@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx shadcn@latest add tooltip --yes)",
+      "Bash(npx shadcn@latest add dialog -y)",
+      "Bash(npx shadcn@latest add button -y)",
+      "Bash(npx next build)",
+      "Bash(node -e \"const { Ear } = require\\(''lucide-react''\\); console.log\\(typeof Ear\\);\")"
+    ]
+  }
+}
