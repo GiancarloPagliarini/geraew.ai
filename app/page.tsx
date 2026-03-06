@@ -2,6 +2,7 @@
 
 import { Canvas } from '@/components/canvas/Canvas';
 import { LeftSidebar } from '@/components/editor/LeftSidebar';
+import { OnboardingTour } from '@/components/editor/OnboardingTour';
 import { RightSidebar } from '@/components/editor/RightSidebar';
 import { TopNavbar } from '@/components/editor/TopNavbar';
 import { EditorProvider } from '@/lib/editor-context';
@@ -48,6 +49,7 @@ export default function Home() {
           <RightSidebar />
         </div>
       </div>
+      <OnboardingTour />
     </EditorProvider>
   );
 }

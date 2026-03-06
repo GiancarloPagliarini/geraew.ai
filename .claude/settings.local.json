@@ -5,7 +5,10 @@
       "Bash(npx shadcn@latest add dialog -y)",
       "Bash(npx shadcn@latest add button -y)",
       "Bash(npx next build)",
-      "Bash(node -e \"const { Ear } = require\\(''lucide-react''\\); console.log\\(typeof Ear\\);\")"
+      "Bash(node -e \"const { Ear } = require\\(''lucide-react''\\); console.log\\(typeof Ear\\);\")",
+      "Bash(npm install react-joyride)",
+      "Bash(npm install react-joyride --legacy-peer-deps)",
+      "Bash(node -e \"require\\(''react-joyride''\\)\")"
     ]
   }
 }
