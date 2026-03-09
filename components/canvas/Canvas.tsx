@@ -10,13 +10,13 @@ import {
   useNodesState,
   useReactFlow,
 } from '@xyflow/react';
-import { ImageIcon, PersonStanding, Plus, Video } from 'lucide-react';
+import { ImageIcon, PersonStanding, Video } from 'lucide-react';
+import Image from 'next/image';
 import { useCallback, useState } from 'react';
 import { useEditor } from '@/lib/editor-context';
 import { BottomToolbar } from '../editor/BottomToolbar';
 import { CanvasContextMenu } from './CanvasContextMenu';
 import { PanelNode } from './PanelNode';
-import Image from 'next/image';
 
 // ─── node registry ───────────────────────────────────────────────────────────
 
@@ -43,7 +43,7 @@ function CanvasContent() {
 
   const handleAddPanel = useCallback(
     (type: string) => {
-      if (type !== 'generate-image' && type !== 'create-influencer' && type !== 'generate-video') return;
+      if (type !== 'generate-image' && type !== 'create-influencer' && type !== 'generate-video' && type !== 'generic') return;
 
       // Place the new panel near the center of the visible viewport
       const position = screenToFlowPosition({ x: window.innerWidth / 2 - 160, y: 160 });
@@ -104,7 +104,7 @@ function CanvasContent() {
           setViewport({ x: 0, y: 0, zoom: 1 }, { duration: 300 });
           setZoom(1);
         }}
-        onAdd={() => handleAddPanel('generate-image')}
+        onAdd={() => handleAddPanel('generic')}
         onAddInfluencer={() => handleAddPanel('create-influencer')}
         onAddVideo={() => handleAddPanel('generate-video')}
         onDelete={handleDelete}
@@ -114,7 +114,7 @@ function CanvasContent() {
       {/* Empty state */}
       {nodes.length === 0 && (
         <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
-          <div className="pointer-events-auto flex flex-col items-center gap-4">
+          <div className="pointer-events-auto flex flex-col items-center gap-6">
             <Image
               src="/logo_2.svg"
               alt="Geraew AI"
@@ -123,38 +123,44 @@ function CanvasContent() {
               className="rounded-md animate-pulse"
             />
             <div className="text-center">
-              <h2 className="text-sm font-semibold text-[#f3f0ed]">Comece a criar</h2>
-              <p className="mt-1 text-xs text-[#f3f0ed]/35">
-                Escolha o que deseja criar
+              <h2 className="text-md font-semibold text-[#f3f0ed]">Tudo pronto!</h2>
+              <p className="mt-1 text-sm text-[#f3f0ed]/35">
+                Escolha o que você deseja criar
               </p>
             </div>
-            <div className="flex flex-col items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-4">
               <button
                 onClick={() => handleAddPanel('generate-image')}
-                className="flex items-center gap-2 rounded-full bg-[#a2dd00] px-5 py-2 text-xs font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95"
+                className="group flex h-40 w-40 flex-col items-center justify-center gap-4 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95"
               >
-                <Plus className="h-3.5 w-3.5" />
-                Gerar imagem
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10">
+                  <ImageIcon className="h-6 w-6 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00]" />
+                </div>
+                <span className="text-sm font-medium text-[#f3f0ed]/90">Gerar imagem</span>
               </button>
 
               <button
                 onClick={() => handleAddPanel('create-influencer')}
-                className="flex items-center gap-2 rounded-full border border-[#a2dd00]/40 bg-[#a2dd00]/10 px-5 py-2 text-xs font-bold text-[#a2dd00] transition-all hover:border-[#a2dd00]/70 hover:bg-[#a2dd00]/20 active:scale-95"
+                className="group flex h-40 w-40 flex-col items-center justify-center gap-4 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95"
               >
-                <Plus className="h-3.5 w-3.5" />
-                Criar AI Influencer
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10">
+                  <PersonStanding className="h-6 w-6 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00]" />
+                </div>
+                <span className="text-sm font-medium text-[#f3f0ed]/90">Criar influencer</span>
               </button>
 
               <button
                 onClick={() => handleAddPanel('generate-video')}
-                className="flex items-center gap-2 rounded-full border border-[#a2dd00]/40 bg-[#a2dd00]/10 px-5 py-2 text-xs font-bold text-[#a2dd00] transition-all hover:border-[#a2dd00]/70 hover:bg-[#a2dd00]/20 active:scale-95"
+                className="group flex h-40 w-40 flex-col items-center justify-center gap-4 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95"
               >
-                <Plus className="h-3.5 w-3.5" />
-                Gerar vídeo
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10">
+                  <Video className="h-6 w-6 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00]" />
+                </div>
+                <span className="text-sm font-medium text-[#f3f0ed]/90">Gerar vídeo</span>
               </button>
             </div>
           </div>
-        </div >
+        </div>
       )
       }
     </>

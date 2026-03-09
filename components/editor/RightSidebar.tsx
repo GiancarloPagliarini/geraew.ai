@@ -16,10 +16,10 @@ import { InfluencerSidebar } from './InfluencerSidebar';
 // ─── UpscaleSection ───────────────────────────────────────────────────────────
 
 const MODELS = [
-  { value: 'real-esrgan-x4', name: 'Real-ESRGAN', tag: 'x4',    desc: 'Melhor qualidade',   recommended: true },
-  { value: 'real-esrgan-x2', name: 'Real-ESRGAN', tag: 'x2',    desc: 'Mais rápido'                            },
-  { value: 'esrgan-pro',     name: 'ESRGAN',      tag: 'Pro',   desc: 'Detalhes nítidos'                       },
-  { value: 'swinir-ultra',   name: 'SwinIR',      tag: 'Ultra', desc: 'Preserva texturas'                      },
+  { value: 'real-esrgan-x4', name: 'Real-ESRGAN', tag: 'x4', desc: 'Melhor qualidade', recommended: true },
+  { value: 'real-esrgan-x2', name: 'Real-ESRGAN', tag: 'x2', desc: 'Mais rápido' },
+  { value: 'esrgan-pro', name: 'ESRGAN', tag: 'Pro', desc: 'Detalhes nítidos' },
+  { value: 'swinir-ultra', name: 'SwinIR', tag: 'Ultra', desc: 'Preserva texturas' },
 ];
 
 function UpscaleSection({ generatedImage, nodeId }: { generatedImage: string; nodeId: string }) {
@@ -142,15 +142,15 @@ function UpscaleSection({ generatedImage, nodeId }: { generatedImage: string; no
         style={
           upscaleState === 'idle'
             ? {
-                background: 'linear-gradient(135deg, #a2dd00 0%, #85b800 100%)',
-                color: '#1a2123',
-                boxShadow: '0 4px 16px rgba(162,221,0,0.22)',
-              }
+              background: 'linear-gradient(135deg, #a2dd00 0%, #85b800 100%)',
+              color: '#1a2123',
+              boxShadow: '0 4px 16px rgba(162,221,0,0.22)',
+            }
             : {
-                background: 'rgba(162,221,0,0.07)',
-                color: 'rgba(162,221,0,0.55)',
-                border: '1px solid rgba(162,221,0,0.14)',
-              }
+              background: 'rgba(162,221,0,0.07)',
+              color: 'rgba(162,221,0,0.55)',
+              border: '1px solid rgba(162,221,0,0.14)',
+            }
         }
       >
         {upscaleState === 'upscaling' ? (
@@ -264,15 +264,15 @@ function FaceSwapSection({ generatedImage }: { generatedImage: string }) {
         style={
           facePhoto
             ? {
-                background: 'linear-gradient(135deg, #a2dd00 0%, #85b800 100%)',
-                color: '#1a2123',
-                boxShadow: '0 4px 16px rgba(162,221,0,0.22)',
-              }
+              background: 'linear-gradient(135deg, #a2dd00 0%, #85b800 100%)',
+              color: '#1a2123',
+              boxShadow: '0 4px 16px rgba(162,221,0,0.22)',
+            }
             : {
-                background: 'rgba(162,221,0,0.07)',
-                color: 'rgba(162,221,0,0.4)',
-                border: '1px solid rgba(162,221,0,0.12)',
-              }
+              background: 'rgba(162,221,0,0.07)',
+              color: 'rgba(162,221,0,0.4)',
+              border: '1px solid rgba(162,221,0,0.12)',
+            }
         }
       >
         <ScanFace className="h-3.5 w-3.5" />
@@ -295,7 +295,7 @@ export function RightSidebar() {
   // Influencer builder sidebar
   if (panelType === 'create-influencer') {
     return (
-      <aside className="aside-in flex h-full w-72 shrink-0 flex-col border-l border-[#f3f0ed]/[0.07] bg-[#1a2123]">
+      <aside className="aside-in flex h-full w-80 shrink-0 flex-col border-l border-[#f3f0ed]/[0.07] bg-[#1a2123]">
         {/* Header */}
         <div className="flex items-center gap-2.5 border-b border-[#f3f0ed]/[0.05] bg-gradient-to-b from-[#f3f0ed]/[0.02] to-transparent px-4 py-3.5">
           <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#f3f0ed]/[0.05]">

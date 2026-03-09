@@ -1,6 +1,9 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from './auth-context';
+import { api, CreditsBalance } from './api';
 
 type UpscaleState = 'idle' | 'upscaling' | 'done';
 
@@ -14,26 +17,43 @@ interface EditorContextValue {
   nodePanelTypes: Record<string, string>;
   setNodePanelType: (nodeId: string, panelType: string) => void;
   credits: number;
+  creditsBalance: CreditsBalance | undefined;
+  creditsLoading: boolean;
   consumeCredits: (amount: number) => void;
+  refetchCredits: () => void;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
 
 export function EditorProvider({ children }: { children: React.ReactNode }) {
+  const { accessToken } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [nodeImages, setNodeImages] = useState<Record<string, string>>({});
   const [nodeUpscaleStates, setNodeUpscaleStates] = useState<Record<string, UpscaleState>>({});
   const [nodePanelTypes, setNodePanelTypes] = useState<Record<string, string>>({});
-  const [credits, setCredits] = useState<number>(0);
 
-  // Initialize credits on mount
-  useEffect(() => {
-    const randomValue = Math.floor(Math.random() * (500 - 50 + 1)) + 50;
-    setCredits(randomValue);
-  }, []);
+  const { data: creditsBalance, isLoading: creditsLoading, refetch: refetchCredits } = useQuery({
+    queryKey: ['credits', 'balance'],
+    queryFn: () => api.credits.balance(accessToken!),
+    enabled: !!accessToken,
+  });
+
+  const credits = creditsBalance?.totalCreditsAvailable ?? 0;
 
   const consumeCredits = (amount: number) => {
-    setCredits((prev) => Math.max(0, prev - amount));
+    // Optimistic update on the cache
+    queryClient.setQueryData<CreditsBalance>(['credits', 'balance'], (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        totalCreditsAvailable: Math.max(0, old.totalCreditsAvailable - amount),
+        planCreditsUsed: old.planCreditsUsed + amount,
+        planCreditsRemaining: Math.max(0, old.planCreditsRemaining - amount),
+      };
+    });
+    // Refetch to sync with server
+    refetchCredits();
   };
 
   return (
@@ -51,7 +71,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         setNodePanelType: (nodeId, panelType) =>
           setNodePanelTypes((prev) => ({ ...prev, [nodeId]: panelType })),
         credits,
+        creditsBalance,
+        creditsLoading,
         consumeCredits,
+        refetchCredits,
       }}
     >
       {children}

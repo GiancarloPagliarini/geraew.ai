@@ -22,6 +22,8 @@ export const metadata: Metadata = {
 };
 
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/lib/auth-context";
+import { QueryProvider } from "@/lib/query-provider";
 
 export default function RootLayout({
   children,
@@ -33,9 +35,13 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
-        <TooltipProvider delayDuration={0}>
-          {children}
-        </TooltipProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <TooltipProvider delayDuration={0}>
+              {children}
+            </TooltipProvider>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

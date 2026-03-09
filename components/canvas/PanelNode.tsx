@@ -6,6 +6,7 @@ import { useEditor } from '@/lib/editor-context';
 import { GenerateImagePanel } from '../editor/GenerateImagePanel';
 import { CreateInfluencerPanel } from '../editor/CreateInfluencerPanel';
 import { GenerateVideoPanel } from '../editor/GenerateVideoPanel';
+import { GenericPanel } from '../editor/GenericPanel';
 
 export function PanelNode({ id, data }: NodeProps) {
   const { setNodes } = useReactFlow();
@@ -24,6 +25,9 @@ export function PanelNode({ id, data }: NodeProps) {
   }
   if (data.panelType === 'generate-video') {
     return <GenerateVideoPanel nodeId={id} onClose={handleClose} />;
+  }
+  if (data.panelType === 'generic') {
+    return <GenericPanel nodeId={id} onClose={handleClose} />;
   }
   return null;
 }

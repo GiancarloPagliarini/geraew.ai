@@ -5,10 +5,12 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useEditor } from '@/lib/editor-context';
+import { useAuth } from '@/lib/auth-context';
 
 export function TopNavbar() {
   const router = useRouter();
-  const { credits } = useEditor();
+  const { credits, creditsLoading } = useEditor();
+  const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -27,7 +29,7 @@ export function TopNavbar() {
   }, [menuOpen]);
 
   function handleLogout() {
-    localStorage.removeItem('geraew-auth');
+    logout();
     router.push('/login');
   }
 
@@ -52,7 +54,11 @@ export function TopNavbar() {
         {/* Credit badge */}
         <div className="flex items-center gap-1.5 rounded-full border border-[#f3f0ed]/10 bg-[#f3f0ed]/[0.05] px-3 py-1.5">
           <Coins className="h-3.5 w-3.5 text-[#a2dd00]" />
-          <span className="text-xs font-semibold text-[#f3f0ed]">{credits}</span>
+          {creditsLoading ? (
+            <div className="h-3 w-10 animate-pulse rounded-full bg-[#f3f0ed]/10" />
+          ) : (
+            <span className="text-xs font-semibold text-[#f3f0ed]">{credits.toLocaleString('pt-BR')}</span>
+          )}
         </div>
 
         {/* Buy button — accent lime */}
@@ -83,8 +89,8 @@ export function TopNavbar() {
             <div className="absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] shadow-2xl">
               {/* User info */}
               <div className="border-b border-[#f3f0ed]/[0.06] px-4 py-3">
-                <p className="text-xs font-semibold text-[#f3f0ed]">Usuário</p>
-                <p className="mt-0.5 text-[11px] text-[#f3f0ed]/40">usuario@email.com</p>
+                <p className="text-xs font-semibold text-[#f3f0ed]">{user?.name || 'Usuário'}</p>
+                <p className="mt-0.5 text-[11px] text-[#f3f0ed]/40">{user?.email}</p>
               </div>
 
               {/* Menu items */}

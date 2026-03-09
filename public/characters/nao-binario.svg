@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#b68fd0"/>
+      <stop offset="50%" style="stop-color:#f5f5dc"/>
+      <stop offset="100%" style="stop-color:#4a8c5c"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" rx="24" fill="url(#bg)"/>
+  <!-- Androgynous silhouette -->
+  <circle cx="200" cy="140" r="55" fill="rgba(255,255,255,0.15)"/>
+  <path d="M155 210 Q155 200 165 195 L235 195 Q245 200 245 210 L240 300 Q240 310 230 310 L170 310 Q160 310 160 300Z" fill="rgba(255,255,255,0.15)"/>
+  <!-- Medium hair -->
+  <path d="M145 145 Q140 80 200 72 Q260 80 255 145 Q258 95 200 82 Q142 95 145 145Z" fill="rgba(255,255,255,0.1)"/>
+  <!-- Label bar -->
+  <rect x="0" y="340" width="400" height="60" rx="0" fill="rgba(0,0,0,0.45)"/>
+  <text x="24" y="378" font-family="system-ui,sans-serif" font-size="22" font-weight="700" fill="white">Não-binário</text>
+</svg>

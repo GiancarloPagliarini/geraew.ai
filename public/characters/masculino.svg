@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5b9bd5"/>
+      <stop offset="100%" style="stop-color:#2a4a7f"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" rx="24" fill="url(#bg)"/>
+  <!-- Male silhouette -->
+  <circle cx="200" cy="140" r="55" fill="rgba(255,255,255,0.15)"/>
+  <rect x="140" y="200" width="120" height="120" rx="20" fill="rgba(255,255,255,0.15)"/>
+  <!-- Short hair -->
+  <path d="M150 130 Q150 85 200 80 Q250 85 250 130 Q248 100 200 90 Q152 100 150 130Z" fill="rgba(255,255,255,0.1)"/>
+  <!-- Label bar -->
+  <rect x="0" y="340" width="400" height="60" rx="0" fill="rgba(0,0,0,0.45)"/>
+  <text x="24" y="378" font-family="system-ui,sans-serif" font-size="22" font-weight="700" fill="white">Masculino</text>
+</svg>

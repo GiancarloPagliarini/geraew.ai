@@ -16,8 +16,161 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
+import Image from 'next/image';
 import { useState } from 'react';
 import { Section } from './Section';
+
+// ─── Character type data ──────────────────────────────────────────────────────
+
+const CHARACTER_TYPES = [
+  { id: 'Humano', label: 'Humano', image: '/characters/humano.svg' },
+  { id: 'Anime', label: 'Anime', image: '/characters/anime.svg' },
+  { id: 'Semi-realista', label: 'Semi-realista', image: '/characters/semi-realista.svg' },
+  { id: 'Cartoon', label: 'Cartoon', image: '/characters/cartoon.svg' },
+  { id: '3D', label: '3D Render', image: '/characters/3d.svg' },
+  { id: 'Pixel Art', label: 'Pixel Art', image: '/characters/pixel-art.svg' },
+] as const;
+
+const ETHNICITY_TYPES = [
+  { id: 'Latina', label: 'Latina', image: '/characters/latina.svg' },
+  { id: 'Europeia', label: 'Europeia', image: '/characters/europeia.svg' },
+  { id: 'Africana', label: 'Africana', image: '/characters/africana.svg' },
+  { id: 'Asiática', label: 'Asiática', image: '/characters/asiatica.svg' },
+  { id: 'Árabe', label: 'Árabe', image: '/characters/arabe.svg' },
+  { id: 'Indígena', label: 'Indígena', image: '/characters/indigena.svg' },
+] as const;
+
+const GENDER_TYPES = [
+  { id: 'Feminino', label: 'Feminino', image: '/characters/feminino.svg' },
+  { id: 'Masculino', label: 'Masculino', image: '/characters/masculino.svg' },
+  { id: 'Não-binário', label: 'Não-binário', image: '/characters/nao-binario.svg' },
+] as const;
+
+const EYE_COLORS = [
+  { id: 'Castanho', label: 'Castanho', color: '#6B3410' },
+  { id: 'Verde', label: 'Verde', color: '#3d8b2f' },
+  { id: 'Azul', label: 'Azul', color: '#3a7fc4' },
+  { id: 'Mel', label: 'Mel', color: '#c48a20' },
+  { id: 'Cinza', label: 'Cinza', color: '#8a929a' },
+  { id: 'Heterocromia', label: 'Heterocromia', color: 'linear-gradient(135deg, #3a7fc4 50%, #6B3410 50%)' },
+] as const;
+
+const SKIN_COLORS = [
+  { id: 'Clara', label: 'Clara', color: '#f5d6b8' },
+  { id: 'Média', label: 'Média', color: '#d4a373' },
+  { id: 'Morena', label: 'Morena', color: '#b07d56' },
+  { id: 'Escura', label: 'Escura', color: '#8b5e3c' },
+  { id: 'Muito escura', label: 'Muito escura', color: '#4a2c17' },
+] as const;
+
+const SKIN_CONDITIONS = [
+  { id: 'Lisa', label: 'Lisa', color: '#d4a373' },
+  { id: 'Sardas', label: 'Sardas', color: 'radial-gradient(circle 2px, #8b5e3c 30%, transparent 30%), radial-gradient(circle 1.5px, #a0704a 20%, transparent 20%), #d4a373' },
+  { id: 'Manchas', label: 'Manchas', color: 'radial-gradient(ellipse 40% 35% at 35% 40%, rgba(139,94,60,0.5) 0%, transparent 100%), radial-gradient(ellipse 30% 40% at 65% 60%, rgba(139,94,60,0.4) 0%, transparent 100%), #d4a373' },
+  { id: 'Acne', label: 'Acne', color: 'radial-gradient(circle 3px at 30% 35%, #c46b6b 0%, transparent 70%), radial-gradient(circle 2px at 55% 50%, #d07070 0%, transparent 70%), radial-gradient(circle 2.5px at 70% 30%, #c46b6b 0%, transparent 70%), radial-gradient(circle 2px at 40% 65%, #d07070 0%, transparent 70%), #d4a373' },
+  { id: 'Cicatrizes', label: 'Cicatrizes', color: 'linear-gradient(160deg, transparent 42%, rgba(190,160,130,0.6) 44%, rgba(190,160,130,0.6) 46%, transparent 48%), linear-gradient(130deg, transparent 55%, rgba(190,160,130,0.5) 57%, rgba(190,160,130,0.5) 59%, transparent 61%), #d4a373' },
+] as const;
+
+// ─── ColorSwatchGrid ──────────────────────────────────────────────────────────
+
+function ColorSwatchGrid({
+  options,
+  value,
+  onChange,
+}: {
+  options: ReadonlyArray<{ id: string; label: string; color: string }>;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2.5 mt-2">
+      {options.map((opt) => {
+        const active = value === opt.id;
+        return (
+          <button
+            key={opt.id}
+            onClick={() => onChange(opt.id)}
+            className="group flex flex-col items-center gap-1.5 transition-all active:scale-95"
+          >
+            <div
+              className="h-10 w-10 rounded-full transition-all duration-200 group-hover:scale-110"
+              style={{
+                background: opt.color,
+                border: `3px solid ${active ? '#a2dd00' : 'rgba(243,240,237,0.08)'}`,
+                boxShadow: active
+                  ? '0 0 0 2px rgba(162,221,0,0.3), 0 0 12px rgba(162,221,0,0.15)'
+                  : 'inset 0 2px 4px rgba(0,0,0,0.15)',
+              }}
+            />
+            <span
+              className="text-[9px] font-semibold transition-colors"
+              style={{ color: active ? '#a2dd00' : 'rgba(243,240,237,0.35)' }}
+            >
+              {opt.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── ImageOptionGrid ──────────────────────────────────────────────────────────
+
+function ImageOptionGrid({
+  options,
+  value,
+  onChange,
+}: {
+  options: ReadonlyArray<{ id: string; label: string; image: string }>;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-2 mt-2">
+      {options.map((opt) => {
+        const active = value === opt.id;
+        return (
+          <button
+            key={opt.id}
+            onClick={() => onChange(opt.id)}
+            className="group relative aspect-square overflow-hidden rounded-xl transition-all active:scale-95"
+            style={{
+              border: `2px solid ${active ? 'rgba(162,221,0,0.6)' : 'rgba(243,240,237,0.06)'}`,
+              boxShadow: active ? '0 0 12px rgba(162,221,0,0.15)' : 'none',
+            }}
+          >
+            {/* Image */}
+            <Image
+              src={opt.image}
+              alt={opt.label}
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              sizes="120px"
+            />
+
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+
+            {/* Label */}
+            <span className="absolute bottom-1.5 left-2 text-[11px] font-bold text-white drop-shadow-md">
+              {opt.label}
+            </span>
+
+            {/* Active check */}
+            {active && (
+              <div className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#a2dd00] shadow-md">
+                <svg className="h-3 w-3 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 // ─── OptionPills ──────────────────────────────────────────────────────────────
 
@@ -167,48 +320,48 @@ export function InfluencerSidebar() {
           <>
             {/* ── Basic builder sections ─────────────────────────────── */}
             <Section title="TIPO DE PERSONAGEM" icon={Users}>
-              <OptionPills
-                options={['Humano', 'Anime', 'Semi-realista', 'Cartoon']}
+              <ImageOptionGrid
+                options={CHARACTER_TYPES}
                 value={characterType}
                 onChange={setCharacterType}
               />
             </Section>
 
             <Section title="GÊNERO" icon={ImageIcon}>
-              <OptionPills
-                options={['Feminino', 'Masculino', 'Não-binário']}
+              <ImageOptionGrid
+                options={GENDER_TYPES}
                 value={gender}
                 onChange={setGender}
               />
             </Section>
 
-            <Section title="ETNIA / ORIGEM BASE" icon={Globe}>
-              <OptionPills
-                options={['Latina', 'Europeia', 'Africana', 'Asiática', 'Árabe', 'Indígena']}
+            <Section title="ETNIA" icon={Globe}>
+              <ImageOptionGrid
+                options={ETHNICITY_TYPES}
                 value={ethnicity}
                 onChange={setEthnicity}
               />
             </Section>
 
             <Section title="COR DA PELE" icon={CircleDot}>
-              <OptionPills
-                options={['Clara', 'Média', 'Morena', 'Escura', 'Muito escura']}
+              <ColorSwatchGrid
+                options={SKIN_COLORS}
                 value={skinColor}
                 onChange={setSkinColor}
               />
             </Section>
 
             <Section title="COR DOS OLHOS" icon={Palette}>
-              <OptionPills
-                options={['Castanho', 'Verde', 'Azul', 'Mel', 'Cinza', 'Heterocromia']}
+              <ColorSwatchGrid
+                options={EYE_COLORS}
                 value={eyeColor}
                 onChange={setEyeColor}
               />
             </Section>
 
             <Section title="CONDIÇÕES DA PELE" icon={User}>
-              <OptionPills
-                options={['Lisa', 'Sardas', 'Manchas', 'Acne', 'Cicatrizes']}
+              <ColorSwatchGrid
+                options={SKIN_CONDITIONS}
                 value={skinCondition}
                 onChange={setSkinCondition}
               />

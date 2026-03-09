@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e88ca5"/>
+      <stop offset="100%" style="stop-color:#8b3a62"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" rx="24" fill="url(#bg)"/>
+  <!-- Female silhouette -->
+  <circle cx="200" cy="140" r="55" fill="rgba(255,255,255,0.15)"/>
+  <ellipse cx="200" cy="280" rx="65" ry="80" fill="rgba(255,255,255,0.15)"/>
+  <!-- Hair -->
+  <path d="M145 140 Q145 75 200 70 Q255 75 255 140 Q260 100 240 80 Q200 55 160 80 Q140 100 145 140Z" fill="rgba(255,255,255,0.1)"/>
+  <!-- Label bar -->
+  <rect x="0" y="340" width="400" height="60" rx="0" fill="rgba(0,0,0,0.45)"/>
+  <text x="24" y="378" font-family="system-ui,sans-serif" font-size="22" font-weight="700" fill="white">Feminino</text>
+</svg>

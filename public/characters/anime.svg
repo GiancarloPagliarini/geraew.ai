@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b9d"/>
+      <stop offset="50%" style="stop-color:#c44dff"/>
+      <stop offset="100%" style="stop-color:#7b2ff7"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.12)"/>
+      <stop offset="100%" style="stop-color:rgba(255,255,255,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="400" rx="24" fill="url(#bg)"/>
+  <rect width="400" height="400" rx="24" fill="url(#glow)"/>
+  <!-- Anime eyes -->
+  <!-- Left eye -->
+  <ellipse cx="145" cy="175" rx="42" ry="50" fill="rgba(255,255,255,0.3)" />
+  <ellipse cx="145" cy="175" rx="30" ry="38" fill="rgba(0,0,0,0.3)" />
+  <circle cx="135" cy="160" r="12" fill="rgba(255,255,255,0.5)" />
+  <circle cx="155" cy="170" r="6" fill="rgba(255,255,255,0.35)" />
+  <!-- Right eye -->
+  <ellipse cx="255" cy="175" rx="42" ry="50" fill="rgba(255,255,255,0.3)" />
+  <ellipse cx="255" cy="175" rx="30" ry="38" fill="rgba(0,0,0,0.3)" />
+  <circle cx="245" cy="160" r="12" fill="rgba(255,255,255,0.5)" />
+  <circle cx="265" cy="170" r="6" fill="rgba(255,255,255,0.35)" />
+  <!-- Small mouth -->
+  <path d="M185 230 Q200 245 215 230" stroke="rgba(255,255,255,0.3)" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- Hair strands -->
+  <path d="M100 100 Q120 60 200 80 Q280 60 300 100 L290 140 Q250 110 200 120 Q150 110 110 140 Z" fill="rgba(255,255,255,0.15)"/>
+  <!-- Label background -->
+  <rect x="0" y="340" width="400" height="60" fill="rgba(0,0,0,0.45)"/>
+  <text x="200" y="378" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="700" fill="white" letter-spacing="1">Anime</text>
+</svg>

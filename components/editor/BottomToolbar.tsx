@@ -1,6 +1,6 @@
 'use client';
 
-import { HelpCircle, Minus, PersonStanding, Plus, Trash2, Video } from 'lucide-react';
+import { HelpCircle, ImageIcon, Minus, PersonStanding, Plus, Trash2, Video } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -37,6 +37,10 @@ export function BottomToolbar({
         <div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-[#f3f0ed]/[0.08] bg-[#1a2123]/90 px-2 py-1.5 shadow-2xl backdrop-blur-md">
           <ToolbarButton tooltip="Adicionar painel" onClick={onAdd}>
             <Plus className="h-4 w-4" />
+          </ToolbarButton>
+
+          <ToolbarButton tooltip="Gerar imagem" onClick={onAdd}>
+            <ImageIcon className="h-4 w-4" />
           </ToolbarButton>
 
           <ToolbarButton tooltip="Criar AI Influencer" onClick={onAddInfluencer}>

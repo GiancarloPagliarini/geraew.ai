@@ -1,27 +1,45 @@
 'use client';
 
-import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import Image from 'next/image';
+import { useAuth } from '@/lib/auth-context';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, register } = useAuth();
+
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    setError('');
     setLoading(true);
 
-    // Fake login — salva flag e redireciona
-    setTimeout(() => {
-      localStorage.setItem('geraew-auth', 'true');
+    try {
+      if (mode === 'login') {
+        await login(email, password);
+      } else {
+        await register(email, name, password);
+      }
       router.push('/');
-    }, 800);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Ocorreu um erro. Tente novamente.';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   }
+
+  const isRegister = mode === 'register';
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#1a2123] px-4">
@@ -45,6 +63,27 @@ export default function LoginPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {/* Name — only on register */}
+          {isRegister && (
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="name"
+                className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/50"
+              >
+                NOME
+              </label>
+              <input
+                id="name"
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Seu nome"
+                className="h-10 rounded-lg border border-[#f3f0ed]/[0.08] bg-[#f3f0ed]/[0.04] px-3 text-sm text-[#f3f0ed] placeholder:text-[#f3f0ed]/20 outline-none transition-colors focus:border-[#a2dd00]/50 focus:bg-[#f3f0ed]/[0.06]"
+              />
+            </div>
+          )}
+
           {/* Email */}
           <div className="flex flex-col gap-1.5">
             <label
@@ -96,15 +135,24 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Forgot password */}
-          <div className="flex justify-end">
-            <button
-              type="button"
-              className="text-[11px] text-[#a2dd00]/70 transition-colors hover:text-[#a2dd00]"
-            >
-              Esqueceu a senha?
-            </button>
-          </div>
+          {/* Error message */}
+          {error && (
+            <p className="rounded-lg border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs text-red-400">
+              {error}
+            </p>
+          )}
+
+          {/* Forgot password — only on login */}
+          {!isRegister && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="text-[11px] text-[#a2dd00]/70 transition-colors hover:text-[#a2dd00]"
+              >
+                Esqueceu a senha?
+              </button>
+            </div>
+          )}
 
           {/* Submit */}
           <button
@@ -114,6 +162,11 @@ export default function LoginPage() {
           >
             {loading ? (
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#1a2123]/30 border-t-[#1a2123]" />
+            ) : isRegister ? (
+              <>
+                <UserPlus className="h-4 w-4" />
+                <span className="text-sm">Criar conta</span>
+              </>
             ) : (
               <>
                 <LogIn className="h-4 w-4" />
@@ -130,14 +183,18 @@ export default function LoginPage() {
           <div className="h-px flex-1 bg-[#f3f0ed]/[0.07]" />
         </div>
 
-        {/* Sign up CTA */}
+        {/* Toggle mode CTA */}
         <p className="text-center text-xs text-[#f3f0ed]/40">
-          Não tem uma conta?{' '}
+          {isRegister ? 'Já tem uma conta?' : 'Não tem uma conta?'}{' '}
           <button
             type="button"
+            onClick={() => {
+              setMode(isRegister ? 'login' : 'register');
+              setError('');
+            }}
             className="font-semibold text-[#a2dd00]/80 transition-colors hover:text-[#a2dd00]"
           >
-            Criar conta
+            {isRegister ? 'Entrar' : 'Criar conta'}
           </button>
         </p>
       </div>

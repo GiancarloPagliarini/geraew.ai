@@ -8,7 +8,9 @@
       "Bash(node -e \"const { Ear } = require\\(''lucide-react''\\); console.log\\(typeof Ear\\);\")",
       "Bash(npm install react-joyride)",
       "Bash(npm install react-joyride --legacy-peer-deps)",
-      "Bash(node -e \"require\\(''react-joyride''\\)\")"
+      "Bash(node -e \"require\\(''react-joyride''\\)\")",
+      "Bash(npm install @tanstack/react-query)",
+      "Bash(npm install @tanstack/react-query --legacy-peer-deps)"
     ]
   }
 }
