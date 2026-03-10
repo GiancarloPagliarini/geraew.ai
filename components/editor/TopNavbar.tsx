@@ -44,7 +44,7 @@ export function TopNavbar() {
           height={32}
           className="rounded-md mix-blend-lighten"
         />
-        <span className="text-xs font-semibold tracking-[0.2em] text-[#f3f0ed]">
+        <span className="text-sm font-medium text-[#f3f0ed]">
           Geraew.AI
         </span>
       </div>

@@ -10,18 +10,34 @@ import {
 import { ArrowUpRight, Download, ImagePlus, Loader2, Sparkles, Wand2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useEditor } from '@/lib/editor-context';
+import { useAuth } from '@/lib/auth-context';
+import { api, AspectRatio } from '@/lib/api';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
 type GenState = 'idle' | 'generating' | 'done';
 
-// ─── constants ────────────────────────────────────────────────────────────────
-
-const MOCK_IMAGE = '/mulher_escrevendo_carta.png';
-
 // SVG circle metrics
 const RADIUS = 36;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
+
+function qualityToResolution(q: string): 'RES_1K' | 'RES_2K' | 'RES_4K' {
+  if (q === '4k') return 'RES_4K';
+  if (q === 'hd') return 'RES_2K';
+  return 'RES_1K';
+}
+
+function proportionToAspectRatio(p: string): AspectRatio {
+  const map: Record<string, AspectRatio> = {
+    '16-9': '16:9',
+    '9-16': '9:16',
+    '1-1': '1:1',
+    '4-3': '4:3',
+  };
+  return map[p] ?? 'auto';
+}
 
 // ─── component ────────────────────────────────────────────────────────────────
 
@@ -31,67 +47,127 @@ interface GenerateImagePanelProps {
 }
 
 export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps) {
-  const { setNodeImage, nodeUpscaleStates, setNodeUpscaleState, consumeCredits } = useEditor();
+  const { setNodeImage, nodeUpscaleStates, setNodeUpscaleState, consumeCredits, refetchCredits } =
+    useEditor();
+  const { accessToken } = useAuth();
   const upscaleState = nodeUpscaleStates[nodeId] ?? 'idle';
-  const [prompt, setPrompt] = useState('uma mulher escrevendo uma carta');
-  const [category, setCategory] = useState('influencer');
+
+  const [prompt, setPrompt] = useState('');
   const [proportion, setProportion] = useState('16-9');
   const [quality, setQuality] = useState('4k');
 
   const [genState, setGenState] = useState<GenState>('idle');
   const [progress, setProgress] = useState(0);
   const [imageVisible, setImageVisible] = useState(false);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  function clearTimer() {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+  function clearProgressTimer() {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
     }
   }
 
-  function handleGenerate() {
-    // Consome 10 créditos ao gerar imagem
-    consumeCredits(10);
+  function clearPollTimer() {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  }
 
-    // Reset if re-generating
+  function startProgressAnimation() {
+    let current = 0;
+    progressIntervalRef.current = setInterval(() => {
+      const remaining = 90 - current;
+      const step = Math.max(1, Math.random() * (remaining * 0.12 + 1));
+      current = Math.min(90, current + step);
+      setProgress(Math.round(current));
+    }, 180);
+  }
+
+  function finishWithImage(url: string) {
+    clearProgressTimer();
+    setProgress(100);
+    setTimeout(() => {
+      setGenState('done');
+      setGeneratedImageUrl(url);
+      setNodeImage(nodeId, url);
+      setTimeout(() => setImageVisible(true), 60);
+    }, 380);
+  }
+
+  async function handleGenerate() {
+    if (!accessToken) return;
+
     setGenState('generating');
     setProgress(0);
     setImageVisible(false);
-    clearTimer();
+    setErrorMsg(null);
+    clearProgressTimer();
+    clearPollTimer();
+    startProgressAnimation();
 
-    let current = 0;
-    intervalRef.current = setInterval(() => {
-      // Accelerate early, decelerate near the end
-      const remaining = 94 - current;
-      const step = Math.max(1, Math.random() * (remaining * 0.12 + 1));
-      current = Math.min(94, current + step);
-      setProgress(Math.round(current));
+    try {
+      const { id, creditsConsumed } = await api.generations.textToImage(accessToken, {
+        prompt,
+        resolution: qualityToResolution(quality),
+        aspectRatio: proportionToAspectRatio(proportion),
+        imageModel: 'gemini-3.1-flash-image-preview',
+      });
 
-      if (current >= 94) {
-        clearTimer();
-        // Brief pause at 94% then jump to 100
-        setTimeout(() => {
-          setProgress(100);
-          setTimeout(() => {
-            setGenState('done');
-            setNodeImage(nodeId, MOCK_IMAGE);
-            setTimeout(() => setImageVisible(true), 60);
-          }, 380);
-        }, 600);
-      }
-    }, 180);
+      consumeCredits(creditsConsumed);
+
+      pollIntervalRef.current = setInterval(async () => {
+        try {
+          const generation = await api.generations.get(accessToken, id);
+
+          if (generation.status === 'COMPLETED') {
+            clearPollTimer();
+            finishWithImage(generation.outputUrl!);
+            refetchCredits();
+          }
+
+          if (generation.status === 'FAILED') {
+            clearPollTimer();
+            clearProgressTimer();
+            setGenState('idle');
+            setErrorMsg(generation.errorMessage ?? 'Erro ao gerar imagem.');
+            refetchCredits();
+          }
+        } catch {
+          clearPollTimer();
+          clearProgressTimer();
+          setGenState('idle');
+          setErrorMsg('Erro ao verificar status da geração.');
+        }
+      }, 3000);
+    } catch (err) {
+      clearProgressTimer();
+      setGenState('idle');
+      setErrorMsg(err instanceof Error ? err.message : 'Erro ao iniciar geração.');
+    }
   }
 
   function handleDiscard() {
     setGenState('idle');
     setProgress(0);
     setImageVisible(false);
+    setGeneratedImageUrl(null);
+    setErrorMsg(null);
     setNodeUpscaleState(nodeId, 'idle');
   }
 
-  useEffect(() => () => clearTimer(), []);
+  useEffect(
+    () => () => {
+      clearProgressTimer();
+      clearPollTimer();
+    },
+    [],
+  );
 
   const dashOffset = CIRCUMFERENCE * (1 - progress / 100);
 
@@ -114,23 +190,6 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
       </div>
 
       <div className="space-y-4 p-4">
-        {/* Category */}
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-            O QUE VOCÊ QUER GERAR?
-          </label>
-          <PanelSelect
-            value={category}
-            onValueChange={setCategory}
-            options={[
-              { value: 'influencer', label: 'Influencer Realista' },
-              { value: 'digital-art', label: 'Arte Digital' },
-              { value: 'photography', label: 'Fotografia' },
-              { value: 'illustration', label: 'Ilustração' },
-            ]}
-          />
-        </div>
-
         {/* Prompt */}
         <textarea
           value={prompt}
@@ -140,6 +199,13 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
           className="w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30"
         />
 
+        {/* ── Error message ────────────────────────────────────────────── */}
+        {errorMsg && (
+          <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-xs text-red-400">
+            {errorMsg}
+          </div>
+        )}
+
         {/* ── Generation area ─────────────────────────────────────────── */}
         {genState === 'generating' && (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-[#f3f0ed]/[0.06] bg-[#1e494b]/10 py-8">
@@ -148,7 +214,9 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
               <svg width="90" height="90" viewBox="0 0 90 90" className="-rotate-90">
                 {/* Track */}
                 <circle
-                  cx="45" cy="45" r={RADIUS}
+                  cx="45"
+                  cy="45"
+                  r={RADIUS}
                   fill="none"
                   stroke="#f3f0ed"
                   strokeOpacity={0.07}
@@ -156,7 +224,9 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
                 />
                 {/* Progress arc */}
                 <circle
-                  cx="45" cy="45" r={RADIUS}
+                  cx="45"
+                  cy="45"
+                  r={RADIUS}
                   fill="none"
                   stroke="#a2dd00"
                   strokeWidth="4"
@@ -167,9 +237,7 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
                 />
               </svg>
               {/* Percentage label */}
-              <span className="absolute text-sm font-bold text-[#f3f0ed]/80">
-                {progress}%
-              </span>
+              <span className="absolute text-sm font-bold text-[#f3f0ed]/80">{progress}%</span>
             </div>
 
             <span className="text-[10px] font-bold tracking-[0.2em] text-[#f3f0ed]/30">
@@ -179,7 +247,7 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
         )}
 
         {/* ── Generated image ─────────────────────────────────────────── */}
-        {genState === 'done' && (
+        {genState === 'done' && generatedImageUrl && (
           <div
             className="group relative overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08]"
             style={{
@@ -191,7 +259,7 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
             {/* Image */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={MOCK_IMAGE}
+              src={generatedImageUrl}
               alt="Imagem gerada"
               className="h-auto w-full object-cover"
               draggable={false}
@@ -206,22 +274,26 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
 
             {/* Upscale done badge */}
             {upscaleState === 'done' && (
-              <div className="absolute left-2 top-2 flex items-center justify-center rounded-full bg-[#a2dd00] px-2 py-0.5 ">
-                <span className="text-[8px] font-black tracking-widest text-[#1a2123]">
-                  HD+
-                </span>
+              <div className="absolute left-2 top-2 flex items-center justify-center rounded-full bg-[#a2dd00] px-2 py-0.5">
+                <span className="text-[8px] font-black tracking-widest text-[#1a2123]">HD+</span>
               </div>
             )}
 
             {/* Overlay — visible on hover */}
             <div className="absolute inset-0 flex items-start justify-end gap-1.5 bg-gradient-to-b from-black/50 via-transparent to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
               {/* Expand */}
-              <ActionButton title="Expandir" onClick={() => window.open(MOCK_IMAGE, '_blank')}>
+              <ActionButton
+                title="Expandir"
+                onClick={() => window.open(generatedImageUrl, '_blank')}
+              >
                 <ArrowUpRight className="h-3.5 w-3.5" />
               </ActionButton>
 
               {/* Download */}
-              <ActionButton title="Baixar" onClick={() => handleDownload()}>
+              <ActionButton
+                title="Baixar"
+                onClick={() => handleDownload(generatedImageUrl)}
+              >
                 <Download className="h-3.5 w-3.5" />
               </ActionButton>
 
@@ -282,7 +354,7 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
         {/* Generate button */}
         <button
           onClick={handleGenerate}
-          disabled={genState === 'generating'}
+          disabled={genState === 'generating' || !prompt.trim()}
           className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
           style={{
             background: genState === 'generating' ? 'rgba(162,221,0,0.12)' : '#a2dd00',
@@ -309,10 +381,10 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-function handleDownload() {
+function handleDownload(url: string) {
   const a = document.createElement('a');
-  a.href = MOCK_IMAGE;
-  a.download = 'geraew-ai.png';
+  a.href = url;
+  a.download = 'geraew-ai.jpg';
   a.click();
 }
 

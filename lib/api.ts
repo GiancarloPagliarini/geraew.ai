@@ -75,7 +75,97 @@ export interface CreditPackage {
   createdAt: string;
 }
 
+// ─── Generations ──────────────────────────────────────────────────────────────
+
+export type GenerationStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+export type AspectRatio =
+  | '1:1' | '1:4' | '1:8' | '2:3' | '3:2' | '3:4'
+  | '4:1' | '4:3' | '4:5' | '5:4' | '8:1' | '9:16'
+  | '16:9' | '21:9' | 'auto';
+
+export interface CreateGenerationResponse {
+  id: string;
+  status: GenerationStatus;
+  creditsConsumed: number;
+}
+
+export interface Generation {
+  id: string;
+  type: string;
+  status: GenerationStatus;
+  prompt?: string;
+  resolution?: string;
+  outputUrl?: string;
+  thumbnailUrl?: string;
+  hasWatermark?: boolean;
+  durationSeconds?: number;
+  creditsConsumed: number;
+  isFavorited?: boolean;
+  errorMessage?: string;
+  errorCode?: string;
+  createdAt?: string;
+  completedAt?: string;
+}
+
+export interface GalleryStats {
+  totalGenerations: number;
+  totalCreditsUsed: number;
+  generationsByType: {
+    TEXT_TO_IMAGE: number;
+    IMAGE_TO_IMAGE: number;
+    TEXT_TO_VIDEO: number;
+    IMAGE_TO_VIDEO: number;
+    MOTION_CONTROL: number;
+  };
+  favoriteCount: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface TextToImageRequest {
+  prompt: string;
+  negativePrompt?: string;
+  resolution: 'RES_1K' | 'RES_2K' | 'RES_4K';
+  aspectRatio?: AspectRatio;
+  outputFormat?: 'png' | 'jpg';
+  googleSearch?: boolean;
+  imageModel?: 'gemini-3.1-pro-preview' | 'gemini-3.1-flash-image-preview';
+  parameters?: Record<string, unknown>;
+}
+
 export const api = {
+  gallery: {
+    list(accessToken: string, page = 1, limit = 20) {
+      return authRequest<PaginatedResponse<Generation>>(
+        `/api/v1/gallery?page=${page}&limit=${limit}&sort=created_at:desc`,
+        accessToken,
+      );
+    },
+    stats(accessToken: string) {
+      return authRequest<GalleryStats>('/api/v1/gallery/stats', accessToken);
+    },
+  },
+
+  generations: {
+    textToImage(accessToken: string, payload: TextToImageRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/text-to-image', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    get(accessToken: string, id: string) {
+      return authRequest<Generation>(`/api/v1/generations/${id}`, accessToken);
+    },
+  },
+
   credits: {
     balance(accessToken: string) {
       return authRequest<CreditsBalance>('/api/v1/credits/balance', accessToken);
