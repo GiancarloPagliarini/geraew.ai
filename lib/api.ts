@@ -1,4 +1,4 @@
-const BASE_URL = 'https://clip-generator-geraew-api.ernvcw.easypanel.host';
+export const BASE_URL = 'https://clip-generator-geraew-api.ernvcw.easypanel.host';
 
 export interface AuthUser {
   id: string;
@@ -89,17 +89,36 @@ export interface CreateGenerationResponse {
   creditsConsumed: number;
 }
 
+export interface GenerationOutput {
+  id: string;
+  url: string;
+  order: number;
+}
+
+export interface GenerationInputImage {
+  id: string;
+  role: string;
+  mimeType: string;
+  order: number;
+  url?: string;
+  referenceType?: string;
+}
+
 export interface Generation {
   id: string;
   type: string;
   status: GenerationStatus;
   prompt?: string;
   resolution?: string;
-  outputUrl?: string;
-  thumbnailUrl?: string;
-  hasWatermark?: boolean;
   durationSeconds?: number;
+  hasAudio?: boolean;
+  modelUsed?: string;
+  parameters?: Record<string, unknown>;
+  outputs: GenerationOutput[];
+  inputImages?: GenerationInputImage[];
+  hasWatermark?: boolean;
   creditsConsumed: number;
+  processingTimeMs?: number;
   isFavorited?: boolean;
   errorMessage?: string;
   errorCode?: string;
@@ -130,15 +149,28 @@ export interface PaginatedResponse<T> {
   };
 }
 
-export interface TextToImageRequest {
+export interface GenerateImageRequest {
   prompt: string;
-  negativePrompt?: string;
+  model: string;
   resolution: 'RES_1K' | 'RES_2K' | 'RES_4K';
-  aspectRatio?: AspectRatio;
-  outputFormat?: 'png' | 'jpg';
-  googleSearch?: boolean;
-  imageModel?: 'gemini-3.1-pro-preview' | 'gemini-3.1-flash-image-preview';
-  parameters?: Record<string, unknown>;
+  aspect_ratio: string;
+  mime_type?: string;
+  images?: { base64: string; mime_type: string }[];
+}
+
+export interface TextToVideoRequest {
+  prompt: string;
+  model: string;
+  resolution: string;
+  duration_seconds: number;
+  aspect_ratio?: string;
+  generate_audio?: boolean;
+  sample_count?: number;
+  negative_prompt?: string;
+}
+
+export interface VideoWithReferencesRequest extends TextToVideoRequest {
+  reference_images: { base64: string; mime_type: string; reference_type: 'asset' }[];
 }
 
 export const api = {
@@ -155,8 +187,20 @@ export const api = {
   },
 
   generations: {
-    textToImage(accessToken: string, payload: TextToImageRequest) {
-      return authRequest<CreateGenerationResponse>('/api/v1/generations/text-to-image', accessToken, {
+    generateImage(accessToken: string, payload: GenerateImageRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/generate-image', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    textToVideo(accessToken: string, payload: TextToVideoRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/text-to-video', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    videoWithReferences(accessToken: string, payload: VideoWithReferencesRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/video-with-references', accessToken, {
         method: 'POST',
         body: JSON.stringify(payload),
       });

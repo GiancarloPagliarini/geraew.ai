@@ -11,7 +11,8 @@ import { ArrowUpRight, Download, ImagePlus, Loader2, Sparkles, Wand2, X } from '
 import { useEffect, useRef, useState } from 'react';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
-import { api, AspectRatio } from '@/lib/api';
+import { api } from '@/lib/api';
+import { listenGeneration } from '@/lib/sse';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -21,6 +22,26 @@ type GenState = 'idle' | 'generating' | 'done';
 const RADIUS = 36;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
+// ─── loading messages ─────────────────────────────────────────────────────────
+
+const LOADING_MESSAGES = [
+  'CONSULTANDO OS PIXELS...',
+  'ENSINANDO A IA A PINTAR...',
+  'MISTURANDO CORES DIGITAIS...',
+  'PEDINDO INSPIRAÇÃO AO UNIVERSO...',
+  'AQUECENDO OS NEURÔNIOS...',
+  'INVOCANDO O ARTISTA INTERIOR...',
+  'CALCULANDO CRIATIVIDADE...',
+  'SONHANDO EM ALTA RESOLUÇÃO...',
+  'TREINANDO O OLHO ARTÍSTICO...',
+  'APLICANDO CAMADAS DE GENIALIDADE...',
+  'BUSCANDO REFERÊNCIAS NO MUSEU...',
+  'CONVERSANDO COM OS PIXELS...',
+  'CONVENCENDO A IA A CAPRICHAR...',
+  'PROCESSANDO BOAS VIBES...',
+  'ADICIONANDO UM TOQUE DE MAGIA...',
+];
+
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 function qualityToResolution(q: string): 'RES_1K' | 'RES_2K' | 'RES_4K' {
@@ -29,14 +50,14 @@ function qualityToResolution(q: string): 'RES_1K' | 'RES_2K' | 'RES_4K' {
   return 'RES_1K';
 }
 
-function proportionToAspectRatio(p: string): AspectRatio {
-  const map: Record<string, AspectRatio> = {
+function proportionToAspectRatio(p: string): string {
+  const map: Record<string, string> = {
     '16-9': '16:9',
     '9-16': '9:16',
     '1-1': '1:1',
     '4-3': '4:3',
   };
-  return map[p] ?? 'auto';
+  return map[p] ?? '1:1';
 }
 
 // ─── component ────────────────────────────────────────────────────────────────
@@ -61,14 +82,26 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
   const [imageVisible, setImageVisible] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [attachedImages, setAttachedImages] = useState<{ base64: string; mime_type: string; preview: string }[]>([]);
+  const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const msgIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sseControllerRef = useRef<AbortController | null>(null);
 
   function clearProgressTimer() {
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current);
       progressIntervalRef.current = null;
+    }
+  }
+
+  function clearMsgTimer() {
+    if (msgIntervalRef.current) {
+      clearInterval(msgIntervalRef.current);
+      msgIntervalRef.current = null;
     }
   }
 
@@ -79,18 +112,58 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
     }
   }
 
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    const remaining = 4 - attachedImages.length;
+    files.slice(0, remaining).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const dataUrl = ev.target?.result as string;
+        const base64 = dataUrl.split(',')[1];
+        setAttachedImages((prev) => [
+          ...prev,
+          { base64, mime_type: file.type, preview: dataUrl },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+    // reset so same file can be re-added after removal
+    e.target.value = '';
+  }
+
+  function removeAttachedImage(index: number) {
+    setAttachedImages((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function clearSSE() {
+    if (sseControllerRef.current) {
+      sseControllerRef.current.abort();
+      sseControllerRef.current = null;
+    }
+  }
+
   function startProgressAnimation() {
     let current = 0;
     progressIntervalRef.current = setInterval(() => {
       const remaining = 90 - current;
-      const step = Math.max(1, Math.random() * (remaining * 0.12 + 1));
+      const step = Math.max(0.3, Math.random() * (remaining * 0.05 + 0.5));
       current = Math.min(90, current + step);
       setProgress(Math.round(current));
-    }, 180);
+    }, 600);
+
+    // cycle loading messages every 5 s
+    let msgIndex = 0;
+    setLoadingMsg(LOADING_MESSAGES[0]);
+    msgIntervalRef.current = setInterval(() => {
+      msgIndex = (msgIndex + 1) % LOADING_MESSAGES.length;
+      setLoadingMsg(LOADING_MESSAGES[msgIndex]);
+    }, 5000);
   }
 
   function finishWithImage(url: string) {
     clearProgressTimer();
+    clearMsgTimer();
     setProgress(100);
     setTimeout(() => {
       setGenState('done');
@@ -98,6 +171,34 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
       setNodeImage(nodeId, url);
       setTimeout(() => setImageVisible(true), 60);
     }, 380);
+  }
+
+  function startPollingFallback(id: string) {
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const generation = await api.generations.get(accessToken!, id);
+
+        if (generation.status === 'COMPLETED') {
+          clearPollTimer();
+          finishWithImage(generation.outputs[0].url);
+          refetchCredits();
+        }
+
+        if (generation.status === 'FAILED') {
+          clearPollTimer();
+          clearProgressTimer();
+          clearMsgTimer();
+          setGenState('idle');
+          setErrorMsg(generation.errorMessage ?? 'Erro ao gerar imagem.');
+          refetchCredits();
+        }
+      } catch {
+        clearPollTimer();
+        clearProgressTimer();
+        setGenState('idle');
+        setErrorMsg('Erro ao verificar status da geração.');
+      }
+    }, 3000);
   }
 
   async function handleGenerate() {
@@ -109,44 +210,45 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
     setErrorMsg(null);
     clearProgressTimer();
     clearPollTimer();
+    clearSSE();
     startProgressAnimation();
 
     try {
-      const { id, creditsConsumed } = await api.generations.textToImage(accessToken, {
+      const { id, creditsConsumed } = await api.generations.generateImage(accessToken, {
         prompt,
+        model: 'gemini-3.1-flash-image-preview',
         resolution: qualityToResolution(quality),
-        aspectRatio: proportionToAspectRatio(proportion),
-        imageModel: 'gemini-3.1-flash-image-preview',
+        aspect_ratio: proportionToAspectRatio(proportion),
+        mime_type: 'image/png',
+        ...(attachedImages.length > 0 && {
+          images: attachedImages.map(({ base64, mime_type }) => ({ base64, mime_type })),
+        }),
       });
 
       consumeCredits(creditsConsumed);
 
-      pollIntervalRef.current = setInterval(async () => {
-        try {
-          const generation = await api.generations.get(accessToken, id);
-
-          if (generation.status === 'COMPLETED') {
-            clearPollTimer();
-            finishWithImage(generation.outputUrl!);
-            refetchCredits();
-          }
-
-          if (generation.status === 'FAILED') {
-            clearPollTimer();
-            clearProgressTimer();
-            setGenState('idle');
-            setErrorMsg(generation.errorMessage ?? 'Erro ao gerar imagem.');
-            refetchCredits();
-          }
-        } catch {
-          clearPollTimer();
+      // Conecta via SSE e faz fallback automático para polling se falhar
+      sseControllerRef.current = listenGeneration(id, accessToken, {
+        onCompleted: ({ outputUrls }) => {
+          finishWithImage(outputUrls[0]);
+          refetchCredits();
+        },
+        onFailed: ({ errorMessage, creditsRefunded }) => {
           clearProgressTimer();
+          clearMsgTimer();
           setGenState('idle');
-          setErrorMsg('Erro ao verificar status da geração.');
-        }
-      }, 3000);
+          const msg = errorMessage ?? 'Erro ao gerar imagem.';
+          setErrorMsg(creditsRefunded > 0 ? `${msg} (${creditsRefunded} créditos estornados)` : msg);
+          refetchCredits();
+        },
+        onError: () => {
+          // SSE falhou → fallback para polling
+          startPollingFallback(id);
+        },
+      });
     } catch (err) {
       clearProgressTimer();
+      clearMsgTimer();
       setGenState('idle');
       setErrorMsg(err instanceof Error ? err.message : 'Erro ao iniciar geração.');
     }
@@ -158,13 +260,16 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
     setImageVisible(false);
     setGeneratedImageUrl(null);
     setErrorMsg(null);
+    setAttachedImages([]);
     setNodeUpscaleState(nodeId, 'idle');
   }
 
   useEffect(
     () => () => {
       clearProgressTimer();
+      clearMsgTimer();
       clearPollTimer();
+      clearSSE();
     },
     [],
   );
@@ -240,8 +345,8 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
               <span className="absolute text-sm font-bold text-[#f3f0ed]/80">{progress}%</span>
             </div>
 
-            <span className="text-[10px] font-bold tracking-[0.2em] text-[#f3f0ed]/30">
-              CRIANDO IMAGEM...
+            <span className="text-[10px] animate-pulse font-bold tracking-[0.2em] text-[#f3f0ed]/30 transition-all duration-500">
+              {loadingMsg}
             </span>
           </div>
         )}
@@ -344,11 +449,38 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
             <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
               REFERÊNCIAS (OPCIONAL)
             </label>
-            <span className="text-[10px] text-[#f3f0ed]/25">0/4</span>
+            <span className="text-[10px] text-[#f3f0ed]/25">{attachedImages.length}/4</span>
           </div>
-          <button className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60">
-            <ImagePlus className="h-5 w-5" />
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {attachedImages.map((img, i) => (
+              <div key={i} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#f3f0ed]/10">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img.preview} alt="" className="h-full w-full object-cover" />
+                <button
+                  onClick={() => removeAttachedImage(i)}
+                  className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
+                >
+                  <X className="h-3.5 w-3.5 text-white" />
+                </button>
+              </div>
+            ))}
+            {attachedImages.length < 4 && (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+              >
+                <ImagePlus className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={handleFileSelect}
+          />
         </div>
 
         {/* Generate button */}
