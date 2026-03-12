@@ -75,10 +75,13 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
   const [resolution, setResolution] = useState('RES_1080P');
   const [refImages, setRefImages] = useState<{ base64: string; mime_type: string; preview: string }[]>([]);
 
+  const [sampleCount, setSampleCount] = useState(1);
+
   const [genState, setGenState] = useState<GenState>('idle');
   const [progress, setProgress] = useState(0);
-  const [videoVisible, setVideoVisible] = useState(false);
-  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
+  const [videosVisible, setVideosVisible] = useState(false);
+  const [generatedVideoUrls, setGeneratedVideoUrls] = useState<string[]>([]);
+  const [selectedVideoIdx, setSelectedVideoIdx] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loadingMsg, setLoadingMsg] = useState(VIDEO_LOADING_MESSAGES[0]);
 
@@ -151,15 +154,16 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
     }, 5000);
   }
 
-  function finishWithVideo(url: string) {
+  function finishWithVideos(urls: string[]) {
     clearProgressTimer();
     clearMsgTimer();
     setProgress(100);
     setTimeout(() => {
       setGenState('done');
-      setGeneratedVideoUrl(url);
-      setNodeImage(nodeId, url);
-      setTimeout(() => setVideoVisible(true), 60);
+      setGeneratedVideoUrls(urls);
+      setSelectedVideoIdx(0);
+      setNodeImage(nodeId, urls[0]);
+      setTimeout(() => setVideosVisible(true), 60);
     }, 380);
   }
 
@@ -170,7 +174,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
 
         if (generation.status === 'COMPLETED') {
           clearPollTimer();
-          finishWithVideo(generation.outputs[0].url);
+          finishWithVideos(generation.outputs.map((o) => o.url));
           refetchCredits();
         }
 
@@ -196,7 +200,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
 
     setGenState('generating');
     setProgress(0);
-    setVideoVisible(false);
+    setVideosVisible(false);
     setErrorMsg(null);
     clearProgressTimer();
     clearPollTimer();
@@ -210,7 +214,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
       duration_seconds: durationToSeconds(duration),
       aspect_ratio: proportionToAspectRatio(proportion),
       generate_audio: audio,
-      sample_count: 1,
+      sample_count: sampleCount,
       negative_prompt: 'blurry, low quality',
     };
 
@@ -230,7 +234,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
 
       sseControllerRef.current = listenGeneration(id, accessToken, {
         onCompleted: ({ outputUrls }) => {
-          finishWithVideo(outputUrls[0]);
+          finishWithVideos(outputUrls);
           refetchCredits();
         },
         onFailed: ({ errorMessage, creditsRefunded }) => {
@@ -256,8 +260,9 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
   function handleDiscard() {
     setGenState('idle');
     setProgress(0);
-    setVideoVisible(false);
-    setGeneratedVideoUrl(null);
+    setVideosVisible(false);
+    setGeneratedVideoUrls([]);
+    setSelectedVideoIdx(0);
     setErrorMsg(null);
     setRefImages([]);
   }
@@ -380,35 +385,61 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
           </div>
         )}
 
-        {/* Generated video */}
-        {genState === 'done' && generatedVideoUrl && (
+        {/* Generated videos */}
+        {genState === 'done' && generatedVideoUrls.length > 0 && (
           <div
-            className="group relative overflow-hidden rounded-xl border border-[#f3f0ed]/8"
+            className="flex flex-col gap-2"
             style={{
-              opacity: videoVisible ? 1 : 0,
-              transform: videoVisible ? 'scale(1)' : 'scale(0.96)',
+              opacity: videosVisible ? 1 : 0,
+              transform: videosVisible ? 'scale(1)' : 'scale(0.96)',
               transition: 'opacity 0.4s ease, transform 0.4s ease',
             }}
           >
-            <video
-              src={generatedVideoUrl}
-              controls
-              preload="metadata"
-              className="w-full rounded-xl bg-black"
-            />
-            <div className="pointer-events-none absolute inset-0 flex items-start justify-end gap-1.5 bg-linear-to-b from-black/50 via-transparent to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-              <div className="pointer-events-auto flex gap-1.5">
-                <ActionButton title="Abrir" onClick={() => window.open(generatedVideoUrl, '_blank')}>
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                </ActionButton>
-                <ActionButton title="Baixar" onClick={() => handleDownload(generatedVideoUrl)}>
-                  <Download className="h-3.5 w-3.5" />
-                </ActionButton>
-                <ActionButton title="Descartar" onClick={handleDiscard}>
-                  <X className="h-3.5 w-3.5" />
-                </ActionButton>
+            {/* Main player */}
+            <div className="group relative overflow-hidden rounded-xl border border-[#f3f0ed]/8">
+              <video
+                key={generatedVideoUrls[selectedVideoIdx]}
+                src={generatedVideoUrls[selectedVideoIdx]}
+                controls
+                preload="metadata"
+                className="w-full rounded-xl bg-black"
+              />
+              <div className="pointer-events-none absolute inset-0 flex items-start justify-end gap-1.5 bg-linear-to-b from-black/50 via-transparent to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                <div className="pointer-events-auto flex gap-1.5">
+                  <ActionButton title="Abrir" onClick={() => window.open(generatedVideoUrls[selectedVideoIdx], '_blank')}>
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </ActionButton>
+                  <ActionButton title="Baixar" onClick={() => handleDownload(generatedVideoUrls[selectedVideoIdx])}>
+                    <Download className="h-3.5 w-3.5" />
+                  </ActionButton>
+                  <ActionButton title="Descartar" onClick={handleDiscard}>
+                    <X className="h-3.5 w-3.5" />
+                  </ActionButton>
+                </div>
               </div>
             </div>
+
+            {/* Thumbnail strip — only when multiple videos */}
+            {generatedVideoUrls.length > 1 && (
+              <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${generatedVideoUrls.length}, 1fr)` }}>
+                {generatedVideoUrls.map((url, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedVideoIdx(i)}
+                    className="group/thumb relative overflow-hidden rounded-lg aspect-video bg-black transition-all"
+                    style={{
+                      outline: i === selectedVideoIdx ? '2px solid #a2dd00' : '2px solid transparent',
+                      outlineOffset: '1px',
+                    }}
+                  >
+                    <video src={url} preload="metadata" muted className="h-full w-full object-cover" />
+                    <div className="absolute bottom-1 right-1 rounded-md bg-black/70 px-1 py-0.5 text-[8px] font-bold text-white">
+                      {i + 1}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -506,6 +537,33 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
                 );
               })}
             </div>
+          </div>
+        </div>
+
+        {/* Sample count */}
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+            QUANTIDADE
+          </label>
+          <div className="flex gap-1.5">
+            {[1, 2, 3, 4].map((n) => {
+              const active = sampleCount === n;
+              return (
+                <button
+                  key={n}
+                  onClick={() => setSampleCount(n)}
+                  className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95"
+                  style={{
+                    background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
+                    color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
+                    border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
+                    boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
+                  }}
+                >
+                  {n}
+                </button>
+              );
+            })}
           </div>
         </div>
 
