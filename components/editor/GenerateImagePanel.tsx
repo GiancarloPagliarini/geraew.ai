@@ -216,10 +216,10 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
     try {
       const { id, creditsConsumed } = await api.generations.generateImage(accessToken, {
         prompt,
-        model: 'gemini-3.1-flash-image-preview',
         resolution: qualityToResolution(quality),
         aspect_ratio: proportionToAspectRatio(proportion),
-        mime_type: 'image/png',
+        output_format: 'png',
+        google_search: false,
         ...(attachedImages.length > 0 && {
           images: attachedImages.map(({ base64, mime_type }) => ({ base64, mime_type })),
         }),

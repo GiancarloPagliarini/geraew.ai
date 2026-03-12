@@ -151,10 +151,10 @@ export interface PaginatedResponse<T> {
 
 export interface GenerateImageRequest {
   prompt: string;
-  model: string;
   resolution: 'RES_1K' | 'RES_2K' | 'RES_4K';
   aspect_ratio: string;
-  mime_type?: string;
+  output_format?: string;
+  google_search?: boolean;
   images?: { base64: string; mime_type: string }[];
 }
 
@@ -188,7 +188,7 @@ export const api = {
 
   generations: {
     generateImage(accessToken: string, payload: GenerateImageRequest) {
-      return authRequest<CreateGenerationResponse>('/api/v1/generations/generate-image', accessToken, {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/generate-image-nano-banana', accessToken, {
         method: 'POST',
         body: JSON.stringify(payload),
       });
