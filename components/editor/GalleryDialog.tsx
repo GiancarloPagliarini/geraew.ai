@@ -27,7 +27,6 @@ import { useAuth } from '@/lib/auth-context';
 import { api, Generation, GenerationInputImage } from '@/lib/api';
 
 const PAGE_SIZE = 6;
-const FIVE_MIN = 5 * 60 * 1000;
 
 interface GalleryDialogProps {
   open: boolean;
@@ -55,7 +54,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
     getNextPageParam: (last) =>
       last.meta.page < last.meta.totalPages ? last.meta.page + 1 : undefined,
     enabled: !!accessToken && open,
-    staleTime: FIVE_MIN,
+    staleTime: Infinity,
   });
 
   // Flatten pages into a single list
@@ -68,7 +67,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
     queryKey: ['gallery', 'stats'],
     queryFn: () => api.gallery.stats(accessToken!),
     enabled: !!accessToken && open,
-    staleTime: FIVE_MIN,
+    staleTime: Infinity,
   });
 
   // ── IntersectionObserver — trigger next page ───────────────────────────────

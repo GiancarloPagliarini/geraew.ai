@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowUpRight, Download, ImagePlus, Loader2, Sparkles, Wand2, X, Zap } from 'lucide-react';
+import { ArrowUpRight, Coins, Download, Image, ImagePlus, Loader2, Wand2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
@@ -69,23 +69,48 @@ interface GenerateImagePanelProps {
 }
 
 export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps) {
-  const { setNodeImage, nodeUpscaleStates, setNodeUpscaleState, consumeCredits, refetchCredits } =
+  const { setNodeImage, nodeUpscaleStates, setNodeUpscaleState, consumeCredits, refetchCredits, prependToGallery } =
     useEditor();
   const { accessToken } = useAuth();
   const upscaleState = nodeUpscaleStates[nodeId] ?? 'idle';
 
-  const [prompt, setPrompt] = useState('');
-  const [proportion, setProportion] = useState('16-9');
-  const [quality, setQuality] = useState('4k');
+  // ── Persistent state (survives page reload) ──────────────────────────────
+  const storageKey = `geraew-panel-image-${nodeId}`;
+  const [stored] = useState(() => {
+    try {
+      const raw = localStorage.getItem(`geraew-panel-image-${nodeId}`);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  });
 
-  const [genState, setGenState] = useState<GenState>('idle');
+  const [prompt, setPrompt] = useState<string>(stored?.prompt ?? '');
+  const [proportion, setProportion] = useState<string>(stored?.proportion ?? '16-9');
+  const [quality, setQuality] = useState<string>(stored?.quality ?? '4k');
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(stored?.generatedImageUrl ?? null);
+
+  const [genState, setGenState] = useState<GenState>(stored?.generatedImageUrl ? 'done' : 'idle');
   const [progress, setProgress] = useState(0);
   const [imageVisible, setImageVisible] = useState(false);
-  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [attachedImages, setAttachedImages] = useState<{ base64: string; mime_type: string; preview: string }[]>([]);
   const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
+  // Restore image display on mount
+  useEffect(() => {
+    if (stored?.generatedImageUrl) {
+      setNodeImage(nodeId, stored.generatedImageUrl);
+      setTimeout(() => setImageVisible(true), 60);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save form + result state whenever they change
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify({ prompt, proportion, quality, generatedImageUrl }));
+  }, [storageKey, prompt, proportion, quality, generatedImageUrl]);
+
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const msgIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -113,24 +138,41 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
     }
   }
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []);
-    if (!files.length) return;
+  function processFiles(files: File[]) {
     const remaining = 4 - attachedImages.length;
-    files.slice(0, remaining).forEach((file) => {
+    files.filter((f) => f.type.startsWith('image/')).slice(0, remaining).forEach((file) => {
       const reader = new FileReader();
       reader.onload = (ev) => {
         const dataUrl = ev.target?.result as string;
         const base64 = dataUrl.split(',')[1];
-        setAttachedImages((prev) => [
-          ...prev,
-          { base64, mime_type: file.type, preview: dataUrl },
-        ]);
+        setAttachedImages((prev) => [...prev, { base64, mime_type: file.type, preview: dataUrl }]);
       };
       reader.readAsDataURL(file);
     });
-    // reset so same file can be re-added after removal
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    processFiles(Array.from(e.target.files ?? []));
     e.target.value = '';
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (attachedImages.length < 4) setIsDraggingOver(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+    processFiles(Array.from(e.dataTransfer.files));
   }
 
   function removeAttachedImage(index: number) {
@@ -183,6 +225,7 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
           clearPollTimer();
           finishWithImage(generation.outputs[0].url);
           refetchCredits();
+          prependToGallery(generation);
         }
 
         if (generation.status === 'FAILED') {
@@ -230,9 +273,10 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
 
       // Conecta via SSE e faz fallback automático para polling se falhar
       sseControllerRef.current = listenGeneration(id, accessToken, {
-        onCompleted: ({ outputUrls }) => {
+        onCompleted: ({ generationId, outputUrls }) => {
           finishWithImage(outputUrls[0]);
           refetchCredits();
+          api.generations.get(accessToken!, generationId).then(prependToGallery).catch(() => {});
         },
         onFailed: ({ errorMessage, creditsRefunded }) => {
           clearProgressTimer();
@@ -275,6 +319,18 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
     [],
   );
 
+  // Block wheel events from reaching ReactFlow when scrolling inside form fields
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const onWheel = (e: WheelEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') e.stopPropagation();
+    };
+    panel.addEventListener('wheel', onWheel);
+    return () => panel.removeEventListener('wheel', onWheel);
+  }, []);
+
   const imageType = attachedImages.length > 0 ? 'IMAGE_TO_IMAGE' as const : 'TEXT_TO_IMAGE' as const;
 
   const { data: estimate, isLoading: estimateLoading } = useQuery({
@@ -287,17 +343,23 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
   const dashOffset = CIRCUMFERENCE * (1 - progress / 100);
 
   return (
-    <div className="w-[320px] overflow-hidden rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] shadow-2xl shadow-black/50">
+    <div
+      ref={panelRef}
+      className={`w-[320px] overflow-hidden rounded-2xl border bg-[#1a2123] shadow-2xl shadow-black/50 transition-colors ${isDraggingOver ? 'border-[#a2dd00]/50 ring-2 ring-[#a2dd00]/30' : 'border-[#f3f0ed]/8'}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* Header — drag handle */}
       <div className="panel-drag-handle flex cursor-grab items-center justify-between border-b border-[#f3f0ed]/[0.07] px-4 py-3 active:cursor-grabbing">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-[#a2dd00]" />
+          <Image className="h-4 w-4 text-[#a2dd00]" />
           <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
             GERAR IMAGEM
           </span>
         </div>
         <button
-          onClick={onClose}
+          onClick={() => { localStorage.removeItem(storageKey); onClose?.(); }}
           className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/[0.08] hover:text-[#f3f0ed]/80"
         >
           <X className="h-3.5 w-3.5" />
@@ -497,7 +559,7 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
         {genState !== 'generating' && (
           <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
             <div className="flex items-center gap-1.5">
-              <Zap className="h-3 w-3 text-[#a2dd00]" />
+              <Coins className="h-3 w-3 text-[#a2dd00]" />
               <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Estimativa</span>
             </div>
             {estimateLoading ? (

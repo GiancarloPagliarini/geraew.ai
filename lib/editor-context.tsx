@@ -1,9 +1,9 @@
 'use client';
 
-import { createContext, useContext, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { createContext, useCallback, useContext, useState } from 'react';
+import { InfiniteData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './auth-context';
-import { api, CreditsBalance } from './api';
+import { api, CreditsBalance, Generation, PaginatedResponse } from './api';
 
 type UpscaleState = 'idle' | 'upscaling' | 'done';
 
@@ -21,6 +21,7 @@ interface EditorContextValue {
   creditsLoading: boolean;
   consumeCredits: (amount: number) => void;
   refetchCredits: () => void;
+  prependToGallery: (generation: Generation) => void;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
@@ -40,6 +41,31 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   });
 
   const credits = creditsBalance?.totalCreditsAvailable ?? 0;
+
+  const prependToGallery = useCallback(
+    (generation: Generation) => {
+      queryClient.setQueryData<InfiniteData<PaginatedResponse<Generation>>>(
+        ['gallery', 'list'],
+        (old) => {
+          if (!old?.pages.length) return old;
+          const [firstPage, ...rest] = old.pages;
+          return {
+            ...old,
+            pages: [
+              {
+                ...firstPage,
+                data: [generation, ...firstPage.data],
+                meta: { ...firstPage.meta, total: firstPage.meta.total + 1 },
+              },
+              ...rest,
+            ],
+          };
+        },
+      );
+      queryClient.invalidateQueries({ queryKey: ['gallery', 'stats'] });
+    },
+    [queryClient],
+  );
 
   const consumeCredits = (amount: number) => {
     // Optimistic update on the cache
@@ -75,6 +101,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         creditsLoading,
         consumeCredits,
         refetchCredits,
+        prependToGallery,
       }}
     >
       {children}

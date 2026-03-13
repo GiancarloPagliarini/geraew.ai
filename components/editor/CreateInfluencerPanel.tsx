@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader2, Sparkles, User, X } from 'lucide-react';
+import { Loader2, PersonStanding, Sparkles, User, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useEditor } from '@/lib/editor-context';
 
@@ -74,7 +74,7 @@ export function CreateInfluencerPanel({ nodeId, onClose }: CreateInfluencerPanel
       {/* Header — drag handle */}
       <div className="panel-drag-handle flex cursor-grab items-center justify-between border-b border-[#f3f0ed]/[0.07] px-4 py-3 active:cursor-grabbing">
         <div className="flex items-center gap-2">
-          <User className="h-4 w-4 text-[#a2dd00]" />
+          <PersonStanding className="h-4 w-4 text-[#a2dd00]" />
           <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
             AI INFLUENCER
           </span>

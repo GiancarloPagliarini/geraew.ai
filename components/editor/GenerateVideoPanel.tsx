@@ -9,14 +9,14 @@ import {
 } from '@/components/ui/select';
 import {
   ArrowUpRight,
+  Coins,
   Download,
   ImagePlus,
   Info,
   Loader2,
   Sparkles,
   Video,
-  X,
-  Zap,
+  X
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -66,18 +66,28 @@ interface GenerateVideoPanelProps {
 }
 
 export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps) {
-  const { setNodeImage, consumeCredits, refetchCredits } = useEditor();
+  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery } = useEditor();
   const { accessToken } = useAuth();
 
-  const [prompt, setPrompt] = useState('');
-  const [audio, setAudio] = useState(true);
-  const [model, setModel] = useState('veo-3.1-generate-preview');
-  const [duration, setDuration] = useState('6s');
-  const [proportion, setProportion] = useState('16-9');
-  const [resolution, setResolution] = useState('RES_1080P');
-  const [refImages, setRefImages] = useState<{ base64: string; mime_type: string; preview: string }[]>([]);
+  // ── Persistent state (survives page reload) ──────────────────────────────
+  const storageKey = `geraew-panel-video-${nodeId}`;
+  const [stored] = useState(() => {
+    try {
+      const raw = localStorage.getItem(`geraew-panel-video-${nodeId}`);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  });
 
-  const [sampleCount, setSampleCount] = useState(1);
+  const [prompt, setPrompt] = useState<string>(stored?.prompt ?? '');
+  const [audio, setAudio] = useState<boolean>(stored?.audio ?? true);
+  const [model, setModel] = useState<string>(stored?.model ?? 'veo-3.1-generate-preview');
+  const [duration, setDuration] = useState<string>(stored?.duration ?? '6s');
+  const [proportion, setProportion] = useState<string>(stored?.proportion ?? '16-9');
+  const [resolution, setResolution] = useState<string>(stored?.resolution ?? 'RES_1080P');
+  const [sampleCount, setSampleCount] = useState<number>(stored?.sampleCount ?? 1);
+  const [generatedVideoUrls, setGeneratedVideoUrls] = useState<string[]>(stored?.generatedVideoUrls ?? []);
+
+  const [refImages, setRefImages] = useState<{ base64: string; mime_type: string; preview: string }[]>([]);
 
   // With references + 1080P/4K → only 8s allowed
   const forceEightSeconds =
@@ -85,7 +95,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
   const effectiveDuration = forceEightSeconds ? '8s' : duration;
   const videoType = refImages.length > 0 ? 'REFERENCE_VIDEO' as const : 'TEXT_TO_VIDEO' as const;
 
-  const [genState, setGenState] = useState<GenState>('idle');
+  const [genState, setGenState] = useState<GenState>(stored?.generatedVideoUrls?.length > 0 ? 'done' : 'idle');
 
   const { data: estimate, isLoading: estimateLoading } = useQuery({
     queryKey: ['credits', 'estimate', videoType, resolution, effectiveDuration, audio],
@@ -100,33 +110,69 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
   });
   const [progress, setProgress] = useState(0);
   const [videosVisible, setVideosVisible] = useState(false);
-  const [generatedVideoUrls, setGeneratedVideoUrls] = useState<string[]>([]);
   const [selectedVideoIdx, setSelectedVideoIdx] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loadingMsg, setLoadingMsg] = useState(VIDEO_LOADING_MESSAGES[0]);
+
+  // Restore video display on mount
+  useEffect(() => {
+    if (stored?.generatedVideoUrls?.length > 0) {
+      setNodeImage(nodeId, stored.generatedVideoUrls[0]);
+      setTimeout(() => setVideosVisible(true), 60);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save form + result state whenever they change
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify({
+      prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls,
+    }));
+  }, [storageKey, prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls]);
 
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const msgIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sseControllerRef = useRef<AbortController | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []);
-    if (!files.length) return;
+  function processFiles(files: File[]) {
     const remaining = 3 - refImages.length;
-    files.slice(0, remaining).forEach((file) => {
+    files.filter((f) => f.type.startsWith('image/')).slice(0, remaining).forEach((file) => {
       const reader = new FileReader();
       reader.onload = (ev) => {
         const dataUrl = ev.target?.result as string;
-        setRefImages((prev) => [
-          ...prev,
-          { base64: dataUrl.split(',')[1], mime_type: file.type, preview: dataUrl },
-        ]);
+        setRefImages((prev) => [...prev, { base64: dataUrl.split(',')[1], mime_type: file.type, preview: dataUrl }]);
       };
       reader.readAsDataURL(file);
     });
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    processFiles(Array.from(e.target.files ?? []));
     e.target.value = '';
+  }
+
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (refImages.length < 3) setIsDraggingOver(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+    processFiles(Array.from(e.dataTransfer.files));
   }
 
   function clearProgressTimer() {
@@ -196,6 +242,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
           clearPollTimer();
           finishWithVideos(generation.outputs.map((o) => o.url));
           refetchCredits();
+          prependToGallery(generation);
         }
 
         if (generation.status === 'FAILED') {
@@ -253,9 +300,10 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
       consumeCredits(creditsConsumed);
 
       sseControllerRef.current = listenGeneration(id, accessToken, {
-        onCompleted: ({ outputUrls }) => {
+        onCompleted: ({ generationId, outputUrls }) => {
           finishWithVideos(outputUrls);
           refetchCredits();
+          api.generations.get(accessToken!, generationId).then(prependToGallery).catch(() => {});
         },
         onFailed: ({ errorMessage, creditsRefunded }) => {
           clearProgressTimer();
@@ -297,10 +345,28 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
     [],
   );
 
+  // Block wheel events from reaching ReactFlow when scrolling inside form fields
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const onWheel = (e: WheelEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') e.stopPropagation();
+    };
+    panel.addEventListener('wheel', onWheel);
+    return () => panel.removeEventListener('wheel', onWheel);
+  }, []);
+
   const dashOffset = CIRCUMFERENCE * (1 - progress / 100);
 
   return (
-    <div className="w-[320px] overflow-hidden rounded-2xl border border-[#f3f0ed]/8 bg-[#1a2123] shadow-2xl shadow-black/50">
+    <div
+      ref={panelRef}
+      className={`w-[320px] overflow-hidden rounded-2xl border bg-[#1a2123] shadow-2xl shadow-black/50 transition-colors ${isDraggingOver ? 'border-[#a2dd00]/50 ring-2 ring-[#a2dd00]/30' : 'border-[#f3f0ed]/8'}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* Header — drag handle */}
       <div className="panel-drag-handle flex cursor-grab items-center justify-between border-b border-[#f3f0ed]/[0.07] px-4 py-3 active:cursor-grabbing">
         <div className="flex items-center gap-2">
@@ -310,7 +376,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
           </span>
         </div>
         <button
-          onClick={onClose}
+          onClick={() => { localStorage.removeItem(storageKey); onClose?.(); }}
           className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
         >
           <X className="h-3.5 w-3.5" />
@@ -594,7 +660,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
         {genState !== 'generating' && (
           <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
             <div className="flex items-center gap-1.5">
-              <Zap className="h-3 w-3 text-[#a2dd00]" />
+              <Coins className="h-3 w-3 text-[#a2dd00]" />
               <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Estimativa</span>
             </div>
             {estimateLoading ? (
@@ -638,11 +704,22 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-function handleDownload(url: string) {
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'geraew-video.mp4';
-  a.click();
+async function handleDownload(url: string) {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = 'geraew-video.mp4';
+    a.click();
+    URL.revokeObjectURL(objectUrl);
+  } catch {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'geraew-video.mp4';
+    a.click();
+  }
 }
 
 function ActionButton({
