@@ -227,7 +227,7 @@ export const api = {
 
   generations: {
     generateImage(accessToken: string, payload: GenerateImageRequest) {
-      return authRequest<CreateGenerationResponse>('/api/v1/generations/generate-image-nano-banana', accessToken, {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/generate-image-auto', accessToken, {
         method: 'POST',
         body: JSON.stringify(payload),
       });
