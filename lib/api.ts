@@ -46,14 +46,41 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
-function authRequest<T>(path: string, accessToken: string, options: RequestInit = {}) {
-  return request<T>(path, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      ...options.headers,
-    },
-  });
+// ─── 401 refresh interceptor ──────────────────────────────────────────────────
+
+type RefreshHandler = () => Promise<string>;
+let _refreshHandler: RefreshHandler | null = null;
+let _refreshPromise: Promise<string> | null = null;
+
+export function setRefreshHandler(fn: RefreshHandler) {
+  _refreshHandler = fn;
+}
+
+async function authRequest<T>(path: string, accessToken: string, options: RequestInit = {}): Promise<T> {
+  const makeRequest = (token: string) =>
+    request<T>(path, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...options.headers,
+      },
+    });
+
+  try {
+    return await makeRequest(accessToken);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 401 && _refreshHandler) {
+      // Coalesce simultaneous 401s into a single refresh call
+      if (!_refreshPromise) {
+        _refreshPromise = _refreshHandler().finally(() => {
+          _refreshPromise = null;
+        });
+      }
+      const newToken = await _refreshPromise;
+      return makeRequest(newToken);
+    }
+    throw err;
+  }
 }
 
 export interface CreditsBalance {
@@ -149,6 +176,18 @@ export interface PaginatedResponse<T> {
   };
 }
 
+export interface CreditsEstimateRequest {
+  type: 'TEXT_TO_IMAGE' | 'IMAGE_TO_IMAGE' | 'TEXT_TO_VIDEO' | 'IMAGE_TO_VIDEO' | 'REFERENCE_VIDEO';
+  resolution?: string;
+  durationSeconds?: number;
+  hasAudio?: boolean;
+}
+
+export interface CreditsEstimateResponse {
+  creditsRequired: number;
+  hasSufficientBalance: boolean;
+}
+
 export interface GenerateImageRequest {
   prompt: string;
   resolution: 'RES_1K' | 'RES_2K' | 'RES_4K';
@@ -216,6 +255,12 @@ export const api = {
     },
     packages(accessToken: string) {
       return authRequest<CreditPackage[]>('/api/v1/credits/packages', accessToken);
+    },
+    estimate(accessToken: string, payload: CreditsEstimateRequest) {
+      return authRequest<CreditsEstimateResponse>('/api/v1/credits/estimate', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
     },
   },
 

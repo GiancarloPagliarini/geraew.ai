@@ -16,8 +16,10 @@ import {
   Sparkles,
   Video,
   X,
+  Zap,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -77,7 +79,25 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
 
   const [sampleCount, setSampleCount] = useState(1);
 
+  // With references + 1080P/4K → only 8s allowed
+  const forceEightSeconds =
+    refImages.length > 0 && (resolution === 'RES_1080P' || resolution === 'RES_4K');
+  const effectiveDuration = forceEightSeconds ? '8s' : duration;
+  const videoType = refImages.length > 0 ? 'REFERENCE_VIDEO' as const : 'TEXT_TO_VIDEO' as const;
+
   const [genState, setGenState] = useState<GenState>('idle');
+
+  const { data: estimate, isLoading: estimateLoading } = useQuery({
+    queryKey: ['credits', 'estimate', videoType, resolution, effectiveDuration, audio],
+    queryFn: () => api.credits.estimate(accessToken!, {
+      type: videoType,
+      resolution,
+      durationSeconds: durationToSeconds(effectiveDuration),
+      hasAudio: audio,
+    }),
+    enabled: !!accessToken && genState === 'idle',
+    staleTime: 30_000,
+  });
   const [progress, setProgress] = useState(0);
   const [videosVisible, setVideosVisible] = useState(false);
   const [generatedVideoUrls, setGeneratedVideoUrls] = useState<string[]>([]);
@@ -211,7 +231,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
       prompt,
       model,
       resolution,
-      duration_seconds: durationToSeconds(duration),
+      duration_seconds: durationToSeconds(effectiveDuration),
       aspect_ratio: proportionToAspectRatio(proportion),
       generate_audio: audio,
       sample_count: sampleCount,
@@ -492,12 +512,15 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
             </label>
             <div className="flex gap-1.5">
               {['4s', '6s', '8s'].map((d) => {
-                const active = duration === d;
+                const active = effectiveDuration === d;
+                const disabled = forceEightSeconds && d !== '8s';
                 return (
                   <button
                     key={d}
-                    onClick={() => setDuration(d)}
-                    className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95"
+                    onClick={() => !disabled && setDuration(d)}
+                    disabled={disabled}
+                    title={disabled ? 'Apenas 8s disponível com referências em 1080p/4K' : undefined}
+                    className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
                     style={{
                       background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
                       color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
@@ -566,6 +589,24 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
             })}
           </div>
         </div>
+
+        {/* Credit estimate */}
+        {genState !== 'generating' && (
+          <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
+            <div className="flex items-center gap-1.5">
+              <Zap className="h-3 w-3 text-[#a2dd00]" />
+              <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Estimativa</span>
+            </div>
+            {estimateLoading ? (
+              <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
+            ) : estimate ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
+                <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
+              </div>
+            ) : null}
+          </div>
+        )}
 
         {/* Generate button */}
         <button

@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { api, AuthUser } from './api';
+import { api, AuthUser, setRefreshHandler } from './api';
 
 interface AuthState {
   user: AuthUser | null;
@@ -95,6 +95,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginMutation = useLoginMutation(handleAuthSuccess);
   const registerMutation = useRegisterMutation(handleAuthSuccess);
+
+  // Register the 401 refresh handler so authRequest can auto-retry
+  useEffect(() => {
+    setRefreshHandler(async () => {
+      const stored = loadAuth();
+      if (!stored) {
+        clearAuth();
+        setState({ user: null, accessToken: null, refreshToken: null, loading: false });
+        throw new Error('No refresh token available');
+      }
+      try {
+        const res = await api.auth.refresh(stored.refreshToken);
+        saveAuth(res);
+        setState({ user: res.user, accessToken: res.accessToken, refreshToken: res.refreshToken, loading: false });
+        return res.accessToken;
+      } catch {
+        clearAuth();
+        setState({ user: null, accessToken: null, refreshToken: null, loading: false });
+        throw new Error('Session expired');
+      }
+    });
+  }, []);
 
   // Hydrate from cookies on mount
   useEffect(() => {

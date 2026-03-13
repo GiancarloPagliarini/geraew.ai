@@ -261,16 +261,32 @@ function DetailView({ item, onBack }: { item: Generation; onBack: () => void }) 
           </div>
         </div>
 
-        <a
-          href={url}
-          download
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          onClick={async () => {
+            if (!url) return;
+            const ext = isVideo ? 'mp4' : 'jpg';
+            const filename = `geraew-ai.${ext}`;
+            try {
+              const res = await fetch(url);
+              const blob = await res.blob();
+              const objectUrl = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = objectUrl;
+              a.download = filename;
+              a.click();
+              URL.revokeObjectURL(objectUrl);
+            } catch {
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = filename;
+              a.click();
+            }
+          }}
           className="shrink-0 flex items-center gap-2 rounded-lg bg-[#a2dd00]/10 px-3 py-1.5 text-xs font-medium text-[#a2dd00] hover:bg-[#a2dd00]/20 transition-colors"
         >
           <Download className="h-4 w-4" />
           Download
-        </a>
+        </button>
       </div>
 
       {/* Reference images */}
