@@ -84,6 +84,7 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
   });
 
   const [prompt, setPrompt] = useState<string>(stored?.prompt ?? '');
+  const [model, setModel] = useState<string>(stored?.model ?? 'gemini-3-pro-image-preview');
   const [proportion, setProportion] = useState<string>(stored?.proportion ?? '16-9');
   const [quality, setQuality] = useState<string>(stored?.quality ?? '4k');
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(stored?.generatedImageUrl ?? null);
@@ -107,8 +108,8 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
 
   // Save form + result state whenever they change
   useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify({ prompt, proportion, quality, generatedImageUrl }));
-  }, [storageKey, prompt, proportion, quality, generatedImageUrl]);
+    localStorage.setItem(storageKey, JSON.stringify({ prompt, model, proportion, quality, generatedImageUrl }));
+  }, [storageKey, prompt, model, proportion, quality, generatedImageUrl]);
 
   const panelRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -260,10 +261,10 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
     try {
       const { id, creditsConsumed } = await api.generations.generateImage(accessToken, {
         prompt,
+        model,
         resolution: qualityToResolution(quality),
         aspect_ratio: proportionToAspectRatio(proportion),
-        output_format: 'png',
-        google_search: false,
+        mime_type: 'image/png',
         ...(attachedImages.length > 0 && {
           images: attachedImages.map(({ base64, mime_type }) => ({ base64, mime_type })),
         }),
@@ -482,7 +483,21 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
           </div>
         )}
 
-        {/* ── Bottom section (proportion + quality + refs) ──────────── */}
+        {/* ── Bottom section (model + proportion + quality + refs) ──── */}
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+            MODELO
+          </label>
+          <PanelSelect
+            value={model}
+            onValueChange={setModel}
+            options={[
+              { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2' },
+              { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
+            ]}
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">

@@ -190,10 +190,10 @@ export interface CreditsEstimateResponse {
 
 export interface GenerateImageRequest {
   prompt: string;
+  model?: string;
   resolution: 'RES_1K' | 'RES_2K' | 'RES_4K';
   aspect_ratio: string;
-  output_format?: string;
-  google_search?: boolean;
+  mime_type?: string;
   images?: { base64: string; mime_type: string }[];
 }
 
