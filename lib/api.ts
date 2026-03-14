@@ -10,6 +10,8 @@ export interface AuthUser {
   createdAt: string;
 }
 
+// ola
+
 export interface UserProfile extends AuthUser {
   plan: Record<string, unknown> | null;
   credits: Record<string, unknown> | null;
