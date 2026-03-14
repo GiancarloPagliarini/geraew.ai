@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowUpRight, Coins, Download, Image, ImagePlus, Images, Loader2, Wand2, X } from 'lucide-react';
+import { ArrowUpRight, Coins, Download, Image, ImagePlus, Images, Loader2, Sparkles, Wand2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
@@ -97,6 +97,8 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
   const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [showGalleryPicker, setShowGalleryPicker] = useState(false);
+  const [enhancePrompt, setEnhancePrompt] = useState(stored?.enhancePrompt ?? true);
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   // Restore image display on mount
   useEffect(() => {
@@ -109,8 +111,8 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
 
   // Save form + result state whenever they change
   useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify({ prompt, model, proportion, quality, generatedImageUrl }));
-  }, [storageKey, prompt, model, proportion, quality, generatedImageUrl]);
+    localStorage.setItem(storageKey, JSON.stringify({ prompt, model, proportion, quality, generatedImageUrl, enhancePrompt }));
+  }, [storageKey, prompt, model, proportion, quality, generatedImageUrl, enhancePrompt]);
 
   const panelRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -286,11 +288,27 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
     clearProgressTimer();
     clearPollTimer();
     clearSSE();
+
+    let finalPrompt = prompt;
+
+    if (enhancePrompt && prompt.trim()) {
+      setIsEnhancing(true);
+      try {
+        const { enhancedPrompt } = await api.promptEnhancer.enhance(accessToken, prompt);
+        finalPrompt = enhancedPrompt;
+        setPrompt(enhancedPrompt);
+      } catch {
+        // If enhancement fails, continue with original prompt
+      } finally {
+        setIsEnhancing(false);
+      }
+    }
+
     startProgressAnimation();
 
     try {
       const { id, creditsConsumed } = await api.generations.generateImage(accessToken, {
-        prompt,
+        prompt: finalPrompt,
         model,
         resolution: qualityToResolution(quality),
         aspect_ratio: proportionToAspectRatio(proportion),
@@ -432,6 +450,33 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
           placeholder="Descreva o que deseja gerar..."
           className="w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30"
         />
+
+        {/* Enhance prompt toggle */}
+        <button
+          onClick={() => setEnhancePrompt(!enhancePrompt)}
+          className="flex w-full items-center justify-between rounded-xl border px-3 py-2 transition-all"
+          style={{
+            background: enhancePrompt ? 'rgba(162,221,0,0.06)' : 'transparent',
+            borderColor: enhancePrompt ? 'rgba(162,221,0,0.2)' : 'rgba(243,240,237,0.07)',
+          }}
+        >
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="h-3 w-3" style={{ color: enhancePrompt ? '#a2dd00' : 'rgba(243,240,237,0.3)' }} />
+            <span className="text-[10px] font-bold tracking-[0.12em]" style={{ color: enhancePrompt ? '#a2dd00' : 'rgba(243,240,237,0.4)' }}>
+              {isEnhancing ? 'MELHORANDO...' : 'MELHORAR PROMPT'}
+            </span>
+            {isEnhancing && <Loader2 className="h-3 w-3 animate-spin text-[#a2dd00]" />}
+          </div>
+          <div
+            className="relative h-4 w-7 rounded-full transition-colors"
+            style={{ background: enhancePrompt ? '#a2dd00' : 'rgba(243,240,237,0.12)' }}
+          >
+            <div
+              className="absolute top-0.5 h-3 w-3 rounded-full bg-white shadow-sm transition-transform"
+              style={{ transform: enhancePrompt ? 'translateX(13px)' : 'translateX(2px)' }}
+            />
+          </div>
+        </button>
 
         {/* ── Error message ────────────────────────────────────────────── */}
         {errorMsg && (

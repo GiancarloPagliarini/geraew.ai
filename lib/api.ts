@@ -214,6 +214,29 @@ export interface VideoWithReferencesRequest extends TextToVideoRequest {
   reference_images: { base64: string; mime_type: string; reference_type: 'asset' }[];
 }
 
+// ─── Video Editor ─────────────────────────────────────────────────────────────
+
+export interface VideoProject {
+  id: string;
+  name: string;
+  status: 'DRAFT' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  outputUrl?: string;
+  outputThumbnailUrl?: string;
+  durationMs?: number;
+  clips: VideoClip[];
+  createdAt: string;
+}
+
+export interface VideoClip {
+  id: string;
+  sourceUrl: string;
+  thumbnailUrl?: string;
+  order: number;
+  startMs: number;
+  endMs?: number;
+  durationMs: number;
+}
+
 // ─── Folders ──────────────────────────────────────────────────────────────────
 
 export interface Folder {
@@ -335,6 +358,73 @@ export const api = {
   users: {
     me(accessToken: string) {
       return authRequest<UserProfile>('/api/v1/users/me', accessToken);
+    },
+  },
+
+  videoEditor: {
+    async listProjects(accessToken: string) {
+      const res = await authRequest<PaginatedResponse<VideoProject>>(
+        '/api/v1/video-editor/projects',
+        accessToken,
+      );
+      return res.data;
+    },
+    createProject(accessToken: string, name?: string) {
+      return authRequest<VideoProject>('/api/v1/video-editor/projects', accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+      });
+    },
+    getProject(accessToken: string, id: string) {
+      return authRequest<VideoProject>(`/api/v1/video-editor/projects/${id}`, accessToken);
+    },
+    updateProject(accessToken: string, id: string, name: string) {
+      return authRequest<VideoProject>(`/api/v1/video-editor/projects/${id}`, accessToken, {
+        method: 'PATCH',
+        body: JSON.stringify({ name }),
+      });
+    },
+    deleteProject(accessToken: string, id: string) {
+      return authRequest<void>(`/api/v1/video-editor/projects/${id}`, accessToken, {
+        method: 'DELETE',
+      });
+    },
+    addClip(accessToken: string, projectId: string, clip: { sourceUrl: string; thumbnailUrl?: string; durationMs: number }) {
+      return authRequest<VideoClip>(`/api/v1/video-editor/projects/${projectId}/clips`, accessToken, {
+        method: 'POST',
+        body: JSON.stringify(clip),
+      });
+    },
+    updateClip(accessToken: string, projectId: string, clipId: string, data: { startMs?: number; endMs?: number }) {
+      return authRequest<VideoClip>(`/api/v1/video-editor/projects/${projectId}/clips/${clipId}`, accessToken, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    },
+    removeClip(accessToken: string, projectId: string, clipId: string) {
+      return authRequest<void>(`/api/v1/video-editor/projects/${projectId}/clips/${clipId}`, accessToken, {
+        method: 'DELETE',
+      });
+    },
+    reorderClips(accessToken: string, projectId: string, clipIds: string[]) {
+      return authRequest<void>(`/api/v1/video-editor/projects/${projectId}/reorder`, accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ clipIds }),
+      });
+    },
+    render(accessToken: string, projectId: string) {
+      return authRequest<VideoProject>(`/api/v1/video-editor/projects/${projectId}/render`, accessToken, {
+        method: 'POST',
+      });
+    },
+  },
+
+  promptEnhancer: {
+    enhance(accessToken: string, prompt: string) {
+      return authRequest<{ enhancedPrompt: string }>('/api/v1/prompt-enhancer/enhance', accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ prompt }),
+      });
     },
   },
 

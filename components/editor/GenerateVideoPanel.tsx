@@ -17,6 +17,7 @@ import {
   Loader2,
   Sparkles,
   Video,
+  Wand2,
   X
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -89,6 +90,8 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
   const [generatedVideoUrls, setGeneratedVideoUrls] = useState<string[]>(stored?.generatedVideoUrls ?? []);
 
   const [refImages, setRefImages] = useState<{ base64: string; mime_type: string; preview: string }[]>([]);
+  const [enhancePrompt, setEnhancePrompt] = useState(stored?.enhancePrompt ?? true);
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   // With references + 1080P/4K → only 8s allowed
   const forceEightSeconds =
@@ -128,9 +131,9 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
   // Save form + result state whenever they change
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify({
-      prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls,
+      prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, enhancePrompt,
     }));
-  }, [storageKey, prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls]);
+  }, [storageKey, prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, enhancePrompt]);
 
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const msgIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -303,10 +306,26 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
     clearProgressTimer();
     clearPollTimer();
     clearSSE();
+
+    let finalPrompt = prompt;
+
+    if (enhancePrompt && prompt.trim()) {
+      setIsEnhancing(true);
+      try {
+        const { enhancedPrompt: enhanced } = await api.promptEnhancer.enhance(accessToken, prompt);
+        finalPrompt = enhanced;
+        setPrompt(enhanced);
+      } catch {
+        // If enhancement fails, continue with original prompt
+      } finally {
+        setIsEnhancing(false);
+      }
+    }
+
     startProgressAnimation();
 
     const basePayload = {
-      prompt,
+      prompt: finalPrompt,
       model,
       resolution,
       duration_seconds: durationToSeconds(effectiveDuration),
@@ -436,6 +455,33 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
             placeholder="Descreva a cena que você imagina, com detalhes."
             className="w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30"
           />
+
+          {/* Enhance prompt toggle */}
+          <button
+            onClick={() => setEnhancePrompt(!enhancePrompt)}
+            className="flex w-full items-center justify-between rounded-xl border px-3 py-2 transition-all"
+            style={{
+              background: enhancePrompt ? 'rgba(162,221,0,0.06)' : 'transparent',
+              borderColor: enhancePrompt ? 'rgba(162,221,0,0.2)' : 'rgba(243,240,237,0.07)',
+            }}
+          >
+            <div className="flex items-center gap-1.5">
+              <Wand2 className="h-3 w-3" style={{ color: enhancePrompt ? '#a2dd00' : 'rgba(243,240,237,0.3)' }} />
+              <span className="text-[10px] font-bold tracking-[0.12em]" style={{ color: enhancePrompt ? '#a2dd00' : 'rgba(243,240,237,0.4)' }}>
+                {isEnhancing ? 'MELHORANDO...' : 'MELHORAR PROMPT'}
+              </span>
+              {isEnhancing && <Loader2 className="h-3 w-3 animate-spin text-[#a2dd00]" />}
+            </div>
+            <div
+              className="relative h-4 w-7 rounded-full transition-colors"
+              style={{ background: enhancePrompt ? '#a2dd00' : 'rgba(243,240,237,0.12)' }}
+            >
+              <div
+                className="absolute top-0.5 h-3 w-3 rounded-full bg-white shadow-sm transition-transform"
+                style={{ transform: enhancePrompt ? 'translateX(13px)' : 'translateX(2px)' }}
+              />
+            </div>
+          </button>
         </div>
 
         {/* Reference images */}
