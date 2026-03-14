@@ -1,4 +1,4 @@
-export const BASE_URL = 'https://clip-generator-geraew-api-provider.ernvcw.easypanel.host';
+export const BASE_URL = 'https://clip-generator-geraew-api.ernvcw.easypanel.host';
 
 export interface AuthUser {
   id: string;
@@ -9,8 +9,6 @@ export interface AuthUser {
   emailVerified: boolean;
   createdAt: string;
 }
-
-// ola
 
 export interface UserProfile extends AuthUser {
   plan: Record<string, unknown> | null;
@@ -121,7 +119,6 @@ export interface CreateGenerationResponse {
 export interface GenerationOutput {
   id: string;
   url: string;
-  thumbnailUrl?: string;
   order: number;
 }
 
@@ -184,7 +181,6 @@ export interface CreditsEstimateRequest {
   resolution?: string;
   durationSeconds?: number;
   hasAudio?: boolean;
-  sampleCount?: number;
 }
 
 export interface CreditsEstimateResponse {
@@ -216,105 +212,16 @@ export interface VideoWithReferencesRequest extends TextToVideoRequest {
   reference_images: { base64: string; mime_type: string; reference_type: 'asset' }[];
 }
 
-// ─── Video Editor ─────────────────────────────────────────────────────────────
-
-export interface VideoProject {
-  id: string;
-  name: string;
-  status: 'DRAFT' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
-  outputUrl?: string;
-  outputThumbnailUrl?: string;
-  durationMs?: number;
-  clips: VideoClip[];
-  createdAt: string;
-}
-
-export interface VideoClip {
-  id: string;
-  sourceUrl: string;
-  thumbnailUrl?: string;
-  order: number;
-  startMs: number;
-  endMs?: number;
-  durationMs: number;
-}
-
-// ─── Folders ──────────────────────────────────────────────────────────────────
-
-export interface Folder {
-  id: string;
-  name: string;
-  generationCount: number;
-  createdAt: string;
-}
-
 export const api = {
   gallery: {
-    list(accessToken: string, page = 1, limit = 20, filters?: { type?: string; favorited?: boolean; folderId?: string }) {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-        sort: 'created_at:desc',
-      });
-      if (filters?.type) params.set('type', filters.type);
-      if (filters?.favorited) params.set('favorited', 'true');
-      if (filters?.folderId) params.set('folderId', filters.folderId);
+    list(accessToken: string, page = 1, limit = 20) {
       return authRequest<PaginatedResponse<Generation>>(
-        `/api/v1/gallery?${params.toString()}`,
+        `/api/v1/gallery?page=${page}&limit=${limit}&sort=created_at:desc`,
         accessToken,
       );
     },
     stats(accessToken: string) {
       return authRequest<GalleryStats>('/api/v1/gallery/stats', accessToken);
-    },
-    favorite(accessToken: string, generationId: string) {
-      return authRequest<void>(`/api/v1/generations/${generationId}/favorite`, accessToken, {
-        method: 'POST',
-      });
-    },
-    unfavorite(accessToken: string, generationId: string) {
-      return authRequest<void>(`/api/v1/generations/${generationId}/favorite`, accessToken, {
-        method: 'DELETE',
-      });
-    },
-  },
-
-  folders: {
-    async list(accessToken: string) {
-      const res = await authRequest<PaginatedResponse<Folder>>('/api/v1/folders?limit=100', accessToken);
-      return res.data;
-    },
-    create(accessToken: string, name: string) {
-      return authRequest<Folder>('/api/v1/folders', accessToken, {
-        method: 'POST',
-        body: JSON.stringify({ name }),
-      });
-    },
-    get(accessToken: string, id: string, page = 1, limit = 20) {
-      return authRequest<PaginatedResponse<Generation>>(`/api/v1/folders/${id}?page=${page}&limit=${limit}`, accessToken);
-    },
-    update(accessToken: string, id: string, name: string) {
-      return authRequest<Folder>(`/api/v1/folders/${id}`, accessToken, {
-        method: 'PATCH',
-        body: JSON.stringify({ name }),
-      });
-    },
-    delete(accessToken: string, id: string) {
-      return authRequest<void>(`/api/v1/folders/${id}`, accessToken, {
-        method: 'DELETE',
-      });
-    },
-    addGenerations(accessToken: string, folderId: string, generationIds: string[]) {
-      return authRequest<void>(`/api/v1/folders/${folderId}/generations`, accessToken, {
-        method: 'POST',
-        body: JSON.stringify({ generationIds }),
-      });
-    },
-    removeGeneration(accessToken: string, folderId: string, generationId: string) {
-      return authRequest<void>(`/api/v1/folders/${folderId}/generations`, accessToken, {
-        method: 'DELETE',
-        body: JSON.stringify({ generationIds: [generationId] }),
-      });
     },
   },
 
@@ -360,73 +267,6 @@ export const api = {
   users: {
     me(accessToken: string) {
       return authRequest<UserProfile>('/api/v1/users/me', accessToken);
-    },
-  },
-
-  videoEditor: {
-    async listProjects(accessToken: string) {
-      const res = await authRequest<PaginatedResponse<VideoProject>>(
-        '/api/v1/video-editor/projects',
-        accessToken,
-      );
-      return res.data;
-    },
-    createProject(accessToken: string, name?: string) {
-      return authRequest<VideoProject>('/api/v1/video-editor/projects', accessToken, {
-        method: 'POST',
-        body: JSON.stringify({ name }),
-      });
-    },
-    getProject(accessToken: string, id: string) {
-      return authRequest<VideoProject>(`/api/v1/video-editor/projects/${id}`, accessToken);
-    },
-    updateProject(accessToken: string, id: string, name: string) {
-      return authRequest<VideoProject>(`/api/v1/video-editor/projects/${id}`, accessToken, {
-        method: 'PATCH',
-        body: JSON.stringify({ name }),
-      });
-    },
-    deleteProject(accessToken: string, id: string) {
-      return authRequest<void>(`/api/v1/video-editor/projects/${id}`, accessToken, {
-        method: 'DELETE',
-      });
-    },
-    addClip(accessToken: string, projectId: string, clip: { sourceUrl: string; thumbnailUrl?: string; durationMs: number }) {
-      return authRequest<VideoClip>(`/api/v1/video-editor/projects/${projectId}/clips`, accessToken, {
-        method: 'POST',
-        body: JSON.stringify(clip),
-      });
-    },
-    updateClip(accessToken: string, projectId: string, clipId: string, data: { startMs?: number; endMs?: number }) {
-      return authRequest<VideoClip>(`/api/v1/video-editor/projects/${projectId}/clips/${clipId}`, accessToken, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      });
-    },
-    removeClip(accessToken: string, projectId: string, clipId: string) {
-      return authRequest<void>(`/api/v1/video-editor/projects/${projectId}/clips/${clipId}`, accessToken, {
-        method: 'DELETE',
-      });
-    },
-    reorderClips(accessToken: string, projectId: string, clipIds: string[]) {
-      return authRequest<void>(`/api/v1/video-editor/projects/${projectId}/reorder`, accessToken, {
-        method: 'POST',
-        body: JSON.stringify({ clipIds }),
-      });
-    },
-    render(accessToken: string, projectId: string) {
-      return authRequest<VideoProject>(`/api/v1/video-editor/projects/${projectId}/render`, accessToken, {
-        method: 'POST',
-      });
-    },
-  },
-
-  promptEnhancer: {
-    enhance(accessToken: string, prompt: string) {
-      return authRequest<{ enhancedPrompt: string }>('/api/v1/prompt-enhancer/enhance', accessToken, {
-        method: 'POST',
-        body: JSON.stringify({ prompt }),
-      });
     },
   },
 
