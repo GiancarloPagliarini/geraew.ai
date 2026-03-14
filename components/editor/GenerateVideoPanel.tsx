@@ -12,6 +12,7 @@ import {
   Coins,
   Download,
   ImagePlus,
+  Images,
   Info,
   Loader2,
   Sparkles,
@@ -19,7 +20,7 @@ import {
   X
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -81,8 +82,8 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
   const [prompt, setPrompt] = useState<string>(stored?.prompt ?? '');
   const [audio, setAudio] = useState<boolean>(stored?.audio ?? true);
   const [model, setModel] = useState<string>(stored?.model ?? 'veo-3.1-generate-preview');
-  const [duration, setDuration] = useState<string>(stored?.duration ?? '6s');
-  const [proportion, setProportion] = useState<string>(stored?.proportion ?? '16-9');
+  const [duration, setDuration] = useState<string>(stored?.duration ?? '8s');
+  const [proportion, setProportion] = useState<string>(stored?.proportion ?? '9-16');
   const [resolution, setResolution] = useState<string>(stored?.resolution ?? 'RES_1080P');
   const [sampleCount, setSampleCount] = useState<number>(stored?.sampleCount ?? 1);
   const [generatedVideoUrls, setGeneratedVideoUrls] = useState<string[]>(stored?.generatedVideoUrls ?? []);
@@ -98,12 +99,13 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
   const [genState, setGenState] = useState<GenState>(stored?.generatedVideoUrls?.length > 0 ? 'done' : 'idle');
 
   const { data: estimate, isLoading: estimateLoading } = useQuery({
-    queryKey: ['credits', 'estimate', videoType, resolution, effectiveDuration, audio],
+    queryKey: ['credits', 'estimate', videoType, resolution, effectiveDuration, audio, sampleCount],
     queryFn: () => api.credits.estimate(accessToken!, {
       type: videoType,
       resolution,
       durationSeconds: durationToSeconds(effectiveDuration),
       hasAudio: audio,
+      sampleCount,
     }),
     enabled: !!accessToken && genState === 'idle',
     staleTime: 30_000,
@@ -120,7 +122,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
       setNodeImage(nodeId, stored.generatedVideoUrls[0]);
       setTimeout(() => setVideosVisible(true), 60);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Save form + result state whenever they change
@@ -155,6 +157,27 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
   }
 
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [showGalleryPicker, setShowGalleryPicker] = useState(false);
+
+  async function addImageFromUrl(url: string) {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const mime_type = blob.type || 'image/png';
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const dataUrl = ev.target?.result as string;
+        const base64 = dataUrl.split(',')[1];
+        setRefImages((prev) => {
+          if (prev.length >= 3) return prev;
+          return [...prev, { base64, mime_type, preview: dataUrl }];
+        });
+      };
+      reader.readAsDataURL(blob);
+    } catch {
+      // silently fail
+    }
+  }
 
   function handleDragOver(e: React.DragEvent) {
     e.preventDefault();
@@ -172,6 +195,14 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
     e.preventDefault();
     e.stopPropagation();
     setIsDraggingOver(false);
+
+    // Check if it's a generated image dragged from the image panel
+    const imageUrl = e.dataTransfer.getData('text/geraew-image-url');
+    if (imageUrl) {
+      addImageFromUrl(imageUrl);
+      return;
+    }
+
     processFiles(Array.from(e.dataTransfer.files));
   }
 
@@ -303,7 +334,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
         onCompleted: ({ generationId, outputUrls }) => {
           finishWithVideos(outputUrls);
           refetchCredits();
-          api.generations.get(accessToken!, generationId).then(prependToGallery).catch(() => {});
+          api.generations.get(accessToken!, generationId).then(prependToGallery).catch(() => { });
         },
         onFailed: ({ errorMessage, creditsRefunded }) => {
           clearProgressTimer();
@@ -345,16 +376,25 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
     [],
   );
 
-  // Block wheel events from reaching ReactFlow when scrolling inside form fields
+  // Block wheel events from reaching ReactFlow when scrolling inside form fields or scrollable areas
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;
     const onWheel = (e: WheelEvent) => {
-      const tag = (e.target as HTMLElement).tagName;
-      if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') e.stopPropagation();
+      const target = e.target as HTMLElement;
+      const tag = target.tagName;
+      if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') {
+        e.stopPropagation();
+        return;
+      }
+      const scrollable = target.closest('.sidebar-scroll');
+      if (scrollable) {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }
     };
-    panel.addEventListener('wheel', onWheel);
-    return () => panel.removeEventListener('wheel', onWheel);
+    panel.addEventListener('wheel', onWheel, { capture: true });
+    return () => panel.removeEventListener('wheel', onWheel, { capture: true });
   }, []);
 
   const dashOffset = CIRCUMFERENCE * (1 - progress / 100);
@@ -420,12 +460,22 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
               </div>
             ))}
             {refImages.length < 3 && (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
-              >
-                <ImagePlus className="h-5 w-5" />
-              </button>
+              <>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Enviar do dispositivo"
+                  className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                >
+                  <ImagePlus className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => setShowGalleryPicker(true)}
+                  title="Escolher da galeria"
+                  className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                >
+                  <Images className="h-5 w-5" />
+                </button>
+              </>
             )}
           </div>
           <input
@@ -436,6 +486,16 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
             className="hidden"
             onChange={handleFileSelect}
           />
+
+          {/* Gallery picker */}
+          {showGalleryPicker && (
+            <GalleryPicker
+              accessToken={accessToken}
+              remaining={3 - refImages.length}
+              onSelect={(url) => { addImageFromUrl(url); }}
+              onClose={() => setShowGalleryPicker(false)}
+            />
+          )}
         </div>
 
         {/* Error message */}
@@ -548,8 +608,8 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
               value={model}
               onValueChange={setModel}
               options={[
-                { value: 'veo-3.1-fast-generate-preview', label: 'Veo 3.1' },
-                // { value: 'veo-2.0-generate-001', label: 'Veo 2.0' },
+                { value: 'veo-3.1-generate-preview', label: 'Veo 3.1' },
+                { value: 'veo-3.1-fast-generate-preview', label: 'Veo 3.1 Fast' },
                 // { value: 'kling-2.6', label: 'Kling 2.6' },
               ]}
             />
@@ -661,7 +721,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
           <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
             <div className="flex items-center gap-1.5">
               <Coins className="h-3 w-3 text-[#a2dd00]" />
-              <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Estimativa</span>
+              <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Custo</span>
             </div>
             {estimateLoading ? (
               <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
@@ -766,6 +826,146 @@ function ToggleSwitch({
         }}
       />
     </button>
+  );
+}
+
+// ─── Gallery picker ───────────────────────────────────────────────────────────
+
+function GalleryPicker({
+  accessToken,
+  remaining,
+  onSelect,
+  onClose,
+}: {
+  accessToken: string | null;
+  remaining: number;
+  onSelect: (url: string) => void;
+  onClose: () => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
+
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useInfiniteQuery({
+    queryKey: ['gallery-picker-video'],
+    queryFn: ({ pageParam }) => api.gallery.list(accessToken!, pageParam as number, 8),
+    initialPageParam: 1,
+    getNextPageParam: (last) =>
+      last.meta.page < last.meta.totalPages ? last.meta.page + 1 : undefined,
+    enabled: !!accessToken,
+    staleTime: 30_000,
+  });
+
+  const items = (data?.pages.flatMap((p) => p.data) ?? []).filter((item) => !item.durationSeconds);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasNextPage || isFetchingNextPage) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) fetchNextPage(); },
+      { root: scrollRef.current, threshold: 0.1 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  function toggleSelect(url: string) {
+    setSelectedUrls((prev) => {
+      const next = new Set(prev);
+      if (next.has(url)) {
+        next.delete(url);
+      } else if (next.size < remaining) {
+        next.add(url);
+      }
+      return next;
+    });
+  }
+
+  function handleConfirm() {
+    selectedUrls.forEach((url) => onSelect(url));
+    onClose();
+  }
+
+  return (
+    <div className="rounded-xl border border-[#f3f0ed]/10 bg-[#151b1d] overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[#f3f0ed]/7">
+        <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/50">GALERIA</span>
+        <button onClick={onClose} className="text-[#f3f0ed]/30 hover:text-[#f3f0ed]/70 transition-colors">
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      <div
+        ref={scrollRef}
+        className="max-h-[200px] overflow-y-auto sidebar-scroll p-2"
+        onWheel={(e) => e.stopPropagation()}
+      >
+        {isLoading ? (
+          <div className="grid grid-cols-4 gap-1.5">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="aspect-square rounded-lg bg-[#f3f0ed]/6 animate-pulse" />
+            ))}
+          </div>
+        ) : items.length === 0 ? (
+          <p className="text-center text-[10px] text-[#f3f0ed]/30 py-6">Nenhuma imagem na galeria.</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-4 gap-1.5">
+              {items.map((item) => {
+                const output = item.outputs?.[0];
+                const url = output?.url;
+                if (!url) return null;
+                const thumb = output?.thumbnailUrl ?? url;
+                const isSelected = selectedUrls.has(url);
+                const isDisabled = !isSelected && selectedUrls.size >= remaining;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => !isDisabled && toggleSelect(url)}
+                    className={`relative aspect-square rounded-lg overflow-hidden ring-2 transition-all ${isSelected
+                        ? 'ring-[#a2dd00] opacity-100'
+                        : isDisabled
+                          ? 'ring-transparent opacity-30 cursor-not-allowed'
+                          : 'ring-transparent opacity-70 hover:opacity-100 hover:ring-[#f3f0ed]/20'
+                      }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={thumb} alt="" className="h-full w-full object-cover" loading="lazy" />
+                    {isSelected && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-[#a2dd00]/20">
+                        <div className="h-5 w-5 rounded-full bg-[#a2dd00] flex items-center justify-center">
+                          <svg className="h-3 w-3 text-[#1a2123]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </div>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <div ref={sentinelRef} className="h-2" />
+            {isFetchingNextPage && (
+              <div className="flex justify-center py-2">
+                <Loader2 className="h-3 w-3 animate-spin text-[#a2dd00]/50" />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {selectedUrls.size > 0 && (
+        <div className="flex items-center justify-between px-3 py-2 border-t border-[#f3f0ed]/7">
+          <span className="text-[10px] text-[#f3f0ed]/40">{selectedUrls.size} selecionada{selectedUrls.size > 1 ? 's' : ''}</span>
+          <button
+            onClick={handleConfirm}
+            className="rounded-lg bg-[#a2dd00] px-3 py-1 text-[10px] font-bold text-[#1a2123] transition-all hover:bg-[#a2dd00]/90 active:scale-95"
+          >
+            ADICIONAR
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

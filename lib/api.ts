@@ -1,4 +1,4 @@
-export const BASE_URL = 'https://clip-generator-geraew-api.ernvcw.easypanel.host';
+export const BASE_URL = 'http://localhost:3001';
 
 export interface AuthUser {
   id: string;
@@ -119,6 +119,7 @@ export interface CreateGenerationResponse {
 export interface GenerationOutput {
   id: string;
   url: string;
+  thumbnailUrl?: string;
   order: number;
 }
 
@@ -181,6 +182,7 @@ export interface CreditsEstimateRequest {
   resolution?: string;
   durationSeconds?: number;
   hasAudio?: boolean;
+  sampleCount?: number;
 }
 
 export interface CreditsEstimateResponse {
@@ -212,16 +214,82 @@ export interface VideoWithReferencesRequest extends TextToVideoRequest {
   reference_images: { base64: string; mime_type: string; reference_type: 'asset' }[];
 }
 
+// ─── Folders ──────────────────────────────────────────────────────────────────
+
+export interface Folder {
+  id: string;
+  name: string;
+  generationCount: number;
+  createdAt: string;
+}
+
 export const api = {
   gallery: {
-    list(accessToken: string, page = 1, limit = 20) {
+    list(accessToken: string, page = 1, limit = 20, filters?: { type?: string; favorited?: boolean; folderId?: string }) {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+        sort: 'created_at:desc',
+      });
+      if (filters?.type) params.set('type', filters.type);
+      if (filters?.favorited) params.set('favorited', 'true');
+      if (filters?.folderId) params.set('folderId', filters.folderId);
       return authRequest<PaginatedResponse<Generation>>(
-        `/api/v1/gallery?page=${page}&limit=${limit}&sort=created_at:desc`,
+        `/api/v1/gallery?${params.toString()}`,
         accessToken,
       );
     },
     stats(accessToken: string) {
       return authRequest<GalleryStats>('/api/v1/gallery/stats', accessToken);
+    },
+    favorite(accessToken: string, generationId: string) {
+      return authRequest<void>(`/api/v1/generations/${generationId}/favorite`, accessToken, {
+        method: 'POST',
+      });
+    },
+    unfavorite(accessToken: string, generationId: string) {
+      return authRequest<void>(`/api/v1/generations/${generationId}/favorite`, accessToken, {
+        method: 'DELETE',
+      });
+    },
+  },
+
+  folders: {
+    async list(accessToken: string) {
+      const res = await authRequest<PaginatedResponse<Folder>>('/api/v1/folders?limit=100', accessToken);
+      return res.data;
+    },
+    create(accessToken: string, name: string) {
+      return authRequest<Folder>('/api/v1/folders', accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+      });
+    },
+    get(accessToken: string, id: string, page = 1, limit = 20) {
+      return authRequest<PaginatedResponse<Generation>>(`/api/v1/folders/${id}?page=${page}&limit=${limit}`, accessToken);
+    },
+    update(accessToken: string, id: string, name: string) {
+      return authRequest<Folder>(`/api/v1/folders/${id}`, accessToken, {
+        method: 'PATCH',
+        body: JSON.stringify({ name }),
+      });
+    },
+    delete(accessToken: string, id: string) {
+      return authRequest<void>(`/api/v1/folders/${id}`, accessToken, {
+        method: 'DELETE',
+      });
+    },
+    addGenerations(accessToken: string, folderId: string, generationIds: string[]) {
+      return authRequest<void>(`/api/v1/folders/${folderId}/generations`, accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ generationIds }),
+      });
+    },
+    removeGeneration(accessToken: string, folderId: string, generationId: string) {
+      return authRequest<void>(`/api/v1/folders/${folderId}/generations`, accessToken, {
+        method: 'DELETE',
+        body: JSON.stringify({ generationIds: [generationId] }),
+      });
     },
   },
 

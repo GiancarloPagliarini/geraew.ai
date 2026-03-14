@@ -13,18 +13,40 @@ import {
   Coins,
   Download,
   Expand,
+  FolderIcon,
+  FolderPlus,
   Heart,
   ImageIcon,
   ImagePlus,
   Layers,
   Loader2,
+  Pencil,
   Play,
-  ScanFace, Settings, X
+  Plus,
+  ScanFace, Settings, Trash2, X
 } from 'lucide-react';
-import { memo, useEffect, useRef, useState } from 'react';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient, InfiniteData } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-context';
-import { api, Generation, GenerationInputImage } from '@/lib/api';
+import { api, Folder, Generation, GenerationInputImage, PaginatedResponse } from '@/lib/api';
+
+type GalleryTab = 'all' | 'photos' | 'videos' | 'favorites';
+
+const TABS: { key: GalleryTab; label: string }[] = [
+  { key: 'all', label: 'Tudo' },
+  { key: 'photos', label: 'Fotos' },
+  { key: 'videos', label: 'Vídeos' },
+  { key: 'favorites', label: 'Favoritos' },
+];
+
+function tabToFilters(tab: GalleryTab): { type?: string; favorited?: boolean } | undefined {
+  switch (tab) {
+    case 'photos': return { type: 'TEXT_TO_IMAGE,IMAGE_TO_IMAGE' };
+    case 'videos': return { type: 'TEXT_TO_VIDEO,IMAGE_TO_VIDEO,REFERENCE_VIDEO' };
+    case 'favorites': return { favorited: true };
+    default: return undefined;
+  }
+}
 
 const PAGE_SIZE = 6;
 
@@ -36,10 +58,68 @@ interface GalleryDialogProps {
 export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
   const { accessToken } = useAuth();
   const [selected, setSelected] = useState<Generation | null>(null);
+  const [activeTab, setActiveTab] = useState<GalleryTab>('all');
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [showFoldersList, setShowFoldersList] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
   const sentinelRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+
+  // ── Folders ─────────────────────────────────────────────────────────────────
+
+  const { data: folders = [] } = useQuery({
+    queryKey: ['folders'],
+    queryFn: () => api.folders.list(accessToken!),
+    enabled: !!accessToken && open,
+    staleTime: 30_000,
+  });
+
+  const activeFolder = activeFolderId ? folders.find((f) => f.id === activeFolderId) : null;
+
+  const createFolderMutation = useMutation({
+    mutationFn: (name: string) => api.folders.create(accessToken!, name),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['folders'] }),
+  });
+
+  const updateFolderMutation = useMutation({
+    mutationFn: ({ folderId, name }: { folderId: string; name: string }) =>
+      api.folders.update(accessToken!, folderId, name),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['folders'] }),
+  });
+
+  const deleteFolderMutation = useMutation({
+    mutationFn: (folderId: string) => api.folders.delete(accessToken!, folderId),
+    onSuccess: (_, folderId) => {
+      if (activeFolderId === folderId) { setActiveFolderId(null); setShowFoldersList(true); }
+      queryClient.invalidateQueries({ queryKey: ['folders'] });
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+    },
+  });
+
+  const addToFolderMutation = useMutation({
+    mutationFn: ({ folderId, generationId }: { folderId: string; generationId: string }) =>
+      api.folders.addGenerations(accessToken!, folderId, [generationId]),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['folders'] });
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+    },
+  });
+
+  const removeFromFolderMutation = useMutation({
+    mutationFn: ({ folderId, generationId }: { folderId: string; generationId: string }) =>
+      api.folders.removeGeneration(accessToken!, folderId, generationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['folders'] });
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+    },
+  });
 
   // ── Infinite list ──────────────────────────────────────────────────────────
+
+  const filters = activeFolderId
+    ? { folderId: activeFolderId }
+    : tabToFilters(activeTab);
 
   const {
     data,
@@ -48,8 +128,8 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
     hasNextPage,
     fetchNextPage,
   } = useInfiniteQuery({
-    queryKey: ['gallery', 'list'],
-    queryFn: ({ pageParam }) => api.gallery.list(accessToken!, pageParam as number, PAGE_SIZE),
+    queryKey: ['gallery', 'list', activeFolderId ?? activeTab],
+    queryFn: ({ pageParam }) => api.gallery.list(accessToken!, pageParam as number, PAGE_SIZE, filters),
     initialPageParam: 1,
     getNextPageParam: (last) =>
       last.meta.page < last.meta.totalPages ? last.meta.page + 1 : undefined,
@@ -70,6 +150,67 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
     staleTime: Infinity,
   });
 
+  // ── Favorite mutation (optimistic) ───────────────────────────────────────────
+
+  const favoriteMutation = useMutation({
+    mutationFn: (item: Generation) =>
+      item.isFavorited
+        ? api.gallery.unfavorite(accessToken!, item.id)
+        : api.gallery.favorite(accessToken!, item.id),
+    onMutate: async (item) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['gallery'] });
+
+      const newFavorited = !item.isFavorited;
+
+      // Optimistically update all gallery list caches
+      const queryKeys = TABS.map((t) => ['gallery', 'list', t.key]);
+      const snapshots: [string[], InfiniteData<PaginatedResponse<Generation>> | undefined][] = [];
+
+      for (const qk of queryKeys) {
+        const prev = queryClient.getQueryData<InfiniteData<PaginatedResponse<Generation>>>(qk);
+        snapshots.push([qk, prev]);
+        if (prev) {
+          queryClient.setQueryData<InfiniteData<PaginatedResponse<Generation>>>(qk, {
+            ...prev,
+            pages: prev.pages.map((page) => ({
+              ...page,
+              data: page.data.map((g) =>
+                g.id === item.id ? { ...g, isFavorited: newFavorited } : g,
+              ),
+            })),
+          });
+        }
+      }
+
+      // Update selected item if it's the one being toggled
+      if (selected?.id === item.id) {
+        setSelected({ ...selected, isFavorited: newFavorited });
+      }
+
+      return { snapshots };
+    },
+    onError: (_err, _item, context) => {
+      // Rollback all caches
+      if (context?.snapshots) {
+        for (const [qk, prev] of context.snapshots) {
+          if (prev) queryClient.setQueryData(qk, prev);
+        }
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+    },
+  });
+
+  const toggleFavorite = useCallback(
+    (item: Generation, e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      favoriteMutation.mutate(item);
+    },
+    [favoriteMutation],
+  );
+
   // ── IntersectionObserver — trigger next page ───────────────────────────────
 
   useEffect(() => {
@@ -84,10 +225,25 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Reset scroll when closing or opening detail
+  const handleAddToFolder = useCallback(
+    (folderId: string, generationId: string) => {
+      addToFolderMutation.mutate({ folderId, generationId });
+    },
+    [addToFolderMutation],
+  );
+
+  const handleCreateFolderAndAdd = useCallback(
+    async (name: string, generationId: string) => {
+      const folder = await createFolderMutation.mutateAsync(name);
+      addToFolderMutation.mutate({ folderId: folder.id, generationId });
+    },
+    [createFolderMutation, addToFolderMutation],
+  );
+
+  // Reset scroll when closing, opening detail, or switching tabs
   useEffect(() => {
     if (!selected) scrollRef.current?.scrollTo({ top: 0 });
-  }, [selected]);
+  }, [selected, activeTab, activeFolderId]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -104,18 +260,158 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
 
         {/* Stats bar */}
         {!selected && (
-          <div className="grid grid-cols-4 gap-2 shrink-0">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 shrink-0">
             <StatCard icon={Settings} label="Gerações" value={stats?.totalGenerations} loading={statsLoading} />
-            <StatCard icon={Coins} label="Créditos usados" value={stats?.totalCreditsUsed} loading={statsLoading} />
+            <StatCard icon={Coins} label="Créditos" value={stats?.totalCreditsUsed} loading={statsLoading} />
             <StatCard icon={Heart} label="Favoritos" value={stats?.favoriteCount} loading={statsLoading} />
-            <StatCard icon={ImagePlus} label="Imagens" value={stats?.generationsByType?.TEXT_TO_IMAGE} loading={statsLoading} />
+            <StatCard icon={ImagePlus} label="Imagens" value={stats ? (stats.generationsByType?.TEXT_TO_IMAGE ?? 0) + (stats.generationsByType?.IMAGE_TO_IMAGE ?? 0) : undefined} loading={statsLoading} />
+            <StatCard icon={Play} label="Vídeos" value={stats ? (stats.generationsByType?.TEXT_TO_VIDEO ?? 0) + (stats.generationsByType?.IMAGE_TO_VIDEO ?? 0) : undefined} loading={statsLoading} />
+            <StatCard
+              icon={FolderIcon}
+              label="Pastas"
+              value={folders.length}
+              loading={false}
+              onClick={() => { setShowFoldersList(!showFoldersList); setActiveFolderId(null); }}
+              active={showFoldersList}
+            />
+          </div>
+        )}
+
+        {/* Tab bar (hidden when inside a folder, viewing detail, or browsing folders) */}
+        {!selected && !activeFolderId && !showFoldersList && (
+          <div className="flex gap-1 shrink-0">
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${activeTab === tab.key
+                    ? 'bg-[#a2dd00]/15 text-[#a2dd00]'
+                    : 'text-[#f3f0ed]/40 hover:text-[#f3f0ed]/70 hover:bg-[#f3f0ed]/5'
+                  }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Folder breadcrumb (when inside a folder) */}
+        {!selected && activeFolderId && activeFolder && (
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => { setActiveFolderId(null); setShowFoldersList(true); }}
+              className="flex items-center gap-1 text-xs font-medium text-[#a2dd00] hover:text-[#a2dd00]/80 transition-colors"
+            >
+              <ArrowLeft className="h-3 w-3" />
+              {activeFolder.name}
+            </button>
+          </div>
+        )}
+
+        {/* Folders list header (when browsing folders) */}
+        {!selected && !activeFolderId && showFoldersList && (
+          <div className="flex items-center justify-between shrink-0">
+            <button
+              onClick={() => setShowFoldersList(false)}
+              className="flex items-center gap-1 text-xs font-medium text-[#a2dd00] hover:text-[#a2dd00]/80 transition-colors"
+            >
+              <ArrowLeft className="h-3 w-3" />
+              Minhas Pastas
+            </button>
           </div>
         )}
 
         {/* Content */}
         <div ref={scrollRef} className="overflow-y-auto sidebar-scroll flex-1 -mx-1 px-1">
-          {selected ? (
-            <DetailView item={selected} onBack={() => setSelected(null)} />
+          {/* Folders list view */}
+          {!selected && !activeFolderId && showFoldersList ? (
+            <div className="flex flex-col gap-2 mt-1">
+              {/* Create new folder */}
+              <div className="flex gap-2">
+                <input
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newFolderName.trim()) {
+                      createFolderMutation.mutate(newFolderName.trim());
+                      setNewFolderName('');
+                    }
+                  }}
+                  placeholder="Nova pasta..."
+                  className="flex-1 rounded-lg bg-[#f3f0ed]/5 border border-[#f3f0ed]/10 px-3 py-2 text-xs text-[#f3f0ed] placeholder:text-[#f3f0ed]/30 focus:outline-none focus:border-[#a2dd00]/30"
+                />
+                <button
+                  onClick={() => {
+                    if (newFolderName.trim()) {
+                      createFolderMutation.mutate(newFolderName.trim());
+                      setNewFolderName('');
+                    }
+                  }}
+                  disabled={!newFolderName.trim()}
+                  className="rounded-lg bg-[#a2dd00]/10 px-3 py-2 text-xs font-medium text-[#a2dd00] hover:bg-[#a2dd00]/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+
+              {folders.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-[#f3f0ed]/30">
+                  <FolderIcon className="h-10 w-10 mb-3 opacity-40" />
+                  <p className="text-sm font-medium">Nenhuma pasta</p>
+                  <p className="text-xs mt-1">Crie uma pasta para organizar suas gerações</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {folders.map((folder) => (
+                    <button
+                      key={folder.id}
+                      onClick={() => { setActiveFolderId(folder.id); setShowFoldersList(false); }}
+                      className="group flex flex-col gap-2 rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 p-4 text-left hover:border-[#a2dd00]/20 hover:bg-[#f3f0ed]/5 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <FolderIcon className="h-5 w-5 text-[#a2dd00]" />
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const name = window.prompt('Renomear pasta:', folder.name);
+                              if (name && name.trim() && name !== folder.name) {
+                                updateFolderMutation.mutate({ folderId: folder.id, name: name.trim() });
+                              }
+                            }}
+                            className="rounded p-1 hover:bg-[#f3f0ed]/10 transition-colors"
+                          >
+                            <Pencil className="h-3 w-3 text-[#f3f0ed]/40" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`Excluir pasta "${folder.name}"?`)) {
+                                deleteFolderMutation.mutate(folder.id);
+                              }
+                            }}
+                            className="rounded p-1 hover:bg-red-500/10 transition-colors"
+                          >
+                            <Trash2 className="h-3 w-3 text-red-400/60" />
+                          </button>
+                        </div>
+                      </div>
+                      <span className="text-sm font-medium text-[#f3f0ed]/80 truncate">{folder.name}</span>
+                      <span className="text-[10px] text-[#f3f0ed]/30">{folder.generationCount} {folder.generationCount === 1 ? 'item' : 'itens'}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : selected ? (
+            <DetailView
+              item={selected}
+              onBack={() => setSelected(null)}
+              toggleFavorite={toggleFavorite}
+              folders={folders}
+              onAddToFolder={(folderId) => handleAddToFolder(folderId, selected.id)}
+              onCreateFolderAndAdd={(name) => handleCreateFolderAndAdd(name, selected.id)}
+            />
           ) : galleryLoading ? (
             <SkeletonGrid />
           ) : items.length === 0 ? (
@@ -124,7 +420,15 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-1">
                 {items.map((item) => (
-                  <GalleryItem key={item.id} item={item} onClick={() => setSelected(item)} />
+                  <GalleryItem
+                    key={item.id}
+                    item={item}
+                    onClick={() => setSelected(item)}
+                    onToggleFavorite={toggleFavorite}
+                    folders={folders}
+                    onAddToFolder={(folderId) => handleAddToFolder(folderId, item.id)}
+                    onCreateFolderAndAdd={(name) => handleCreateFolderAndAdd(name, item.id)}
+                  />
                 ))}
               </div>
 
@@ -156,7 +460,14 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
 
 // ─── Detail view ──────────────────────────────────────────────────────────────
 
-function DetailView({ item, onBack }: { item: Generation; onBack: () => void }) {
+function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onCreateFolderAndAdd }: {
+  item: Generation;
+  onBack: () => void;
+  toggleFavorite: (item: Generation, e?: React.MouseEvent) => void;
+  folders: Folder[];
+  onAddToFolder: (folderId: string) => void;
+  onCreateFolderAndAdd: (name: string) => void;
+}) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [lightbox, setLightbox] = useState<GenerationInputImage | null>(null);
@@ -260,32 +571,46 @@ function DetailView({ item, onBack }: { item: Generation; onBack: () => void }) 
           </div>
         </div>
 
-        <button
-          onClick={async () => {
-            if (!url) return;
-            const ext = isVideo ? 'mp4' : 'jpg';
-            const filename = `geraew-ai.${ext}`;
-            try {
-              const res = await fetch(url);
-              const blob = await res.blob();
-              const objectUrl = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = objectUrl;
-              a.download = filename;
-              a.click();
-              URL.revokeObjectURL(objectUrl);
-            } catch {
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = filename;
-              a.click();
-            }
-          }}
-          className="shrink-0 flex items-center gap-2 rounded-lg bg-[#a2dd00]/10 px-3 py-1.5 text-xs font-medium text-[#a2dd00] hover:bg-[#a2dd00]/20 transition-colors"
-        >
-          <Download className="h-4 w-4" />
-          Download
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={(e) => toggleFavorite(item, e)}
+            className="flex items-center gap-2 rounded-lg bg-[#f3f0ed]/5 px-3 py-1.5 text-xs font-medium text-[#f3f0ed]/50 hover:bg-[#f3f0ed]/10 transition-colors"
+          >
+            <Heart className={`h-4 w-4 ${item.isFavorited ? 'fill-[#a2dd00] text-[#a2dd00]' : ''}`} />
+            {item.isFavorited ? 'Favoritado' : 'Favoritar'}
+          </button>
+          <FolderDropdown
+            folders={folders}
+            onSelect={onAddToFolder}
+            onCreateAndAdd={onCreateFolderAndAdd}
+          />
+          <button
+            onClick={async () => {
+              if (!url) return;
+              const ext = isVideo ? 'mp4' : 'jpg';
+              const filename = `geraew-ai.${ext}`;
+              try {
+                const res = await fetch(url);
+                const blob = await res.blob();
+                const objectUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = objectUrl;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(objectUrl);
+              } catch {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+              }
+            }}
+            className="flex items-center gap-2 rounded-lg bg-[#a2dd00]/10 px-3 py-1.5 text-xs font-medium text-[#a2dd00] hover:bg-[#a2dd00]/20 transition-colors"
+          >
+            <Download className="h-4 w-4" />
+            Download
+          </button>
+        </div>
       </div>
 
       {/* Reference images */}
@@ -409,9 +734,17 @@ function OutputThumb({
 const GalleryItem = memo(function GalleryItem({
   item,
   onClick,
+  onToggleFavorite,
+  folders,
+  onAddToFolder,
+  onCreateFolderAndAdd,
 }: {
   item: Generation;
   onClick: () => void;
+  onToggleFavorite: (item: Generation, e?: React.MouseEvent) => void;
+  folders: Folder[];
+  onAddToFolder: (folderId: string) => void;
+  onCreateFolderAndAdd: (name: string) => void;
 }) {
   const [loaded, setLoaded] = useState(false);
   const url = item.outputs?.[0]?.url;
@@ -475,19 +808,293 @@ const GalleryItem = memo(function GalleryItem({
 
       {/* Top-left badges */}
       <div className="absolute top-2 left-2 flex items-center gap-1">
-        {item.isFavorited && (
-          <Heart className="h-3.5 w-3.5 fill-[#a2dd00] text-[#a2dd00] drop-shadow" />
-        )}
         {hasRefs && (
           <div className="flex items-center gap-0.5 rounded-md bg-black/60 px-1 py-0.5 backdrop-blur-sm">
             <ScanFace className="h-3 w-3 text-[#a2dd00]" />
             <span className="text-[8px] font-bold text-[#a2dd00]">{item.inputImages!.length}</span>
           </div>
         )}
+        <div
+          role="button"
+          onClick={(e) => onToggleFavorite(item, e)}
+          className={`rounded-md p-0.5 backdrop-blur-sm transition-colors ${item.isFavorited
+              ? 'bg-black/60'
+              : 'bg-black/40 opacity-0 group-hover:opacity-100'
+            }`}
+        >
+          <Heart className={`h-3.5 w-3.5 drop-shadow transition-colors ${item.isFavorited
+              ? 'fill-[#a2dd00] text-[#a2dd00]'
+              : 'text-white/70 hover:text-[#a2dd00]'
+            }`} />
+        </div>
+        <GalleryItemFolderButton
+          folders={folders}
+          onAddToFolder={onAddToFolder}
+          onCreateFolderAndAdd={onCreateFolderAndAdd}
+        />
       </div>
     </button>
   );
 });
+
+// ─── Folder chip (horizontal folder bar) ──────────────────────────────────────
+
+function FolderChip({
+  folder,
+  onClick,
+  onRename,
+  onDelete,
+}: {
+  folder: Folder;
+  onClick: () => void;
+  onRename: (name: string) => void;
+  onDelete: () => void;
+}) {
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showMenu]);
+
+  return (
+    <div className="relative shrink-0">
+      <button
+        onClick={onClick}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setShowMenu(true);
+        }}
+        className="flex items-center gap-1.5 rounded-lg bg-[#f3f0ed]/5 px-3 py-1.5 text-xs font-medium text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/10 hover:text-[#f3f0ed]/80 transition-colors"
+      >
+        <FolderIcon className="h-3.5 w-3.5 text-[#a2dd00]" />
+        {folder.name}
+        <span className="text-[10px] text-[#f3f0ed]/30">{folder.generationCount}</span>
+      </button>
+
+      {showMenu && (
+        <div ref={menuRef} className="absolute top-full left-0 mt-1 z-50 min-w-[120px] rounded-lg bg-[#252220] border border-[#f3f0ed]/10 shadow-xl py-1">
+          <button
+            onClick={() => {
+              setShowMenu(false);
+              const name = window.prompt('Renomear pasta:', folder.name);
+              if (name && name.trim() && name !== folder.name) onRename(name.trim());
+            }}
+            className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]"
+          >
+            <Pencil className="h-3 w-3" />
+            Renomear
+          </button>
+          <button
+            onClick={() => {
+              setShowMenu(false);
+              onDelete();
+            }}
+            className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-red-400/70 hover:bg-red-400/5 hover:text-red-400"
+          >
+            <Trash2 className="h-3 w-3" />
+            Excluir
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Folder dropdown (for detail view) ────────────────────────────────────────
+
+function FolderDropdown({
+  folders,
+  onSelect,
+  onCreateAndAdd,
+}: {
+  folders: Folder[];
+  onSelect: (folderId: string) => void;
+  onCreateAndAdd: (name: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [newName, setNewName] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setNewName('');
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 rounded-lg bg-[#f3f0ed]/5 px-3 py-1.5 text-xs font-medium text-[#f3f0ed]/50 hover:bg-[#f3f0ed]/10 transition-colors"
+      >
+        <FolderPlus className="h-4 w-4" />
+        Pasta
+      </button>
+
+      {open && (
+        <div className="absolute bottom-full right-0 mb-1 z-50 w-52 rounded-lg bg-[#252220] border border-[#f3f0ed]/10 shadow-xl py-1">
+          {folders.length > 0 && (
+            <div className="max-h-40 overflow-y-auto sidebar-scroll">
+              {folders.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => {
+                    onSelect(f.id);
+                    setOpen(false);
+                  }}
+                  className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]"
+                >
+                  <FolderIcon className="h-3.5 w-3.5 text-[#a2dd00]" />
+                  <span className="truncate">{f.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="border-t border-[#f3f0ed]/7 px-2 py-1.5">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (newName.trim()) {
+                  onCreateAndAdd(newName.trim());
+                  setNewName('');
+                  setOpen(false);
+                }
+              }}
+              className="flex items-center gap-1"
+            >
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Nova pasta..."
+                className="flex-1 bg-transparent text-xs text-[#f3f0ed] placeholder-[#f3f0ed]/20 outline-none px-1 py-0.5"
+                autoFocus
+              />
+              <button
+                type="submit"
+                disabled={!newName.trim()}
+                className="rounded p-0.5 text-[#a2dd00] hover:bg-[#a2dd00]/10 disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Gallery item folder button (small icon on grid items) ────────────────────
+
+function GalleryItemFolderButton({
+  folders,
+  onAddToFolder,
+  onCreateFolderAndAdd,
+}: {
+  folders: Folder[];
+  onAddToFolder: (folderId: string) => void;
+  onCreateFolderAndAdd: (name: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [newName, setNewName] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setNewName('');
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <div
+        role="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(!open);
+        }}
+        className="rounded-md p-0.5 bg-black/40 opacity-0 group-hover:opacity-100 backdrop-blur-sm transition-colors hover:bg-black/60"
+      >
+        <FolderPlus className="h-3.5 w-3.5 text-white/70 hover:text-[#a2dd00] drop-shadow transition-colors" />
+      </div>
+
+      {open && (
+        <div
+          className="absolute top-full left-0 mt-1 z-50 w-44 rounded-lg bg-[#252220] border border-[#f3f0ed]/10 shadow-xl py-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {folders.length > 0 && (
+            <div className="max-h-32 overflow-y-auto sidebar-scroll">
+              {folders.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => {
+                    onAddToFolder(f.id);
+                    setOpen(false);
+                  }}
+                  className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]"
+                >
+                  <FolderIcon className="h-3 w-3 text-[#a2dd00]" />
+                  <span className="truncate">{f.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="border-t border-[#f3f0ed]/7 px-2 py-1.5">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (newName.trim()) {
+                  onCreateFolderAndAdd(newName.trim());
+                  setNewName('');
+                  setOpen(false);
+                }
+              }}
+              className="flex items-center gap-1"
+            >
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Nova pasta..."
+                className="flex-1 bg-transparent text-[10px] text-[#f3f0ed] placeholder-[#f3f0ed]/20 outline-none px-1 py-0.5"
+                autoFocus
+              />
+              <button
+                type="submit"
+                disabled={!newName.trim()}
+                className="rounded p-0.5 text-[#a2dd00] hover:bg-[#a2dd00]/10 disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <Plus className="h-3 w-3" />
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Skeleton grid ────────────────────────────────────────────────────────────
 
@@ -521,14 +1128,25 @@ function StatCard({
   label,
   value,
   loading,
+  onClick,
+  active,
 }: {
   icon: React.ElementType;
   label: string;
   value: number | undefined;
   loading: boolean;
+  onClick?: () => void;
+  active?: boolean;
 }) {
+  const Wrapper = onClick ? 'button' : 'div';
   return (
-    <div className="flex flex-col gap-1 rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2.5">
+    <Wrapper
+      onClick={onClick}
+      className={`flex flex-col gap-1 rounded-xl border px-3 py-2.5 text-left transition-colors ${active
+          ? 'border-[#a2dd00]/30 bg-[#a2dd00]/8'
+          : 'border-[#f3f0ed]/7 bg-[#f3f0ed]/3'
+        } ${onClick ? 'cursor-pointer hover:border-[#a2dd00]/20 hover:bg-[#f3f0ed]/5' : ''}`}
+    >
       <div className="flex items-center gap-1.5">
         <Icon className="h-4 w-4 text-[#a2dd00]" />
         <span className="text-[9px] font-bold tracking-[0.15em] text-[#f3f0ed]/30 uppercase">
@@ -540,6 +1158,6 @@ function StatCard({
       ) : (
         <span className="text-lg font-bold text-[#f3f0ed]">{value ?? 0}</span>
       )}
-    </div>
+    </Wrapper>
   );
 }
