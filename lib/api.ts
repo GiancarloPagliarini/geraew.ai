@@ -1,4 +1,4 @@
-export const BASE_URL = 'http://localhost:3001';
+export const BASE_URL = 'https://clip-generator-geraew-api-provider.ernvcw.easypanel.host';
 
 export interface AuthUser {
   id: string;
