@@ -10,7 +10,24 @@
       "Bash(npm install react-joyride --legacy-peer-deps)",
       "Bash(node -e \"require\\(''react-joyride''\\)\")",
       "Bash(npm install @tanstack/react-query)",
-      "Bash(npm install @tanstack/react-query --legacy-peer-deps)"
+      "Bash(npm install @tanstack/react-query --legacy-peer-deps)",
+      "Bash(npx tsc --noEmit --pretty 2>&1 | head -30)",
+      "Bash(npx tsc --noEmit --pretty 2>&1 | head -20)",
+      "Bash(cd /Users/gustavogomes/projects/pessoais/geraew/geraew-api && npx prisma migrate dev --name add_thumbnail_url_to_generation_output 2>&1)",
+      "Bash(cd /Users/gustavogomes/projects/pessoais/geraew/geraew-api && npx prisma db push 2>&1)",
+      "Bash(cd /Users/gustavogomes/projects/pessoais/geraew/geraew-api && npx tsc --noEmit 2>&1 | head -40)",
+      "Bash(cd /Users/gustavogomes/projects/pessoais/geraew/geraew-api && npx tsc --noEmit 2>&1 | head -60)",
+      "Bash(cd /Users/gustavogomes/projects/pessoais/geraew/geraew-api && ./node_modules/.bin/tsc --noEmit 2>&1 | head -60)",
+      "Bash(pushd /Users/gustavogomes/projects/pessoais/geraew/geraew-api && ./node_modules/.bin/tsc --noEmit 2>&1 | head -20 ; popd)",
+      "Bash(npx tsc --noEmit --pretty 2>&1 | head -10)",
+      "Bash(find /Users/gustavogomes/projects/pessoais/geraew/geraew.ai/app -type f -name \"*.tsx\" -o -name \"*.ts\" 2>/dev/null | head -20)",
+      "Bash(grep -n \"GalleryDialog\" /Users/gustavogomes/projects/pessoais/geraew/geraew.ai/components/editor/*.tsx)",
+      "mcp__ide__getDiagnostics",
+      "Bash(cd /Users/gustavogomes/projects/pessoais/geraew/geraew-api && npx prisma generate 2>&1)",
+      "Bash(cd /Users/gustavogomes/projects/pessoais/geraew/geraew-api && npx tsc --noEmit 2>&1 | head -50)",
+      "Bash(find /Users/gustavogomes/projects/pessoais/geraew/geraew.ai/lib -name \"*.ts\" -o -name \"*.tsx\" 2>/dev/null | head -20)",
+      "Bash(cd /Users/gustavogomes/projects/pessoais/geraew/geraew-api && npm install fluent-ffmpeg @ffmpeg-installer/ffmpeg && npm install -D @types/fluent-ffmpeg)",
+      "Bash(cd /Users/gustavogomes/projects/pessoais/geraew/geraew-api && npx prisma generate)"
     ]
   }
 }

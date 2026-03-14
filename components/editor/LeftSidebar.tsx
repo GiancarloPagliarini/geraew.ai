@@ -7,20 +7,24 @@ import {
 } from '@/components/ui/tooltip';
 import { GalleryDialog } from './GalleryDialog';
 import { TutorialDialog } from './TutorialDialog';
-import { FolderOpen, GraduationCap } from 'lucide-react';
+import { VideoEditorDialog } from './VideoEditorDialog';
+import { Film, FolderOpen, GraduationCap } from 'lucide-react';
 import { useState } from 'react';
 
 const navItems = [
   { id: 'gallery', icon: FolderOpen, label: 'Galeria' },
+  { id: 'videoEditor', icon: Film, label: 'Editor de Video' },
   { id: 'tutorial', icon: GraduationCap, label: 'Tutorial' },
 ];
 
 export function LeftSidebar() {
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [videoEditorOpen, setVideoEditorOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
 
   function handleNavClick(id: string) {
     if (id === 'gallery') setGalleryOpen(true);
+    if (id === 'videoEditor') setVideoEditorOpen(true);
     if (id === 'tutorial') setTutorialOpen(true);
   }
 
@@ -28,7 +32,7 @@ export function LeftSidebar() {
     <>
       <aside className="flex h-full w-12 shrink-0 flex-col items-center gap-1.5 border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] py-3 z-50">
         {navItems.map(({ id, icon: Icon, label }) => {
-          const isActive = (id === 'gallery' && galleryOpen) || (id === 'tutorial' && tutorialOpen);
+          const isActive = (id === 'gallery' && galleryOpen) || (id === 'videoEditor' && videoEditorOpen) || (id === 'tutorial' && tutorialOpen);
           return (
             <Tooltip key={id}>
               <TooltipTrigger asChild>
@@ -58,6 +62,7 @@ export function LeftSidebar() {
         <div className="my-1 h-px w-6 bg-[#f3f0ed]/[0.07]" />
       </aside>
       <GalleryDialog open={galleryOpen} onOpenChange={setGalleryOpen} />
+      <VideoEditorDialog open={videoEditorOpen} onOpenChange={setVideoEditorOpen} />
       <TutorialDialog open={tutorialOpen} onOpenChange={setTutorialOpen} />
     </>
   );
