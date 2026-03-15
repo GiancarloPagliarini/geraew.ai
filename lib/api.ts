@@ -1,4 +1,4 @@
-export const BASE_URL = 'https://clip-generator-geraew-api.ernvcw.easypanel.host';
+export const BASE_URL = 'http://localhost:3000';
 
 export interface AuthUser {
   id: string;
@@ -7,6 +7,7 @@ export interface AuthUser {
   avatarUrl: string;
   role: string;
   emailVerified: boolean;
+  hasCompletedOnboarding: boolean;
   createdAt: string;
 }
 
@@ -360,6 +361,11 @@ export const api = {
   users: {
     me(accessToken: string) {
       return authRequest<UserProfile>('/api/v1/users/me', accessToken);
+    },
+    completeOnboarding(accessToken: string) {
+      return authRequest<UserProfile>('/api/v1/users/me/onboarding', accessToken, {
+        method: 'PATCH',
+      });
     },
   },
 

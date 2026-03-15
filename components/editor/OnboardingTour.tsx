@@ -8,8 +8,8 @@ import Joyride, {
 } from 'react-joyride';
 import { useEffect, useState } from 'react';
 import { Coins, GraduationCap, ImageIcon, Smile, Sparkles, X } from 'lucide-react';
-
-const TOUR_KEY = 'geraew-tour-done';
+import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
 
 const steps: Step[] = [
   {
@@ -163,20 +163,23 @@ function TourTooltip({
 }
 
 export function OnboardingTour() {
+  const { user, accessToken } = useAuth();
   const [run, setRun] = useState(false);
 
   useEffect(() => {
-    if (localStorage.getItem(TOUR_KEY) !== 'true') {
+    if (user && user.hasCompletedOnboarding === false) {
       const t = setTimeout(() => setRun(true), 700);
       return () => clearTimeout(t);
     }
-  }, []);
+  }, [user]);
 
   function handleCallback({ status }: CallBackProps) {
     const finished = ([STATUS.FINISHED, STATUS.SKIPPED] as string[]).includes(status);
     if (finished) {
-      localStorage.setItem(TOUR_KEY, 'true');
       setRun(false);
+      if (accessToken) {
+        api.users.completeOnboarding(accessToken).catch(() => {});
+      }
     }
   }
 

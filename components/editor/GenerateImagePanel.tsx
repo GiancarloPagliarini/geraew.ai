@@ -745,11 +745,22 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-function handleDownload(url: string) {
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'geraew-ai.jpg';
-  a.click();
+async function handleDownload(url: string) {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = 'geraew-ai.jpg';
+    a.click();
+    URL.revokeObjectURL(objectUrl);
+  } catch {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'geraew-ai.jpg';
+    a.click();
+  }
 }
 
 function ActionButton({
