@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import { Coins, GraduationCap, ImageIcon, VideoIcon, UserRound, PlayCircle } from 'lucide-react';
+import { Coins, GraduationCap, ImageIcon, VideoIcon, UserRound, PlayCircle, X } from 'lucide-react';
 import { useState } from 'react';
 
 const tutorials = [
@@ -69,20 +62,31 @@ export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
     setSelected(null);
   }
 
-  return (
-    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setSelected(null); }}>
-      <DialogContent className="border-[#f3f0ed]/[0.08] bg-[#1a2123] text-[#f3f0ed] sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col [&_[data-slot=dialog-close]]:text-[#f3f0ed]/50 [&_[data-slot=dialog-close]]:hover:text-[#f3f0ed]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-[#f3f0ed]">
-            <GraduationCap className="h-4 w-4 text-[#a2dd00]" />
-            Tutoriais
-          </DialogTitle>
-          <DialogDescription className="text-[#f3f0ed]/40">
-            Aprenda a usar todas as funcionalidades da plataforma
-          </DialogDescription>
-        </DialogHeader>
+  if (!open) return null;
 
-        <div className="flex overflow-y-auto sidebar-scroll p-2 flex-1 -mx-1 px-1">
+  return (
+    <aside className="aside-in-left flex h-full w-xl shrink-0 flex-col border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] text-[#f3f0ed] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-[#f3f0ed]/[0.05] bg-gradient-to-b from-[#f3f0ed]/[0.02] to-transparent px-4 py-3.5">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#a2dd00]/10">
+            <GraduationCap className="h-3.5 w-3.5 text-[#a2dd00]" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-[#f3f0ed]/60">Tutoriais</h2>
+            <p className="text-xs text-[#f3f0ed]/30">Aprenda a usar todas as funcionalidades</p>
+          </div>
+        </div>
+        <button
+          onClick={() => { onOpenChange(false); setSelected(null); }}
+          className="flex h-6 w-6 items-center justify-center rounded-md text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70 transition-colors"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      <div className="flex flex-col flex-1 overflow-hidden px-4 py-3 gap-3">
+        <div className="flex overflow-y-auto sidebar-scroll flex-1">
           {selected && selectedTutorial ? (
             <div className="flex flex-col gap-4">
               <button
@@ -134,7 +138,7 @@ export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
                 <button
                   key={id}
                   onClick={() => setSelected(id)}
-                  className="group flex items-start gap-4 rounded-xl bg-[#f3f0ed]/[0.03] ring-1 ring-[#f3f0ed]/[0.06] hover:ring-[#a2dd00]/30 hover:bg-[#a2dd00]/[0.04] p-4 text-left transition-all"
+                  className="group flex items-start gap-4 rounded-xl bg-[#f3f0ed]/[0.03] ring-[#f3f0ed]/[0.06] hover:ring-[#a2dd00]/30 hover:bg-[#a2dd00]/[0.04] p-4 text-left transition-all"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#a2dd00]/10 ring-1 ring-[#a2dd00]/20 group-hover:bg-[#a2dd00]/15 transition-colors">
                     <Icon className="h-5 w-5 text-[#a2dd00]" />
@@ -159,13 +163,13 @@ export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
         </div>
 
         {!selected && (
-          <div className="flex items-center justify-between border-t border-[#f3f0ed]/[0.07] pt-3 -mx-6 px-6">
+          <div className="flex items-center justify-between border-t border-[#f3f0ed]/[0.07] pt-3">
             <span className="text-[10px] font-medium tracking-wider text-[#f3f0ed]/30 uppercase">
               {tutorials.length} tutoriais disponíveis
             </span>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </div>
+    </aside>
   );
 }

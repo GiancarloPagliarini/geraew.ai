@@ -127,6 +127,15 @@
   animation: aside-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@keyframes aside-in-left {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.aside-in-left {
+  animation: aside-in-left 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* ─── Custom scrollbar ─────────────────────────────────────────────────────── */
 
 .sidebar-scroll {

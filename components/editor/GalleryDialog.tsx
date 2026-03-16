@@ -265,18 +265,30 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
     if (!selected) scrollRef.current?.scrollTo({ top: 0 });
   }, [selected, activeTab, activeFolderId]);
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-[#f3f0ed]/8 bg-[#1a2123] text-[#f3f0ed] sm:max-w-3xl max-h-[85vh] overflow-hidden flex flex-col **:data-[slot=dialog-close]:text-[#f3f0ed]/50 **:data-[slot=dialog-close]:hover:text-[#f3f0ed]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-[#f3f0ed]">
-            <ImageIcon className="h-5 w-5 text-[#a2dd00]" />
-            Galeria
-          </DialogTitle>
-          <DialogDescription className="text-[#f3f0ed]/40">
-            Suas imagens e vídeos gerados com IA
-          </DialogDescription>
-        </DialogHeader>
+    <aside className="aside-in-left flex h-full w-2xl shrink-0 flex-col border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] text-[#f3f0ed] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-[#f3f0ed]/[0.05] bg-gradient-to-b from-[#f3f0ed]/[0.02] to-transparent px-4 py-3.5">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#a2dd00]/10">
+            <ImageIcon className="h-3.5 w-3.5 text-[#a2dd00]" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-[#f3f0ed]/60">Galeria</h2>
+            <p className="text-xs text-[#f3f0ed]/30">Suas imagens e vídeos gerados com IA</p>
+          </div>
+        </div>
+        <button
+          onClick={() => onOpenChange(false)}
+          className="flex h-6 w-6 items-center justify-center rounded-md text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70 transition-colors"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      <div className="flex flex-col flex-1 overflow-hidden px-4 py-3 gap-3">
 
         {/* Stats bar */}
         {!selected && (
@@ -440,14 +452,14 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
 
         {/* Footer */}
         {!selected && !galleryLoading && items.length > 0 && (
-          <div className="flex items-center justify-between border-t border-[#f3f0ed]/7 pt-3 -mx-6 px-6">
+          <div className="flex items-center justify-between border-t border-[#f3f0ed]/7 pt-3">
             <span className="text-[10px] font-medium tracking-wider text-[#f3f0ed]/30 uppercase">
               {items.length} de {total} {total === 1 ? 'item' : 'itens'}
             </span>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </div>
+    </aside>
   );
 }
 
@@ -1310,7 +1322,7 @@ function StatCard({
   return (
     <Wrapper
       onClick={onClick}
-      className={`flex flex-col gap-1 rounded-xl border px-3 py-2.5 text-left transition-colors ${active
+      className={`flex flex-col gap-1 rounded-xl border px-2 py-2 text-left transition-colors ${active
         ? 'border-[#a2dd00]/30 bg-[#a2dd00]/8'
         : 'border-[#f3f0ed]/7 bg-[#f3f0ed]/3'
         } ${onClick ? 'cursor-pointer hover:border-[#a2dd00]/20 hover:bg-[#f3f0ed]/5' : ''}`}

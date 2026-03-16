@@ -23,9 +23,21 @@ export function LeftSidebar() {
   const [tutorialOpen, setTutorialOpen] = useState(false);
 
   function handleNavClick(id: string) {
-    if (id === 'gallery') setGalleryOpen(true);
-    if (id === 'videoEditor') setVideoEditorOpen(true);
-    if (id === 'tutorial') setTutorialOpen(true);
+    if (id === 'gallery') {
+      setGalleryOpen((v) => !v);
+      setVideoEditorOpen(false);
+      setTutorialOpen(false);
+    }
+    if (id === 'videoEditor') {
+      setVideoEditorOpen((v) => !v);
+      setGalleryOpen(false);
+      setTutorialOpen(false);
+    }
+    if (id === 'tutorial') {
+      setTutorialOpen((v) => !v);
+      setGalleryOpen(false);
+      setVideoEditorOpen(false);
+    }
   }
 
   return (

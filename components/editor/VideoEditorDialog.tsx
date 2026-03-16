@@ -1,13 +1,6 @@
 'use client';
 
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import {
   ArrowLeft,
   Clock,
   Download,
@@ -286,7 +279,7 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
     if (isSameSource) {
       video.currentTime = range.trimStart / 1000;
       switchingRef.current = false;
-      if (autoplay) video.play().catch(() => {});
+      if (autoplay) video.play().catch(() => { });
     } else {
       video.src = range.clip.sourceUrl;
       video.load();
@@ -295,7 +288,7 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
         video.removeEventListener('canplay', onCanPlay);
         video.currentTime = range.trimStart / 1000;
         switchingRef.current = false;
-        if (autoplay) video.play().catch(() => {});
+        if (autoplay) video.play().catch(() => { });
       };
       video.addEventListener('canplay', onCanPlay);
     }
@@ -325,7 +318,7 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
         setIsPlaying(true);
         return;
       }
-      video.play().catch(() => {});
+      video.play().catch(() => { });
       setIsPlaying(true);
     }
   }
@@ -455,40 +448,45 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
     );
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  if (!open) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="border-[#f3f0ed]/8 bg-[#1a2123] text-[#f3f0ed] sm:max-w-3xl max-h-[85vh] overflow-hidden flex flex-col **:data-[slot=dialog-close]:text-[#f3f0ed]/50 **:data-[slot=dialog-close]:hover:text-[#f3f0ed]"
-        showCloseButton
-      >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-[#f3f0ed]">
-            {activeProjectId ? (
-              <button
-                onClick={() => { setActiveProjectId(null); setSelectedClipId(null); setRenderStatus('idle'); setIsPlaying(false); setActiveClipIndex(0); setGlobalTimeMs(0); }}
-                className="flex items-center gap-1.5 text-sm font-medium text-[#a2dd00] hover:text-[#a2dd00]/80 transition-colors"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Projetos
-              </button>
-            ) : (
-              <>
-                <Film className="h-5 w-5 text-[#a2dd00]" />
-                Editor de Video
-              </>
-            )}
-            {activeProjectId && project && (
-              <span className="text-[#f3f0ed]/60 text-sm font-normal">/ {project.name}</span>
-            )}
-          </DialogTitle>
-          <DialogDescription className="text-[#f3f0ed]/40">
-            {activeProjectId ? 'Gerencie os clipes e renderize seu video' : 'Crie e gerencie seus projetos de video'}
-          </DialogDescription>
-        </DialogHeader>
+    <aside className="aside-in-left flex h-full w-2xl shrink-0 flex-col border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] text-[#f3f0ed] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-[#f3f0ed]/[0.05] bg-gradient-to-b from-[#f3f0ed]/[0.02] to-transparent px-4 py-3.5">
+        <div className="flex items-center gap-2.5">
+          {activeProjectId ? (
+            <button
+              onClick={() => { setActiveProjectId(null); setSelectedClipId(null); setRenderStatus('idle'); setIsPlaying(false); setActiveClipIndex(0); setGlobalTimeMs(0); }}
+              className="flex items-center gap-1.5 text-sm font-medium text-[#a2dd00] hover:text-[#a2dd00]/80 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Projetos
+            </button>
+          ) : (
+            <>
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#a2dd00]/10">
+                <Film className="h-3.5 w-3.5 text-[#a2dd00]" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-[#f3f0ed]/60">Editor de Vídeo</h2>
+                <p className="text-xs text-[#f3f0ed]/30">Crie e gerencie seus projetos</p>
+              </div>
+            </>
+          )}
+          {activeProjectId && project && (
+            <span className="text-[#f3f0ed]/60 text-sm font-normal">/ {project.name}</span>
+          )}
+        </div>
+        <button
+          onClick={() => onOpenChange(false)}
+          className="flex h-6 w-6 items-center justify-center rounded-md text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70 transition-colors"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
 
-        {/* ─── Projects list view ──────────────────────────────────────────── */}
+      <div className="flex flex-col flex-1 overflow-hidden px-4 py-3 gap-3">
         {!activeProjectId && (
           <div className="flex flex-col gap-3 overflow-y-auto flex-1 min-h-0">
             {/* Create project */}
@@ -718,13 +716,12 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
                         e.stopPropagation();
                         setSelectedClipId(range.clip.id === selectedClipId ? null : range.clip.id);
                       }}
-                      className={`group relative h-full overflow-hidden cursor-pointer transition-all ${
-                        isSelected
+                      className={`group relative h-full overflow-hidden cursor-pointer transition-all ${isSelected
                           ? 'ring-2 ring-[#a2dd00] ring-inset z-[5]'
                           : isActive
                             ? 'ring-1 ring-[#a2dd00]/40 ring-inset'
                             : ''
-                      }`}
+                        }`}
                       style={{
                         width: `${widthPct}%`,
                         minWidth: '40px',
@@ -894,8 +891,8 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
             </div>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </div>
+    </aside>
   );
 }
 
@@ -1066,9 +1063,8 @@ function TrimHandle({
       {/* Handle bar */}
       <div
         data-clip-action
-        className={`absolute top-0 bottom-0 w-6 cursor-col-resize flex items-center justify-center z-10 group ${
-          side === 'left' ? '-left-1' : '-right-1'
-        }`}
+        className={`absolute top-0 bottom-0 w-6 cursor-col-resize flex items-center justify-center z-10 group ${side === 'left' ? '-left-1' : '-right-1'
+          }`}
         style={previewPct != null ? { left: side === 'left' ? `calc(${pct}% - 12px)` : undefined, right: side === 'right' ? `calc(${100 - pct}% - 12px)` : undefined } : undefined}
         onPointerDown={handlePointerDown}
       >
