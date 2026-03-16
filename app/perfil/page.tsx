@@ -4,7 +4,24 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { useLoadingMessage } from '@/lib/loading-messages';
-import { ArrowLeft, Mail, Calendar, Shield, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Mail,
+  Calendar,
+  Shield,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Sparkles,
+  TrendingUp,
+  Zap,
+  CreditCard,
+  Crown,
+  CalendarDays,
+  ExternalLink,
+  User,
+  Coins,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Image from 'next/image';
@@ -20,13 +37,19 @@ export default function PerfilPage() {
     enabled: !!accessToken,
   });
 
+  const { data: balance, isLoading: balanceLoading } = useQuery({
+    queryKey: ['credits', 'balance'],
+    queryFn: () => api.credits.balance(accessToken!),
+    enabled: !!accessToken,
+  });
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
     }
   }, [authLoading, user, router]);
 
-  if (authLoading || isLoading) {
+  if (authLoading || isLoading || balanceLoading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[#1a2123]">
         <Loader2 className="h-6 w-6 animate-spin text-[#a2dd00]" />
@@ -61,6 +84,56 @@ export default function PerfilPage() {
     year: 'numeric',
   });
 
+  // Credits
+  const totalCredits = balance
+    ? balance.totalCreditsAvailable + balance.planCreditsUsed
+    : 0;
+  const usagePercent =
+    totalCredits > 0 ? (balance!.planCreditsUsed / totalCredits) * 100 : 0;
+  const periodStart = balance
+    ? new Date(balance.periodStart).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+    : '';
+  const periodEnd = balance
+    ? new Date(balance.periodEnd).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+    : '';
+
+  // Plan
+  const plan = profile.plan as Record<string, unknown> | null;
+  const planName = (plan?.name as string) || (plan?.planName as string) || null;
+  const planStatus = (plan?.status as string) || null;
+
+  // Subscription
+  const sub = profile.subscription as Record<string, unknown> | null;
+  const subStatus = (sub?.status as string) || null;
+  const subEnd = sub?.currentPeriodEnd
+    ? new Date(sub.currentPeriodEnd as string).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    })
+    : null;
+
+  const statusColor = (s: string | null) => {
+    if (!s) return 'text-[#f3f0ed]/40';
+    const lower = s.toLowerCase();
+    if (lower === 'active' || lower === 'ativo') return 'text-green-400';
+    if (lower === 'trialing') return 'text-yellow-400';
+    if (lower === 'canceled' || lower === 'cancelado') return 'text-red-400';
+    return 'text-[#f3f0ed]/60';
+  };
+
+  const statusLabel = (s: string | null) => {
+    if (!s) return '—';
+    const map: Record<string, string> = {
+      active: 'Ativo',
+      trialing: 'Trial',
+      canceled: 'Cancelado',
+      past_due: 'Vencido',
+      inactive: 'Inativo',
+    };
+    return map[s.toLowerCase()] ?? s;
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-[#1a2123]">
       {/* Header */}
@@ -74,72 +147,223 @@ export default function PerfilPage() {
         </button>
       </header>
 
-      {/* Content */}
-      <div className="mx-auto flex w-full max-w-lg flex-col gap-6 px-4 py-10">
-        {/* Avatar + Name */}
-        <div className="flex flex-col items-center gap-3">
-          {profile.avatarUrl ? (
-            <Image
-              src={typeof profile.avatarUrl === 'string' ? profile.avatarUrl : ''}
-              alt={profile.name}
-              width={80}
-              height={80}
-              className="rounded-full border-2 border-[#a2dd00]/30"
-            />
-          ) : (
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#a2dd00]/20 text-2xl font-bold text-[#a2dd00]">
-              {profile.name.charAt(0).toUpperCase()}
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-10">
+
+        {/* ── Hero ── */}
+        <div className="relative overflow-hidden rounded-2xl border border-[#f3f0ed]/8 bg-linear-to-br from-[#f3f0ed]/4 to-[#a2dd00]/4 p-6">
+          {/* accent blob */}
+          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#a2dd00]/7 blur-2xl" />
+
+          <div className="flex items-center gap-5">
+            {/* Avatar */}
+            <div className="relative shrink-0">
+              {profile.avatarUrl ? (
+                <Image
+                  src={typeof profile.avatarUrl === 'string' ? profile.avatarUrl : ''}
+                  alt={profile.name}
+                  width={72}
+                  height={72}
+                  className="rounded-full"
+                />
+              ) : (
+                <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-[#a2dd00]/20 text-2xl font-bold text-[#a2dd00]">
+                  {profile.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              {/* verified dot */}
+              {profile.emailVerified && (
+                <span className="absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#1a2123] bg-green-400">
+                  <CheckCircle className="h-3 w-3 text-[#1a2123]" />
+                </span>
+              )}
             </div>
-          )}
-          <div className="text-center">
-            <h1 className="text-lg font-bold text-[#f3f0ed]">{profile.name}</h1>
-            <p className="text-xs text-[#f3f0ed]/40">{profile.role}</p>
+
+            {/* Info */}
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-xl font-bold text-[#f3f0ed]">{profile.name}</h1>
+              <p className="mt-0.5 text-sm text-[#f3f0ed]/50">{profile.email}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {/* Role badge */}
+                <span className="flex items-center gap-1 rounded-full border border-[#f3f0ed]/10 bg-[#f3f0ed]/6 px-2.5 py-0.5 text-[11px] font-medium text-[#f3f0ed]/60">
+                  <Shield className="h-3 w-3" />
+                  {profile.role}
+                </span>
+                {/* Plan badge */}
+                {planName && (
+                  <span className="flex items-center gap-1 rounded-full border border-[#a2dd00]/20 bg-[#a2dd00]/8 px-2.5 py-0.5 text-[11px] font-bold text-[#a2dd00]">
+                    <Crown className="h-3 w-3" />
+                    {planName}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Member since */}
+          <div className="mt-4 flex items-center gap-1.5 text-xs text-[#f3f0ed]/30">
+            <Calendar className="h-3.5 w-3.5" />
+            Membro desde {createdAt}
           </div>
         </div>
 
-        {/* Info cards */}
-        <div className="flex flex-col gap-3">
-          <InfoCard icon={Mail} label="Email" value={profile.email} />
-          <InfoCard
-            icon={profile.emailVerified ? CheckCircle : XCircle}
-            label="Email verificado"
-            value={profile.emailVerified ? 'Sim' : 'Não'}
-            valueColor={profile.emailVerified ? 'text-green-400' : 'text-red-400'}
+        {/* ── Créditos ── */}
+        <div>
+          <SectionHeader
+            icon={Coins}
+            title="Créditos"
+            action={
+              <button
+                onClick={() => router.push('/creditos')}
+                className="flex items-center gap-1 text-xs text-[#a2dd00]/60 transition-colors hover:text-[#a2dd00]"
+              >
+                Ver detalhes
+                <ExternalLink className="h-3 w-3" />
+              </button>
+            }
           />
-          <InfoCard icon={Shield} label="Função" value={profile.role} />
-          <InfoCard icon={Calendar} label="Membro desde" value={createdAt} />
+
+          {balance ? (
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {/* Disponíveis */}
+              <div className="col-span-2 rounded-xl border border-[#a2dd00]/20 bg-[#a2dd00]/6 p-4 sm:col-span-1">
+                <p className="text-[10px] font-bold tracking-[0.12em] text-[#a2dd00]/60">DISPONÍVEIS</p>
+                <p className="mt-1.5 text-3xl font-bold tabular-nums text-[#a2dd00]">
+                  {balance.totalCreditsAvailable.toLocaleString('pt-BR')}
+                </p>
+              </div>
+
+              {/* Plano */}
+              <div className="rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 p-4">
+                <p className="text-[10px] font-bold tracking-[0.12em] text-[#f3f0ed]/40">DO PLANO</p>
+                <p className="mt-1.5 text-2xl font-bold tabular-nums text-[#f3f0ed]">
+                  {balance.planCreditsRemaining.toLocaleString('pt-BR')}
+                </p>
+              </div>
+
+              {/* Bônus */}
+              <div className="rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 p-4">
+                <p className="text-[10px] font-bold tracking-[0.12em] text-[#f3f0ed]/40">BÔNUS</p>
+                <p className="mt-1.5 text-2xl font-bold tabular-nums text-[#f3f0ed]">
+                  {balance.bonusCreditsRemaining.toLocaleString('pt-BR')}
+                </p>
+              </div>
+
+              {/* Usage bar — full width */}
+              <div className="col-span-2 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 p-4 sm:col-span-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-[#f3f0ed]/40">
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    <span className="text-[10px] font-bold tracking-[0.12em]">USO NO PERÍODO</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[#f3f0ed]/40">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    <span className="text-xs">{periodStart} — {periodEnd}</span>
+                  </div>
+                </div>
+                <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-[#f3f0ed]/10">
+                  <div
+                    className="h-full rounded-full bg-[#a2dd00] transition-all"
+                    style={{ width: `${Math.min(usagePercent, 100)}%` }}
+                  />
+                </div>
+                <div className="mt-1.5 flex items-center justify-between text-[11px] text-[#f3f0ed]/30">
+                  <span>{balance.planCreditsUsed.toLocaleString('pt-BR')} utilizados</span>
+                  <span>{usagePercent.toFixed(1)}%</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <EmptyState icon={Zap} text="Dados de crédito indisponíveis" />
+          )}
         </div>
 
-        {/* Plan / Credits / Subscription */}
-        {profile.plan && Object.keys(profile.plan).length > 0 && (
-          <Section title="Plano">
-            <pre className="text-xs text-[#f3f0ed]/60">
-              {JSON.stringify(profile.plan, null, 2)}
-            </pre>
-          </Section>
-        )}
+        {/* ── Plano & Assinatura ── */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Plano */}
+          <div className="rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 p-4">
+            <div className="flex items-center gap-2 text-[#f3f0ed]/40">
+              <Crown className="h-4 w-4" />
+              <span className="text-[10px] font-bold tracking-[0.12em]">PLANO</span>
+            </div>
+            {plan && planName ? (
+              <div className="mt-3 flex flex-col gap-2">
+                <p className="text-base font-bold text-[#f3f0ed]">{planName}</p>
+                {planStatus && (
+                  <span className={`text-xs font-medium ${statusColor(planStatus)}`}>
+                    {statusLabel(planStatus)}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-[#f3f0ed]/30">Sem plano ativo</p>
+            )}
+          </div>
 
-        {profile.credits && Object.keys(profile.credits).length > 0 && (
-          <Section title="Créditos">
-            <pre className="text-xs text-[#f3f0ed]/60">
-              {JSON.stringify(profile.credits, null, 2)}
-            </pre>
-          </Section>
-        )}
+          {/* Assinatura */}
+          <div className="rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 p-4">
+            <div className="flex items-center gap-2 text-[#f3f0ed]/40">
+              <CreditCard className="h-4 w-4" />
+              <span className="text-[10px] font-bold tracking-[0.12em]">ASSINATURA</span>
+            </div>
+            {sub && subStatus ? (
+              <div className="mt-3 flex flex-col gap-2">
+                <span className={`text-sm font-bold ${statusColor(subStatus)}`}>
+                  {statusLabel(subStatus)}
+                </span>
+                {subEnd && (
+                  <p className="text-xs text-[#f3f0ed]/40">Renova em {subEnd}</p>
+                )}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-[#f3f0ed]/30">Sem assinatura ativa</p>
+            )}
+          </div>
+        </div>
 
-        {profile.subscription && Object.keys(profile.subscription).length > 0 && (
-          <Section title="Assinatura">
-            <pre className="text-xs text-[#f3f0ed]/60">
-              {JSON.stringify(profile.subscription, null, 2)}
-            </pre>
-          </Section>
-        )}
+        {/* ── Conta ── */}
+        <div>
+          <SectionHeader icon={User} title="Conta" />
+          <div className="mt-3 flex flex-col gap-2">
+            <InfoRow icon={Mail} label="Email" value={profile.email} />
+            <InfoRow
+              icon={profile.emailVerified ? CheckCircle : XCircle}
+              label="Email verificado"
+              value={profile.emailVerified ? 'Verificado' : 'Não verificado'}
+              valueColor={profile.emailVerified ? 'text-green-400' : 'text-red-400'}
+            />
+            <InfoRow icon={Shield} label="Função" value={profile.role} />
+            <InfoRow icon={Calendar} label="Membro desde" value={createdAt} />
+          </div>
+        </div>
+
       </div>
     </div>
   );
 }
 
-function InfoCard({
+/* ─── Sub-components ─────────────────────────────────────────────────── */
+
+function SectionHeader({
+  icon: Icon,
+  title,
+  action,
+}: {
+  icon: typeof Sparkles;
+  title: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <Icon className="h-4 w-4 text-[#a2dd00]/70" />
+        <h2 className="text-sm font-bold text-[#f3f0ed]">{title}</h2>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function InfoRow({
   icon: Icon,
   label,
   value,
@@ -151,21 +375,19 @@ function InfoCard({
   valueColor?: string;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-[#f3f0ed]/[0.08] bg-[#f3f0ed]/[0.03] px-4 py-3">
-      <Icon className="h-4 w-4 shrink-0 text-[#a2dd00]/60" />
-      <div className="flex flex-1 items-center justify-between">
-        <span className="text-xs text-[#f3f0ed]/50">{label}</span>
-        <span className={`text-xs font-medium ${valueColor || 'text-[#f3f0ed]'}`}>{value}</span>
-      </div>
+    <div className="flex items-center gap-3 rounded-xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/2 px-4 py-3">
+      <Icon className="h-4 w-4 shrink-0 text-[#a2dd00]/50" />
+      <span className="flex-1 text-xs text-[#f3f0ed]/40">{label}</span>
+      <span className={`text-xs font-medium ${valueColor ?? 'text-[#f3f0ed]'}`}>{value}</span>
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function EmptyState({ icon: Icon, text }: { icon: typeof Zap; text: string }) {
   return (
-    <div className="rounded-xl border border-[#f3f0ed]/[0.08] bg-[#f3f0ed]/[0.03] p-4">
-      <h2 className="mb-3 text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/50">{title.toUpperCase()}</h2>
-      {children}
+    <div className="mt-3 flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 py-8 text-[#f3f0ed]/20">
+      <Icon className="h-5 w-5" />
+      <p className="text-xs">{text}</p>
     </div>
   );
 }

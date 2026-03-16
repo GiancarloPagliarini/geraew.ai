@@ -88,12 +88,30 @@ function CanvasContent() {
     (type: string) => {
       if (type !== 'generate-image' && type !== 'create-influencer' && type !== 'generate-video' && type !== 'generic') return;
 
-      const position = screenToFlowPosition({ x: window.innerWidth / 2 - 160, y: 160 });
+      const NODE_W = 360;
+      const NODE_H = 480;
+      const GAP = 24;
+
+      const baseScreen = { x: window.innerWidth / 2 - NODE_W / 2, y: 80 };
+      let candidate = screenToFlowPosition(baseScreen);
+
+      // Shift horizontally until the candidate doesn't overlap any existing node
+      const MAX_ATTEMPTS = 30;
+      for (let attempts = 0; attempts < MAX_ATTEMPTS; attempts++) {
+        const overlaps = nodes.some((n) => {
+          const dx = Math.abs(n.position.x - candidate.x);
+          const dy = Math.abs(n.position.y - candidate.y);
+          return dx < NODE_W * 0.9 && dy < NODE_H * 0.9;
+        });
+        if (!overlaps) break;
+        candidate = { x: candidate.x + NODE_W + GAP, y: candidate.y };
+      }
+
       const id = `${type}-${Date.now()}`;
       const newNode: Node = {
         id,
         type: 'panel',
-        position,
+        position: candidate,
         data: { panelType: type },
         dragHandle: '.panel-drag-handle',
         style: PANEL_NODE_STYLE,
@@ -102,7 +120,7 @@ function CanvasContent() {
       setNodes((nds) => [...nds, newNode]);
       setNodePanelType(id, type);
     },
-    [screenToFlowPosition, setNodes, setNodePanelType]
+    [nodes, screenToFlowPosition, setNodes, setNodePanelType]
   );
 
   const handleDelete = useCallback(() => {
