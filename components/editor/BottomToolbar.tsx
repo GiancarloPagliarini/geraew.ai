@@ -61,10 +61,10 @@ export function BottomToolbar({
 
           <div className="mx-1.5 h-4 w-px bg-[#f3f0ed]/[0.08]" />
 
-          {/* Add panels */}
+          {/* Add panels
           <ToolbarButton tooltip="Adicionar painel" onClick={onAdd}>
             <Plus className="h-4 w-4" />
-          </ToolbarButton>
+          </ToolbarButton> */}
 
           <ToolbarButton tooltip="Gerar imagem" onClick={onAddImage}>
             <ImageIcon className="h-4 w-4" />

@@ -15,6 +15,7 @@ import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { listenGeneration } from '@/lib/sse';
+import { toast } from 'sonner';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -156,6 +157,7 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
         const dataUrl = ev.target?.result as string;
         const base64 = dataUrl.split(',')[1];
         setAttachedImages((prev) => [...prev, { base64, mime_type: file.type, preview: dataUrl }]);
+        toast.success('Imagem adicionada como referência!');
       };
       reader.readAsDataURL(file);
     });
@@ -680,7 +682,7 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
-                        onClick={() => openGalleryPicker({ nodeId, remaining: 4 - attachedImages.length, onSelect: (url) => addImageFromUrl(url) })}
+                        onClick={() => openGalleryPicker({ nodeId, remaining: 4 - attachedImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success('Imagem adicionada como referência!'); } })}
                         className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
                       >
                         <FolderOpen className="h-5 w-5" />

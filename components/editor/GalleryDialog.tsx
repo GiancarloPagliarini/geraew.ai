@@ -125,9 +125,10 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
   const addToFolderMutation = useMutation({
     mutationFn: ({ folderId, generationId }: { folderId: string; generationId: string }) =>
       api.folders.addGenerations(accessToken!, folderId, [generationId]),
-    onSuccess: () => {
+    onSuccess: (_data, { generationId }) => {
       queryClient.invalidateQueries({ queryKey: ['folders'] });
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      queryClient.invalidateQueries({ queryKey: ['generation-folders', generationId] });
       toast.success('Adicionada à pasta', { description: 'A imagem foi movida com sucesso.' });
     },
     onError: () => toast.error('Erro ao adicionar à pasta', { description: 'Tente novamente.' }),
@@ -136,9 +137,10 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
   const removeFromFolderMutation = useMutation({
     mutationFn: ({ folderId, generationId }: { folderId: string; generationId: string }) =>
       api.folders.removeGeneration(accessToken!, folderId, generationId),
-    onSuccess: () => {
+    onSuccess: (_data, { generationId }) => {
       queryClient.invalidateQueries({ queryKey: ['folders'] });
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      queryClient.invalidateQueries({ queryKey: ['generation-folders', generationId] });
     },
   });
 
@@ -542,9 +544,17 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onCr
   onAddToFolder: (folderId: string) => void;
   onCreateFolderAndAdd: (name: string) => void;
 }) {
+  const { accessToken } = useAuth();
   const [activeIndex, setActiveIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [lightbox, setLightbox] = useState<GenerationInputImage | null>(null);
+
+  const { data: detailFolders } = useQuery({
+    queryKey: ['generation-folders', item.id],
+    queryFn: () => api.generations.getFolders(accessToken!, item.id),
+    enabled: !!accessToken,
+    staleTime: 60_000,
+  });
 
   const outputs = item.outputs ?? [];
   const activeOutput = outputs[activeIndex];
@@ -655,6 +665,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onCr
           </button>
           <FolderDropdown
             folders={folders}
+            activeFolderIds={detailFolders?.map((f) => f.id) ?? []}
             onSelect={onAddToFolder}
             onCreateAndAdd={onCreateFolderAndAdd}
           />
@@ -826,12 +837,20 @@ const GalleryItem = memo(function GalleryItem({
   pickerSelected?: boolean;
   pickerDisabled?: boolean;
 }) {
+  const { accessToken } = useAuth();
   const [loaded, setLoaded] = useState(false);
   const [folderDropdownOpen, setFolderDropdownOpen] = useState(false);
   const url = item.outputs?.[0]?.url;
   const isVideo = !!item.durationSeconds;
   const hasRefs = (item.inputImages?.length ?? 0) > 0;
   const outputCount = item.outputs?.length ?? 0;
+
+  const { data: itemFolders } = useQuery({
+    queryKey: ['generation-folders', item.id],
+    queryFn: () => api.generations.getFolders(accessToken!, item.id),
+    enabled: !!accessToken,
+    staleTime: 60_000,
+  });
 
   return (
     <div
@@ -845,15 +864,14 @@ const GalleryItem = memo(function GalleryItem({
       }}
       onClick={() => { if (!folderDropdownOpen) onClick(); }}
       onKeyDown={(e) => { if (!folderDropdownOpen && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick(); } }}
-      className={`group relative aspect-square rounded-xl overflow-hidden bg-[#f3f0ed]/3 ring-2 transition-[box-shadow,ring-color,opacity] cursor-pointer ${
-        pickerSelected
-          ? 'ring-[#a2dd00] opacity-100'
-          : pickerDisabled
-            ? 'ring-transparent opacity-30 cursor-not-allowed'
-            : pickerMode
-              ? 'ring-transparent opacity-80 hover:opacity-100 hover:ring-[#a2dd00]/30'
-              : 'ring-[#f3f0ed]/6 hover:ring-[#a2dd00]/40'
-      }`}
+      className={`group relative aspect-square rounded-xl overflow-hidden bg-[#f3f0ed]/3 ring-2 transition-[box-shadow,ring-color,opacity] cursor-pointer ${pickerSelected
+        ? 'ring-[#a2dd00] opacity-100'
+        : pickerDisabled
+          ? 'ring-transparent opacity-30 cursor-not-allowed'
+          : pickerMode
+            ? 'ring-transparent opacity-80 hover:opacity-100 hover:ring-[#a2dd00]/30'
+            : 'ring-[#f3f0ed]/6 hover:ring-[#a2dd00]/40'
+        }`}
       style={{ contain: 'layout paint' }}
     >
       {/* Static placeholder until media loads */}
@@ -904,7 +922,13 @@ const GalleryItem = memo(function GalleryItem({
       )}
 
       {/* Bottom-right badges */}
-      <div className="absolute bottom-2 right-2 flex items-center gap-1">
+      <div className="absolute bottom-3 right-3 flex items-center gap-1">
+        {itemFolders && itemFolders.length > 0 && (
+          <div className="flex items-center gap-0.5 rounded-md bg-black/70 px-1.5 py-0.5">
+            <FolderIcon className="h-3 w-3 text-[#a2dd00]" />
+            <span className="text-[9px] font-bold text-[#a2dd00] max-w-[60px] truncate">{itemFolders[0].name}</span>
+          </div>
+        )}
         {isVideo && (
           <div className="flex items-center gap-1 rounded-md bg-black/70 px-1.5 py-0.5">
             <Play className="h-3 w-3 fill-white text-white" />
@@ -942,6 +966,7 @@ const GalleryItem = memo(function GalleryItem({
         </div>
         <GalleryItemFolderButton
           folders={folders}
+          activeFolderIds={itemFolders?.map((f) => f.id) ?? []}
           onAddToFolder={onAddToFolder}
           onCreateFolderAndAdd={onCreateFolderAndAdd}
           onOpenChange={setFolderDropdownOpen}
@@ -1198,10 +1223,12 @@ function FolderChip({
 
 function FolderDropdown({
   folders,
+  activeFolderIds = [],
   onSelect,
   onCreateAndAdd,
 }: {
   folders: Folder[];
+  activeFolderIds?: string[];
   onSelect: (folderId: string) => void;
   onCreateAndAdd: (name: string) => void;
 }) {
@@ -1235,19 +1262,27 @@ function FolderDropdown({
         <div className="absolute bottom-full right-0 mb-1 z-50 w-52 rounded-lg bg-[#252220] border border-[#f3f0ed]/10 shadow-xl py-1">
           {folders.length > 0 && (
             <div className="max-h-40 overflow-y-auto sidebar-scroll">
-              {folders.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => {
-                    onSelect(f.id);
-                    setOpen(false);
-                  }}
-                  className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]"
-                >
-                  <FolderIcon className="h-3.5 w-3.5 text-[#a2dd00]" />
-                  <span className="truncate">{f.name}</span>
-                </button>
-              ))}
+              {folders.map((f) => {
+                const isActive = activeFolderIds.includes(f.id);
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => {
+                      onSelect(f.id);
+                      setOpen(false);
+                    }}
+                    className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]"
+                  >
+                    <FolderIcon className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-[#a2dd00]' : 'text-[#f3f0ed]/30'}`} />
+                    <span className="truncate flex-1 text-left">{f.name}</span>
+                    {isActive && (
+                      <svg className="h-3.5 w-3.5 text-[#a2dd00] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
           <div className="border-t border-[#f3f0ed]/7 px-2 py-1.5">
@@ -1289,11 +1324,13 @@ function FolderDropdown({
 
 function GalleryItemFolderButton({
   folders,
+  activeFolderIds = [],
   onAddToFolder,
   onCreateFolderAndAdd,
   onOpenChange,
 }: {
   folders: Folder[];
+  activeFolderIds?: string[];
   onAddToFolder: (folderId: string) => void;
   onCreateFolderAndAdd: (name: string) => void;
   onOpenChange?: (open: boolean) => void;
@@ -1330,19 +1367,27 @@ function GalleryItemFolderButton({
 
           {folders.length > 0 && (
             <div className="max-h-40 overflow-y-auto sidebar-scroll -mx-1">
-              {folders.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => {
-                    onAddToFolder(f.id);
-                    setOpen(false);
-                  }}
-                  className="flex items-center gap-2.5 w-full rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed] transition-colors"
-                >
-                  <FolderIcon className="h-4 w-4 text-[#a2dd00] shrink-0" />
-                  <span className="truncate">{f.name}</span>
-                </button>
-              ))}
+              {folders.map((f) => {
+                const isActive = activeFolderIds.includes(f.id);
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => {
+                      onAddToFolder(f.id);
+                      setOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 w-full rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed] transition-colors"
+                  >
+                    <FolderIcon className={`h-4 w-4 shrink-0 ${isActive ? 'text-[#a2dd00]' : 'text-[#f3f0ed]/30'}`} />
+                    <span className="truncate flex-1 text-left">{f.name}</span>
+                    {isActive && (
+                      <svg className="h-3.5 w-3.5 text-[#a2dd00] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
 

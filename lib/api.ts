@@ -354,6 +354,9 @@ export const api = {
     get(accessToken: string, id: string) {
       return authRequest<Generation>(`/api/v1/generations/${id}`, accessToken);
     },
+    getFolders(accessToken: string, id: string) {
+      return authRequest<Folder[]>(`/api/v1/generations/${id}/folders`, accessToken);
+    },
   },
 
   credits: {

@@ -13,9 +13,7 @@ import {
   Download,
   FolderOpen,
   Image,
-  ImagePlus,
-  Images,
-  Info,
+  ImagePlus, Info,
   Loader2,
   Sparkles,
   Type,
@@ -30,6 +28,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { listenGeneration } from '@/lib/sse';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -170,6 +169,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
       reader.onload = (ev) => {
         const dataUrl = ev.target?.result as string;
         setRefImages((prev) => [...prev, { base64: dataUrl.split(',')[1], mime_type: file.type, preview: dataUrl }]);
+        toast.success('Imagem adicionada como referência!');
       };
       reader.readAsDataURL(file);
     });
@@ -181,6 +181,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
       setter({ base64: dataUrl.split(',')[1], mime_type: file.type, preview: dataUrl });
+      toast.success('Imagem adicionada como referência!');
     };
     reader.readAsDataURL(file);
   }
@@ -631,7 +632,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
-                          onClick={() => openGalleryPicker({ nodeId, remaining: 3 - refImages.length, onSelect: (url) => addImageFromUrl(url) })}
+                          onClick={() => openGalleryPicker({ nodeId, remaining: 3 - refImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success('Imagem adicionada como referência!'); } })}
                           className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
                         >
                           <FolderOpen className="h-5 w-5" />
@@ -693,6 +694,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
                               reader.onload = (ev) => {
                                 const dataUrl = ev.target?.result as string;
                                 targetSetter({ base64: dataUrl.split(',')[1], mime_type: blob.type || 'image/jpeg', preview: dataUrl });
+                                toast.success('Imagem adicionada como referência!');
                               };
                               reader.readAsDataURL(blob);
                             }).catch(() => { });
@@ -701,7 +703,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
                       }}
                       className="flex h-14 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 px-4 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
                     >
-                      <Images className="h-4 w-4" />
+                      <FolderOpen className="h-4 w-4" />
                     </button>
                   </div>
                 )}
@@ -754,6 +756,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
                               reader.onload = (ev) => {
                                 const dataUrl = ev.target?.result as string;
                                 setLastFrame({ base64: dataUrl.split(',')[1], mime_type: blob.type || 'image/jpeg', preview: dataUrl });
+                                toast.success('Imagem adicionada como referência!');
                               };
                               reader.readAsDataURL(blob);
                             }).catch(() => { });
@@ -762,7 +765,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
                       }}
                       className="flex h-14 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 px-4 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
                     >
-                      <Images className="h-4 w-4" />
+                      <FolderOpen className="h-4 w-4" />
                     </button>
                   </div>
                 )}
