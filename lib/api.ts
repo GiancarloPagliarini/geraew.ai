@@ -217,6 +217,13 @@ export interface VideoWithReferencesRequest extends TextToVideoRequest {
   reference_images: { base64: string; mime_type: string; reference_type: 'asset' }[];
 }
 
+export interface ImageToVideoRequest extends TextToVideoRequest {
+  first_frame: string;
+  first_frame_mime_type?: string;
+  last_frame?: string;
+  last_frame_mime_type?: string;
+}
+
 // ─── Video Editor ─────────────────────────────────────────────────────────────
 
 export interface VideoProject {
@@ -334,6 +341,12 @@ export const api = {
     },
     videoWithReferences(accessToken: string, payload: VideoWithReferencesRequest) {
       return authRequest<CreateGenerationResponse>('/api/v1/generations/video-with-references', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    imageToVideo(accessToken: string, payload: ImageToVideoRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/image-to-video', accessToken, {
         method: 'POST',
         body: JSON.stringify(payload),
       });

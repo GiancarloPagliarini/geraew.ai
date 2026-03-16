@@ -89,7 +89,10 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
   const [sampleCount, setSampleCount] = useState<number>(stored?.sampleCount ?? 1);
   const [generatedVideoUrls, setGeneratedVideoUrls] = useState<string[]>(stored?.generatedVideoUrls ?? []);
 
+  const [videoMode, setVideoMode] = useState<'text' | 'image'>(stored?.videoMode ?? 'text');
   const [refImages, setRefImages] = useState<{ base64: string; mime_type: string; preview: string }[]>([]);
+  const [firstFrame, setFirstFrame] = useState<{ base64: string; mime_type: string; preview: string } | null>(null);
+  const [lastFrame, setLastFrame] = useState<{ base64: string; mime_type: string; preview: string } | null>(null);
   const [enhancePrompt, setEnhancePrompt] = useState(stored?.enhancePrompt ?? false);
   const [isEnhancing, setIsEnhancing] = useState(false);
 
@@ -97,7 +100,11 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
   const forceEightSeconds =
     refImages.length > 0 && (resolution === 'RES_1080P' || resolution === 'RES_4K');
   const effectiveDuration = forceEightSeconds ? '8s' : duration;
-  const videoType = refImages.length > 0 ? 'REFERENCE_VIDEO' as const : 'TEXT_TO_VIDEO' as const;
+  const videoType = videoMode === 'image'
+    ? 'IMAGE_TO_VIDEO' as const
+    : refImages.length > 0
+      ? 'REFERENCE_VIDEO' as const
+      : 'TEXT_TO_VIDEO' as const;
 
   const [genState, setGenState] = useState<GenState>(stored?.generatedVideoUrls?.length > 0 ? 'done' : 'idle');
 
@@ -131,9 +138,9 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
   // Save form + result state whenever they change
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify({
-      prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, enhancePrompt,
+      prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, enhancePrompt, videoMode,
     }));
-  }, [storageKey, prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, enhancePrompt]);
+  }, [storageKey, prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, enhancePrompt, videoMode]);
 
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const msgIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -141,6 +148,8 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
   const sseControllerRef = useRef<AbortController | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const firstFrameInputRef = useRef<HTMLInputElement | null>(null);
+  const lastFrameInputRef = useRef<HTMLInputElement | null>(null);
 
   function processFiles(files: File[]) {
     const remaining = 3 - refImages.length;
@@ -152,6 +161,16 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
       };
       reader.readAsDataURL(file);
     });
+  }
+
+  function processFrameFile(file: File, setter: (frame: { base64: string; mime_type: string; preview: string }) => void) {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setter({ base64: dataUrl.split(',')[1], mime_type: file.type, preview: dataUrl });
+    };
+    reader.readAsDataURL(file);
   }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -185,7 +204,11 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
   function handleDragOver(e: React.DragEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (refImages.length < 3) setIsDraggingOver(true);
+    if (videoMode === 'image') {
+      if (!firstFrame || !lastFrame) setIsDraggingOver(true);
+    } else {
+      if (refImages.length < 3) setIsDraggingOver(true);
+    }
   }
 
   function handleDragLeave(e: React.DragEvent) {
@@ -199,7 +222,29 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
     e.stopPropagation();
     setIsDraggingOver(false);
 
-    // Check if it's a generated image dragged from the image panel
+    if (videoMode === 'image') {
+      const targetSetter = !firstFrame ? setFirstFrame : !lastFrame ? setLastFrame : null;
+      if (!targetSetter) return;
+
+      const imageUrl = e.dataTransfer.getData('text/geraew-image-url');
+      if (imageUrl) {
+        fetch(imageUrl).then((r) => r.blob()).then((blob) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const dataUrl = ev.target?.result as string;
+            targetSetter({ base64: dataUrl.split(',')[1], mime_type: blob.type || 'image/jpeg', preview: dataUrl });
+          };
+          reader.readAsDataURL(blob);
+        }).catch(() => {});
+        return;
+      }
+
+      const file = Array.from(e.dataTransfer.files).find((f) => f.type.startsWith('image/'));
+      if (file) processFrameFile(file, targetSetter);
+      return;
+    }
+
+    // Text mode — existing behavior
     const imageUrl = e.dataTransfer.getData('text/geraew-image-url');
     if (imageUrl) {
       addImageFromUrl(imageUrl);
@@ -298,6 +343,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
 
   async function handleGenerate() {
     if (!accessToken || !prompt.trim()) return;
+    if (videoMode === 'image' && !firstFrame) return;
 
     setGenState('generating');
     setProgress(0);
@@ -336,16 +382,32 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
     };
 
     try {
-      const { id, creditsConsumed } = refImages.length > 0
-        ? await api.generations.videoWithReferences(accessToken, {
+      let result: { id: string; creditsConsumed: number };
+
+      if (videoMode === 'image' && firstFrame) {
+        result = await api.generations.imageToVideo(accessToken, {
+          ...basePayload,
+          first_frame: firstFrame.base64,
+          first_frame_mime_type: firstFrame.mime_type,
+          ...(lastFrame ? {
+            last_frame: lastFrame.base64,
+            last_frame_mime_type: lastFrame.mime_type,
+          } : {}),
+        });
+      } else if (refImages.length > 0) {
+        result = await api.generations.videoWithReferences(accessToken, {
           ...basePayload,
           reference_images: refImages.map(({ base64, mime_type }) => ({
             base64,
             mime_type,
             reference_type: 'asset' as const,
           })),
-        })
-        : await api.generations.textToVideo(accessToken, basePayload);
+        });
+      } else {
+        result = await api.generations.textToVideo(accessToken, basePayload);
+      }
+
+      const { id, creditsConsumed } = result;
 
       consumeCredits(creditsConsumed);
 
@@ -383,6 +445,8 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
     setSelectedVideoIdx(0);
     setErrorMsg(null);
     setRefImages([]);
+    setFirstFrame(null);
+    setLastFrame(null);
   }
 
   useEffect(
@@ -443,6 +507,28 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
       </div>
 
       <div className="space-y-4 p-4">
+        {/* Mode selector */}
+        <div className="flex gap-1.5">
+          {([['text', 'Texto → Vídeo'], ['image', 'Imagem → Vídeo']] as const).map(([mode, label]) => {
+            const active = videoMode === mode;
+            return (
+              <button
+                key={mode}
+                onClick={() => setVideoMode(mode)}
+                className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95"
+                style={{
+                  background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
+                  color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
+                  border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
+                  boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
         {/* Prompt */}
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
@@ -484,65 +570,185 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
           </button>
         </div>
 
-        {/* Reference images */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-              IMAGENS DE REFERÊNCIA (opcional)
-            </label>
-            <span className="text-[10px] text-[#f3f0ed]/25">{refImages.length}/3</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {refImages.map((img, i) => (
-              <div key={i} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#f3f0ed]/10">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={img.preview} alt="" className="h-full w-full object-cover" />
-                <button
-                  onClick={() => setRefImages((prev) => prev.filter((_, idx) => idx !== i))}
-                  className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
-                >
-                  <X className="h-3.5 w-3.5 text-white" />
-                </button>
-              </div>
-            ))}
-            {refImages.length < 3 && (
-              <>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  title="Enviar do dispositivo"
-                  className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
-                >
-                  <ImagePlus className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={() => setShowGalleryPicker(true)}
-                  title="Escolher da galeria"
-                  className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
-                >
-                  <Images className="h-5 w-5" />
-                </button>
-              </>
+        {/* Reference images (text mode) */}
+        {videoMode === 'text' && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                IMAGENS DE REFERÊNCIA (opcional)
+              </label>
+              <span className="text-[10px] text-[#f3f0ed]/25">{refImages.length}/3</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {refImages.map((img, i) => (
+                <div key={i} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#f3f0ed]/10">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img.preview} alt="" className="h-full w-full object-cover" />
+                  <button
+                    onClick={() => setRefImages((prev) => prev.filter((_, idx) => idx !== i))}
+                    className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <X className="h-3.5 w-3.5 text-white" />
+                  </button>
+                </div>
+              ))}
+              {refImages.length < 3 && (
+                <>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Enviar do dispositivo"
+                    className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                  >
+                    <ImagePlus className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => setShowGalleryPicker(true)}
+                    title="Escolher da galeria"
+                    className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                  >
+                    <Images className="h-5 w-5" />
+                  </button>
+                </>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+
+            {/* Gallery picker */}
+            {showGalleryPicker && (
+              <GalleryPicker
+                accessToken={accessToken}
+                remaining={3 - refImages.length}
+                onSelect={(url) => { addImageFromUrl(url); }}
+                onClose={() => setShowGalleryPicker(false)}
+              />
             )}
           </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={handleFileSelect}
-          />
+        )}
 
-          {/* Gallery picker */}
-          {showGalleryPicker && (
-            <GalleryPicker
-              accessToken={accessToken}
-              remaining={3 - refImages.length}
-              onSelect={(url) => { addImageFromUrl(url); }}
-              onClose={() => setShowGalleryPicker(false)}
-            />
-          )}
-        </div>
+        {/* First / Last frame (image mode) */}
+        {videoMode === 'image' && (
+          <div className="space-y-3">
+            {/* First frame — required */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                PRIMEIRO FRAME <span className="text-red-400/60">*</span>
+              </label>
+              {firstFrame ? (
+                <div className="group relative h-20 w-full overflow-hidden rounded-xl border border-[#f3f0ed]/10">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={firstFrame.preview} alt="" className="h-full w-full object-cover" />
+                  <button
+                    onClick={() => setFirstFrame(null)}
+                    className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <X className="h-4 w-4 text-white" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => firstFrameInputRef.current?.click()}
+                    className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                    <span className="text-[10px] font-bold tracking-wider">ENVIAR</span>
+                  </button>
+                  <button
+                    onClick={() => setShowGalleryPicker(true)}
+                    className="flex h-14 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 px-4 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                  >
+                    <Images className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+              <input
+                ref={firstFrameInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) processFrameFile(file, setFirstFrame);
+                  e.target.value = '';
+                }}
+              />
+            </div>
+
+            {/* Last frame — optional */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                ÚLTIMO FRAME <span className="text-[#f3f0ed]/20">(opcional)</span>
+              </label>
+              {lastFrame ? (
+                <div className="group relative h-20 w-full overflow-hidden rounded-xl border border-[#f3f0ed]/10">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={lastFrame.preview} alt="" className="h-full w-full object-cover" />
+                  <button
+                    onClick={() => setLastFrame(null)}
+                    className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <X className="h-4 w-4 text-white" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => lastFrameInputRef.current?.click()}
+                    className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                    <span className="text-[10px] font-bold tracking-wider">ENVIAR</span>
+                  </button>
+                  <button
+                    onClick={() => setShowGalleryPicker(true)}
+                    className="flex h-14 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 px-4 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                  >
+                    <Images className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+              <input
+                ref={lastFrameInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) processFrameFile(file, setLastFrame);
+                  e.target.value = '';
+                }}
+              />
+            </div>
+
+            {/* Gallery picker for frames */}
+            {showGalleryPicker && (
+              <GalleryPicker
+                accessToken={accessToken}
+                remaining={1}
+                onSelect={(url) => {
+                  // Add to first frame if empty, otherwise last frame
+                  const targetSetter = !firstFrame ? setFirstFrame : setLastFrame;
+                  fetch(url).then((r) => r.blob()).then((blob) => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      const dataUrl = ev.target?.result as string;
+                      targetSetter({ base64: dataUrl.split(',')[1], mime_type: blob.type || 'image/jpeg', preview: dataUrl });
+                    };
+                    reader.readAsDataURL(blob);
+                  }).catch(() => {});
+                }}
+                onClose={() => setShowGalleryPicker(false)}
+              />
+            )}
+          </div>
+        )}
 
         {/* Error message */}
         {errorMsg && (
@@ -783,7 +989,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
         {/* Generate button */}
         <button
           onClick={handleGenerate}
-          disabled={genState === 'generating' || !prompt.trim()}
+          disabled={genState === 'generating' || !prompt.trim() || (videoMode === 'image' && !firstFrame)}
           className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
           style={{
             background: genState === 'generating' ? 'rgba(162,221,0,0.12)' : '#a2dd00',
