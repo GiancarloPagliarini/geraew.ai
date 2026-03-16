@@ -31,6 +31,7 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, InfiniteData } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-context';
+import { useEditor, GalleryPickerRequest } from '@/lib/editor-context';
 import { api, Folder, Generation, GenerationInputImage, PaginatedResponse } from '@/lib/api';
 
 type GalleryTab = 'all' | 'photos' | 'videos' | 'favorites';
@@ -60,9 +61,20 @@ interface GalleryDialogProps {
 
 export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
   const { accessToken } = useAuth();
+  const { galleryPickerRequest, closeGalleryPicker } = useEditor();
   const [selected, setSelected] = useState<Generation | null>(null);
   const [activeTab, setActiveTab] = useState<GalleryTab>('all');
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [pickerSelectedUrls, setPickerSelectedUrls] = useState<Set<string>>(new Set());
+
+  // Reset picker selection when request changes
+  useEffect(() => {
+    setPickerSelectedUrls(new Set());
+    if (galleryPickerRequest) {
+      setSelected(null);
+      setActiveTab('photos');
+    }
+  }, [galleryPickerRequest]);
   const [showFoldersList, setShowFoldersList] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -288,6 +300,24 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
         </button>
       </div>
 
+      {/* Picker mode banner */}
+      {galleryPickerRequest && (
+        <div className="flex items-center justify-between border-b border-[#a2dd00]/20 bg-[#a2dd00]/5 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <ImagePlus className="h-4 w-4 text-[#a2dd00]" />
+            <span className="text-xs font-medium text-[#a2dd00]">
+              Selecione imagens ou arraste para o node
+            </span>
+          </div>
+          <button
+            onClick={closeGalleryPicker}
+            className="rounded-md px-2.5 py-1 text-[10px] font-bold text-[#f3f0ed]/40 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70 transition-colors"
+          >
+            CANCELAR
+          </button>
+        </div>
+      )}
+
       <div className="flex flex-col flex-1 overflow-hidden px-4 py-3 gap-3">
 
         {/* Stats bar */}
@@ -424,17 +454,37 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
           ) : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-1">
-                {items.map((item) => (
-                  <GalleryItem
-                    key={item.id}
-                    item={item}
-                    onClick={() => setSelected(item)}
-                    onToggleFavorite={toggleFavorite}
-                    folders={folders}
-                    onAddToFolder={(folderId) => handleAddToFolder(folderId, item.id)}
-                    onCreateFolderAndAdd={(name) => handleCreateFolderAndAdd(name, item.id)}
-                  />
-                ))}
+                {items.map((item) => {
+                  const itemUrl = item.outputs?.[0]?.url;
+                  return (
+                    <GalleryItem
+                      key={item.id}
+                      item={item}
+                      onClick={() => {
+                        if (galleryPickerRequest && itemUrl && !item.durationSeconds) {
+                          setPickerSelectedUrls((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(itemUrl)) {
+                              next.delete(itemUrl);
+                            } else if (next.size < galleryPickerRequest.remaining) {
+                              next.add(itemUrl);
+                            }
+                            return next;
+                          });
+                        } else if (!galleryPickerRequest) {
+                          setSelected(item);
+                        }
+                      }}
+                      onToggleFavorite={toggleFavorite}
+                      folders={folders}
+                      onAddToFolder={(folderId) => handleAddToFolder(folderId, item.id)}
+                      onCreateFolderAndAdd={(name) => handleCreateFolderAndAdd(name, item.id)}
+                      pickerMode={!!galleryPickerRequest}
+                      pickerSelected={!!itemUrl && pickerSelectedUrls.has(itemUrl)}
+                      pickerDisabled={!!galleryPickerRequest && !!itemUrl && !pickerSelectedUrls.has(itemUrl) && pickerSelectedUrls.size >= galleryPickerRequest.remaining}
+                    />
+                  );
+                })}
               </div>
 
               {/* Sentinel — observed to trigger next page load */}
@@ -451,11 +501,30 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
         </div>
 
         {/* Footer */}
-        {!selected && !galleryLoading && items.length > 0 && (
+        {!selected && !galleryLoading && items.length > 0 && !galleryPickerRequest && (
           <div className="flex items-center justify-between border-t border-[#f3f0ed]/7 pt-3">
             <span className="text-[10px] font-medium tracking-wider text-[#f3f0ed]/30 uppercase">
               {items.length} de {total} {total === 1 ? 'item' : 'itens'}
             </span>
+          </div>
+        )}
+
+        {/* Picker confirm footer */}
+        {galleryPickerRequest && pickerSelectedUrls.size > 0 && (
+          <div className="flex items-center justify-between border-t border-[#a2dd00]/20 bg-[#a2dd00]/5 rounded-xl px-4 py-2.5 shrink-0">
+            <span className="text-xs text-[#f3f0ed]/50">
+              {pickerSelectedUrls.size} selecionada{pickerSelectedUrls.size > 1 ? 's' : ''}
+            </span>
+            <button
+              onClick={() => {
+                pickerSelectedUrls.forEach((url) => galleryPickerRequest.onSelect(url));
+                setPickerSelectedUrls(new Set());
+                closeGalleryPicker();
+              }}
+              className="rounded-lg bg-[#a2dd00] px-4 py-1.5 text-xs font-bold text-[#1a2123] transition-all hover:bg-[#a2dd00]/90 active:scale-95"
+            >
+              ADICIONAR
+            </button>
           </div>
         )}
       </div>
@@ -743,6 +812,9 @@ const GalleryItem = memo(function GalleryItem({
   folders,
   onAddToFolder,
   onCreateFolderAndAdd,
+  pickerMode = false,
+  pickerSelected = false,
+  pickerDisabled = false,
 }: {
   item: Generation;
   onClick: () => void;
@@ -750,6 +822,9 @@ const GalleryItem = memo(function GalleryItem({
   folders: Folder[];
   onAddToFolder: (folderId: string) => void;
   onCreateFolderAndAdd: (name: string) => void;
+  pickerMode?: boolean;
+  pickerSelected?: boolean;
+  pickerDisabled?: boolean;
 }) {
   const [loaded, setLoaded] = useState(false);
   const [folderDropdownOpen, setFolderDropdownOpen] = useState(false);
@@ -762,9 +837,23 @@ const GalleryItem = memo(function GalleryItem({
     <div
       role="button"
       tabIndex={0}
+      draggable={!isVideo && !!url}
+      onDragStart={(e) => {
+        if (!url || isVideo) return;
+        e.dataTransfer.setData('text/geraew-image-url', url);
+        e.dataTransfer.effectAllowed = 'copy';
+      }}
       onClick={() => { if (!folderDropdownOpen) onClick(); }}
       onKeyDown={(e) => { if (!folderDropdownOpen && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick(); } }}
-      className="group relative aspect-square rounded-xl overflow-hidden bg-[#f3f0ed]/3 ring-1 ring-[#f3f0ed]/6 hover:ring-[#a2dd00]/40 transition-[box-shadow,ring-color] cursor-pointer"
+      className={`group relative aspect-square rounded-xl overflow-hidden bg-[#f3f0ed]/3 ring-2 transition-[box-shadow,ring-color,opacity] cursor-pointer ${
+        pickerSelected
+          ? 'ring-[#a2dd00] opacity-100'
+          : pickerDisabled
+            ? 'ring-transparent opacity-30 cursor-not-allowed'
+            : pickerMode
+              ? 'ring-transparent opacity-80 hover:opacity-100 hover:ring-[#a2dd00]/30'
+              : 'ring-[#f3f0ed]/6 hover:ring-[#a2dd00]/40'
+      }`}
       style={{ contain: 'layout paint' }}
     >
       {/* Static placeholder until media loads */}
@@ -790,14 +879,29 @@ const GalleryItem = memo(function GalleryItem({
         />
       )}
 
-      {/* Hover overlay */}
-      <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-      <div className="absolute bottom-0 inset-x-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <p className="text-[10px] font-medium text-white truncate">{item.prompt ?? '—'}</p>
-      </div>
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Expand className="h-3.5 w-3.5 text-white drop-shadow" />
-      </div>
+      {/* Picker selected overlay */}
+      {pickerSelected && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#a2dd00]/20">
+          <div className="h-7 w-7 rounded-full bg-[#a2dd00] flex items-center justify-center">
+            <svg className="h-4 w-4 text-[#1a2123]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+        </div>
+      )}
+
+      {/* Hover overlay (hidden in picker mode) */}
+      {!pickerMode && (
+        <>
+          <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute bottom-0 inset-x-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <p className="text-[10px] font-medium text-white truncate">{item.prompt ?? '—'}</p>
+          </div>
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Expand className="h-3.5 w-3.5 text-white drop-shadow" />
+          </div>
+        </>
+      )}
 
       {/* Bottom-right badges */}
       <div className="absolute bottom-2 right-2 flex items-center gap-1">
@@ -815,8 +919,8 @@ const GalleryItem = memo(function GalleryItem({
         )}
       </div>
 
-      {/* Top-left badges */}
-      <div className="absolute top-2 left-2 flex items-center gap-1">
+      {/* Top-left badges (hidden in picker mode) */}
+      {!pickerMode && <div className="absolute top-2 left-2 flex items-center gap-1">
         {hasRefs && (
           <div className="flex items-center gap-0.5 rounded-md bg-black/60 px-1 py-0.5 backdrop-blur-sm">
             <ScanFace className="h-3 w-3 text-[#a2dd00]" />
@@ -842,7 +946,7 @@ const GalleryItem = memo(function GalleryItem({
           onCreateFolderAndAdd={onCreateFolderAndAdd}
           onOpenChange={setFolderDropdownOpen}
         />
-      </div>
+      </div>}
     </div>
   );
 });

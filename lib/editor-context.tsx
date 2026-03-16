@@ -7,6 +7,12 @@ import { api, CreditsBalance, Generation, PaginatedResponse } from './api';
 
 type UpscaleState = 'idle' | 'upscaling' | 'done';
 
+export interface GalleryPickerRequest {
+  nodeId: string;
+  remaining: number;
+  onSelect: (url: string) => void;
+}
+
 interface EditorContextValue {
   selectedNodeId: string | null;
   setSelectedNodeId: (id: string | null) => void;
@@ -22,6 +28,9 @@ interface EditorContextValue {
   consumeCredits: (amount: number) => void;
   refetchCredits: () => void;
   prependToGallery: (generation: Generation) => void;
+  galleryPickerRequest: GalleryPickerRequest | null;
+  openGalleryPicker: (req: GalleryPickerRequest) => void;
+  closeGalleryPicker: () => void;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
@@ -33,6 +42,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [nodeImages, setNodeImages] = useState<Record<string, string>>({});
   const [nodeUpscaleStates, setNodeUpscaleStates] = useState<Record<string, UpscaleState>>({});
   const [nodePanelTypes, setNodePanelTypes] = useState<Record<string, string>>({});
+  const [galleryPickerRequest, setGalleryPickerRequest] = useState<GalleryPickerRequest | null>(null);
 
   const { data: creditsBalance, isLoading: creditsLoading, refetch: refetchCredits } = useQuery({
     queryKey: ['credits', 'balance'],
@@ -102,6 +112,9 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         consumeCredits,
         refetchCredits,
         prependToGallery,
+        galleryPickerRequest,
+        openGalleryPicker: setGalleryPickerRequest,
+        closeGalleryPicker: () => setGalleryPickerRequest(null),
       }}
     >
       {children}

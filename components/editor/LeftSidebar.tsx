@@ -9,7 +9,8 @@ import { GalleryDialog } from './GalleryDialog';
 import { TutorialDialog } from './TutorialDialog';
 import { VideoEditorDialog } from './VideoEditorDialog';
 import { Film, FolderOpen, GraduationCap } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useEditor } from '@/lib/editor-context';
 
 const navItems = [
   { id: 'gallery', icon: FolderOpen, label: 'Galeria' },
@@ -18,9 +19,18 @@ const navItems = [
 ];
 
 export function LeftSidebar() {
+  const { galleryPickerRequest } = useEditor();
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [videoEditorOpen, setVideoEditorOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
+
+  useEffect(() => {
+    if (galleryPickerRequest) {
+      setGalleryOpen(true);
+      setVideoEditorOpen(false);
+      setTutorialOpen(false);
+    }
+  }, [galleryPickerRequest]);
 
   function handleNavClick(id: string) {
     if (id === 'gallery') {

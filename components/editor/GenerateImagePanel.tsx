@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/select';
 import { ArrowUpRight, Coins, Download, Image, ImagePlus, Images, Loader2, Sparkles, Wand2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
 import { api, Generation } from '@/lib/api';
@@ -69,7 +69,7 @@ interface GenerateImagePanelProps {
 }
 
 export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps) {
-  const { setNodeImage, nodeUpscaleStates, setNodeUpscaleState, consumeCredits, refetchCredits, prependToGallery } =
+  const { setNodeImage, nodeUpscaleStates, setNodeUpscaleState, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker } =
     useEditor();
   const { accessToken } = useAuth();
   const upscaleState = nodeUpscaleStates[nodeId] ?? 'idle';
@@ -96,7 +96,6 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
   const [attachedImages, setAttachedImages] = useState<{ base64: string; mime_type: string; preview: string }[]>([]);
   const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
-  const [showGalleryPicker, setShowGalleryPicker] = useState(false);
   const [enhancePrompt, setEnhancePrompt] = useState(stored?.enhancePrompt ?? false);
   const [isEnhancing, setIsEnhancing] = useState(false);
 
@@ -668,7 +667,7 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
                   <ImagePlus className="h-5 w-5" />
                 </button>
                 <button
-                  onClick={() => setShowGalleryPicker(true)}
+                  onClick={() => openGalleryPicker({ nodeId, remaining: 4 - attachedImages.length, onSelect: (url) => addImageFromUrl(url) })}
                   title="Escolher da galeria"
                   className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
                 >
@@ -686,15 +685,6 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
             onChange={handleFileSelect}
           />
 
-          {/* Gallery picker */}
-          {showGalleryPicker && (
-            <GalleryPicker
-              accessToken={accessToken}
-              remaining={4 - attachedImages.length}
-              onSelect={(url) => { addImageFromUrl(url); }}
-              onClose={() => setShowGalleryPicker(false)}
-            />
-          )}
         </div>
 
         {/* Credit estimate */}
@@ -784,149 +774,6 @@ function ActionButton({
 }
 
 // ─── Select helper ────────────────────────────────────────────────────────────
-
-// ─── Gallery picker ───────────────────────────────────────────────────────────
-
-function GalleryPicker({
-  accessToken,
-  remaining,
-  onSelect,
-  onClose,
-}: {
-  accessToken: string | null;
-  remaining: number;
-  onSelect: (url: string) => void;
-  onClose: () => void;
-}) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
-
-  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useInfiniteQuery({
-    queryKey: ['gallery-picker'],
-    queryFn: ({ pageParam }) => api.gallery.list(accessToken!, pageParam as number, 8),
-    initialPageParam: 1,
-    getNextPageParam: (last) =>
-      last.meta.page < last.meta.totalPages ? last.meta.page + 1 : undefined,
-    enabled: !!accessToken,
-    staleTime: 30_000,
-  });
-
-  const items = (data?.pages.flatMap((p) => p.data) ?? []).filter((item) => !item.durationSeconds);
-
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel || !hasNextPage || isFetchingNextPage) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) fetchNextPage(); },
-      { root: scrollRef.current, threshold: 0.1 },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-  function toggleSelect(url: string) {
-    setSelectedUrls((prev) => {
-      const next = new Set(prev);
-      if (next.has(url)) {
-        next.delete(url);
-      } else if (next.size < remaining) {
-        next.add(url);
-      }
-      return next;
-    });
-  }
-
-  function handleConfirm() {
-    selectedUrls.forEach((url) => onSelect(url));
-    onClose();
-  }
-
-  return (
-    <div className="rounded-xl border border-[#f3f0ed]/10 bg-[#151b1d] overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[#f3f0ed]/7">
-        <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/50">GALERIA</span>
-        <button onClick={onClose} className="text-[#f3f0ed]/30 hover:text-[#f3f0ed]/70 transition-colors">
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
-
-      {/* Grid */}
-      <div
-        ref={scrollRef}
-        className="max-h-[200px] overflow-y-auto sidebar-scroll p-2"
-        onWheel={(e) => e.stopPropagation()}
-      >
-        {isLoading ? (
-          <div className="grid grid-cols-4 gap-1.5">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="aspect-square rounded-lg bg-[#f3f0ed]/6 animate-pulse" />
-            ))}
-          </div>
-        ) : items.length === 0 ? (
-          <p className="text-center text-[10px] text-[#f3f0ed]/30 py-6">Nenhuma imagem na galeria.</p>
-        ) : (
-          <>
-            <div className="grid grid-cols-4 gap-1.5">
-              {items.map((item) => {
-                const output = item.outputs?.[0];
-                const url = output?.url;
-                if (!url) return null;
-                const thumb = output?.thumbnailUrl ?? url;
-                const isSelected = selectedUrls.has(url);
-                const isDisabled = !isSelected && selectedUrls.size >= remaining;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => !isDisabled && toggleSelect(url)}
-                    className={`relative aspect-square rounded-lg overflow-hidden ring-2 transition-all ${isSelected
-                        ? 'ring-[#a2dd00] opacity-100'
-                        : isDisabled
-                          ? 'ring-transparent opacity-30 cursor-not-allowed'
-                          : 'ring-transparent opacity-70 hover:opacity-100 hover:ring-[#f3f0ed]/20'
-                      }`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={thumb} alt="" className="h-full w-full object-cover" loading="lazy" />
-                    {isSelected && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-[#a2dd00]/20">
-                        <div className="h-5 w-5 rounded-full bg-[#a2dd00] flex items-center justify-center">
-                          <svg className="h-3 w-3 text-[#1a2123]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        </div>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            <div ref={sentinelRef} className="h-2" />
-            {isFetchingNextPage && (
-              <div className="flex justify-center py-2">
-                <Loader2 className="h-3 w-3 animate-spin text-[#a2dd00]/50" />
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Footer */}
-      {selectedUrls.size > 0 && (
-        <div className="flex items-center justify-between px-3 py-2 border-t border-[#f3f0ed]/7">
-          <span className="text-[10px] text-[#f3f0ed]/40">{selectedUrls.size} selecionada{selectedUrls.size > 1 ? 's' : ''}</span>
-          <button
-            onClick={handleConfirm}
-            className="rounded-lg bg-[#a2dd00] px-3 py-1 text-[10px] font-bold text-[#1a2123] transition-all hover:bg-[#a2dd00]/90 active:scale-95"
-          >
-            ADICIONAR
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 function PanelSelect({
   value,
