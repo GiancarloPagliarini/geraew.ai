@@ -241,3 +241,7 @@ textarea::-webkit-scrollbar-thumb:hover {
     font-family: var(--font-mono), 'JetBrains Mono', monospace;
   }
 }
+
+[data-sonner-toaster] [data-description] {
+  color: rgba(243, 240, 237, 0.45) !important;
+}

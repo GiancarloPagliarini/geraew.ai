@@ -53,9 +53,6 @@ export default function RootLayout({
                     boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
                     gap: '8px',
                   },
-                  descriptionStyle: {
-                    color: 'rgba(243,240,237,0.45)',
-                  },
                   actionButtonStyle: {
                     background: '#a2dd00',
                     color: '#1c1917',
