@@ -3,10 +3,12 @@
 import Image from 'next/image';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   ArrowLeft,
@@ -26,6 +28,7 @@ import {
   ScanFace, Settings, Trash2, X
 } from 'lucide-react';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, InfiniteData } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-context';
 import { api, Folder, Generation, GenerationInputImage, PaginatedResponse } from '@/lib/api';
@@ -79,13 +82,21 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
 
   const createFolderMutation = useMutation({
     mutationFn: (name: string) => api.folders.create(accessToken!, name),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['folders'] }),
+    onSuccess: (_, name) => {
+      queryClient.invalidateQueries({ queryKey: ['folders'] });
+      toast.success('Pasta criada', { description: `"${name}" foi criada com sucesso.` });
+    },
+    onError: () => toast.error('Erro ao criar pasta', { description: 'Tente novamente.' }),
   });
 
   const updateFolderMutation = useMutation({
     mutationFn: ({ folderId, name }: { folderId: string; name: string }) =>
       api.folders.update(accessToken!, folderId, name),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['folders'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['folders'] });
+      toast.success('Pasta renomeada', { description: 'O nome foi atualizado com sucesso.' });
+    },
+    onError: () => toast.error('Erro ao renomear pasta', { description: 'Tente novamente.' }),
   });
 
   const deleteFolderMutation = useMutation({
@@ -94,7 +105,9 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
       if (activeFolderId === folderId) { setActiveFolderId(null); setShowFoldersList(true); }
       queryClient.invalidateQueries({ queryKey: ['folders'] });
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      toast.success('Pasta excluída', { description: 'A pasta foi removida com sucesso.' });
     },
+    onError: () => toast.error('Erro ao excluir pasta', { description: 'Tente novamente.' }),
   });
 
   const addToFolderMutation = useMutation({
@@ -103,7 +116,9 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['folders'] });
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      toast.success('Adicionada à pasta', { description: 'A imagem foi movida com sucesso.' });
     },
+    onError: () => toast.error('Erro ao adicionar à pasta', { description: 'Tente novamente.' }),
   });
 
   const removeFromFolderMutation = useMutation({
@@ -190,6 +205,10 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
 
       return { snapshots };
     },
+    onSuccess: (_data, item) => {
+      const wasFavorited = item.isFavorited;
+      toast.success(wasFavorited ? 'Removida dos favoritos' : 'Adicionada aos favoritos');
+    },
     onError: (_err, _item, context) => {
       // Rollback all caches
       if (context?.snapshots) {
@@ -197,6 +216,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
           if (prev) queryClient.setQueryData(qk, prev);
         }
       }
+      toast.error('Erro ao atualizar favorito', { description: 'Tente novamente.' });
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
@@ -285,8 +305,8 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${activeTab === tab.key
-                    ? 'bg-[#a2dd00]/15 text-[#a2dd00]'
-                    : 'text-[#f3f0ed]/40 hover:text-[#f3f0ed]/70 hover:bg-[#f3f0ed]/5'
+                  ? 'bg-[#a2dd00]/15 text-[#a2dd00]'
+                  : 'text-[#f3f0ed]/40 hover:text-[#f3f0ed]/70 hover:bg-[#f3f0ed]/5'
                   }`}
               >
                 {tab.label}
@@ -332,7 +352,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newFolderName.trim()) {
+                    if (e.key === 'Enter' && newFolderName.trim() && !createFolderMutation.isPending) {
                       createFolderMutation.mutate(newFolderName.trim());
                       setNewFolderName('');
                     }
@@ -347,10 +367,10 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
                       setNewFolderName('');
                     }
                   }}
-                  disabled={!newFolderName.trim()}
+                  disabled={!newFolderName.trim() || createFolderMutation.isPending}
                   className="rounded-lg bg-[#a2dd00]/10 px-3 py-2 text-xs font-medium text-[#a2dd00] hover:bg-[#a2dd00]/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 >
-                  <Plus className="h-4 w-4" />
+                  {createFolderMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 </button>
               </div>
 
@@ -363,42 +383,15 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {folders.map((folder) => (
-                    <button
+                    <FolderCard
                       key={folder.id}
-                      onClick={() => { setActiveFolderId(folder.id); setShowFoldersList(false); }}
-                      className="group flex flex-col gap-2 rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 p-4 text-left hover:border-[#a2dd00]/20 hover:bg-[#f3f0ed]/5 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <FolderIcon className="h-5 w-5 text-[#a2dd00]" />
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const name = window.prompt('Renomear pasta:', folder.name);
-                              if (name && name.trim() && name !== folder.name) {
-                                updateFolderMutation.mutate({ folderId: folder.id, name: name.trim() });
-                              }
-                            }}
-                            className="rounded p-1 hover:bg-[#f3f0ed]/10 transition-colors"
-                          >
-                            <Pencil className="h-3 w-3 text-[#f3f0ed]/40" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (window.confirm(`Excluir pasta "${folder.name}"?`)) {
-                                deleteFolderMutation.mutate(folder.id);
-                              }
-                            }}
-                            className="rounded p-1 hover:bg-red-500/10 transition-colors"
-                          >
-                            <Trash2 className="h-3 w-3 text-red-400/60" />
-                          </button>
-                        </div>
-                      </div>
-                      <span className="text-sm font-medium text-[#f3f0ed]/80 truncate">{folder.name}</span>
-                      <span className="text-[10px] text-[#f3f0ed]/30">{folder.generationCount} {folder.generationCount === 1 ? 'item' : 'itens'}</span>
-                    </button>
+                      folder={folder}
+                      onOpen={() => { setActiveFolderId(folder.id); setShowFoldersList(false); }}
+                      onRename={(name) => updateFolderMutation.mutate({ folderId: folder.id, name })}
+                      onDelete={() => deleteFolderMutation.mutate(folder.id)}
+                      deleteIsPending={deleteFolderMutation.isPending && deleteFolderMutation.variables === folder.id}
+                      renameIsPending={updateFolderMutation.isPending && updateFolderMutation.variables?.folderId === folder.id}
+                    />
                   ))}
                 </div>
               )}
@@ -747,15 +740,19 @@ const GalleryItem = memo(function GalleryItem({
   onCreateFolderAndAdd: (name: string) => void;
 }) {
   const [loaded, setLoaded] = useState(false);
+  const [folderDropdownOpen, setFolderDropdownOpen] = useState(false);
   const url = item.outputs?.[0]?.url;
   const isVideo = !!item.durationSeconds;
   const hasRefs = (item.inputImages?.length ?? 0) > 0;
   const outputCount = item.outputs?.length ?? 0;
 
   return (
-    <button
-      onClick={onClick}
-      className="group relative aspect-square rounded-xl overflow-hidden bg-[#f3f0ed]/3 ring-1 ring-[#f3f0ed]/6 hover:ring-[#a2dd00]/40 transition-[box-shadow,ring-color]"
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => { if (!folderDropdownOpen) onClick(); }}
+      onKeyDown={(e) => { if (!folderDropdownOpen && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick(); } }}
+      className="group relative aspect-square rounded-xl overflow-hidden bg-[#f3f0ed]/3 ring-1 ring-[#f3f0ed]/6 hover:ring-[#a2dd00]/40 transition-[box-shadow,ring-color] cursor-pointer"
       style={{ contain: 'layout paint' }}
     >
       {/* Static placeholder until media loads */}
@@ -818,24 +815,157 @@ const GalleryItem = memo(function GalleryItem({
           role="button"
           onClick={(e) => onToggleFavorite(item, e)}
           className={`rounded-md p-0.5 backdrop-blur-sm transition-colors ${item.isFavorited
-              ? 'bg-black/60'
-              : 'bg-black/40 opacity-0 group-hover:opacity-100'
+            ? 'bg-black/60'
+            : 'bg-black/40 opacity-0 group-hover:opacity-100'
             }`}
         >
           <Heart className={`h-3.5 w-3.5 drop-shadow transition-colors ${item.isFavorited
-              ? 'fill-[#a2dd00] text-[#a2dd00]'
-              : 'text-white/70 hover:text-[#a2dd00]'
+            ? 'fill-[#a2dd00] text-[#a2dd00]'
+            : 'text-white/70 hover:text-[#a2dd00]'
             }`} />
         </div>
         <GalleryItemFolderButton
           folders={folders}
           onAddToFolder={onAddToFolder}
           onCreateFolderAndAdd={onCreateFolderAndAdd}
+          onOpenChange={setFolderDropdownOpen}
         />
       </div>
-    </button>
+    </div>
   );
 });
+
+// ─── Folder card (grid view) ───────────────────────────────────────────────────
+
+function FolderCard({
+  folder,
+  onOpen,
+  onRename,
+  onDelete,
+  deleteIsPending,
+  renameIsPending,
+}: {
+  folder: Folder;
+  onOpen: () => void;
+  onRename: (name: string) => void;
+  onDelete: () => void;
+  deleteIsPending: boolean;
+  renameIsPending: boolean;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(folder.name);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const confirmRename = () => {
+    const trimmed = editName.trim();
+    if (trimmed && trimmed !== folder.name) {
+      onRename(trimmed);
+    } else {
+      setEditName(folder.name);
+    }
+    setIsEditing(false);
+  };
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => { if (!isEditing) onOpen(); }}
+      onKeyDown={(e) => { if (!isEditing && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onOpen(); } }}
+      className="group flex flex-col gap-2 rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 p-4 text-left hover:border-[#a2dd00]/20 hover:bg-[#f3f0ed]/5 transition-colors cursor-pointer"
+    >
+      <div className="flex items-center justify-between">
+        <FolderIcon className="h-5 w-5 text-[#a2dd00]" />
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditName(folder.name);
+              setIsEditing(true);
+            }}
+            className="rounded p-1 hover:bg-[#f3f0ed]/10 transition-colors"
+          >
+            <Pencil className="h-3 w-3 text-[#f3f0ed]/40" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowDeleteConfirm(true);
+            }}
+            disabled={deleteIsPending}
+            className="rounded p-1 hover:bg-red-500/10 transition-colors disabled:opacity-30"
+          >
+            {deleteIsPending
+              ? <Loader2 className="h-3 w-3 text-red-400/60 animate-spin" />
+              : <Trash2 className="h-3 w-3 text-red-400/60" />}
+          </button>
+        </div>
+      </div>
+      {renameIsPending ? (
+        <div className="h-5 w-3/4 rounded bg-[#f3f0ed]/10 animate-pulse" />
+      ) : isEditing ? (
+        <input
+          ref={inputRef}
+          value={editName}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => setEditName(e.target.value)}
+          onBlur={confirmRename}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            if (e.key === 'Enter') confirmRename();
+            if (e.key === 'Escape') {
+              setEditName(folder.name);
+              setIsEditing(false);
+            }
+          }}
+          className="bg-transparent text-sm font-medium text-[#f3f0ed]/80 outline-none border-b border-[#a2dd00]/40 w-full"
+        />
+      ) : (
+        <span className="text-sm font-medium text-[#f3f0ed]/80 truncate">{folder.name}</span>
+      )}
+      <span className="text-[10px] text-[#f3f0ed]/30">{folder.generationCount} {folder.generationCount === 1 ? 'item' : 'itens'}</span>
+
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent
+          showCloseButton={false}
+          className="max-w-xs bg-[#252220] border-[#f3f0ed]/10"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-[#f3f0ed] text-base">Excluir pasta</DialogTitle>
+            <DialogDescription className="text-[#f3f0ed]/45 text-sm">
+              Tem certeza que deseja excluir <span className="font-medium text-[#f3f0ed]/70">&quot;{folder.name}&quot;</span>? As gerações dentro dela não serão apagadas.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-2 flex-row gap-2">
+            <DialogClose asChild>
+              <button className="flex-1 rounded-lg bg-[#f3f0ed]/5 px-4 py-2 text-xs font-medium text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/10 transition-colors">
+                Cancelar
+              </button>
+            </DialogClose>
+            <button
+              onClick={() => {
+                setShowDeleteConfirm(false);
+                onDelete();
+              }}
+              className="flex-1 rounded-lg bg-red-500/10 px-4 py-2 text-xs font-medium text-red-400 hover:bg-red-500/20 transition-colors"
+            >
+              Excluir
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
 
 // ─── Folder chip (horizontal folder bar) ──────────────────────────────────────
 
@@ -851,7 +981,10 @@ function FolderChip({
   onDelete: () => void;
 }) {
   const [showMenu, setShowMenu] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(folder.name);
   const menuRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!showMenu) return;
@@ -864,28 +997,65 @@ function FolderChip({
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showMenu]);
 
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const confirmRename = () => {
+    const trimmed = editName.trim();
+    if (trimmed && trimmed !== folder.name) {
+      onRename(trimmed);
+    } else {
+      setEditName(folder.name);
+    }
+    setIsEditing(false);
+  };
+
   return (
     <div className="relative shrink-0">
-      <button
-        onClick={onClick}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          setShowMenu(true);
-        }}
-        className="flex items-center gap-1.5 rounded-lg bg-[#f3f0ed]/5 px-3 py-1.5 text-xs font-medium text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/10 hover:text-[#f3f0ed]/80 transition-colors"
-      >
-        <FolderIcon className="h-3.5 w-3.5 text-[#a2dd00]" />
-        {folder.name}
-        <span className="text-[10px] text-[#f3f0ed]/30">{folder.generationCount}</span>
-      </button>
+      {isEditing ? (
+        <div className="flex items-center gap-1.5 rounded-lg bg-[#f3f0ed]/10 px-3 py-1.5">
+          <FolderIcon className="h-3.5 w-3.5 text-[#a2dd00] shrink-0" />
+          <input
+            ref={inputRef}
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            onBlur={confirmRename}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') confirmRename();
+              if (e.key === 'Escape') {
+                setEditName(folder.name);
+                setIsEditing(false);
+              }
+            }}
+            className="bg-transparent text-xs font-medium text-[#f3f0ed] outline-none border-none w-[80px]"
+          />
+        </div>
+      ) : (
+        <button
+          onClick={onClick}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            setShowMenu(true);
+          }}
+          className="flex items-center gap-1.5 rounded-lg bg-[#f3f0ed]/5 px-3 py-1.5 text-xs font-medium text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/10 hover:text-[#f3f0ed]/80 transition-colors"
+        >
+          <FolderIcon className="h-3.5 w-3.5 text-[#a2dd00]" />
+          {folder.name}
+          <span className="text-[10px] text-[#f3f0ed]/30">{folder.generationCount}</span>
+        </button>
+      )}
 
       {showMenu && (
         <div ref={menuRef} className="absolute top-full left-0 mt-1 z-50 min-w-[120px] rounded-lg bg-[#252220] border border-[#f3f0ed]/10 shadow-xl py-1">
           <button
             onClick={() => {
               setShowMenu(false);
-              const name = window.prompt('Renomear pasta:', folder.name);
-              if (name && name.trim() && name !== folder.name) onRename(name.trim());
+              setEditName(folder.name);
+              setIsEditing(true);
             }}
             className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]"
           >
@@ -1005,47 +1175,45 @@ function GalleryItemFolderButton({
   folders,
   onAddToFolder,
   onCreateFolderAndAdd,
+  onOpenChange,
 }: {
   folders: Folder[];
   onAddToFolder: (folderId: string) => void;
   onCreateFolderAndAdd: (name: string) => void;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, _setOpen] = useState(false);
+  const setOpen = (v: boolean) => { _setOpen(v); onOpenChange?.(v); };
   const [newName, setNewName] = useState('');
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-        setNewName('');
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [open]);
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <div
         role="button"
         onClick={(e) => {
           e.stopPropagation();
-          setOpen(!open);
+          setOpen(true);
         }}
         className="rounded-md p-0.5 bg-black/40 opacity-0 group-hover:opacity-100 backdrop-blur-sm transition-colors hover:bg-black/60"
       >
         <FolderPlus className="h-3.5 w-3.5 text-white/70 hover:text-[#a2dd00] drop-shadow transition-colors" />
       </div>
 
-      {open && (
-        <div
-          className="absolute top-full left-0 mt-1 z-50 w-44 rounded-lg bg-[#252220] border border-[#f3f0ed]/10 shadow-xl py-1"
+      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setNewName(''); }}>
+        <DialogContent
+          showCloseButton={false}
+          className="max-w-xs bg-[#252220] border-[#f3f0ed]/10"
           onClick={(e) => e.stopPropagation()}
         >
+          <DialogHeader>
+            <DialogTitle className="text-[#f3f0ed] text-base">Adicionar à pasta</DialogTitle>
+            <DialogDescription className="text-[#f3f0ed]/45 text-sm">
+              Selecione uma pasta ou crie uma nova.
+            </DialogDescription>
+          </DialogHeader>
+
           {folders.length > 0 && (
-            <div className="max-h-32 overflow-y-auto sidebar-scroll">
+            <div className="max-h-40 overflow-y-auto sidebar-scroll -mx-1">
               {folders.map((f) => (
                 <button
                   key={f.id}
@@ -1053,15 +1221,16 @@ function GalleryItemFolderButton({
                     onAddToFolder(f.id);
                     setOpen(false);
                   }}
-                  className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]"
+                  className="flex items-center gap-2.5 w-full rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed] transition-colors"
                 >
-                  <FolderIcon className="h-3 w-3 text-[#a2dd00]" />
+                  <FolderIcon className="h-4 w-4 text-[#a2dd00] shrink-0" />
                   <span className="truncate">{f.name}</span>
                 </button>
               ))}
             </div>
           )}
-          <div className="border-t border-[#f3f0ed]/7 px-2 py-1.5">
+
+          <div className="border-t border-[#f3f0ed]/7 pt-3">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1071,28 +1240,27 @@ function GalleryItemFolderButton({
                   setOpen(false);
                 }
               }}
-              className="flex items-center gap-1"
+              className="flex items-center gap-2"
             >
               <input
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Nova pasta..."
-                className="flex-1 bg-transparent text-[10px] text-[#f3f0ed] placeholder-[#f3f0ed]/20 outline-none px-1 py-0.5"
-                autoFocus
+                className="flex-1 rounded-lg bg-[#f3f0ed]/5 px-3 py-2 text-xs text-[#f3f0ed] placeholder-[#f3f0ed]/20 outline-none border border-transparent focus:border-[#a2dd00]/30 transition-colors"
               />
               <button
                 type="submit"
                 disabled={!newName.trim()}
-                className="rounded p-0.5 text-[#a2dd00] hover:bg-[#a2dd00]/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="rounded-lg bg-[#a2dd00]/10 px-3 py-2 text-[#a2dd00] hover:bg-[#a2dd00]/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
-                <Plus className="h-3 w-3" />
+                <Plus className="h-4 w-4" />
               </button>
             </form>
           </div>
-        </div>
-      )}
-    </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -1143,8 +1311,8 @@ function StatCard({
     <Wrapper
       onClick={onClick}
       className={`flex flex-col gap-1 rounded-xl border px-3 py-2.5 text-left transition-colors ${active
-          ? 'border-[#a2dd00]/30 bg-[#a2dd00]/8'
-          : 'border-[#f3f0ed]/7 bg-[#f3f0ed]/3'
+        ? 'border-[#a2dd00]/30 bg-[#a2dd00]/8'
+        : 'border-[#f3f0ed]/7 bg-[#f3f0ed]/3'
         } ${onClick ? 'cursor-pointer hover:border-[#a2dd00]/20 hover:bg-[#f3f0ed]/5' : ''}`}
     >
       <div className="flex items-center gap-1.5">

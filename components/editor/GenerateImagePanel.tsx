@@ -97,7 +97,7 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
   const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [showGalleryPicker, setShowGalleryPicker] = useState(false);
-  const [enhancePrompt, setEnhancePrompt] = useState(stored?.enhancePrompt ?? true);
+  const [enhancePrompt, setEnhancePrompt] = useState(stored?.enhancePrompt ?? false);
   const [isEnhancing, setIsEnhancing] = useState(false);
 
   // Restore image display on mount

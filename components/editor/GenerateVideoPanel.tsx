@@ -90,7 +90,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
   const [generatedVideoUrls, setGeneratedVideoUrls] = useState<string[]>(stored?.generatedVideoUrls ?? []);
 
   const [refImages, setRefImages] = useState<{ base64: string; mime_type: string; preview: string }[]>([]);
-  const [enhancePrompt, setEnhancePrompt] = useState(stored?.enhancePrompt ?? true);
+  const [enhancePrompt, setEnhancePrompt] = useState(stored?.enhancePrompt ?? false);
   const [isEnhancing, setIsEnhancing] = useState(false);
 
   // With references + 1080P/4K → only 8s allowed

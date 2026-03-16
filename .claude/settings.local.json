@@ -27,7 +27,10 @@
       "Bash(cd /Users/gustavogomes/projects/pessoais/geraew/geraew-api && npx tsc --noEmit 2>&1 | head -50)",
       "Bash(find /Users/gustavogomes/projects/pessoais/geraew/geraew.ai/lib -name \"*.ts\" -o -name \"*.tsx\" 2>/dev/null | head -20)",
       "Bash(cd /Users/gustavogomes/projects/pessoais/geraew/geraew-api && npm install fluent-ffmpeg @ffmpeg-installer/ffmpeg && npm install -D @types/fluent-ffmpeg)",
-      "Bash(cd /Users/gustavogomes/projects/pessoais/geraew/geraew-api && npx prisma generate)"
+      "Bash(cd /Users/gustavogomes/projects/pessoais/geraew/geraew-api && npx prisma generate)",
+      "Bash(npm install sonner)",
+      "Bash(npm install sonner --legacy-peer-deps)",
+      "Bash(xargs grep -l \"Skeleton\")"
     ]
   }
 }
