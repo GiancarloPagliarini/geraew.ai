@@ -7,13 +7,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ArrowUpRight, Coins, Download, FolderOpen, Image, ImagePlus, Loader2, Sparkles, Wand2, X } from 'lucide-react';
+import { ArrowUpRight, Coins, Download, FolderOpen, FolderPlus, Image, ImagePlus, Loader2, Plus, Sparkles, Wand2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
-import { api } from '@/lib/api';
+import { api, Folder } from '@/lib/api';
 import { listenGeneration } from '@/lib/sse';
 import { toast } from 'sonner';
 
@@ -47,6 +54,29 @@ const LOADING_MESSAGES = [
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
+const MAX_REFERENCE_SIZE = 1920;
+const REFERENCE_QUALITY = 0.85;
+
+async function compressImage(dataUrl: string, mimeType: string): Promise<{ dataUrl: string; mimeType: string }> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const { naturalWidth: w, naturalHeight: h } = img;
+      const scale = Math.min(1, MAX_REFERENCE_SIZE / Math.max(w, h));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(w * scale);
+      canvas.height = Math.round(h * scale);
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const outMime = mimeType === 'image/png' ? 'image/png' : 'image/jpeg';
+      const compressed = canvas.toDataURL(outMime, REFERENCE_QUALITY);
+      resolve({ dataUrl: compressed, mimeType: outMime });
+    };
+    img.onerror = () => resolve({ dataUrl, mimeType });
+    img.src = dataUrl;
+  });
+}
+
 function qualityToResolution(q: string): 'RES_1K' | 'RES_2K' | 'RES_4K' {
   if (q === '4k') return 'RES_4K';
   if (q === 'hd') return 'RES_2K';
@@ -74,6 +104,7 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
   const { setNodeImage, nodeUpscaleStates, setNodeUpscaleState, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker } =
     useEditor();
   const { accessToken } = useAuth();
+  const queryClient = useQueryClient();
   const upscaleState = nodeUpscaleStates[nodeId] ?? 'idle';
 
   // ── Persistent state (survives page reload) ──────────────────────────────
@@ -95,6 +126,7 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
   const [progress, setProgress] = useState(0);
   const [imageVisible, setImageVisible] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [generationId, setGenerationId] = useState<string | null>(stored?.generationId ?? null);
   const [attachedImages, setAttachedImages] = useState<{ base64: string; mime_type: string; preview: string }[]>(stored?.attachedImages ?? []);
   const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -113,12 +145,12 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
   // Save form + result state whenever they change
   useEffect(() => {
     try {
-      localStorage.setItem(storageKey, JSON.stringify({ prompt, model, proportion, quality, generatedImageUrl, enhancePrompt, attachedImages }));
+      localStorage.setItem(storageKey, JSON.stringify({ prompt, model, proportion, quality, generatedImageUrl, generationId, enhancePrompt, attachedImages }));
     } catch {
       // Quota exceeded (large base64 images) — save without attachedImages
-      localStorage.setItem(storageKey, JSON.stringify({ prompt, model, proportion, quality, generatedImageUrl, enhancePrompt }));
+      localStorage.setItem(storageKey, JSON.stringify({ prompt, model, proportion, quality, generatedImageUrl, generationId, enhancePrompt }));
     }
-  }, [storageKey, prompt, model, proportion, quality, generatedImageUrl, enhancePrompt, attachedImages]);
+  }, [storageKey, prompt, model, proportion, quality, generatedImageUrl, generationId, enhancePrompt, attachedImages]);
 
   const panelRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -153,10 +185,11 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
     const remaining = 4 - attachedImages.length;
     files.filter((f) => f.type.startsWith('image/')).slice(0, remaining).forEach((file) => {
       const reader = new FileReader();
-      reader.onload = (ev) => {
-        const dataUrl = ev.target?.result as string;
+      reader.onload = async (ev) => {
+        const rawDataUrl = ev.target?.result as string;
+        const { dataUrl, mimeType } = await compressImage(rawDataUrl, file.type);
         const base64 = dataUrl.split(',')[1];
-        setAttachedImages((prev) => [...prev, { base64, mime_type: file.type, preview: dataUrl }]);
+        setAttachedImages((prev) => [...prev, { base64, mime_type: mimeType, preview: dataUrl }]);
         toast.success('Imagem adicionada como referência!');
       };
       reader.readAsDataURL(file);
@@ -203,14 +236,15 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
     try {
       const res = await fetch(url);
       const blob = await res.blob();
-      const mime_type = blob.type || 'image/png';
+      const rawMime = blob.type || 'image/png';
       const reader = new FileReader();
-      reader.onload = (ev) => {
-        const dataUrl = ev.target?.result as string;
+      reader.onload = async (ev) => {
+        const rawDataUrl = ev.target?.result as string;
+        const { dataUrl, mimeType } = await compressImage(rawDataUrl, rawMime);
         const base64 = dataUrl.split(',')[1];
         setAttachedImages((prev) => {
           if (prev.length >= 4) return prev;
-          return [...prev, { base64, mime_type, preview: dataUrl }];
+          return [...prev, { base64, mime_type: mimeType, preview: dataUrl }];
         });
       };
       reader.readAsDataURL(blob);
@@ -244,13 +278,14 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
     }, 5000);
   }
 
-  function finishWithImage(url: string) {
+  function finishWithImage(url: string, genId?: string) {
     clearProgressTimer();
     clearMsgTimer();
     setProgress(100);
     setTimeout(() => {
       setGenState('done');
       setGeneratedImageUrl(url);
+      if (genId) setGenerationId(genId);
       setNodeImage(nodeId, url);
       setTimeout(() => setImageVisible(true), 60);
     }, 380);
@@ -263,7 +298,7 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
 
         if (generation.status === 'COMPLETED') {
           clearPollTimer();
-          finishWithImage(generation.outputs[0].url);
+          finishWithImage(generation.outputs[0].url, id);
           refetchCredits();
           prependToGallery(generation);
         }
@@ -329,10 +364,10 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
 
       // Conecta via SSE e faz fallback automático para polling se falhar
       sseControllerRef.current = listenGeneration(id, accessToken, {
-        onCompleted: ({ generationId, outputUrls }) => {
-          finishWithImage(outputUrls[0]);
+        onCompleted: ({ generationId: genId, outputUrls }) => {
+          finishWithImage(outputUrls[0], genId);
           refetchCredits();
-          api.generations.get(accessToken!, generationId).then(prependToGallery).catch(() => { });
+          api.generations.get(accessToken!, genId).then(prependToGallery).catch(() => { });
         },
         onFailed: ({ errorMessage, creditsRefunded }) => {
           clearProgressTimer();
@@ -360,6 +395,7 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
     setProgress(0);
     setImageVisible(false);
     setGeneratedImageUrl(null);
+    setGenerationId(null);
     setErrorMsg(null);
     setAttachedImages([]);
     setNodeUpscaleState(nodeId, 'idle');
@@ -420,6 +456,51 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
     queryFn: () => api.credits.estimate(accessToken!, { type: imageType, resolution: qualityToResolution(quality) }),
     enabled: !!accessToken && genState === 'idle',
     staleTime: 30_000,
+  });
+
+  // ── Folder state ──────────────────────────────────────────────────────────
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false);
+
+  const { data: folders = [] } = useQuery({
+    queryKey: ['folders'],
+    queryFn: () => api.folders.list(accessToken!),
+    enabled: !!accessToken,
+    staleTime: 30_000,
+  });
+
+  const { data: generationFolders = [] } = useQuery<Folder[]>({
+    queryKey: ['generation-folders', generationId],
+    queryFn: () => api.generations.getFolders(accessToken!, generationId!),
+    enabled: !!accessToken && !!generationId,
+    staleTime: 60_000,
+  });
+
+  const addToFolderMutation = useMutation({
+    mutationFn: ({ folderId }: { folderId: string }) =>
+      api.folders.addGenerations(accessToken!, folderId, [generationId!]),
+    onSuccess: (_data, { folderId }) => {
+      queryClient.invalidateQueries({ queryKey: ['folders'] });
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      queryClient.invalidateQueries({ queryKey: ['generation-folders', generationId] });
+      const folder = folders.find((f) => f.id === folderId);
+      toast.success('Adicionada à pasta', { description: folder ? `"${folder.name}"` : undefined });
+    },
+    onError: () => toast.error('Erro ao adicionar à pasta', { description: 'Tente novamente.' }),
+  });
+
+  const createFolderAndAddMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const folder = await api.folders.create(accessToken!, name);
+      await api.folders.addGenerations(accessToken!, folder.id, [generationId!]);
+      return folder;
+    },
+    onSuccess: (folder) => {
+      queryClient.invalidateQueries({ queryKey: ['folders'] });
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      queryClient.invalidateQueries({ queryKey: ['generation-folders', generationId] });
+      toast.success('Pasta criada e imagem adicionada', { description: `"${folder.name}"` });
+    },
+    onError: () => toast.error('Erro ao criar pasta', { description: 'Tente novamente.' }),
   });
 
   const dashOffset = CIRCUMFERENCE * (1 - progress / 100);
@@ -590,12 +671,31 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
                   <Download className="h-3.5 w-3.5" />
                 </ActionButton>
 
+                {/* Add to folder */}
+                {generationId && (
+                  <ActionButton title="Adicionar à pasta" onClick={() => setFolderDialogOpen(true)}>
+                    <FolderPlus className="h-3.5 w-3.5" />
+                  </ActionButton>
+                )}
+
                 {/* Discard */}
                 <ActionButton title="Descartar" onClick={handleDiscard}>
                   <X className="h-3.5 w-3.5" />
                 </ActionButton>
               </div>
             </div>
+          )}
+
+          {/* ── Folder dialog ───────────────────────────────────────── */}
+          {generationId && (
+            <FolderAddDialog
+              open={folderDialogOpen}
+              onOpenChange={setFolderDialogOpen}
+              folders={folders}
+              activeFolderIds={generationFolders.map((f) => f.id)}
+              onAddToFolder={(folderId) => addToFolderMutation.mutate({ folderId })}
+              onCreateAndAdd={(name) => createFolderAndAddMutation.mutate(name)}
+            />
           )}
 
           {/* ── Bottom section (model + proportion + quality + refs) ──── */}
@@ -792,6 +892,85 @@ function ActionButton({
       </TooltipTrigger>
       <TooltipContent side="top" sideOffset={6}>{title}</TooltipContent>
     </Tooltip>
+  );
+}
+
+// ─── Folder add dialog ────────────────────────────────────────────────────────
+
+function FolderAddDialog({
+  open,
+  onOpenChange,
+  folders,
+  activeFolderIds,
+  onAddToFolder,
+  onCreateAndAdd,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  folders: Folder[];
+  activeFolderIds: string[];
+  onAddToFolder: (folderId: string) => void;
+  onCreateAndAdd: (name: string) => void;
+}) {
+  const [newName, setNewName] = useState('');
+
+  function handleCreate() {
+    const name = newName.trim();
+    if (!name) return;
+    onCreateAndAdd(name);
+    setNewName('');
+    onOpenChange(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setNewName(''); }}>
+      <DialogContent className="max-w-xs rounded-2xl border border-[#f3f0ed]/10 bg-[#1a2123] p-5 shadow-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-sm font-bold text-[#f3f0ed]">Adicionar à pasta</DialogTitle>
+          <DialogDescription className="text-xs text-[#f3f0ed]/40">
+            Escolha uma pasta existente ou crie uma nova.
+          </DialogDescription>
+        </DialogHeader>
+
+        {folders.length > 0 && (
+          <div className="max-h-44 overflow-y-auto sidebar-scroll -mx-1 mt-1">
+            {folders.map((f) => {
+              const isActive = activeFolderIds.includes(f.id);
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => { onAddToFolder(f.id); onOpenChange(false); }}
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs transition-all hover:bg-[#f3f0ed]/5"
+                >
+                  <div className="flex items-center gap-2">
+                    <FolderPlus className="h-3.5 w-3.5 text-[#a2dd00]/60" />
+                    <span className="text-[#f3f0ed]/80">{f.name}</span>
+                  </div>
+                  {isActive && <span className="text-[10px] text-[#a2dd00]">✓</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="flex gap-2 mt-2">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }}
+            placeholder="Nova pasta..."
+            className="flex-1 rounded-lg border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 px-3 py-2 text-xs text-[#f3f0ed]/80 placeholder-[#f3f0ed]/25 outline-none focus:border-[#a2dd00]/40"
+          />
+          <button
+            onClick={handleCreate}
+            disabled={!newName.trim()}
+            className="flex items-center justify-center rounded-lg bg-[#a2dd00] px-3 py-2 transition-all hover:bg-[#b5f000] disabled:opacity-40"
+          >
+            <Plus className="h-3.5 w-3.5 text-[#1a2123]" />
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

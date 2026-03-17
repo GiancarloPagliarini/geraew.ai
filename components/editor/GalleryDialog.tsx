@@ -925,8 +925,8 @@ const GalleryItem = memo(function GalleryItem({
       <div className="absolute bottom-3 right-3 flex items-center gap-1">
         {itemFolders && itemFolders.length > 0 && (
           <div className="flex items-center gap-0.5 rounded-md bg-black/70 px-1.5 py-0.5">
-            <FolderIcon className="h-3 w-3 text-[#a2dd00]" />
-            <span className="text-[9px] font-bold text-[#a2dd00] max-w-[60px] truncate">{itemFolders[0].name}</span>
+            <FolderIcon className="h-3.5 w-3.5 text-[#a2dd00]" />
+            <span className="text-[10px] font-bold text-[#a2dd00] max-w-[60px] truncate">{itemFolders[0].name}</span>
           </div>
         )}
         {isVideo && (

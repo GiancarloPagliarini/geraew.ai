@@ -50,6 +50,29 @@ const VIDEO_LOADING_MESSAGES = [
   'AQUECENDO OS NEURÔNIOS VISUAIS...',
 ];
 
+const MAX_REFERENCE_SIZE = 1920;
+const REFERENCE_QUALITY = 0.85;
+
+async function compressImage(dataUrl: string, mimeType: string): Promise<{ dataUrl: string; mimeType: string }> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const { naturalWidth: w, naturalHeight: h } = img;
+      const scale = Math.min(1, MAX_REFERENCE_SIZE / Math.max(w, h));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(w * scale);
+      canvas.height = Math.round(h * scale);
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const outMime = mimeType === 'image/png' ? 'image/png' : 'image/jpeg';
+      const compressed = canvas.toDataURL(outMime, REFERENCE_QUALITY);
+      resolve({ dataUrl: compressed, mimeType: outMime });
+    };
+    img.onerror = () => resolve({ dataUrl, mimeType });
+    img.src = dataUrl;
+  });
+}
+
 function durationToSeconds(d: string): number {
   return parseInt(d.replace('s', ''), 10);
 }
@@ -166,9 +189,10 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
     const remaining = 3 - refImages.length;
     files.filter((f) => f.type.startsWith('image/')).slice(0, remaining).forEach((file) => {
       const reader = new FileReader();
-      reader.onload = (ev) => {
-        const dataUrl = ev.target?.result as string;
-        setRefImages((prev) => [...prev, { base64: dataUrl.split(',')[1], mime_type: file.type, preview: dataUrl }]);
+      reader.onload = async (ev) => {
+        const rawDataUrl = ev.target?.result as string;
+        const { dataUrl, mimeType } = await compressImage(rawDataUrl, file.type);
+        setRefImages((prev) => [...prev, { base64: dataUrl.split(',')[1], mime_type: mimeType, preview: dataUrl }]);
         toast.success('Imagem adicionada como referência!');
       };
       reader.readAsDataURL(file);
@@ -178,9 +202,10 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
   function processFrameFile(file: File, setter: (frame: { base64: string; mime_type: string; preview: string }) => void) {
     if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
-      setter({ base64: dataUrl.split(',')[1], mime_type: file.type, preview: dataUrl });
+    reader.onload = async (ev) => {
+      const rawDataUrl = ev.target?.result as string;
+      const { dataUrl, mimeType } = await compressImage(rawDataUrl, file.type);
+      setter({ base64: dataUrl.split(',')[1], mime_type: mimeType, preview: dataUrl });
       toast.success('Imagem adicionada como referência!');
     };
     reader.readAsDataURL(file);
@@ -197,14 +222,15 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
     try {
       const res = await fetch(url);
       const blob = await res.blob();
-      const mime_type = blob.type || 'image/png';
+      const rawMime = blob.type || 'image/png';
       const reader = new FileReader();
-      reader.onload = (ev) => {
-        const dataUrl = ev.target?.result as string;
+      reader.onload = async (ev) => {
+        const rawDataUrl = ev.target?.result as string;
+        const { dataUrl, mimeType } = await compressImage(rawDataUrl, rawMime);
         const base64 = dataUrl.split(',')[1];
         setRefImages((prev) => {
           if (prev.length >= 3) return prev;
-          return [...prev, { base64, mime_type, preview: dataUrl }];
+          return [...prev, { base64, mime_type: mimeType, preview: dataUrl }];
         });
       };
       reader.readAsDataURL(blob);
