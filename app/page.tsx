@@ -6,6 +6,7 @@ import { OnboardingTour } from '@/components/editor/OnboardingTour';
 import { RightSidebar } from '@/components/editor/RightSidebar';
 import { TopNavbar } from '@/components/editor/TopNavbar';
 import { EditorProvider } from '@/lib/editor-context';
+import { InfluencerBuilderProvider } from '@/lib/influencer-builder-context';
 import { useAuth } from '@/lib/auth-context';
 import { useLoadingMessage } from '@/lib/loading-messages';
 import { useRouter } from 'next/navigation';
@@ -43,15 +44,17 @@ export default function Home() {
 
   return (
     <EditorProvider>
-      <div className="flex h-screen flex-col overflow-hidden bg-[#1a2123]">
-        <TopNavbar />
-        <div className="flex flex-1 overflow-hidden">
-          <LeftSidebar />
-          <Canvas />
-          <RightSidebar />
+      <InfluencerBuilderProvider>
+        <div className="flex h-screen flex-col overflow-hidden bg-[#1a2123]">
+          <TopNavbar />
+          <div className="flex flex-1 overflow-hidden">
+            <LeftSidebar />
+            <Canvas />
+            <RightSidebar />
+          </div>
         </div>
-      </div>
-      <OnboardingTour />
+        <OnboardingTour />
+      </InfluencerBuilderProvider>
     </EditorProvider>
   );
 }

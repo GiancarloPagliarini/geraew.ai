@@ -1,8 +1,13 @@
 'use client';
 
-import { Loader2, PersonStanding, Sparkles, User, X } from 'lucide-react';
+import { Coins, Loader2, PersonStanding, Sparkles, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
+import { useAuth } from '@/lib/auth-context';
+import { useInfluencerBuilder } from '@/lib/influencer-builder-context';
+import { api } from '@/lib/api';
+import { listenGeneration } from '@/lib/sse';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -12,7 +17,16 @@ type GenState = 'idle' | 'generating' | 'done';
 const RADIUS = 36;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-const MOCK_IMAGE = '/mulher_escrevendo_carta.png';
+const LOADING_MESSAGES = [
+  'CRIANDO SUA INFLUENCER...',
+  'AJUSTANDO TRAÇOS FACIAIS...',
+  'APLICANDO ESTILO ÚNICO...',
+  'REFINANDO DETALHES...',
+  'QUASE LÁ...',
+  'ADICIONANDO UM TOQUE DE MAGIA...',
+  'CONSULTANDO OS PIXELS...',
+  'SONHANDO EM ALTA RESOLUÇÃO...',
+];
 
 // ─── component ────────────────────────────────────────────────────────────────
 
@@ -22,50 +36,175 @@ interface CreateInfluencerPanelProps {
 }
 
 export function CreateInfluencerPanel({ nodeId, onClose }: CreateInfluencerPanelProps) {
-  const { setNodeImage, consumeCredits } = useEditor();
+  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery } = useEditor();
+  const { accessToken } = useAuth();
+  const { prompt } = useInfluencerBuilder();
 
   const [genState, setGenState] = useState<GenState>('idle');
   const [progress, setProgress] = useState(0);
   const [imageVisible, setImageVisible] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const msgIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sseControllerRef = useRef<AbortController | null>(null);
 
-  function clearTimer() {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+  function clearProgressTimer() {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
     }
   }
 
-  function handleGenerate() {
-    consumeCredits(2);
+  function clearMsgTimer() {
+    if (msgIntervalRef.current) {
+      clearInterval(msgIntervalRef.current);
+      msgIntervalRef.current = null;
+    }
+  }
+
+  function clearPollTimer() {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  }
+
+  function clearSSE() {
+    if (sseControllerRef.current) {
+      sseControllerRef.current.abort();
+      sseControllerRef.current = null;
+    }
+  }
+
+  function startProgressAnimation() {
+    let current = 0;
+    progressIntervalRef.current = setInterval(() => {
+      const remaining = 90 - current;
+      const step = Math.max(0.3, Math.random() * (remaining * 0.05 + 0.5));
+      current = Math.min(90, current + step);
+      setProgress(Math.round(current));
+    }, 600);
+
+    let msgIndex = 0;
+    setLoadingMsg(LOADING_MESSAGES[0]);
+    msgIntervalRef.current = setInterval(() => {
+      msgIndex = (msgIndex + 1) % LOADING_MESSAGES.length;
+      setLoadingMsg(LOADING_MESSAGES[msgIndex]);
+    }, 5000);
+  }
+
+  function finishWithImage(url: string) {
+    clearProgressTimer();
+    clearMsgTimer();
+    setProgress(100);
+    setTimeout(() => {
+      setGenState('done');
+      setGeneratedImageUrl(url);
+      setNodeImage(nodeId, url);
+      setTimeout(() => setImageVisible(true), 60);
+    }, 380);
+  }
+
+  function startPollingFallback(id: string) {
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const generation = await api.generations.get(accessToken!, id);
+
+        if (generation.status === 'COMPLETED') {
+          clearPollTimer();
+          finishWithImage(generation.outputs[0].url);
+          refetchCredits();
+          prependToGallery(generation);
+        }
+
+        if (generation.status === 'FAILED') {
+          clearPollTimer();
+          clearProgressTimer();
+          clearMsgTimer();
+          setGenState('idle');
+          setErrorMsg(generation.errorMessage ?? 'Erro ao gerar influencer.');
+          refetchCredits();
+        }
+      } catch {
+        clearPollTimer();
+        clearProgressTimer();
+        clearMsgTimer();
+        setGenState('idle');
+        setErrorMsg('Erro ao verificar status da geração.');
+      }
+    }, 3000);
+  }
+
+  async function handleGenerate() {
+    if (!accessToken) return;
+
     setGenState('generating');
     setProgress(0);
     setImageVisible(false);
-    clearTimer();
+    setErrorMsg(null);
+    clearProgressTimer();
+    clearPollTimer();
+    clearSSE();
 
-    let current = 0;
-    intervalRef.current = setInterval(() => {
-      const remaining = 94 - current;
-      const step = Math.max(1, Math.random() * (remaining * 0.12 + 1));
-      current = Math.min(94, current + step);
-      setProgress(Math.round(current));
+    startProgressAnimation();
 
-      if (current >= 94) {
-        clearTimer();
-        setTimeout(() => {
-          setProgress(100);
-          setTimeout(() => {
-            setGenState('done');
-            setNodeImage(nodeId, MOCK_IMAGE);
-            setTimeout(() => setImageVisible(true), 60);
-          }, 380);
-        }, 600);
-      }
-    }, 180);
+    try {
+      const { id, creditsConsumed } = await api.generations.generateImage(accessToken, {
+        prompt,
+        model: 'gemini-3-pro-image-preview',
+        resolution: 'RES_2K',
+        aspect_ratio: '9:16',
+        mime_type: 'image/png',
+      });
+
+      consumeCredits(creditsConsumed);
+
+      sseControllerRef.current = listenGeneration(id, accessToken, {
+        onCompleted: ({ generationId: genId, outputUrls }) => {
+          finishWithImage(outputUrls[0]);
+          refetchCredits();
+          api.generations.get(accessToken!, genId).then(prependToGallery).catch(() => {});
+        },
+        onFailed: ({ errorMessage, creditsRefunded }) => {
+          clearProgressTimer();
+          clearMsgTimer();
+          setGenState('idle');
+          const msg = errorMessage ?? 'Erro ao gerar influencer.';
+          setErrorMsg(creditsRefunded > 0 ? `${msg} (${creditsRefunded} créditos estornados)` : msg);
+          refetchCredits();
+        },
+        onError: () => {
+          startPollingFallback(id);
+        },
+      });
+    } catch (err) {
+      clearProgressTimer();
+      clearMsgTimer();
+      setGenState('idle');
+      setErrorMsg(err instanceof Error ? err.message : 'Erro ao iniciar geração.');
+    }
   }
 
-  useEffect(() => () => clearTimer(), []);
+  useEffect(
+    () => () => {
+      clearProgressTimer();
+      clearMsgTimer();
+      clearPollTimer();
+      clearSSE();
+    },
+    [],
+  );
+
+  const { data: estimate, isLoading: estimateLoading } = useQuery({
+    queryKey: ['credits', 'estimate', 'TEXT_TO_IMAGE', 'RES_2K'],
+    queryFn: () => api.credits.estimate(accessToken!, { type: 'TEXT_TO_IMAGE', resolution: 'RES_2K' }),
+    enabled: !!accessToken && genState === 'idle',
+    staleTime: 30_000,
+  });
 
   const dashOffset = CIRCUMFERENCE * (1 - progress / 100);
 
@@ -88,18 +227,25 @@ export function CreateInfluencerPanel({ nodeId, onClose }: CreateInfluencerPanel
       </div>
 
       <div className="space-y-4 p-4">
+        {/* ── Error message ────────────────────────────────────────────── */}
+        {errorMsg && (
+          <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-xs text-red-400">
+            {errorMsg}
+          </div>
+        )}
+
         {/* ── Idle state — empty placeholder ────────────────────────── */}
-        {genState === 'idle' && (
+        {genState === 'idle' && !generatedImageUrl && (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-[#f3f0ed]/10 bg-[#1e494b]/10 px-4 py-10">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f3f0ed]/[0.05]">
-              <User className="h-6 w-6 text-[#f3f0ed]/25" />
+              <PersonStanding className="h-6 w-6 text-[#f3f0ed]/25" />
             </div>
             <div className="text-center">
               <p className="text-xs font-semibold text-[#f3f0ed]/60">
                 Sua AI influencer mora aqui.
               </p>
               <p className="mt-1 text-[10px] leading-relaxed text-[#f3f0ed]/25">
-                Desenhe e construa sua AI influencer do zero
+                Configure na sidebar e clique em gerar
               </p>
             </div>
           </div>
@@ -132,14 +278,14 @@ export function CreateInfluencerPanel({ nodeId, onClose }: CreateInfluencerPanel
                 {progress}%
               </span>
             </div>
-            <span className="text-[10px] font-bold tracking-[0.2em] text-[#f3f0ed]/30">
-              CRIANDO INFLUENCER...
+            <span className="text-[10px] animate-pulse font-bold tracking-[0.2em] text-[#f3f0ed]/30 transition-all duration-500">
+              {loadingMsg}
             </span>
           </div>
         )}
 
         {/* ── Done state — generated preview ────────────────────────── */}
-        {genState === 'done' && (
+        {genState === 'done' && generatedImageUrl && (
           <div
             className="group relative overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08]"
             style={{
@@ -150,11 +296,42 @@ export function CreateInfluencerPanel({ nodeId, onClose }: CreateInfluencerPanel
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={MOCK_IMAGE}
+              src={generatedImageUrl}
               alt="Influencer gerada"
               className="h-auto w-full object-cover"
               draggable={false}
             />
+          </div>
+        )}
+
+        {/* ── Idle: show generated image from previous run ──────────── */}
+        {genState === 'idle' && generatedImageUrl && (
+          <div className="group relative overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={generatedImageUrl}
+              alt="Influencer gerada"
+              className="h-auto w-full object-cover"
+              draggable={false}
+            />
+          </div>
+        )}
+
+        {/* Credit estimate */}
+        {genState !== 'generating' && (
+          <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
+            <div className="flex items-center gap-1.5">
+              <Coins className="h-3 w-3 text-[#a2dd00]" />
+              <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Custo</span>
+            </div>
+            {estimateLoading ? (
+              <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
+            ) : estimate ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
+                <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
+              </div>
+            ) : null}
           </div>
         )}
 
@@ -177,7 +354,7 @@ export function CreateInfluencerPanel({ nodeId, onClose }: CreateInfluencerPanel
           ) : (
             <>
               <Sparkles className="h-4 w-4" />
-              {genState === 'done' ? 'GERAR NOVAMENTE' : 'GERAR INFLUENCER'}
+              {generatedImageUrl ? 'GERAR NOVAMENTE' : 'GERAR INFLUENCER'}
             </>
           )}
         </button>

@@ -23,10 +23,13 @@ export interface SSECallbacks {
 
 // ─── SSE listener ─────────────────────────────────────────────────────────────
 
+const MAX_RECONNECT_ATTEMPTS = 8;
+
 /**
  * Opens an SSE connection for a specific generation using fetch + ReadableStream
  * (EventSource nativo não suporta headers de autenticação).
  *
+ * Reconecta automaticamente com backoff exponencial caso a conexão caia.
  * Retorna um AbortController para fechar a conexão quando necessário.
  */
 export function listenGeneration(
@@ -36,7 +39,9 @@ export function listenGeneration(
 ): AbortController {
   const controller = new AbortController();
 
-  (async () => {
+  const connect = async (attempt: number): Promise<void> => {
+    if (controller.signal.aborted) return;
+
     try {
       const res = await fetch(`${BASE_URL}/api/v1/generations/${generationId}/events`, {
         headers: {
@@ -68,6 +73,8 @@ export function listenGeneration(
 
           const event = JSON.parse(dataLine.slice(6));
 
+          if (event.type === 'heartbeat') continue;
+
           if (event.status === 'completed') {
             callbacks.onCompleted({
               generationId: event.generationId,
@@ -88,12 +95,25 @@ export function listenGeneration(
           }
         }
       }
+
+      // Stream fechou sem evento final — reconectar
+      if (!controller.signal.aborted && attempt < MAX_RECONNECT_ATTEMPTS) {
+        const delay = Math.min(1_000 * 2 ** attempt, 30_000);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return connect(attempt + 1);
+      }
     } catch (err) {
-      // AbortError = fechamento intencional, não é falha
       if (err instanceof Error && err.name === 'AbortError') return;
+      if (!controller.signal.aborted && attempt < MAX_RECONNECT_ATTEMPTS) {
+        const delay = Math.min(1_000 * 2 ** attempt, 30_000);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return connect(attempt + 1);
+      }
       callbacks.onError?.(err);
     }
-  })();
+  };
+
+  connect(0);
 
   return controller;
 }

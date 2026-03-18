@@ -1,16 +1,12 @@
 'use client';
 
 import {
-  ChessKing,
   CircleDot,
-  Ear,
   Eye,
   Globe,
   ImageIcon,
   Palette,
   RotateCcw,
-  Shirt,
-  Smile,
   Sparkles,
   User,
   Users,
@@ -19,101 +15,143 @@ import {
 import Image from 'next/image';
 import { useState } from 'react';
 import { Section } from './Section';
+import { useInfluencerBuilder } from '@/lib/influencer-builder-context';
 
-// ─── Character type data ──────────────────────────────────────────────────────
+// ─── CDN Base URL ─────────────────────────────────────────────────────────────
+
+const CDN = 'https://cdn.higgsfield.ai/ai_influencer_option';
+const CDN_CAT = 'https://cdn.higgsfield.ai/ai_influencer_parent_category';
+
+// ─── Dados ────────────────────────────────────────────────────────────────────
 
 const CHARACTER_TYPES = [
-  { id: 'Humano', label: 'Humano', image: '/characters/humano.svg' },
-  { id: 'Anime', label: 'Anime', image: '/characters/anime.svg' },
-  { id: 'Semi-realista', label: 'Semi-realista', image: '/characters/semi-realista.svg' },
-  { id: 'Cartoon', label: 'Cartoon', image: '/characters/cartoon.svg' },
-  { id: '3D', label: '3D Render', image: '/characters/3d.svg' },
-  { id: 'Pixel Art', label: 'Pixel Art', image: '/characters/pixel-art.svg' },
-] as const;
-
-const ETHNICITY_TYPES = [
-  { id: 'Latina', label: 'Latina', image: '/characters/latina.svg' },
-  { id: 'Europeia', label: 'Europeia', image: '/characters/europeia.svg' },
-  { id: 'Africana', label: 'Africana', image: '/characters/africana.svg' },
-  { id: 'Asiática', label: 'Asiática', image: '/characters/asiatica.svg' },
-  { id: 'Árabe', label: 'Árabe', image: '/characters/arabe.svg' },
-  { id: 'Indígena', label: 'Indígena', image: '/characters/indigena.svg' },
+  { id: 'Human', label: 'Humano', image: `${CDN}/977e0927-1320-426b-9de3-e3a3434dbe7a.webp` },
+  { id: 'Ant', label: 'Formiga', image: `${CDN}/d950aa8c-7f58-4277-9f7c-a4c0f073ae99.webp` },
+  { id: 'Bee', label: 'Abelha', image: `${CDN}/20b90c9f-d11f-4816-ad7d-f7f388a5a8b0.webp` },
+  { id: 'Octopus', label: 'Polvo', image: `${CDN}/cf21cfdb-7f25-49b2-8554-2192046aac83.webp` },
+  { id: 'Crocodile', label: 'Crocodilo', image: `${CDN}/79073855-12ba-4339-85ce-dc99ecf4d14c.webp` },
+  { id: 'Iguana', label: 'Iguana', image: `${CDN}/5c237648-205d-484d-80e6-baa1c71d9b17.webp` },
+  { id: 'Lizard', label: 'Lagarto', image: `${CDN}/039958ce-ec7c-465f-a285-935802b2525d.webp` },
+  { id: 'Alien', label: 'Alienígena', image: `${CDN}/077efffe-f459-4dd2-a5a7-064caeca5c10.webp` },
+  { id: 'Beetle', label: 'Besouro', image: `${CDN}/704f1cb5-f833-4758-9f99-ba9fe6e2ed53.webp` },
+  { id: 'Reptile', label: 'Réptil', image: `${CDN}/cd38cb79-b638-43f3-b546-d31849b6fe05.webp` },
+  { id: 'Amphibian', label: 'Anfíbio', image: `${CDN}/d0667019-3b2f-41f6-a09c-5461a5c5b7e0.webp` },
+  { id: 'Elf', label: 'Elfo', image: `${CDN}/f5e66aec-8b11-48b0-904b-6c84eb07349e.webp` },
+  { id: 'Mantis', label: 'Louva-a-deus', image: `${CDN}/feb723e6-fed4-4e6b-965d-38f50ac4f8d6.webp` },
 ] as const;
 
 const GENDER_TYPES = [
-  { id: 'Feminino', label: 'Feminino', image: '/characters/feminino.svg' },
-  { id: 'Masculino', label: 'Masculino', image: '/characters/masculino.svg' },
-  { id: 'Não-binário', label: 'Não-binário', image: '/characters/nao-binario.svg' },
+  { id: 'Female', label: 'Feminino', image: `${CDN}/f9fa514b-620d-433e-bd4e-eadd880de118.webp` },
+  { id: 'Male', label: 'Masculino', image: `${CDN}/fb91b108-27fc-4e7c-a8fd-876dc8c30ecf.webp` },
+  { id: 'Trans man', label: 'Homem trans', image: `${CDN}/95002c8f-c0d6-4dec-8cac-fc7b50501600.webp` },
+  { id: 'Trans woman', label: 'Mulher trans', image: `${CDN}/21fc9f46-6f1f-4aed-8f74-0ca3080c8eec.webp` },
+  { id: 'Non-binary', label: 'Não-binário', image: `${CDN}/58a652a4-bf5e-43ca-95a8-8f9e9cef5b6b.webp` },
 ] as const;
 
-const EYE_COLORS = [
-  { id: 'Castanho', label: 'Castanho', color: '#6B3410' },
-  { id: 'Verde', label: 'Verde', color: '#3d8b2f' },
-  { id: 'Azul', label: 'Azul', color: '#3a7fc4' },
-  { id: 'Mel', label: 'Mel', color: '#c48a20' },
-  { id: 'Cinza', label: 'Cinza', color: '#8a929a' },
-  { id: 'Heterocromia', label: 'Heterocromia', color: 'linear-gradient(135deg, #3a7fc4 50%, #6B3410 50%)' },
+const ETHNICITY_TYPES = [
+  { id: 'African', label: 'Africana', image: `${CDN}/22d1da5f-5581-4030-9a14-c8dc61c40abc.webp` },
+  { id: 'Asian', label: 'Asiática', image: `${CDN}/c6693caf-8a31-44c6-b9c1-120b44b940a0.webp` },
+  { id: 'European', label: 'Europeia', image: `${CDN}/b92e05ee-79a1-4c22-ba32-400c17eb9df3.webp` },
+  { id: 'Indian', label: 'Indiana', image: `${CDN}/35cff943-7efb-40cd-a168-dbb1f7cdbebb.webp` },
+  { id: 'Middle Eastern', label: 'Oriente Médio', image: `${CDN}/0f49e0cd-7b30-4bb3-94c5-792d684a4492.webp` },
+  { id: 'Mixed', label: 'Mista', image: `${CDN}/a992a191-6c13-46e2-991d-f5219b1f5f09.webp` },
 ] as const;
 
 const SKIN_COLORS = [
-  { id: 'Clara', label: 'Clara', color: '#f5d6b8' },
-  { id: 'Média', label: 'Média', color: '#d4a373' },
-  { id: 'Morena', label: 'Morena', color: '#b07d56' },
-  { id: 'Escura', label: 'Escura', color: '#8b5e3c' },
-  { id: 'Muito escura', label: 'Muito escura', color: '#4a2c17' },
+  { id: 'Mixed colors', label: 'Cores mistas', image: `${CDN}/4f7118d2-a16f-4cd3-8760-9a44d301baa3.webp` },
+] as const;
+
+const EYE_COLORS = [
+  { id: 'Black', label: 'Preto', image: `${CDN}/cc87aaa5-568e-4485-ad17-925378e14040.webp` },
+  { id: 'Purple', label: 'Roxo', image: `${CDN}/6cb9d132-30d8-4325-83f5-10e8094e85a7.webp` },
+  { id: 'Green', label: 'Verde', image: `${CDN}/dba6cbbb-557a-4d71-b5ab-720b5791282c.webp` },
+  { id: 'White', label: 'Branco', image: `${CDN}/e6c522cd-c482-44d5-b0fd-d938ac3cdc4e.webp` },
+  { id: 'Brown', label: 'Castanho', image: `${CDN}/67ef9f67-0c21-4d78-8044-561792277b4f.webp` },
+  { id: 'Black (Solid)', label: 'Sólido/Vazio', image: `${CDN}/5cbd08f7-8c6a-48c4-aa93-d796fe97b8ec.webp` },
+  { id: 'White (Blind)', label: 'Cego/Vazio', image: `${CDN}/72969f70-ed33-4f69-ae34-61df12f24dda.webp` },
+  { id: 'Deep Brown', label: 'Castanho escuro', image: `${CDN}/3bc13ca9-defe-4fea-a473-2a6e17cbc521.webp` },
+  { id: 'Blue', label: 'Azul', image: `${CDN}/15e8f960-c44b-43ae-aafb-4fd79556c420.webp` },
+  { id: 'Amber', label: 'Âmbar', image: `${CDN}/4fa90e64-f060-4407-9d1f-ed8b23723c46.webp` },
+  { id: 'Red', label: 'Vermelho', image: `${CDN}/0f422982-0f63-460e-a459-2a2fd48f6ee0.webp` },
+  { id: 'Grey', label: 'Cinza', image: `${CDN}/cdfa6a1f-c914-44c9-afea-0a0771feeb54.webp` },
 ] as const;
 
 const SKIN_CONDITIONS = [
-  { id: 'Lisa', label: 'Lisa', color: '#d4a373' },
-  { id: 'Sardas', label: 'Sardas', color: 'radial-gradient(circle 2px, #8b5e3c 30%, transparent 30%), radial-gradient(circle 1.5px, #a0704a 20%, transparent 20%), #d4a373' },
-  { id: 'Manchas', label: 'Manchas', color: 'radial-gradient(ellipse 40% 35% at 35% 40%, rgba(139,94,60,0.5) 0%, transparent 100%), radial-gradient(ellipse 30% 40% at 65% 60%, rgba(139,94,60,0.4) 0%, transparent 100%), #d4a373' },
-  { id: 'Acne', label: 'Acne', color: 'radial-gradient(circle 3px at 30% 35%, #c46b6b 0%, transparent 70%), radial-gradient(circle 2px at 55% 50%, #d07070 0%, transparent 70%), radial-gradient(circle 2.5px at 70% 30%, #c46b6b 0%, transparent 70%), radial-gradient(circle 2px at 40% 65%, #d07070 0%, transparent 70%), #d4a373' },
-  { id: 'Cicatrizes', label: 'Cicatrizes', color: 'linear-gradient(160deg, transparent 42%, rgba(190,160,130,0.6) 44%, rgba(190,160,130,0.6) 46%, transparent 48%), linear-gradient(130deg, transparent 55%, rgba(190,160,130,0.5) 57%, rgba(190,160,130,0.5) 59%, transparent 61%), #d4a373' },
+  { id: 'Vitiligo', label: 'Vitiligo', image: `${CDN}/bf0f7520-a41a-46b9-b41c-7dc030c22b8b.webp` },
+  { id: 'Pigmentation', label: 'Pigmentação', image: `${CDN}/a9e6b3c8-9ab5-4fe3-8b99-5c5fbfa9665c.webp` },
+  { id: 'Freckles', label: 'Sardas', image: `${CDN}/a657e9c1-02b6-4083-a058-5f78e56a77ac.webp` },
+  { id: 'Birthmarks', label: 'Marcas de nascença', image: `${CDN}/4210a458-66a4-4850-a0ec-5ae20f2214e8.webp` },
+  { id: 'Scars', label: 'Cicatrizes', image: `${CDN}/9d28dcde-2709-4fa8-8f61-8a76798b0e1f.webp` },
+  { id: 'Burns', label: 'Queimaduras', image: `${CDN}/427cee67-8074-4640-ba06-51e4a5bf7ee3.webp` },
+  { id: 'Albinism', label: 'Albinismo', image: `${CDN}/6069e93f-31ce-4840-8e48-c81daee56be0.webp` },
+  { id: 'Cracked/dry skin', label: 'Pele rachada', image: `${CDN}/e0fd17ab-f4bd-4950-9fdf-691a98b021c3.webp` },
+  { id: 'Wrinkled skin', label: 'Pele enrugada', image: `${CDN}/26f07d76-57a7-4975-b18b-80a5fa2137c5.webp` },
 ] as const;
 
-// ─── ColorSwatchGrid ──────────────────────────────────────────────────────────
+// ─── Avançado: Rosto ──────────────────────────────────────────────────────────
 
-function ColorSwatchGrid({
-  options,
-  value,
-  onChange,
-}: {
-  options: ReadonlyArray<{ id: string; label: string; color: string }>;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="flex flex-wrap gap-2.5 mt-2">
-      {options.map((opt) => {
-        const active = value === opt.id;
-        return (
-          <button
-            key={opt.id}
-            onClick={() => onChange(opt.id)}
-            className="group flex flex-col items-center gap-1.5 transition-all active:scale-95"
-          >
-            <div
-              className="h-10 w-10 rounded-full transition-all duration-200 group-hover:scale-110"
-              style={{
-                background: opt.color,
-                border: `3px solid ${active ? '#a2dd00' : 'rgba(243,240,237,0.08)'}`,
-                boxShadow: active
-                  ? '0 0 0 2px rgba(162,221,0,0.3), 0 0 12px rgba(162,221,0,0.15)'
-                  : 'inset 0 2px 4px rgba(0,0,0,0.15)',
-              }}
-            />
-            <span
-              className="text-[9px] font-semibold transition-colors"
-              style={{ color: active ? '#a2dd00' : 'rgba(243,240,237,0.35)' }}
-            >
-              {opt.label}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+const EYES_TYPES = [
+  { id: 'Human', label: 'Humano', image: `${CDN}/ce3bb1ff-d120-4539-8aea-51bacb9e96f9.webp` },
+  { id: 'Reptile', label: 'Réptil', image: `${CDN}/76b1c85d-dba3-43d6-b6b0-27f2923bdab8.webp` },
+  { id: 'Mechanical', label: 'Mecânico', image: `${CDN}/6d7dfd84-741d-4757-9bab-a3ff7cb28612.webp` },
+] as const;
+
+const EYES_DETAILS = [
+  { id: 'Different colors', label: 'Cores diferentes', image: `${CDN}/199bb0e7-41e8-40af-aae7-77c0c659b260.webp` },
+  { id: 'Blind eye', label: 'Olho cego', image: `${CDN}/a1b256a6-45a1-4008-adff-fb0fa1b52c30.webp` },
+  { id: 'Scarred eye', label: 'Olho c/ cicatriz', image: `${CDN}/25f40e63-e0b8-4470-aac8-b3b00465f0ac.webp` },
+  { id: 'Glowing eye', label: 'Olho brilhante', image: `${CDN}/a6a19585-e8ae-4b5b-8334-f0f24248735d.webp` },
+] as const;
+
+const MOUTH_TEETH = [
+  { id: 'Small mouth', label: 'Boca pequena', image: `${CDN}/739d39d2-acc7-44b5-82e9-4d3c7bd8a1cc.webp` },
+  { id: 'Large mouth', label: 'Boca grande', image: `${CDN}/1baa22a5-87fe-49ce-8094-a35669ae367a.webp` },
+  { id: 'No teeth', label: 'Sem dentes', image: `${CDN}/dad0081e-4011-4420-9a95-6a9b96e5c8d9.webp` },
+  { id: 'Different teeth', label: 'Dentes diferentes', image: `${CDN}/517e33c9-82ff-4de3-9d38-8205b26e0985.webp` },
+  { id: 'Sharp teeth', label: 'Dentes afiados', image: `${CDN}/d44ff654-3b53-4f44-bf54-1c8d0d5c4291.webp` },
+  { id: 'Forked tongue', label: 'Língua bifurcada', image: `${CDN}/adb9bb83-1db6-41cc-9933-bae88b72739d.webp` },
+  { id: 'Two tongues', label: 'Duas línguas', image: `${CDN}/43aeb851-4c2e-4c3b-b556-21b425eefc75.webp` },
+] as const;
+
+const EARS_OPTIONS = [
+  { id: 'Human', label: 'Humana', image: `${CDN}/d7a9fd58-5eb3-4e3f-ad56-67bbf3655463.webp` },
+  { id: 'Elf', label: 'Elfo', image: `${CDN}/e9b3d421-6cfb-41f9-af4a-fc3649238b91.webp` },
+  { id: 'No Ears', label: 'Sem orelhas', image: `${CDN}/562abb29-5f61-4485-83e5-470797a8e591.webp` },
+  { id: 'Wing Ears', label: 'Orelhas de asa', image: `${CDN}/9e2c4603-d683-427a-80c0-18332a0f564b.webp` },
+] as const;
+
+const HORNS_OPTIONS = [
+  { id: 'Small Horns', label: 'Chifres pequenos', image: `${CDN}/9664d380-e818-418e-a42d-f5bf4f1dc19a.webp` },
+  { id: 'Big Horns', label: 'Chifres grandes', image: `${CDN}/4a4792eb-215a-4d78-b294-3f0e6bd54c04.webp` },
+  { id: 'Antlers', label: 'Galhadas', image: `${CDN}/a7c647b3-c37b-4ecb-a61f-52442e1cad89.webp` },
+] as const;
+
+const FACE_SKIN_MATERIAL = [
+  { id: 'Human skin', label: 'Pele humana', image: `${CDN}/34d672df-7b82-4b08-b298-4e484ee2d8a2.webp` },
+  { id: 'Scales', label: 'Escamas', image: `${CDN}/dfb106df-8549-4758-a9fe-d405f956dc13.webp` },
+  { id: 'Fur', label: 'Pelo', image: `${CDN}/b041790f-27b1-491e-900a-df7b44b0c0c3.webp` },
+  { id: 'Amphibian skin', label: 'Pele de anfíbio', image: `${CDN}/e471f0b4-7a41-4999-bc8d-9f9f6e030e4c.webp` },
+  { id: 'Fish skin', label: 'Pele de peixe', image: `${CDN}/a349307d-dad9-4e4d-98ec-cd84094067a7.webp` },
+  { id: 'Metallic', label: 'Metálico', image: `${CDN}/cde0fbeb-0556-4881-9e9e-1d4c5a5cf067.webp` },
+] as const;
+
+const SURFACE_PATTERNS = [
+  { id: 'Solid', label: 'Sólido', image: `${CDN}/9d344ce6-aecf-4d44-9969-485a6cdbb4c1.webp` },
+  { id: 'Stripes', label: 'Listras', image: `${CDN}/979e4934-dbef-4fbe-be38-f3579f2cc78e.webp` },
+  { id: 'Spots', label: 'Manchas', image: `${CDN}/7b92c3aa-b271-4e8b-b5ee-331ec8fc3da7.webp` },
+  { id: 'Chess', label: 'Xadrez', image: `${CDN}/b956ae69-56df-40a3-baf9-f879ce1292f1.webp` },
+  { id: 'Veins', label: 'Veias', image: `${CDN}/14aa0526-5be3-4a2b-a172-3c6af54b4d36.webp` },
+  { id: 'Giraffe', label: 'Girafa', image: `${CDN}/e45c30a6-8b55-40df-a85c-ba06a86273af.webp` },
+  { id: 'Cowhide', label: 'Bovino', image: `${CDN}/0fd77971-2a7f-45f2-af99-1db26bf6339e.webp` },
+] as const;
+
+// ─── Abas avançadas ──────────────────────────────────────────────────────────
+
+const ADVANCED_TABS = [
+  { id: 'face' as const, label: 'Rosto', image: `${CDN_CAT}/e0805c7f-c1b0-4c68-bbc7-bab5ae86d6df.webp` },
+  { id: 'body' as const, label: 'Corpo', image: `${CDN_CAT}/ee30f691-5d7b-4788-af82-73d86b6f32bb.webp` },
+  { id: 'style' as const, label: 'Estilo', image: `${CDN_CAT}/5b67892f-ef65-4f8d-af20-e0f35a13f1b3.webp` },
+] as const;
 
 // ─── ImageOptionGrid ──────────────────────────────────────────────────────────
 
@@ -140,7 +178,6 @@ function ImageOptionGrid({
               boxShadow: active ? '0 0 12px rgba(162,221,0,0.15)' : 'none',
             }}
           >
-            {/* Image */}
             <Image
               src={opt.image}
               alt={opt.label}
@@ -149,15 +186,12 @@ function ImageOptionGrid({
               sizes="120px"
             />
 
-            {/* Gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
-            {/* Label */}
             <span className="absolute bottom-1.5 left-2 text-[11px] font-bold text-white drop-shadow-md">
               {opt.label}
             </span>
 
-            {/* Active check */}
             {active && (
               <div className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#a2dd00] shadow-md">
                 <svg className="h-3 w-3 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -209,12 +243,12 @@ function OptionPills({
 // ─── AdvancedTabCard ──────────────────────────────────────────────────────────
 
 function AdvancedTabCard({
-  icon: Icon,
+  image,
   label,
   active,
   onClick,
 }: {
-  icon: LucideIcon;
+  image: string;
   label: string;
   active: boolean;
   onClick: () => void;
@@ -222,14 +256,25 @@ function AdvancedTabCard({
   return (
     <button
       onClick={onClick}
-      className="flex flex-1 flex-col items-center gap-2 rounded-xl p-3 transition-all active:scale-95"
+      className="group relative flex flex-1 flex-col items-center gap-2 overflow-hidden rounded-xl p-3 transition-all active:scale-95"
       style={{
-        background: active ? 'rgba(162,221,0,0.07)' : 'rgba(30,73,75,0.15)',
         border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
       }}
     >
-      <Icon className={`h-5 w-5 ${active ? 'text-[#a2dd00]' : 'text-[#f3f0ed]/25'}`} />
-      <span className={`text-[9px] font-bold tracking-wider ${active ? 'text-[#f3f0ed]/70' : 'text-[#f3f0ed]/30'}`}>
+      <div className="absolute inset-0">
+        <Image
+          src={image}
+          alt={label}
+          fill
+          className="object-cover opacity-30 transition-opacity group-hover:opacity-40"
+          sizes="120px"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/40" />
+      </div>
+      <span
+        className="relative z-10 mt-4 text-[9px] font-bold tracking-wider"
+        style={{ color: active ? '#a2dd00' : 'rgba(243,240,237,0.5)' }}
+      >
         {label}
       </span>
     </button>
@@ -239,41 +284,13 @@ function AdvancedTabCard({
 // ─── InfluencerSidebar ────────────────────────────────────────────────────────
 
 export function InfluencerSidebar() {
+  const { selections, set, reset, prompt } = useInfluencerBuilder();
   const [tab, setTab] = useState<'builder' | 'prompt'>('builder');
   const [advancedTab, setAdvancedTab] = useState<'face' | 'body' | 'style'>('face');
 
-  // Builder form state
-  const [characterType, setCharacterType] = useState('Humano');
-  const [gender, setGender] = useState('Feminino');
-  const [ethnicity, setEthnicity] = useState('Latina');
-  const [skinColor, setSkinColor] = useState('Clara');
-  const [eyeColor, setEyeColor] = useState('Castanho');
-  const [skinCondition, setSkinCondition] = useState('Lisa');
-  const [age, setAge] = useState('Jovem adulto');
-
-  // Advanced: Face
-  const [eyeType, setEyeType] = useState('Amendoado');
-  const [eyeDetails, setEyeDetails] = useState('Natural');
-  const [mouth, setMouth] = useState('Natural');
-  const [ears, setEars] = useState('Normal');
-
-  function handleReset() {
-    setCharacterType('Humano');
-    setGender('Feminino');
-    setEthnicity('Latina');
-    setSkinColor('Clara');
-    setEyeColor('Castanho');
-    setSkinCondition('Lisa');
-    setAge('Jovem adulto');
-    setEyeType('Amendoado');
-    setEyeDetails('Natural');
-    setMouth('Natural');
-    setEars('Normal');
-  }
-
   return (
     <>
-      {/* Tab toggle + Reset */}
+      {/* Abas + Resetar */}
       <div className="flex items-center justify-between border-b border-[#f3f0ed]/[0.05] px-4 py-3">
         <div className="flex gap-1 rounded-lg bg-[#f3f0ed]/[0.04] p-0.5">
           <button
@@ -284,7 +301,7 @@ export function InfluencerSidebar() {
               color: tab === 'builder' ? '#a2dd00' : 'rgba(243,240,237,0.35)',
             }}
           >
-            Builder
+            Construtor
           </button>
           <button
             onClick={() => setTab('prompt')}
@@ -298,84 +315,91 @@ export function InfluencerSidebar() {
           </button>
         </div>
         <button
-          onClick={handleReset}
+          onClick={reset}
           className="flex items-center gap-1 text-[10px] font-semibold text-[#f3f0ed]/30 transition-colors hover:text-[#f3f0ed]/60"
         >
           <RotateCcw className="h-3 w-3" />
-          Reset
+          Resetar
         </button>
       </div>
 
-      {/* Content area */}
+      {/* Área de conteúdo */}
       <div className="sidebar-scroll flex-1 overflow-y-auto">
         {tab === 'prompt' ? (
-          <div className="p-4">
+          <div className="p-4 space-y-2">
+            <p className="text-[10px] font-bold tracking-[0.1em] text-[#f3f0ed]/40">
+              PROMPT GERADO (INGLÊS)
+            </p>
             <textarea
-              rows={6}
-              placeholder="Descreva sua influencer em detalhes..."
-              className="w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30"
+              rows={10}
+              readOnly
+              value={prompt}
+              className="w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-xs leading-relaxed text-[#f3f0ed]/70 placeholder-[#f3f0ed]/25 outline-none"
             />
+            <p className="text-[9px] text-[#f3f0ed]/20">
+              Este prompt é gerado automaticamente com base nas suas seleções no Construtor.
+            </p>
           </div>
         ) : (
           <>
-            {/* ── Basic builder sections ─────────────────────────────── */}
+            {/* ── Seções básicas ──────────────────────────────────────── */}
             <Section title="TIPO DE PERSONAGEM" icon={Users}>
               <ImageOptionGrid
                 options={CHARACTER_TYPES}
-                value={characterType}
-                onChange={setCharacterType}
+                value={selections.characterType}
+                onChange={(v) => set('characterType', v)}
               />
             </Section>
 
             <Section title="GÊNERO" icon={ImageIcon}>
               <ImageOptionGrid
                 options={GENDER_TYPES}
-                value={gender}
-                onChange={setGender}
+                value={selections.gender}
+                onChange={(v) => set('gender', v)}
               />
             </Section>
 
             <Section title="ETNIA" icon={Globe}>
               <ImageOptionGrid
                 options={ETHNICITY_TYPES}
-                value={ethnicity}
-                onChange={setEthnicity}
+                value={selections.ethnicity}
+                onChange={(v) => set('ethnicity', v)}
               />
             </Section>
 
             <Section title="COR DA PELE" icon={CircleDot}>
-              <ColorSwatchGrid
+              <ImageOptionGrid
                 options={SKIN_COLORS}
-                value={skinColor}
-                onChange={setSkinColor}
+                value={selections.skinColor}
+                onChange={(v) => set('skinColor', v)}
               />
             </Section>
 
             <Section title="COR DOS OLHOS" icon={Palette}>
-              <ColorSwatchGrid
+              <ImageOptionGrid
                 options={EYE_COLORS}
-                value={eyeColor}
-                onChange={setEyeColor}
+                value={selections.eyeColor}
+                onChange={(v) => set('eyeColor', v)}
               />
             </Section>
 
             <Section title="CONDIÇÕES DA PELE" icon={User}>
-              <ColorSwatchGrid
+              <ImageOptionGrid
                 options={SKIN_CONDITIONS}
-                value={skinCondition}
-                onChange={setSkinCondition}
+                value={selections.skinCondition}
+                onChange={(v) => set('skinCondition', v)}
               />
             </Section>
 
             <Section title="IDADE" icon={ImageIcon}>
               <OptionPills
                 options={['Adolescente', 'Jovem adulto', 'Adulto', 'Meia-idade', 'Idoso']}
-                value={age}
-                onChange={setAge}
+                value={selections.age}
+                onChange={(v) => set('age', v)}
               />
             </Section>
 
-            {/* ── Advanced settings ──────────────────────────────────── */}
+            {/* ── Configurações avançadas ──────────────────────────────── */}
             <div className="border-b border-[#f3f0ed]/[0.05] px-4 py-4">
               <div className="mb-3 flex items-center gap-2">
                 <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#a2dd00]/10">
@@ -387,49 +411,68 @@ export function InfluencerSidebar() {
               </div>
 
               <div className="flex gap-2">
-                <AdvancedTabCard
-                  icon={Smile}
-                  label="Face"
-                  active={advancedTab === 'face'}
-                  onClick={() => setAdvancedTab('face')}
-                />
-                <AdvancedTabCard
-                  icon={Shirt}
-                  label="Body"
-                  active={advancedTab === 'body'}
-                  onClick={() => setAdvancedTab('body')}
-                />
-                <AdvancedTabCard
-                  icon={ChessKing}
-                  label="Style"
-                  active={advancedTab === 'style'}
-                  onClick={() => setAdvancedTab('style')}
-                />
+                {ADVANCED_TABS.map((t) => (
+                  <AdvancedTabCard
+                    key={t.id}
+                    image={t.image}
+                    label={t.label}
+                    active={advancedTab === t.id}
+                    onClick={() => setAdvancedTab(t.id)}
+                  />
+                ))}
               </div>
             </div>
 
-            {/* Advanced sub-sections */}
+            {/* Sub-seções avançadas */}
             {advancedTab === 'face' && (
               <>
                 <Section title="OLHOS - TIPO" icon={Eye}>
-                  <OptionPills
-                    options={['Amendoado', 'Arredondado', 'Puxado', 'Caído', 'Monolid']}
-                    value={eyeType}
-                    onChange={setEyeType}
+                  <ImageOptionGrid
+                    options={EYES_TYPES}
+                    value={selections.eyeType}
+                    onChange={(v) => set('eyeType', v)}
                   />
                 </Section>
-                <Section title="BOCA & DENTES" icon={Smile}>
-                  <OptionPills
-                    options={['Natural', 'Lábios finos', 'Lábios grossos', 'Sorriso aberto']}
-                    value={mouth}
-                    onChange={setMouth}
+                <Section title="OLHOS - DETALHES" icon={Eye}>
+                  <ImageOptionGrid
+                    options={EYES_DETAILS}
+                    value={selections.eyeDetails}
+                    onChange={(v) => set('eyeDetails', v)}
                   />
                 </Section>
-                <Section title="ORELHAS" icon={Ear}>
-                  <OptionPills
-                    options={['Normal', 'Grandes', 'Pequenas', 'Pontudas']}
-                    value={ears}
-                    onChange={setEars}
+                <Section title="BOCA & DENTES" icon={User}>
+                  <ImageOptionGrid
+                    options={MOUTH_TEETH}
+                    value={selections.mouth}
+                    onChange={(v) => set('mouth', v)}
+                  />
+                </Section>
+                <Section title="ORELHAS" icon={User}>
+                  <ImageOptionGrid
+                    options={EARS_OPTIONS}
+                    value={selections.ears}
+                    onChange={(v) => set('ears', v)}
+                  />
+                </Section>
+                <Section title="CHIFRES" icon={User}>
+                  <ImageOptionGrid
+                    options={HORNS_OPTIONS}
+                    value={selections.horns}
+                    onChange={(v) => set('horns', v)}
+                  />
+                </Section>
+                <Section title="MATERIAL DA PELE" icon={User}>
+                  <ImageOptionGrid
+                    options={FACE_SKIN_MATERIAL}
+                    value={selections.faceSkinMaterial}
+                    onChange={(v) => set('faceSkinMaterial', v)}
+                  />
+                </Section>
+                <Section title="PADRÃO DE SUPERFÍCIE" icon={User}>
+                  <ImageOptionGrid
+                    options={SURFACE_PATTERNS}
+                    value={selections.surfacePattern}
+                    onChange={(v) => set('surfacePattern', v)}
                   />
                 </Section>
               </>
