@@ -10,9 +10,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   ArrowLeft,
+  Calendar,
+  Check,
+  Clock,
   Coins,
+  Copy,
+  Cpu,
   Download,
   Expand,
   FolderIcon,
@@ -21,8 +27,7 @@ import {
   ImageIcon,
   ImagePlus,
   Layers,
-  Loader2,
-  Pencil,
+  Loader2, Pencil,
   Play,
   Plus,
   ScanFace, Settings, Trash2, X
@@ -31,7 +36,7 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, InfiniteData } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-context';
-import { useEditor, GalleryPickerRequest } from '@/lib/editor-context';
+import { useEditor } from '@/lib/editor-context';
 import { api, Folder, Generation, GenerationInputImage, PaginatedResponse } from '@/lib/api';
 
 type GalleryTab = 'all' | 'photos' | 'videos' | 'favorites';
@@ -548,6 +553,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onCr
   const [activeIndex, setActiveIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [lightbox, setLightbox] = useState<GenerationInputImage | null>(null);
+  const [promptCopied, setPromptCopied] = useState(false);
 
   const { data: detailFolders } = useQuery({
     queryKey: ['generation-folders', item.id],
@@ -642,15 +648,64 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onCr
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1 min-w-0">
           {item.prompt && (
-            <p className="text-sm text-[#f3f0ed]/70 line-clamp-3">{item.prompt}</p>
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(item.prompt!);
+                    setPromptCopied(true);
+                    setTimeout(() => setPromptCopied(false), 2000);
+                  }}
+                  className="group flex items-start gap-1.5 text-left cursor-pointer active:scale-95 transition-transform duration-100"
+                >
+                  <p className="text-sm text-[#f3f0ed]/70 line-clamp-3 group-hover:text-[#f3f0ed]/90 transition-colors">{item.prompt}</p>
+                  <span className="relative shrink-0 mt-0.5">
+                    {promptCopied ? (
+                      <>
+                        <span className="absolute inset-0 rounded-full bg-[#a2dd00]/40 animate-ping" />
+                        <Check className="relative h-3.5 w-3.5 text-[#a2dd00]" />
+                      </>
+                    ) : (
+                      <Copy className="h-3.5 w-3.5 text-[#f3f0ed]/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
+                  </span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {promptCopied ? 'Copiado!' : 'Copiar prompt'}
+              </TooltipContent>
+            </Tooltip>
           )}
-          <div className="flex items-center gap-3 text-[10px] text-[#f3f0ed]/30 font-medium tracking-wider">
-            {item.resolution && <span>{item.resolution}</span>}
-            {item.durationSeconds && <span>{item.durationSeconds}s</span>}
-            {item.modelUsed && <span>{item.modelUsed}</span>}
-            {item.creditsConsumed > 0 && <span>{item.creditsConsumed} créditos</span>}
+          <div className="flex flex-col items-start gap-x-3 gap-y-1 mt-1">
+            {item.resolution && (
+              <span className="flex items-center gap-1 text-xs text-[#f3f0ed]/40">
+                <ImagePlus className="h-3 w-3" />
+                {item.resolution}
+              </span>
+            )}
+            {item.durationSeconds && (
+              <span className="flex items-center gap-1 text-xs text-[#f3f0ed]/40">
+                <Clock className="h-3 w-3" />
+                {item.durationSeconds}s
+              </span>
+            )}
+            {item.modelUsed && (
+              <span className="flex items-center gap-1 text-xs text-[#f3f0ed]/40">
+                <Cpu className="h-3 w-3" />
+                {item.modelUsed}
+              </span>
+            )}
+            {item.creditsConsumed > 0 && (
+              <span className="flex items-center gap-1 text-xs text-[#f3f0ed]/40">
+                <Coins className="h-3 w-3" />
+                {item.creditsConsumed}
+              </span>
+            )}
             {item.createdAt && (
-              <span>{new Date(item.createdAt).toLocaleDateString('pt-BR')}</span>
+              <span className="flex items-center gap-1 text-xs text-[#f3f0ed]/40">
+                <Calendar className="h-3 w-3" />
+                {new Date(item.createdAt).toLocaleDateString('pt-BR')}
+              </span>
             )}
           </div>
         </div>
