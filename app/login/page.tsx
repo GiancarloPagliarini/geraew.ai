@@ -5,42 +5,44 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
+import { useGoogleOAuth } from '@react-oauth/google';
 
 const slides = [
   {
     id: 0,
     tag: 'Geração de Vídeos profissionais',
     title: 'Crie vídeos únicos com IA',
-    description: 'Transforme texto em vídeo em segundos com modelos de última geração',
+    description: 'Transforme texto em vídeo em segundos com modelos de última geração.',
     bg: 'bg-black',
     accent: '#a2dd00',
     video: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/s3/ai-generations/generations/cmmwn2wq5007vus01furnxyh4/22c243fd-ce57-4c3e-aa8a-afadc811da46/output_0.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=2e3c372ae61232c26638c35c24b50688%2F20260318%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260318T225640Z&X-Amz-Expires=604800&X-Amz-Signature=7f71f694387a2b2614006ea57b8204993040e992c97f886d7ca619d03588dda0&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject',
   },
   {
     id: 1,
-    tag: 'Personagens',
-    title: 'Personagens que ganham vida',
-    description: 'Construa personagens detalhados com controle total de aparência e estilo',
+    tag: 'Identidade Visual',
+    title: 'Sua marca, do seu jeito',
+    description: 'Crie conteúdo visual consistente para campanhas, redes sociais e muito mais.',
     bg: 'bg-black',
     accent: '#ff6b9d',
     video: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/s3/ai-generations/generations/cmmxjmvws00fyus01sxwu628l/5727b0ea-86d6-4887-8707-57eeb1db17bf/output_2.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=2e3c372ae61232c26638c35c24b50688%2F20260319%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260319T140847Z&X-Amz-Expires=604800&X-Amz-Signature=c3731915c49b12256ff55a1e49c813ecd37e17c347d933fd7748f12478edd98c&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject',
   },
   {
     id: 2,
-    tag: 'Moodboard',
-    title: 'Inspire-se com moodboards',
-    description: 'Organize referências visuais e gere imagens a partir delas automaticamente',
+    tag: 'Geração de Imagens',
+    title: 'Imagine. Descreva. Crie.',
+    description: 'Transforme qualquer ideia em imagem com modelos de última geração — rápido e sem limitações.',
     bg: 'bg-black',
     accent: '#ffa040',
     image: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/s3/ai-generations/generations/cmmxldri200gzus01z4fip7qf/04d6bbed-eb33-4e0a-ae27-8df3e14b6b92/output_0.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=2e3c372ae61232c26638c35c24b50688%2F20260319%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260319T145712Z&X-Amz-Expires=604800&X-Amz-Signature=d94da0d7a749dc62dfe50e76804db9b1dc0677deb4a12395eb98b2c63c3ac3b6&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject',
   },
   {
     id: 3,
-    tag: 'Edição Inteligente',
-    title: 'Edição com inteligência',
-    description: 'Refine cada detalhe das suas criações com ferramentas de IA avançadas',
+    tag: 'Personagens com IA',
+    title: 'Personagens que parecem reais',
+    description: 'Monte personagens únicos com controle total de estilo, etnia, expressão e muito mais.',
     bg: 'bg-gradient-to-br from-teal-950 via-emerald-900 to-cyan-950',
     accent: '#00d4aa',
+    image: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/s3/ai-generations/generations/cmmxwz1zt00zsus01w8hjs14n/2738ecf9-5b07-4fc0-ac89-589eb0b45600/output_0.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=2e3c372ae61232c26638c35c24b50688%2F20260319%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260319T202137Z&X-Amz-Expires=604800&X-Amz-Signature=ef47cb739b190f79059bd5fb95e9f78a579e062d999d89f578c3ecaf0d241e15&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject'
   },
 ];
 
@@ -49,7 +51,7 @@ const TICK_MS = 50;
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, register } = useAuth();
+  const { login, register, googleLogin } = useAuth();
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [progresses, setProgresses] = useState<number[]>(slides.map(() => 0));
@@ -63,6 +65,46 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const { clientId, scriptLoadedSuccessfully } = useGoogleOAuth();
+  const googleBtnRef = useRef<HTMLDivElement>(null);
+
+  // Render a hidden Google button so we get the real ID token on click
+  useEffect(() => {
+    if (!scriptLoadedSuccessfully || !googleBtnRef.current) return;
+    const g = (window as any).google;
+    if (!g?.accounts?.id) return;
+
+    g.accounts.id.initialize({
+      client_id: clientId,
+      callback: async (response: { credential?: string }) => {
+        if (!response.credential) return;
+        setError('');
+        setLoading(true);
+        try {
+          await googleLogin(response.credential);
+          router.push('/');
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'Erro ao entrar com Google';
+          setError(message);
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+
+    g.accounts.id.renderButton(googleBtnRef.current, {
+      type: 'standard',
+      size: 'large',
+      width: 400,
+    });
+  }, [scriptLoadedSuccessfully, clientId, googleLogin, router]);
+
+  function handleGoogleClick() {
+    // Click the real hidden Google button
+    const btn = googleBtnRef.current?.querySelector('div[role="button"]') as HTMLElement | null;
+    btn?.click();
+  }
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const videosRef = useRef<Map<number, HTMLVideoElement>>(new Map());
@@ -221,28 +263,29 @@ export default function LoginPage() {
               Entre ou crie sua conta para começar a criar
             </p>
 
+            {/* Hidden Google button for ID token */}
+            <div ref={googleBtnRef} className="absolute overflow-hidden" style={{ width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} />
+
             {/* Google */}
-            <button className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.05] text-sm font-medium text-white transition-all hover:bg-white/10 active:scale-[0.98]">
+            <button
+              onClick={() => handleGoogleClick()}
+              disabled={loading}
+              className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.05] text-sm font-medium text-white transition-all hover:bg-white/10 active:scale-[0.98]"
+            >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path
-                  fill="#4285F4"
-                  d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"
-                />
+                <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z" />
+                <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z" />
+                <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z" />
+                <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z" />
               </svg>
               Continuar com Google
             </button>
+
+            {error && view === 'options' && (
+              <p className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs text-red-400">
+                {error}
+              </p>
+            )}
 
             {/* Divider */}
             <div className="flex items-center gap-3">
@@ -464,14 +507,17 @@ export default function LoginPage() {
           ))}
         </div>
 
+        {/* Bottom scrim – strong gradient for readability */}
+        <div className="absolute inset-x-0 bottom-0 h-72 bg-linear-to-t from-black/90 via-black/50 to-transparent z-10 pointer-events-none" />
+
         {/* Content – bottom */}
         <div className="absolute bottom-0 left-0 right-0 p-8 z-20">
           <div
-            className="mb-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-widest uppercase transition-all duration-500"
+            className="mb-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-widest uppercase transition-all duration-500 backdrop-blur-sm"
             style={{
-              borderColor: `${slide.accent}40`,
+              borderColor: `${slide.accent}50`,
               color: slide.accent,
-              backgroundColor: `${slide.accent}15`,
+              backgroundColor: `${slide.accent}20`,
             }}
           >
             <span
@@ -484,13 +530,15 @@ export default function LoginPage() {
           <h2
             key={`title-${currentSlide}`}
             className="text-2xl font-bold text-white leading-tight mb-2 animate-in fade-in slide-in-from-bottom-2 duration-500"
+            style={{ textShadow: '0 2px 12px rgba(0,0,0,0.8)' }}
           >
             {slide.title}
           </h2>
 
           <p
             key={`desc-${currentSlide}`}
-            className="text-sm text-white/50 leading-relaxed animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75"
+            className="text-sm text-white/70 leading-relaxed animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75"
+            style={{ textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}
           >
             {slide.description}
           </p>

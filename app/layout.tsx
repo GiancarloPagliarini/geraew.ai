@@ -24,6 +24,7 @@ export const metadata: Metadata = {
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth-context";
 import { QueryProvider } from "@/lib/query-provider";
+import { GoogleAuthWrapper } from "@/lib/google-auth-wrapper";
 import { Toaster } from "sonner";
 
 export default function RootLayout({
@@ -37,6 +38,7 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         <QueryProvider>
+          <GoogleAuthWrapper>
           <AuthProvider>
             <TooltipProvider delayDuration={0}>
               {children}
@@ -68,6 +70,7 @@ export default function RootLayout({
               />
             </TooltipProvider>
           </AuthProvider>
+          </GoogleAuthWrapper>
         </QueryProvider>
       </body>
     </html>

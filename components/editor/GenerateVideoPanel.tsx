@@ -132,7 +132,12 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
       ? 'REFERENCE_VIDEO' as const
       : 'TEXT_TO_VIDEO' as const;
 
-  const [genState, setGenState] = useState<GenState>(stored?.generatedVideoUrls?.length > 0 ? 'done' : 'idle');
+  const [generationId, setGenerationId] = useState<string | null>(stored?.generationId ?? null);
+  const [genState, setGenState] = useState<GenState>(
+    stored?.genState === 'generating' && stored?.generationId
+      ? 'generating'
+      : stored?.generatedVideoUrls?.length > 0 ? 'done' : 'idle'
+  );
 
   const { data: estimate, isLoading: estimateLoading } = useQuery({
     queryKey: ['credits', 'estimate', videoType, resolution, effectiveDuration, audio, sampleCount],
@@ -161,20 +166,29 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Resume in-progress generation on mount (e.g. after page reload)
+  useEffect(() => {
+    if (stored?.genState === 'generating' && stored?.generationId && accessToken) {
+      startProgressAnimation(70);
+      startPollingFallback(stored.generationId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Save form + result state whenever they change
   useEffect(() => {
     try {
       localStorage.setItem(storageKey, JSON.stringify({
-        prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, enhancePrompt, videoMode,
+        prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, generationId, genState, enhancePrompt, videoMode,
         refImages, firstFrame, lastFrame,
       }));
     } catch {
       // Quota exceeded (large base64 images) — save without reference images
       localStorage.setItem(storageKey, JSON.stringify({
-        prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, enhancePrompt, videoMode,
+        prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, generationId, genState, enhancePrompt, videoMode,
       }));
     }
-  }, [storageKey, prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, enhancePrompt, videoMode, refImages, firstFrame, lastFrame]);
+  }, [storageKey, prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, generationId, genState, enhancePrompt, videoMode, refImages, firstFrame, lastFrame]);
 
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const msgIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -320,8 +334,9 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
     }
   }
 
-  function startProgressAnimation() {
-    let current = 0;
+  function startProgressAnimation(from = 0) {
+    let current = from;
+    setProgress(from);
     progressIntervalRef.current = setInterval(() => {
       const remaining = 90 - current;
       const step = Math.max(0.2, Math.random() * (remaining * 0.03 + 0.3));
@@ -448,6 +463,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
       const { id, creditsConsumed } = result;
 
       consumeCredits(creditsConsumed);
+      setGenerationId(id);
 
       sseControllerRef.current = listenGeneration(id, accessToken, {
         onCompleted: ({ generationId, outputUrls }) => {
@@ -480,6 +496,7 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
     setProgress(0);
     setVideosVisible(false);
     setGeneratedVideoUrls([]);
+    setGenerationId(null);
     setSelectedVideoIdx(0);
     setErrorMsg(null);
     setRefImages([]);

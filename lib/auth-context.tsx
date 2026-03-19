@@ -14,9 +14,11 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, name: string, password: string) => Promise<void>;
+  googleLogin: (googleToken: string) => Promise<void>;
   logout: () => void;
   loginMutation: ReturnType<typeof useLoginMutation>;
   registerMutation: ReturnType<typeof useRegisterMutation>;
+  googleLoginMutation: ReturnType<typeof useGoogleLoginMutation>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -80,6 +82,14 @@ function useRegisterMutation(onSuccess: (res: Awaited<ReturnType<typeof api.auth
   });
 }
 
+function useGoogleLoginMutation(onSuccess: (res: Awaited<ReturnType<typeof api.auth.google>>) => void) {
+  return useMutation({
+    mutationFn: ({ googleToken }: { googleToken: string }) =>
+      api.auth.google(googleToken),
+    onSuccess,
+  });
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -95,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginMutation = useLoginMutation(handleAuthSuccess);
   const registerMutation = useRegisterMutation(handleAuthSuccess);
+  const googleLoginMutation = useGoogleLoginMutation(handleAuthSuccess);
 
   // Register the 401 refresh handler so authRequest can auto-retry
   useEffect(() => {
@@ -156,6 +167,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [registerMutation]
   );
 
+  const googleLogin = useCallback(
+    async (googleToken: string) => {
+      await googleLoginMutation.mutateAsync({ googleToken });
+    },
+    [googleLoginMutation]
+  );
+
   const logout = useCallback(async () => {
     if (state.refreshToken) {
       api.auth.logout(state.refreshToken).catch(() => {});
@@ -165,7 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [state.refreshToken]);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, loginMutation, registerMutation }}>
+    <AuthContext.Provider value={{ ...state, login, register, googleLogin, logout, loginMutation, registerMutation, googleLoginMutation }}>
       {children}
     </AuthContext.Provider>
   );

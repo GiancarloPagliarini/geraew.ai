@@ -1,12 +1,13 @@
 'use client';
 
-import { Coins, CreditCard, Gift, LogOut, Plus, Settings, User } from 'lucide-react';
+import { BadgePercent, Coins, CreditCard, Gift, LogOut, Plus, Settings, User } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
 import { BuyCreditsModal } from './BuyCreditsModal';
+import { PlansModal } from './PlansModal';
 
 export function TopNavbar() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export function TopNavbar() {
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [buyModalOpen, setBuyModalOpen] = useState(false);
+  const [plansModalOpen, setPlansModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Fecha o menu ao clicar fora
@@ -117,6 +119,14 @@ export function TopNavbar() {
                       router.push('/creditos');
                     }}
                   />
+                  <DropdownItem
+                    icon={BadgePercent}
+                    label="Planos"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setPlansModalOpen(true);
+                    }}
+                  />
                 </div>
 
                 {/* Logout */}
@@ -138,6 +148,7 @@ export function TopNavbar() {
       </header>
 
       {buyModalOpen && <BuyCreditsModal onClose={() => setBuyModalOpen(false)} />}
+      {plansModalOpen && <PlansModal onClose={() => setPlansModalOpen(false)} />}
     </>
   );
 }

@@ -122,7 +122,11 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
   const [quality, setQuality] = useState<string>(stored?.quality ?? 'hd');
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(stored?.generatedImageUrl ?? null);
 
-  const [genState, setGenState] = useState<GenState>(stored?.generatedImageUrl ? 'done' : 'idle');
+  const [genState, setGenState] = useState<GenState>(
+    stored?.genState === 'generating' && stored?.generationId
+      ? 'generating'
+      : stored?.generatedImageUrl ? 'done' : 'idle'
+  );
   const [progress, setProgress] = useState(0);
   const [imageVisible, setImageVisible] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -142,15 +146,24 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Resume in-progress generation on mount (e.g. after page reload)
+  useEffect(() => {
+    if (stored?.genState === 'generating' && stored?.generationId && accessToken) {
+      startProgressAnimation(70);
+      startPollingFallback(stored.generationId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Save form + result state whenever they change
   useEffect(() => {
     try {
-      localStorage.setItem(storageKey, JSON.stringify({ prompt, model, proportion, quality, generatedImageUrl, generationId, enhancePrompt, attachedImages }));
+      localStorage.setItem(storageKey, JSON.stringify({ prompt, model, proportion, quality, generatedImageUrl, generationId, genState, enhancePrompt, attachedImages }));
     } catch {
       // Quota exceeded (large base64 images) — save without attachedImages
-      localStorage.setItem(storageKey, JSON.stringify({ prompt, model, proportion, quality, generatedImageUrl, generationId, enhancePrompt }));
+      localStorage.setItem(storageKey, JSON.stringify({ prompt, model, proportion, quality, generatedImageUrl, generationId, genState, enhancePrompt }));
     }
-  }, [storageKey, prompt, model, proportion, quality, generatedImageUrl, generationId, enhancePrompt, attachedImages]);
+  }, [storageKey, prompt, model, proportion, quality, generatedImageUrl, generationId, genState, enhancePrompt, attachedImages]);
 
   const panelRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -260,8 +273,9 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
     }
   }
 
-  function startProgressAnimation() {
-    let current = 0;
+  function startProgressAnimation(from = 0) {
+    let current = from;
+    setProgress(from);
     progressIntervalRef.current = setInterval(() => {
       const remaining = 90 - current;
       const step = Math.max(0.3, Math.random() * (remaining * 0.05 + 0.5));
@@ -361,6 +375,7 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
       });
 
       consumeCredits(creditsConsumed);
+      setGenerationId(id);
 
       // Conecta via SSE e faz fallback automático para polling se falhar
       sseControllerRef.current = listenGeneration(id, accessToken, {

@@ -109,6 +109,19 @@ export interface CreditPackage {
   createdAt: string;
 }
 
+export interface Plan {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  priceCents: number;
+  creditsPerMonth: number;
+  maxConcurrentGenerations: number;
+  hasWatermark: boolean;
+  galleryRetentionDays: number | null;
+  hasApiAccess: boolean;
+}
+
 // ─── Generations ──────────────────────────────────────────────────────────────
 
 export type GenerationStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
@@ -448,6 +461,12 @@ export const api = {
     },
   },
 
+  plans: {
+    list(accessToken: string) {
+      return authRequest<Plan[]>('/api/v1/plans', accessToken);
+    },
+  },
+
   promptEnhancer: {
     enhance(accessToken: string, prompt: string) {
       return authRequest<{ enhancedPrompt: string }>('/api/v1/prompt-enhancer/enhance', accessToken, {
@@ -476,6 +495,13 @@ export const api = {
       return request<AuthResponse>('/api/v1/auth/refresh', {
         method: 'POST',
         body: JSON.stringify({ refreshToken }),
+      });
+    },
+
+    google(googleToken: string) {
+      return request<AuthResponse>('/api/v1/auth/google', {
+        method: 'POST',
+        body: JSON.stringify({ googleToken }),
       });
     },
 

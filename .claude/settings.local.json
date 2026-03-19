@@ -31,7 +31,8 @@
       "Bash(npm install sonner)",
       "Bash(npm install sonner --legacy-peer-deps)",
       "Bash(xargs grep -l \"Skeleton\")",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm install:*)"
     ]
   }
 }
