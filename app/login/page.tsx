@@ -108,35 +108,56 @@ export default function LoginPage() {
     const g = (window as any).google;
     if (!g?.accounts?.id) return;
 
-    g.accounts.id.initialize({
-      client_id: clientId,
-      callback: (response: { credential?: string }) => googleCallbackRef.current(response),
-    });
+    if (!clientId) {
+      console.warn('Google Client ID not found. Check NEXT_PUBLIC_GOOGLE_CLIENT_ID environment variable.');
+      return;
+    }
 
-    g.accounts.id.renderButton(googleBtnRef.current, {
-      type: 'standard',
-      size: 'large',
-      width: 400,
-    });
+    try {
+      g.accounts.id.initialize({
+        client_id: clientId,
+        callback: (response: { credential?: string }) => googleCallbackRef.current(response),
+      });
 
-    setGoogleReady(true);
+      g.accounts.id.renderButton(googleBtnRef.current, {
+        type: 'standard',
+        size: 'large',
+        width: 400,
+      });
+
+      setGoogleReady(true);
+    } catch (err) {
+      console.error('Error initializing Google One Tap:', err);
+    }
   }, [scriptLoadedSuccessfully, clientId]);
 
   function handleGoogleClick() {
     const g = (window as any).google;
 
-    // Try clicking the hidden rendered button first
-    const btn = googleBtnRef.current?.querySelector('div[role="button"]') as HTMLElement | null
-      ?? googleBtnRef.current?.querySelector('iframe')?.parentElement as HTMLElement | null;
-    if (btn) {
-      btn.click();
+    if (!clientId) {
+      setError('Configuração do Google incompleta (Client ID faltando)');
       return;
     }
 
-    // Fallback: trigger One Tap prompt
-    if (g?.accounts?.id) {
-      g.accounts.id.prompt();
+    if (!g?.accounts?.id) {
+      setError('Script do Google não carregado corretamente');
+      return;
     }
+
+    // Attempt to trigger One Tap prompt as primary programmatic action
+    g.accounts.id.prompt((notification: any) => {
+      if (notification.isNotDisplayed()) {
+        console.log('One Tap not displayed:', notification.getNotDisplayedReason());
+        // If One Tap is suppressed, try clicking the hidden button as fallback
+        const btn = googleBtnRef.current?.querySelector('div[role="button"]') as HTMLElement | null
+          ?? googleBtnRef.current?.querySelector('iframe')?.parentElement as HTMLElement | null;
+        if (btn) {
+          btn.click();
+        } else {
+          setError('Não foi possível iniciar o login com Google. Tente novamente ou use outro método.');
+        }
+      }
+    });
   }
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
