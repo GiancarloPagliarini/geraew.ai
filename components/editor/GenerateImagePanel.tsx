@@ -165,6 +165,16 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
     }
   }, [storageKey, prompt, model, proportion, quality, generatedImageUrl, generationId, genState, enhancePrompt, attachedImages]);
 
+  // Update document title while generating
+  useEffect(() => {
+    if (genState === 'generating') {
+      document.title = 'Geraew AI - Gerando imagem';
+    } else {
+      document.title = 'Geraew AI';
+    }
+    return () => { document.title = 'Geraew AI'; };
+  }, [genState]);
+
   const panelRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const draggableImgRef = useRef<HTMLImageElement | null>(null);

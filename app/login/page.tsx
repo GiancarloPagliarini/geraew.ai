@@ -68,8 +68,41 @@ export default function LoginPage() {
 
   const { clientId, scriptLoadedSuccessfully } = useGoogleOAuth();
   const googleBtnRef = useRef<HTMLDivElement>(null);
+  const [googleReady, setGoogleReady] = useState(false);
+  const googleCallbackRef = useRef(async (response: { credential?: string }) => {
+    if (!response.credential) return;
+    setError('');
+    setLoading(true);
+    try {
+      await googleLogin(response.credential);
+      router.push('/');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao entrar com Google';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  });
 
-  // Render a hidden Google button so we get the real ID token on click
+  // Keep callback ref up to date
+  useEffect(() => {
+    googleCallbackRef.current = async (response: { credential?: string }) => {
+      if (!response.credential) return;
+      setError('');
+      setLoading(true);
+      try {
+        await googleLogin(response.credential);
+        router.push('/');
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Erro ao entrar com Google';
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+  }, [googleLogin, router]);
+
+  // Initialize Google Sign-In and render hidden button
   useEffect(() => {
     if (!scriptLoadedSuccessfully || !googleBtnRef.current) return;
     const g = (window as any).google;
@@ -77,20 +110,7 @@ export default function LoginPage() {
 
     g.accounts.id.initialize({
       client_id: clientId,
-      callback: async (response: { credential?: string }) => {
-        if (!response.credential) return;
-        setError('');
-        setLoading(true);
-        try {
-          await googleLogin(response.credential);
-          router.push('/');
-        } catch (err: unknown) {
-          const message = err instanceof Error ? err.message : 'Erro ao entrar com Google';
-          setError(message);
-        } finally {
-          setLoading(false);
-        }
-      },
+      callback: (response: { credential?: string }) => googleCallbackRef.current(response),
     });
 
     g.accounts.id.renderButton(googleBtnRef.current, {
@@ -98,12 +118,25 @@ export default function LoginPage() {
       size: 'large',
       width: 400,
     });
-  }, [scriptLoadedSuccessfully, clientId, googleLogin, router]);
+
+    setGoogleReady(true);
+  }, [scriptLoadedSuccessfully, clientId]);
 
   function handleGoogleClick() {
-    // Click the real hidden Google button
-    const btn = googleBtnRef.current?.querySelector('div[role="button"]') as HTMLElement | null;
-    btn?.click();
+    const g = (window as any).google;
+
+    // Try clicking the hidden rendered button first
+    const btn = googleBtnRef.current?.querySelector('div[role="button"]') as HTMLElement | null
+      ?? googleBtnRef.current?.querySelector('iframe')?.parentElement as HTMLElement | null;
+    if (btn) {
+      btn.click();
+      return;
+    }
+
+    // Fallback: trigger One Tap prompt
+    if (g?.accounts?.id) {
+      g.accounts.id.prompt();
+    }
   }
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -264,13 +297,13 @@ export default function LoginPage() {
             </p>
 
             {/* Hidden Google button for ID token */}
-            <div ref={googleBtnRef} className="absolute overflow-hidden" style={{ width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} />
+            <div ref={googleBtnRef} className="fixed overflow-hidden" style={{ top: -1000, left: -1000, opacity: 0 }} />
 
             {/* Google */}
             <button
               onClick={() => handleGoogleClick()}
-              disabled={loading}
-              className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.05] text-sm font-medium text-white transition-all hover:bg-white/10 active:scale-[0.98]"
+              disabled={loading || !googleReady}
+              className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.05] text-sm font-medium text-white transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50"
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z" />

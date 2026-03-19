@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, AuthUser, setRefreshHandler } from './api';
 
 interface AuthState {
@@ -63,6 +63,13 @@ function clearAuth() {
   if (typeof localStorage !== 'undefined') {
     localStorage.removeItem('geraew-auth');
     localStorage.removeItem('geraew-auth-data');
+    // Clear canvas and panel data from previous session
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('geraew-')) keysToRemove.push(key);
+    }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
   }
 }
 
@@ -91,6 +98,7 @@ function useGoogleLoginMutation(onSuccess: (res: Awaited<ReturnType<typeof api.a
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [state, setState] = useState<AuthState>({
     user: null,
     accessToken: null,
@@ -179,8 +187,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       api.auth.logout(state.refreshToken).catch(() => {});
     }
     clearAuth();
+    queryClient.clear();
     setState({ user: null, accessToken: null, refreshToken: null, loading: false });
-  }, [state.refreshToken]);
+  }, [state.refreshToken, queryClient]);
 
   return (
     <AuthContext.Provider value={{ ...state, login, register, googleLogin, logout, loginMutation, registerMutation, googleLoginMutation }}>

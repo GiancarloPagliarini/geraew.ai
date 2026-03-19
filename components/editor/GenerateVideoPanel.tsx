@@ -190,6 +190,16 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
     }
   }, [storageKey, prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, generationId, genState, enhancePrompt, videoMode, refImages, firstFrame, lastFrame]);
 
+  // Update document title while generating
+  useEffect(() => {
+    if (genState === 'generating') {
+      document.title = 'Geraew AI - Gerando Vídeo';
+    } else {
+      document.title = 'Geraew AI';
+    }
+    return () => { document.title = 'Geraew AI'; };
+  }, [genState]);
+
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const msgIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
