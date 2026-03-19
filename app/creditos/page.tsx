@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import type { Plan } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { useLoadingMessage } from '@/lib/loading-messages';
 import {
@@ -12,51 +13,46 @@ import {
   CalendarDays,
   TrendingUp,
   Check,
-  Star,
-  Flame,
-  ArrowRight,
   Lock,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import type { CreditPackage } from '@/lib/api';
+import { useEffect, useState } from 'react';
 
-// Rough estimates: ~38 credits per high-quality image, ~62 per video
-function getPerks(pkg: CreditPackage, isBest: boolean): string[] {
-  const images = Math.floor(pkg.credits / 38);
-  const videos = Math.floor(pkg.credits / 62);
+const PLAN_ORDER = ['free', 'starter', 'pro', 'business'];
 
-  const perks = [
-    `Até ${images} imagens em alta qualidade`,
-    `Até ${videos} vídeos com movimento`,
-    'Combinação livre entre mídias',
-  ];
-
-  if (pkg.credits >= 1000) {
-    perks[2] = 'Equilíbrio entre imagens e vídeos';
-  }
-  if (pkg.credits >= 2000) {
-    perks[2] = 'Produção intensa sem se preocupar';
-  }
-  if (isBest) {
-    perks.push('Volume máximo para produção profissional');
-  }
-
-  return perks;
+function formatPrice(priceCents: number) {
+  if (priceCents === 0) return { main: 'Grátis', sub: null };
+  const int = Math.floor(priceCents / 100);
+  const cents = String(priceCents % 100).padStart(2, '0');
+  return { main: `R$ ${int.toLocaleString('pt-BR')},${cents}`, sub: '/mês' };
 }
 
-function getBadge(i: number, total: number): 'popular' | 'best' | null {
-  if (total <= 1) return null;
-  if (total === 2) return i === 1 ? 'best' : null;
-  if (i === Math.floor(total / 2)) return 'popular';
-  if (i === total - 1) return 'best';
-  return null;
+function getPlanFeatures(plan: Plan): string[] {
+  return [
+    `${plan.creditsPerMonth.toLocaleString('pt-BR')} créditos/mês`,
+    `Até ${plan.maxConcurrentGenerations} gerações simultâneas`,
+    plan.hasWatermark ? null : 'Sem marca d\'água',
+    plan.galleryRetentionDays ? `Galeria por ${plan.galleryRetentionDays} dias` : 'Galeria ilimitada',
+    plan.hasApiAccess ? 'Acesso à API' : null,
+  ].filter(Boolean) as string[];
 }
 
 export default function CreditosPage() {
   const router = useRouter();
   const { user, accessToken, loading: authLoading } = useAuth();
   const loadingMsg = useLoadingMessage('creditos');
+  const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
+
+  async function handleSubscribe(planSlug: string) {
+    if (!accessToken || subscribingSlug) return;
+    setSubscribingSlug(planSlug);
+    try {
+      const { checkoutUrl } = await api.subscriptions.create(accessToken, planSlug);
+      window.location.href = checkoutUrl;
+    } catch {
+      setSubscribingSlug(null);
+    }
+  }
 
   const { data: balance, isLoading: balanceLoading } = useQuery({
     queryKey: ['credits', 'balance'],
@@ -64,17 +60,25 @@ export default function CreditosPage() {
     enabled: !!accessToken,
   });
 
-  const { data: packages, isLoading: packagesLoading } = useQuery({
-    queryKey: ['credits', 'packages'],
-    queryFn: () => api.credits.packages(accessToken!),
+  const { data: plans, isLoading: plansLoading } = useQuery({
+    queryKey: ['plans'],
+    queryFn: () => api.plans.list(accessToken!),
     enabled: !!accessToken,
+    staleTime: 5 * 60_000,
+  });
+
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ['user', 'me'],
+    queryFn: () => api.users.me(accessToken!),
+    enabled: !!accessToken,
+    staleTime: 60_000,
   });
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/login');
   }, [authLoading, user, router]);
 
-  const isLoading = authLoading || balanceLoading || packagesLoading;
+  const isLoading = authLoading || balanceLoading || plansLoading || profileLoading;
 
   if (isLoading) {
     return (
@@ -95,14 +99,12 @@ export default function CreditosPage() {
   const totalCredits = balance ? balance.totalCreditsAvailable + balance.planCreditsUsed : 0;
   const usagePercent = totalCredits > 0 ? (balance!.planCreditsUsed / totalCredits) * 100 : 0;
 
-  const activePackages = (packages ?? [])
-    .filter((p) => p.isActive)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const currentPlanSlug =
+    (profile?.plan as Record<string, unknown> | null)?.slug as string | null ?? null;
 
-  const basePricePerCredit =
-    activePackages.length > 0
-      ? Math.max(...activePackages.map((p) => p.priceCents / p.credits))
-      : 0;
+  const sortedPlans = (plans ?? []).slice().sort(
+    (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),
+  );
 
   return (
     <div className="flex min-h-screen flex-col bg-[#1a2123]">
@@ -117,7 +119,7 @@ export default function CreditosPage() {
         </button>
       </header>
 
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-12 px-4 py-10">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-12 px-4 py-10">
 
         {/* ── Balance ── */}
         {balance && (
@@ -180,18 +182,19 @@ export default function CreditosPage() {
           </div>
         )}
 
-        {/* ── Packages ── */}
-        {activePackages.length > 0 && (
+        {/* ── Plans ── */}
+        {sortedPlans.length > 0 && (
           <div className="flex flex-col gap-8">
 
             {/* Heading */}
             <div className="flex flex-col items-center gap-3 text-center">
               <h2 className="text-2xl font-bold text-[#f3f0ed]">
-                Escolha seu pacote de créditos
+                Escolha seu plano
               </h2>
-              <span className="rounded-full border border-[#f3f0ed]/10 px-4 py-1.5 text-xs text-[#f3f0ed]/50">
-                Créditos extras nunca expiram
-              </span>
+              <p className="flex items-center gap-1.5 text-xs text-[#f3f0ed]/40">
+                <Coins className="h-3 w-3 text-[#a2dd00]" />
+                Créditos do plano renovam mensalmente
+              </p>
               <div className="flex items-center gap-1.5 text-[11px] text-[#f3f0ed]/30">
                 <Lock className="h-3 w-3" />
                 Pagamento seguro via Pix ou Cartão
@@ -200,111 +203,78 @@ export default function CreditosPage() {
 
             {/* Cards */}
             <div
-              className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4"
-              style={{ gridTemplateColumns: `repeat(${Math.min(activePackages.length, 4)}, minmax(0, 1fr))` }}
+              className="grid items-stretch gap-4"
+              style={{ gridTemplateColumns: `repeat(${Math.min(sortedPlans.length, 4)}, minmax(0, 1fr))` }}
             >
-              {activePackages.map((pkg, i) => {
-                const badge = getBadge(i, activePackages.length);
-                const isPopular = badge === 'popular';
-                const isBest = badge === 'best';
-                const pricePerCredit = pkg.priceCents / pkg.credits;
-                const savingsPct =
-                  basePricePerCredit > 0
-                    ? Math.round((1 - pricePerCredit / basePricePerCredit) * 100)
-                    : 0;
-                const perks = getPerks(pkg, isBest);
-                const priceInt = Math.floor(pkg.priceCents / 100);
-                const priceCents = String(pkg.priceCents % 100).padStart(2, '0');
+              {sortedPlans.map((plan) => {
+                const isCurrent = currentPlanSlug === plan.slug;
+                const isFree = plan.priceCents === 0;
+                const isPro = plan.slug === 'pro';
+                const { main, sub } = formatPrice(plan.priceCents);
+                const features = getPlanFeatures(plan);
+                const isSubscribing = subscribingSlug === plan.slug;
 
                 return (
                   <div
-                    key={pkg.id}
-                    className={`relative flex flex-col rounded-2xl border p-5 transition-all duration-200 ${
-                      isBest
+                    key={plan.id}
+                    className={`relative flex flex-col rounded-2xl border p-5 transition-all ${
+                      isCurrent
                         ? 'border-[#a2dd00]/50 bg-[#1e2b1f] shadow-[0_0_30px_rgba(162,221,0,0.1)]'
-                        : isPopular
+                        : isPro
                           ? 'border-[#f3f0ed]/20 bg-[#1f2a2d]'
                           : 'border-[#f3f0ed]/8 bg-[#1c2527]'
                     }`}
                   >
-                    {/* Badge */}
-                    {isPopular && (
-                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                        <span className="flex items-center gap-1 rounded-full border border-[#f3f0ed]/20 bg-[#1a2123] px-3 py-1 text-[10px] font-bold tracking-widest text-[#f3f0ed]">
-                          <Star className="h-2.5 w-2.5 fill-current" />
-                          MAIS POPULAR
-                        </span>
-                      </div>
-                    )}
-                    {isBest && (
+                    {isCurrent && (
                       <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
                         <span className="flex items-center gap-1 rounded-full bg-[#a2dd00] px-3 py-1 text-[10px] font-bold tracking-widest text-[#1a2123]">
-                          <Flame className="h-2.5 w-2.5" />
-                          MELHOR VALOR
+                          <Sparkles className="h-2.5 w-2.5" />
+                          SEU PLANO
                         </span>
                       </div>
                     )}
 
-                    {/* Price */}
-                    <div className="mt-3 flex items-baseline gap-0.5">
-                      <span className="text-sm font-bold text-[#f3f0ed]/60">R$</span>
-                      <span className="text-3xl font-bold tabular-nums text-[#f3f0ed]">
-                        {priceInt.toLocaleString('pt-BR')},{priceCents}
+                    <p className="mt-3 text-sm font-bold text-[#f3f0ed]">{plan.name}</p>
+
+                    <div className="mt-2 flex items-baseline gap-1">
+                      <span className={`text-2xl font-bold tabular-nums ${isCurrent ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'}`}>
+                        {main}
                       </span>
+                      {sub && <span className="text-[11px] text-[#f3f0ed]/40">{sub}</span>}
                     </div>
 
-                    {/* Credits */}
-                    <p className="mt-1 text-base font-bold text-[#f3f0ed]">
-                      {pkg.credits.toLocaleString('pt-BR')} créditos
-                    </p>
-
-                    {/* Savings badge */}
-                    {savingsPct > 0 && (
-                      <span className="mt-1.5 w-fit rounded-full bg-[#a2dd00]/15 px-2 py-0.5 text-[10px] font-bold text-[#a2dd00]">
-                        {savingsPct}% mais barato
-                      </span>
-                    )}
-
-                    {/* Description */}
-                    <p className="mt-3 text-xs leading-relaxed text-[#f3f0ed]/40">
-                      Gera imagens e vídeos em alta qualidade.
-                    </p>
-
-                    {/* Divider */}
                     <div className="my-4 h-px w-full bg-[#f3f0ed]/6" />
 
-                    {/* Perks */}
                     <ul className="flex flex-1 flex-col gap-2.5">
-                      {perks.map((perk) => (
-                        <li key={perk} className="flex items-start gap-2 text-xs text-[#f3f0ed]/60">
-                          <Check
-                            className={`mt-px h-3.5 w-3.5 shrink-0 ${
-                              isBest ? 'text-[#a2dd00]' : 'text-[#a2dd00]/60'
-                            }`}
-                          />
-                          {perk}
+                      {features.map((f) => (
+                        <li key={f} className="flex items-start gap-2 text-xs text-[#f3f0ed]/60">
+                          <Check className={`mt-px h-3.5 w-3.5 shrink-0 ${isCurrent ? 'text-[#a2dd00]' : 'text-[#a2dd00]/60'}`} />
+                          {f}
                         </li>
                       ))}
                     </ul>
 
-                    {/* Price per credit */}
-                    <p className="mt-4 text-[11px] text-[#f3f0ed]/20">
-                      R$ {(pricePerCredit / 100).toFixed(4).replace('.', ',')} por crédito
-                    </p>
-
-                    {/* CTA */}
-                    <button
-                      className={`mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all active:scale-[0.98] ${
-                        isBest
-                          ? 'bg-[#a2dd00] text-[#1a2123] hover:brightness-110'
-                          : isPopular
-                            ? 'border border-[#f3f0ed]/20 bg-transparent text-[#f3f0ed] hover:bg-[#f3f0ed]/8'
-                            : 'bg-[#f3f0ed]/8 text-[#f3f0ed] hover:bg-[#f3f0ed]/12'
-                      }`}
-                    >
-                      Comprar
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
+                    {!isFree && (
+                      <button
+                        disabled={isCurrent || !!subscribingSlug}
+                        onClick={() => handleSubscribe(plan.slug)}
+                        className={`mt-5 flex h-10 w-full items-center justify-center rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${
+                          isCurrent
+                            ? 'bg-[#a2dd00]/20 text-[#a2dd00]'
+                            : isPro
+                              ? 'border border-[#f3f0ed]/20 bg-transparent text-[#f3f0ed] hover:bg-[#f3f0ed]/8'
+                              : 'bg-[#f3f0ed]/8 text-[#f3f0ed] hover:bg-[#f3f0ed]/12'
+                        }`}
+                      >
+                        {isSubscribing ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : isCurrent ? (
+                          'Plano ativo'
+                        ) : (
+                          'Assinar'
+                        )}
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -312,7 +282,7 @@ export default function CreditosPage() {
 
             {/* Footer */}
             <p className="text-center text-xs text-[#f3f0ed]/20">
-              Pagamento único · Sem assinatura · Créditos acumulam com os do plano
+              Créditos extras comprados nunca expiram · Acumulam com os do plano
             </p>
           </div>
         )}

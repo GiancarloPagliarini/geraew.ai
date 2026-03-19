@@ -8,7 +8,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api, Plan } from '@/lib/api';
 
@@ -24,12 +24,15 @@ function formatPrice(priceCents: number) {
 interface PlanCardProps {
   plan: Plan;
   isCurrent: boolean;
+  onSubscribe: (slug: string) => void;
+  subscribingSlug: string | null;
 }
 
-function PlanCard({ plan, isCurrent }: PlanCardProps) {
+function PlanCard({ plan, isCurrent, onSubscribe, subscribingSlug }: PlanCardProps) {
   const isFree = plan.priceCents === 0;
   const isPro = plan.slug === 'pro';
   const { main, sub } = formatPrice(plan.priceCents);
+  const isSubscribing = subscribingSlug === plan.slug;
 
   const features = [
     `${plan.creditsPerMonth.toLocaleString('pt-BR')} créditos/mês`,
@@ -80,7 +83,8 @@ function PlanCard({ plan, isCurrent }: PlanCardProps) {
 
       {!isFree && (
         <button
-          disabled={isCurrent}
+          disabled={isCurrent || !!subscribingSlug}
+          onClick={() => onSubscribe(plan.slug)}
           className={`mt-5 flex h-10 w-full items-center justify-center rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${
             isCurrent
               ? 'bg-[#a2dd00]/20 text-[#a2dd00]'
@@ -89,7 +93,13 @@ function PlanCard({ plan, isCurrent }: PlanCardProps) {
                 : 'bg-[#f3f0ed]/8 text-[#f3f0ed] hover:bg-[#f3f0ed]/12'
           }`}
         >
-          {isCurrent ? 'Plano ativo' : 'Assinar'}
+          {isSubscribing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : isCurrent ? (
+            'Plano ativo'
+          ) : (
+            'Assinar'
+          )}
         </button>
       )}
     </div>
@@ -102,6 +112,7 @@ interface PlansModalProps {
 
 export function PlansModal({ onClose }: PlansModalProps) {
   const { accessToken } = useAuth();
+  const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
 
   const { data: plans, isLoading: plansLoading } = useQuery({
     queryKey: ['plans'],
@@ -133,6 +144,17 @@ export function PlansModal({ onClose }: PlansModalProps) {
   const sorted = (plans ?? []).slice().sort(
     (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),
   );
+
+  async function handleSubscribe(planSlug: string) {
+    if (!accessToken || subscribingSlug) return;
+    setSubscribingSlug(planSlug);
+    try {
+      const { checkoutUrl } = await api.subscriptions.create(accessToken, planSlug);
+      window.location.href = checkoutUrl;
+    } catch {
+      setSubscribingSlug(null);
+    }
+  }
 
   return (
     <div
@@ -176,6 +198,8 @@ export function PlansModal({ onClose }: PlansModalProps) {
                 key={plan.id}
                 plan={plan}
                 isCurrent={currentPlanSlug === plan.slug}
+                onSubscribe={handleSubscribe}
+                subscribingSlug={subscribingSlug}
               />
             ))}
           </div>

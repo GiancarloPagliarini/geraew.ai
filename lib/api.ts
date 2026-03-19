@@ -1,4 +1,4 @@
-export const BASE_URL = 'https://clip-generator-geraew-api.ernvcw.easypanel.host';
+export const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface AuthUser {
   id: string;
@@ -390,6 +390,12 @@ export const api = {
         body: JSON.stringify(payload),
       });
     },
+    purchase(accessToken: string, packageId: string) {
+      return authRequest<{ checkoutUrl: string }>('/api/v1/credits/purchase', accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ packageId }),
+      });
+    },
   },
 
   users: {
@@ -456,6 +462,28 @@ export const api = {
     },
     render(accessToken: string, projectId: string) {
       return authRequest<VideoProject>(`/api/v1/video-editor/projects/${projectId}/render`, accessToken, {
+        method: 'POST',
+      });
+    },
+  },
+
+  subscriptions: {
+    create(accessToken: string, planSlug: string) {
+      return authRequest<{ checkoutUrl: string }>('/api/v1/subscriptions', accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ planSlug }),
+      });
+    },
+    current(accessToken: string) {
+      return authRequest<Record<string, unknown> | null>('/api/v1/subscriptions/current', accessToken);
+    },
+    cancel(accessToken: string) {
+      return authRequest<Record<string, unknown>>('/api/v1/subscriptions/cancel', accessToken, {
+        method: 'POST',
+      });
+    },
+    reactivate(accessToken: string) {
+      return authRequest<Record<string, unknown>>('/api/v1/subscriptions/reactivate', accessToken, {
         method: 'POST',
       });
     },

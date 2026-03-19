@@ -10,7 +10,7 @@ import {
   Star,
   X,
 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { CreditPackage } from '@/lib/api';
@@ -50,6 +50,7 @@ interface BuyCreditsModalProps {
 
 export function BuyCreditsModal({ onClose }: BuyCreditsModalProps) {
   const { accessToken } = useAuth();
+  const [purchasingId, setPurchasingId] = useState<string | null>(null);
 
   const { data: packages, isLoading } = useQuery({
     queryKey: ['credits', 'packages'],
@@ -75,6 +76,17 @@ export function BuyCreditsModal({ onClose }: BuyCreditsModalProps) {
     activePackages.length > 0
       ? Math.max(...activePackages.map((p) => p.priceCents / p.credits))
       : 0;
+
+  async function handlePurchase(packageId: string) {
+    if (!accessToken || purchasingId) return;
+    setPurchasingId(packageId);
+    try {
+      const { checkoutUrl } = await api.credits.purchase(accessToken, packageId);
+      window.location.href = checkoutUrl;
+    } catch {
+      setPurchasingId(null);
+    }
+  }
 
   return (
     /* Backdrop */
@@ -133,6 +145,7 @@ export function BuyCreditsModal({ onClose }: BuyCreditsModalProps) {
               const perks = getPerks(pkg, isBest);
               const priceInt = Math.floor(pkg.priceCents / 100);
               const priceCents = String(pkg.priceCents % 100).padStart(2, '0');
+              const isPurchasing = purchasingId === pkg.id;
 
               return (
                 <div
@@ -205,7 +218,9 @@ export function BuyCreditsModal({ onClose }: BuyCreditsModalProps) {
 
                   {/* CTA */}
                   <button
-                    className={`mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all active:scale-[0.98] ${
+                    onClick={() => handlePurchase(pkg.id)}
+                    disabled={!!purchasingId}
+                    className={`mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${
                       isBest
                         ? 'bg-[#a2dd00] text-[#1a2123] hover:brightness-110'
                         : isPopular
@@ -213,8 +228,14 @@ export function BuyCreditsModal({ onClose }: BuyCreditsModalProps) {
                           : 'bg-[#f3f0ed]/8 text-[#f3f0ed] hover:bg-[#f3f0ed]/12'
                     }`}
                   >
-                    Comprar
-                    <ArrowRight className="h-3.5 w-3.5" />
+                    {isPurchasing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        Comprar
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </>
+                    )}
                   </button>
                 </div>
               );
