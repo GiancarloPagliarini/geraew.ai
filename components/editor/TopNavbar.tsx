@@ -6,12 +6,14 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
+import { BuyCreditsModal } from './BuyCreditsModal';
 
 export function TopNavbar() {
   const router = useRouter();
   const { credits, creditsLoading } = useEditor();
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [buyModalOpen, setBuyModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Fecha o menu ao clicar fora
@@ -24,8 +26,8 @@ export function TopNavbar() {
         setMenuOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    document.addEventListener('mousedown', handleClick, true);
+    return () => document.removeEventListener('mousedown', handleClick, true);
   }, [menuOpen]);
 
   function handleLogout() {
@@ -34,102 +36,109 @@ export function TopNavbar() {
   }
 
   return (
-    <header className="relative z-50 flex h-12 shrink-0 items-center justify-between border-b border-[#f3f0ed]/[0.07] bg-[#1a2123] px-4">
-      {/* Logo */}
-      <div className="flex items-center gap-2.5">
-        <Image
-          src="/logo_2.svg"
-          alt="Geraew AI"
-          width={32}
-          height={32}
-          className="rounded-md mix-blend-lighten"
-        />
-        <span className="text-sm font-medium text-[#f3f0ed]">
-          Geraew.AI
-        </span>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-2">
-        {/* Credit badge */}
-        <div className="flex items-center gap-1.5 rounded-full border border-[#f3f0ed]/10 bg-[#f3f0ed]/[0.05] px-3 py-1.5">
-          <Coins className="h-3.5 w-3.5 text-[#a2dd00]" />
-          {creditsLoading ? (
-            <div className="h-3 w-10 animate-pulse rounded-full bg-[#f3f0ed]/10" />
-          ) : (
-            <span className="text-xs font-semibold text-[#f3f0ed]">{credits.toLocaleString('pt-BR')}</span>
-          )}
+    <>
+      <header className="relative z-50 flex h-12 shrink-0 items-center justify-between border-b border-[#f3f0ed]/[0.07] bg-[#1a2123] px-4">
+        {/* Logo */}
+        <div className="flex items-center gap-2.5">
+          <Image
+            src="/logo_2.svg"
+            alt="Geraew AI"
+            width={32}
+            height={32}
+            className="rounded-md mix-blend-lighten"
+          />
+          <span className="text-sm font-medium text-[#f3f0ed]">
+            Geraew.AI
+          </span>
         </div>
 
-        {/* Buy button — accent lime */}
-        <button className="flex items-center gap-1.5 rounded-full bg-[#a2dd00] px-4 py-1.5 text-xs font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95">
-          <Plus className="h-3.5 w-3.5" />
-          Comprar
-        </button>
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          {/* Credit badge */}
+          <div className="flex items-center gap-1.5 rounded-full border border-[#f3f0ed]/10 bg-[#f3f0ed]/[0.05] px-3 py-1.5">
+            <Coins className="h-3.5 w-3.5 text-[#a2dd00]" />
+            {creditsLoading ? (
+              <div className="h-3 w-10 animate-pulse rounded-full bg-[#f3f0ed]/10" />
+            ) : (
+              <span className="text-xs font-semibold text-[#f3f0ed]">{credits.toLocaleString('pt-BR')}</span>
+            )}
+          </div>
 
-        {/* Refer button — teal outline */}
-        <button className="flex items-center gap-1.5 rounded-full border border-[#1e494b] px-4 py-1.5 text-xs font-semibold text-[#f3f0ed]/80 transition-all hover:border-[#a2dd00]/50 hover:text-[#f3f0ed]">
-          <Gift className="h-3.5 w-3.5" />
-          Indique
-        </button>
-
-        {/* Settings dropdown */}
-        <div ref={menuRef} className="relative">
+          {/* Buy button — accent lime */}
           <button
-            onClick={() => setMenuOpen((v) => !v)}
-            className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all ${menuOpen
-              ? 'border-[#a2dd00]/30 text-[#a2dd00]'
-              : 'border-[#f3f0ed]/10 text-[#f3f0ed]/40 hover:border-[#a2dd00]/30 hover:text-[#a2dd00]'
-              }`}
+            onClick={() => setBuyModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-full bg-[#a2dd00] px-4 py-1.5 text-xs font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95"
           >
-            <Settings className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
+            Comprar
           </button>
 
-          {menuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] shadow-2xl">
-              {/* User info */}
-              <div className="border-b border-[#f3f0ed]/[0.06] px-4 py-3">
-                <p className="text-xs font-semibold text-[#f3f0ed]">{user?.name || 'Usuário'}</p>
-                <p className="mt-0.5 text-[11px] text-[#f3f0ed]/40">{user?.email}</p>
-              </div>
+          {/* Refer button — teal outline */}
+          <button className="flex items-center gap-1.5 rounded-full border border-[#1e494b] px-4 py-1.5 text-xs font-semibold text-[#f3f0ed]/80 transition-all hover:border-[#a2dd00]/50 hover:text-[#f3f0ed]">
+            <Gift className="h-3.5 w-3.5" />
+            Poste e ganhe
+          </button>
 
-              {/* Menu items */}
-              <div className="py-1.5">
-                <DropdownItem
-                  icon={User}
-                  label="Perfil"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    router.push('/perfil');
-                  }}
-                />
-                <DropdownItem
-                  icon={CreditCard}
-                  label="Créditos"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    router.push('/creditos');
-                  }}
-                />
-              </div>
+          {/* Settings dropdown */}
+          <div ref={menuRef} className="relative">
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all ${menuOpen
+                ? 'border-[#a2dd00]/30 text-[#a2dd00]'
+                : 'border-[#f3f0ed]/10 text-[#f3f0ed]/40 hover:border-[#a2dd00]/30 hover:text-[#a2dd00]'
+                }`}
+            >
+              <Settings className="h-4 w-4" />
+            </button>
 
-              {/* Logout */}
-              <div className="border-t border-[#f3f0ed]/[0.06] py-1.5">
-                <DropdownItem
-                  icon={LogOut}
-                  label="Sair"
-                  danger
-                  onClick={() => {
-                    setMenuOpen(false);
-                    handleLogout();
-                  }}
-                />
+            {menuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] shadow-2xl">
+                {/* User info */}
+                <div className="border-b border-[#f3f0ed]/[0.06] px-4 py-3">
+                  <p className="text-xs font-semibold text-[#f3f0ed]">{user?.name || 'Usuário'}</p>
+                  <p className="mt-0.5 text-[11px] text-[#f3f0ed]/40">{user?.email}</p>
+                </div>
+
+                {/* Menu items */}
+                <div className="py-1.5">
+                  <DropdownItem
+                    icon={User}
+                    label="Perfil"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      router.push('/perfil');
+                    }}
+                  />
+                  <DropdownItem
+                    icon={CreditCard}
+                    label="Créditos"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      router.push('/creditos');
+                    }}
+                  />
+                </div>
+
+                {/* Logout */}
+                <div className="border-t border-[#f3f0ed]/[0.06] py-1.5">
+                  <DropdownItem
+                    icon={LogOut}
+                    label="Sair"
+                    danger
+                    onClick={() => {
+                      setMenuOpen(false);
+                      handleLogout();
+                    }}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {buyModalOpen && <BuyCreditsModal onClose={() => setBuyModalOpen(false)} />}
+    </>
   );
 }
 

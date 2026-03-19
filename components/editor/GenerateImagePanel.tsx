@@ -624,14 +624,15 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
                 transition: 'opacity 0.4s ease, transform 0.4s ease',
               }}
             >
-              {/* Image — draggable to video panel */}
+              {/* Image — draggable to video panel, click to expand */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 ref={draggableImgRef}
                 src={generatedImageUrl}
                 alt="Imagem gerada"
-                className="nopan nodrag h-auto w-full object-cover cursor-grab active:cursor-grabbing"
+                className="nopan nodrag h-auto w-full object-cover cursor-pointer"
                 draggable="true"
+                onClick={() => window.open(generatedImageUrl, '_blank')}
                 onDragStart={(e) => {
                   e.stopPropagation();
                   e.dataTransfer.setData('text/geraew-image-url', generatedImageUrl);

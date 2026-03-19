@@ -119,8 +119,11 @@ function CanvasContent() {
 
       setNodes((nds) => [...nds, newNode]);
       setNodePanelType(id, type);
+      if (type === 'create-influencer') {
+        setSelectedNodeId(id);
+      }
     },
-    [nodes, screenToFlowPosition, setNodes, setNodePanelType]
+    [nodes, screenToFlowPosition, setNodes, setNodePanelType, setSelectedNodeId]
   );
 
   const handleDelete = useCallback(() => {
@@ -175,7 +178,7 @@ function CanvasContent() {
                 localStorage.setItem(STORAGE_VIEWPORT_KEY, JSON.stringify(vp));
               }, 500);
             }}
-            panOnDrag={!isSelectMode}
+            panOnDrag={isSelectMode ? [1] : true}
             selectionOnDrag={isSelectMode}
             selectionMode={SelectionMode.Partial}
             multiSelectionKeyCode="Shift"

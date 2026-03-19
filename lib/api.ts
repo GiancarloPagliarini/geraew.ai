@@ -46,6 +46,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new ApiError(res.status, body.message || `Erro ${res.status}`);
   }
 
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    return undefined as T;
+  }
+
   return res.json();
 }
 
@@ -151,6 +155,7 @@ export interface Generation {
   creditsConsumed: number;
   processingTimeMs?: number;
   isFavorited?: boolean;
+  folder?: { id: string; name: string } | null;
   errorMessage?: string;
   errorCode?: string;
   createdAt?: string;

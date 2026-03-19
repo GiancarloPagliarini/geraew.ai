@@ -219,7 +219,7 @@ export function CreateInfluencerPanel({ nodeId, onClose }: CreateInfluencerPanel
           </span>
         </div>
         <button
-          onClick={onClose}
+          onClick={(e) => { e.stopPropagation(); onClose?.(); }}
           className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/[0.08] hover:text-[#f3f0ed]/80"
         >
           <X className="h-3.5 w-3.5" />

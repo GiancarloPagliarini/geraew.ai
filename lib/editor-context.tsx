@@ -54,9 +54,14 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
 
   const prependToGallery = useCallback(
     (generation: Generation) => {
-      queryClient.setQueryData<InfiniteData<PaginatedResponse<Generation>>>(
-        ['gallery', 'list'],
-        (old) => {
+      // Update every cached gallery list variant (each tab / folder has its own key)
+      const keys = queryClient
+        .getQueryCache()
+        .findAll({ queryKey: ['gallery', 'list'] })
+        .map((q) => q.queryKey);
+
+      for (const key of keys) {
+        queryClient.setQueryData<InfiniteData<PaginatedResponse<Generation>>>(key, (old) => {
           if (!old?.pages.length) return old;
           const [firstPage, ...rest] = old.pages;
           return {
@@ -70,8 +75,9 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
               ...rest,
             ],
           };
-        },
-      );
+        });
+      }
+
       queryClient.invalidateQueries({ queryKey: ['gallery', 'stats'] });
     },
     [queryClient],

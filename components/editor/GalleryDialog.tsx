@@ -30,6 +30,7 @@ import {
   Loader2, Pencil,
   Play,
   Plus,
+  RefreshCw,
   ScanFace, Settings, Trash2, X
 } from 'lucide-react';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
@@ -57,7 +58,7 @@ function tabToFilters(tab: GalleryTab): { type?: string; favorited?: boolean } |
   }
 }
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 10;
 
 interface GalleryDialogProps {
   open: boolean;
@@ -130,10 +131,9 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
   const addToFolderMutation = useMutation({
     mutationFn: ({ folderId, generationId }: { folderId: string; generationId: string }) =>
       api.folders.addGenerations(accessToken!, folderId, [generationId]),
-    onSuccess: (_data, { generationId }) => {
+    onSuccess: (_data, { generationId: _generationId }) => {
       queryClient.invalidateQueries({ queryKey: ['folders'] });
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
-      queryClient.invalidateQueries({ queryKey: ['generation-folders', generationId] });
       toast.success('Adicionada à pasta', { description: 'A imagem foi movida com sucesso.' });
     },
     onError: () => toast.error('Erro ao adicionar à pasta', { description: 'Tente novamente.' }),
@@ -142,11 +142,12 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
   const removeFromFolderMutation = useMutation({
     mutationFn: ({ folderId, generationId }: { folderId: string; generationId: string }) =>
       api.folders.removeGeneration(accessToken!, folderId, generationId),
-    onSuccess: (_data, { generationId }) => {
+    onSuccess: (_data, { generationId: _generationId }) => {
       queryClient.invalidateQueries({ queryKey: ['folders'] });
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
-      queryClient.invalidateQueries({ queryKey: ['generation-folders', generationId] });
+      toast.success('Removida da pasta', { description: 'A imagem foi removida com sucesso.' });
     },
+    onError: () => toast.error('Erro ao remover da pasta', { description: 'Tente novamente.' }),
   });
 
   // ── Infinite list ──────────────────────────────────────────────────────────
@@ -258,9 +259,17 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
 
     const observer = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) fetchNextPage(); },
-      { root: scrollRef.current, threshold: 0.1 },
+      { root: scrollRef.current, threshold: 0, rootMargin: '300px' },
     );
     observer.observe(sentinel);
+
+    // If sentinel is already in range when observer is created (e.g. right after
+    // a page finishes loading), IntersectionObserver won't fire because the
+    // intersection state hasn't changed — so check manually and fetch right away.
+    const rect = sentinel.getBoundingClientRect();
+    const rootRect = scrollRef.current?.getBoundingClientRect();
+    if (rootRect && rect.top <= rootRect.bottom + 300) fetchNextPage();
+
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
@@ -269,6 +278,13 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
       addToFolderMutation.mutate({ folderId, generationId });
     },
     [addToFolderMutation],
+  );
+
+  const handleRemoveFromFolder = useCallback(
+    (folderId: string, generationId: string) => {
+      removeFromFolderMutation.mutate({ folderId, generationId });
+    },
+    [removeFromFolderMutation],
   );
 
   const handleCreateFolderAndAdd = useCallback(
@@ -348,7 +364,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
 
         {/* Tab bar (hidden when inside a folder, viewing detail, or browsing folders) */}
         {!selected && !activeFolderId && !showFoldersList && (
-          <div className="flex gap-1 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             {TABS.map((tab) => (
               <button
                 key={tab.key}
@@ -361,6 +377,13 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
                 {tab.label}
               </button>
             ))}
+            <button
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['gallery'] })}
+              className="ml-auto flex h-6 w-6 items-center justify-center rounded-md text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70 transition-colors"
+              title="Atualizar galeria"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+            </button>
           </div>
         )}
 
@@ -452,6 +475,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
               toggleFavorite={toggleFavorite}
               folders={folders}
               onAddToFolder={(folderId) => handleAddToFolder(folderId, selected.id)}
+              onRemoveFromFolder={(folderId) => handleRemoveFromFolder(folderId, selected.id)}
               onCreateFolderAndAdd={(name) => handleCreateFolderAndAdd(name, selected.id)}
             />
           ) : galleryLoading ? (
@@ -485,6 +509,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
                       onToggleFavorite={toggleFavorite}
                       folders={folders}
                       onAddToFolder={(folderId) => handleAddToFolder(folderId, item.id)}
+                      onRemoveFromFolder={(folderId) => handleRemoveFromFolder(folderId, item.id)}
                       onCreateFolderAndAdd={(name) => handleCreateFolderAndAdd(name, item.id)}
                       pickerMode={!!galleryPickerRequest}
                       pickerSelected={!!itemUrl && pickerSelectedUrls.has(itemUrl)}
@@ -541,26 +566,21 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
 
 // ─── Detail view ──────────────────────────────────────────────────────────────
 
-function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onCreateFolderAndAdd }: {
+function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRemoveFromFolder, onCreateFolderAndAdd }: {
   item: Generation;
   onBack: () => void;
   toggleFavorite: (item: Generation, e?: React.MouseEvent) => void;
   folders: Folder[];
   onAddToFolder: (folderId: string) => void;
+  onRemoveFromFolder: (folderId: string) => void;
   onCreateFolderAndAdd: (name: string) => void;
 }) {
-  const { accessToken } = useAuth();
   const [activeIndex, setActiveIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [lightbox, setLightbox] = useState<GenerationInputImage | null>(null);
   const [promptCopied, setPromptCopied] = useState(false);
 
-  const { data: detailFolders } = useQuery({
-    queryKey: ['generation-folders', item.id],
-    queryFn: () => api.generations.getFolders(accessToken!, item.id),
-    enabled: !!accessToken,
-    staleTime: 60_000,
-  });
+  const activeFolderIds = item.folder ? [item.folder.id] : [];
 
   const outputs = item.outputs ?? [];
   const activeOutput = outputs[activeIndex];
@@ -720,8 +740,10 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onCr
           </button>
           <FolderDropdown
             folders={folders}
-            activeFolderIds={detailFolders?.map((f) => f.id) ?? []}
-            onSelect={onAddToFolder}
+            activeFolderIds={activeFolderIds}
+            onSelect={(folderId) => {
+              activeFolderIds.includes(folderId) ? onRemoveFromFolder(folderId) : onAddToFolder(folderId);
+            }}
             onCreateAndAdd={onCreateFolderAndAdd}
           />
           <button
@@ -877,6 +899,7 @@ const GalleryItem = memo(function GalleryItem({
   onToggleFavorite,
   folders,
   onAddToFolder,
+  onRemoveFromFolder,
   onCreateFolderAndAdd,
   pickerMode = false,
   pickerSelected = false,
@@ -887,25 +910,19 @@ const GalleryItem = memo(function GalleryItem({
   onToggleFavorite: (item: Generation, e?: React.MouseEvent) => void;
   folders: Folder[];
   onAddToFolder: (folderId: string) => void;
+  onRemoveFromFolder: (folderId: string) => void;
   onCreateFolderAndAdd: (name: string) => void;
   pickerMode?: boolean;
   pickerSelected?: boolean;
   pickerDisabled?: boolean;
 }) {
-  const { accessToken } = useAuth();
   const [loaded, setLoaded] = useState(false);
   const [folderDropdownOpen, setFolderDropdownOpen] = useState(false);
   const url = item.outputs?.[0]?.url;
   const isVideo = !!item.durationSeconds;
   const hasRefs = (item.inputImages?.length ?? 0) > 0;
   const outputCount = item.outputs?.length ?? 0;
-
-  const { data: itemFolders } = useQuery({
-    queryKey: ['generation-folders', item.id],
-    queryFn: () => api.generations.getFolders(accessToken!, item.id),
-    enabled: !!accessToken,
-    staleTime: 60_000,
-  });
+  const itemFolderIds = item.folder ? [item.folder.id] : [];
 
   return (
     <div
@@ -978,10 +995,10 @@ const GalleryItem = memo(function GalleryItem({
 
       {/* Bottom-right badges */}
       <div className="absolute bottom-3 right-3 flex items-center gap-1">
-        {itemFolders && itemFolders.length > 0 && (
+        {item.folder && (
           <div className="flex items-center gap-0.5 rounded-md bg-black/70 px-1.5 py-0.5">
             <FolderIcon className="h-3.5 w-3.5 text-[#a2dd00]" />
-            <span className="text-[10px] font-bold text-[#a2dd00] max-w-[60px] truncate">{itemFolders[0].name}</span>
+            <span className="text-[10px] font-bold text-[#a2dd00] max-w-[60px] truncate">{item.folder.name}</span>
           </div>
         )}
         {isVideo && (
@@ -1021,8 +1038,9 @@ const GalleryItem = memo(function GalleryItem({
         </div>
         <GalleryItemFolderButton
           folders={folders}
-          activeFolderIds={itemFolders?.map((f) => f.id) ?? []}
+          activeFolderIds={itemFolderIds}
           onAddToFolder={onAddToFolder}
+          onRemoveFromFolder={onRemoveFromFolder}
           onCreateFolderAndAdd={onCreateFolderAndAdd}
           onOpenChange={setFolderDropdownOpen}
         />
@@ -1381,12 +1399,14 @@ function GalleryItemFolderButton({
   folders,
   activeFolderIds = [],
   onAddToFolder,
+  onRemoveFromFolder,
   onCreateFolderAndAdd,
   onOpenChange,
 }: {
   folders: Folder[];
   activeFolderIds?: string[];
   onAddToFolder: (folderId: string) => void;
+  onRemoveFromFolder: (folderId: string) => void;
   onCreateFolderAndAdd: (name: string) => void;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -1428,7 +1448,7 @@ function GalleryItemFolderButton({
                   <button
                     key={f.id}
                     onClick={() => {
-                      onAddToFolder(f.id);
+                      isActive ? onRemoveFromFolder(f.id) : onAddToFolder(f.id);
                       setOpen(false);
                     }}
                     className="flex items-center gap-2.5 w-full rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed] transition-colors"
