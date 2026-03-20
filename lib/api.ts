@@ -516,6 +516,12 @@ export const api = {
         body: JSON.stringify({ prompt }),
       });
     },
+    enhanceInfluencer(accessToken: string, selections: Record<string, string>) {
+      return authRequest<{ enhancedPrompt: string }>('/api/v1/prompt-enhancer/enhance-influencer', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(selections),
+      });
+    },
   },
 
   auth: {
