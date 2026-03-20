@@ -40,7 +40,7 @@ interface CreateInfluencerPanelProps {
 export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateInfluencerPanelProps) {
   const { setNodeImage, consumeCredits, refetchCredits, prependToGallery } = useEditor();
   const { accessToken } = useAuth();
-  const { prompt } = useInfluencerBuilder();
+  const { selections } = useInfluencerBuilder();
 
   const [genState, setGenState] = useState<GenState>('idle');
   const [progress, setProgress] = useState(0);
@@ -155,8 +155,14 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
     startProgressAnimation();
 
     try {
+      // Call AI agent to build structured JSON prompt with varied scenes
+      const { enhancedPrompt } = await api.promptEnhancer.enhanceInfluencer(
+        accessToken,
+        selections as unknown as Record<string, string>,
+      );
+
       const { id, creditsConsumed } = await api.generations.generateImage(accessToken, {
-        prompt,
+        prompt: enhancedPrompt,
         model: 'gemini-3-pro-image-preview',
         resolution: 'RES_2K',
         aspect_ratio: '9:16',

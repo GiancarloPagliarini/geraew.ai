@@ -38,7 +38,9 @@ const ETHNICITY_DESC: Record<string, string> = {
 };
 
 const SKIN_COLOR_DESC: Record<string, string> = {
-  'Mixed colors': '',
+  Morena: 'tan/olive brown skin',
+  Preta: 'dark black skin',
+  Branca: 'fair white skin',
 };
 
 const EYE_COLOR_DESC: Record<string, string> = {
@@ -131,6 +133,60 @@ const SURFACE_DESC: Record<string, string> = {
   Cowhide: 'with cowhide spotted pattern',
 };
 
+const BODY_TYPE_DESC: Record<string, string> = {
+  Slim: 'slim body build',
+  Lean: 'lean toned body build',
+  Athletic: 'athletic fit body build',
+  Muscular: 'muscular heavily built body',
+  Curvy: 'curvy body shape',
+  Heavy: 'heavy large body build',
+  Skinny: 'very skinny thin body build',
+};
+
+const ARM_DESC: Record<string, string> = {
+  'Normal arm': '',
+  'Cute arm': 'cute stylized',
+  'Robotic arm': 'robotic cybernetic',
+  'Prosthetic arm': 'prosthetic',
+  'Mechanical arm': 'mechanical steampunk',
+  None: 'missing',
+};
+
+const LEG_DESC: Record<string, string> = {
+  'Normal leg': '',
+  'Cute leg': 'cute stylized',
+  'Robotic leg': 'robotic cybernetic',
+  'Prosthetic leg': 'prosthetic',
+  'Mechanical leg': 'mechanical steampunk',
+  None: 'missing',
+};
+
+const HAIR_DESC: Record<string, string> = {
+  Bald: 'bald head',
+  'Short hair': 'short hair',
+  'Long hair': 'long flowing hair',
+  Afro: 'afro hairstyle',
+  'Punk hairstyle': 'punk mohawk hairstyle',
+  Fur: 'fur-covered head',
+  Tentacles: 'tentacles instead of hair',
+  Spines: 'sharp spines instead of hair',
+};
+
+const ACCESSORIES_DESC: Record<string, string> = {
+  Tattoos: 'with visible tattoos',
+  Piercing: 'with facial piercings',
+  Scarification: 'with scarification body art',
+  Symbols: 'with mystical symbols and markings on the skin',
+  'Cyber markings': 'with glowing cybernetic markings on the skin',
+};
+
+const RENDERING_STYLE_DESC: Record<string, string> = {
+  'Hiper-realista': 'hyper-realistic photographic style',
+  Anime: 'anime art style',
+  Cartoon: 'cartoon art style',
+  'Ilustração 2D': '2D illustration art style',
+};
+
 // ─── State interface ─────────────────────────────────────────────────────────
 
 export interface InfluencerSelections {
@@ -148,13 +204,21 @@ export interface InfluencerSelections {
   horns: string;
   faceSkinMaterial: string;
   surfacePattern: string;
+  bodyType: string;
+  leftArm: string;
+  rightArm: string;
+  leftLeg: string;
+  rightLeg: string;
+  hair: string;
+  accessories: string;
+  renderingStyle: string;
 }
 
 const DEFAULTS: InfluencerSelections = {
   characterType: 'Human',
   gender: 'Female',
   ethnicity: 'European',
-  skinColor: 'Mixed colors',
+  skinColor: 'Morena',
   eyeColor: 'Brown',
   skinCondition: '',
   age: 'Jovem adulto',
@@ -165,6 +229,14 @@ const DEFAULTS: InfluencerSelections = {
   horns: '',
   faceSkinMaterial: 'Human skin',
   surfacePattern: 'Solid',
+  bodyType: 'Athletic',
+  leftArm: 'Normal arm',
+  rightArm: 'Normal arm',
+  leftLeg: 'Normal leg',
+  rightLeg: 'Normal leg',
+  hair: 'Short hair',
+  accessories: '',
+  renderingStyle: 'Hiper-realista',
 };
 
 // ─── Prompt builder ──────────────────────────────────────────────────────────
@@ -215,6 +287,44 @@ function buildPrompt(s: InfluencerSelections): string {
   // Surface pattern
   const pattern = SURFACE_DESC[s.surfacePattern];
   if (pattern) parts.push(pattern);
+
+  // Body type
+  const bodyType = BODY_TYPE_DESC[s.bodyType];
+  if (bodyType) parts.push(bodyType);
+
+  // Arms
+  const leftArm = ARM_DESC[s.leftArm];
+  const rightArm = ARM_DESC[s.rightArm];
+  if (leftArm && rightArm && leftArm === rightArm) {
+    parts.push(`with ${leftArm} arms`);
+  } else {
+    if (leftArm) parts.push(`with ${leftArm} left arm`);
+    if (rightArm) parts.push(`with ${rightArm} right arm`);
+  }
+
+  // Legs
+  const leftLeg = LEG_DESC[s.leftLeg];
+  const rightLeg = LEG_DESC[s.rightLeg];
+  if (leftLeg && rightLeg && leftLeg === rightLeg) {
+    parts.push(`with ${leftLeg} legs`);
+  } else {
+    if (leftLeg) parts.push(`with ${leftLeg} left leg`);
+    if (rightLeg) parts.push(`with ${rightLeg} right leg`);
+  }
+
+  // Hair
+  const hair = HAIR_DESC[s.hair];
+  if (hair) parts.push(hair);
+
+  // Accessories
+  const acc = s.accessories ? ACCESSORIES_DESC[s.accessories] : '';
+  if (acc) parts.push(acc);
+
+  // Rendering style
+  const renderStyle = RENDERING_STYLE_DESC[s.renderingStyle];
+  if (renderStyle && s.renderingStyle !== 'Hiper-realista') {
+    parts.push(renderStyle);
+  }
 
   // Cinematic suffix
   parts.push(

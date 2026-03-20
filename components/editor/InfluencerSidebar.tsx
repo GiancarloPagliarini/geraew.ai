@@ -4,8 +4,10 @@ import {
   CircleDot,
   Eye,
   Globe,
+  Hand,
   ImageIcon,
   Palette,
+  PersonStanding,
   RotateCcw,
   Sparkles,
   User,
@@ -58,7 +60,9 @@ const ETHNICITY_TYPES = [
 ] as const;
 
 const SKIN_COLORS = [
-  { id: 'Mixed colors', label: 'Cores mistas', image: `${CDN}/4f7118d2-a16f-4cd3-8760-9a44d301baa3.webp` },
+  { id: 'Morena', label: 'Morena', image: `${CDN}/4f7118d2-a16f-4cd3-8760-9a44d301baa3.webp` },
+  { id: 'Preta', label: 'Preta', image: `${CDN}/4f7118d2-a16f-4cd3-8760-9a44d301baa3.webp` },
+  { id: 'Branca', label: 'Branca', image: `${CDN}/4f7118d2-a16f-4cd3-8760-9a44d301baa3.webp` },
 ] as const;
 
 const EYE_COLORS = [
@@ -143,6 +147,75 @@ const SURFACE_PATTERNS = [
   { id: 'Veins', label: 'Veias', image: `${CDN}/14aa0526-5be3-4a2b-a172-3c6af54b4d36.webp` },
   { id: 'Giraffe', label: 'Girafa', image: `${CDN}/e45c30a6-8b55-40df-a85c-ba06a86273af.webp` },
   { id: 'Cowhide', label: 'Bovino', image: `${CDN}/0fd77971-2a7f-45f2-af99-1db26bf6339e.webp` },
+] as const;
+
+// ─── Avançado: Corpo ──────────────────────────────────────────────────────────
+
+const BODY_TYPES = [
+  { id: 'Slim', label: 'Magro', image: `${CDN}/dadf681a-d007-4ac7-96f0-cb14673687b5.webp` },
+  { id: 'Lean', label: 'Esbelto', image: `${CDN}/142ea702-6816-4933-8f42-4b65cade3a8c.webp` },
+  { id: 'Athletic', label: 'Atlético', image: `${CDN}/d077688b-6a9a-4cb5-9bfb-b62c06fc7f2b.webp` },
+  { id: 'Muscular', label: 'Musculoso', image: `${CDN}/16b7cb85-e2b6-42ac-8d22-30edb28d8eb2.webp` },
+  { id: 'Curvy', label: 'Curvilíneo', image: `${CDN}/2bb2fe58-8099-4d62-97f5-5742e564a31f.webp` },
+  { id: 'Heavy', label: 'Pesado', image: `${CDN}/c6198edf-f21d-4e3e-9ac5-d4a3333ceb6f.webp` },
+  { id: 'Skinny', label: 'Esquelético', image: `${CDN}/b8109486-db80-4bef-b2c6-3f823cde5eb7.webp` },
+] as const;
+
+const LEFT_ARM_OPTIONS = [
+  { id: 'Normal arm', label: 'Normal', image: `${CDN}/d8b70b8b-07fe-4056-b654-40144f0abf13.webp` },
+  { id: 'Cute arm', label: 'Fofo', image: `${CDN}/2896f074-69bb-4ac7-be86-7203c33ac5b6.webp` },
+  { id: 'Robotic arm', label: 'Robótico', image: `${CDN}/f168d95a-5744-46d7-ac2f-039a0e7d78ff.webp` },
+  { id: 'Prosthetic arm', label: 'Protético', image: `${CDN}/da1534dc-1166-44e6-8f38-8c7d5f172fa8.webp` },
+  { id: 'Mechanical arm', label: 'Mecânico', image: `${CDN}/335cc7d7-a1bc-45d0-9d35-f897c081d60b.webp` },
+  { id: 'None', label: 'Nenhum', image: `${CDN}/a9c17f68-ee40-450b-9f82-4cce5b7d4ccc.webp` },
+] as const;
+
+const RIGHT_ARM_OPTIONS = [
+  { id: 'Normal arm', label: 'Normal', image: `${CDN}/030fe9e3-b4b6-490b-a1fa-163680682b89.webp` },
+  { id: 'Cute arm', label: 'Fofo', image: `${CDN}/259eac0d-f054-4b09-9101-f09934d07663.webp` },
+  { id: 'Robotic arm', label: 'Robótico', image: `${CDN}/1e0fdb91-e757-419e-9f40-250b084904cc.webp` },
+  { id: 'Prosthetic arm', label: 'Protético', image: `${CDN}/d1db6a3f-cbfd-43f8-97ab-002341774488.webp` },
+  { id: 'Mechanical arm', label: 'Mecânico', image: `${CDN}/4bcab738-e4b9-4831-9612-c3263ce9cbae.webp` },
+  { id: 'None', label: 'Nenhum', image: `${CDN}/764b52a2-006b-46e0-a649-5c71e8cd9915.webp` },
+] as const;
+
+const LEFT_LEG_OPTIONS = [
+  { id: 'Normal leg', label: 'Normal', image: `${CDN}/eb416e7d-63c5-40df-86a9-6787c5784ef5.webp` },
+  { id: 'Cute leg', label: 'Fofo', image: `${CDN}/5d927e55-999a-4319-90de-4723bed162fb.webp` },
+  { id: 'Robotic leg', label: 'Robótico', image: `${CDN}/1daebe83-c57e-4594-b6e0-f35b1608fbdd.webp` },
+  { id: 'Prosthetic leg', label: 'Protético', image: `${CDN}/d7e4fbd7-4eed-497d-b627-9b50adc1d1fd.webp` },
+  { id: 'Mechanical leg', label: 'Mecânico', image: `${CDN}/a709b1c0-7f65-42dd-b24c-a81f3ca4d666.webp` },
+  { id: 'None', label: 'Nenhum', image: `${CDN}/2137532d-0b3b-4c60-8930-f608135c73c2.webp` },
+] as const;
+
+const RIGHT_LEG_OPTIONS = [
+  { id: 'Normal leg', label: 'Normal', image: `${CDN}/61905af5-e21a-48d9-90ad-b87d47d6858b.webp` },
+  { id: 'Cute leg', label: 'Fofo', image: `${CDN}/4d22f534-f865-49a4-9327-dfd082b0fb79.webp` },
+  { id: 'Robotic leg', label: 'Robótico', image: `${CDN}/475314c9-5b3e-4c60-a14d-fffda3c5c852.webp` },
+  { id: 'Prosthetic leg', label: 'Protético', image: `${CDN}/9d2bda1f-bd7e-4acb-9c17-87e8528efa1d.webp` },
+  { id: 'Mechanical leg', label: 'Mecânico', image: `${CDN}/e8e31345-3d33-4608-ab56-87ce4d185d77.webp` },
+  { id: 'None', label: 'Nenhum', image: `${CDN}/5b3674c7-0c91-4af4-b9c2-e0c352466c01.webp` },
+] as const;
+
+// ─── Avançado: Estilo ─────────────────────────────────────────────────────────
+
+const HAIR_OPTIONS = [
+  { id: 'Bald', label: 'Careca', image: `${CDN}/ca8b2954-900c-424f-9fda-acc5c37d58dd.webp` },
+  { id: 'Short hair', label: 'Curto', image: `${CDN}/383399be-fe36-4196-9b45-f328cf40eb1e.webp` },
+  { id: 'Long hair', label: 'Longo', image: `${CDN}/9145dee8-7136-4ee9-a464-20268fed4a37.webp` },
+  { id: 'Afro', label: 'Afro', image: `${CDN}/7fc8fcc7-310f-406c-94c2-c4fc56568d40.webp` },
+  { id: 'Punk hairstyle', label: 'Punk', image: `${CDN}/a6555ba9-bd9b-4839-898d-3758e9788d18.webp` },
+  { id: 'Fur', label: 'Pelo', image: `${CDN}/1de2b775-27ed-4465-a930-f8cb2d73bd9f.webp` },
+  { id: 'Tentacles', label: 'Tentáculos', image: `${CDN}/b3c8c28b-c19d-49bf-8223-42a5e3a66edb.webp` },
+  { id: 'Spines', label: 'Espinhos', image: `${CDN}/35fd3acc-eda0-4b00-a19a-32ad85ce7766.webp` },
+] as const;
+
+const ACCESSORIES_OPTIONS = [
+  { id: 'Tattoos', label: 'Tatuagens', image: `${CDN}/2c4a9764-5449-4c78-a5c1-d6b13034d222.webp` },
+  { id: 'Piercing', label: 'Piercing', image: `${CDN}/587f72de-6688-441a-8696-77bd251fa138.webp` },
+  { id: 'Scarification', label: 'Escarificação', image: `${CDN}/855ceb60-0637-4266-909b-2713bb459da7.webp` },
+  { id: 'Symbols', label: 'Símbolos', image: `${CDN}/3bdb0c00-765a-4405-b037-bd064c39309c.webp` },
+  { id: 'Cyber markings', label: 'Marcas cyber', image: `${CDN}/123f2efe-cd4b-42a9-89e7-db1a49ebf089.webp` },
 ] as const;
 
 // ─── Abas avançadas ──────────────────────────────────────────────────────────
@@ -479,15 +552,69 @@ export function InfluencerSidebar() {
             )}
 
             {advancedTab === 'body' && (
-              <div className="px-4 py-8 text-center text-[10px] text-[#f3f0ed]/20">
-                Em breve...
-              </div>
+              <>
+                <Section title="TIPO DE CORPO" icon={PersonStanding}>
+                  <ImageOptionGrid
+                    options={BODY_TYPES}
+                    value={selections.bodyType}
+                    onChange={(v) => set('bodyType', v)}
+                  />
+                </Section>
+                <Section title="BRAÇO ESQUERDO" icon={Hand}>
+                  <ImageOptionGrid
+                    options={LEFT_ARM_OPTIONS}
+                    value={selections.leftArm}
+                    onChange={(v) => set('leftArm', v)}
+                  />
+                </Section>
+                <Section title="BRAÇO DIREITO" icon={Hand}>
+                  <ImageOptionGrid
+                    options={RIGHT_ARM_OPTIONS}
+                    value={selections.rightArm}
+                    onChange={(v) => set('rightArm', v)}
+                  />
+                </Section>
+                <Section title="PERNA ESQUERDA" icon={PersonStanding}>
+                  <ImageOptionGrid
+                    options={LEFT_LEG_OPTIONS}
+                    value={selections.leftLeg}
+                    onChange={(v) => set('leftLeg', v)}
+                  />
+                </Section>
+                <Section title="PERNA DIREITA" icon={PersonStanding}>
+                  <ImageOptionGrid
+                    options={RIGHT_LEG_OPTIONS}
+                    value={selections.rightLeg}
+                    onChange={(v) => set('rightLeg', v)}
+                  />
+                </Section>
+              </>
             )}
 
             {advancedTab === 'style' && (
-              <div className="px-4 py-8 text-center text-[10px] text-[#f3f0ed]/20">
-                Em breve...
-              </div>
+              <>
+                <Section title="CABELO / CABEÇA" icon={User}>
+                  <ImageOptionGrid
+                    options={HAIR_OPTIONS}
+                    value={selections.hair}
+                    onChange={(v) => set('hair', v)}
+                  />
+                </Section>
+                <Section title="ACESSÓRIOS & MARCAS" icon={Sparkles}>
+                  <ImageOptionGrid
+                    options={ACCESSORIES_OPTIONS}
+                    value={selections.accessories}
+                    onChange={(v) => set('accessories', v)}
+                  />
+                </Section>
+                <Section title="ESTILO DE RENDERIZAÇÃO" icon={Palette}>
+                  <OptionPills
+                    options={['Hiper-realista', 'Anime', 'Cartoon', 'Ilustração 2D']}
+                    value={selections.renderingStyle}
+                    onChange={(v) => set('renderingStyle', v)}
+                  />
+                </Section>
+              </>
             )}
           </>
         )}
