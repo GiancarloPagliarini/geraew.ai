@@ -172,6 +172,26 @@ const HAIR_DESC: Record<string, string> = {
   Spines: 'sharp spines instead of hair',
 };
 
+const HAIR_COLOR_DESC: Record<string, string> = {
+  Black: 'black hair',
+  'Dark Brown': 'dark brown hair',
+  Brown: 'brown hair',
+  'Light Brown': 'light brown hair',
+  Blonde: 'blonde hair',
+  'Platinum Blonde': 'platinum blonde hair',
+  Red: 'red hair',
+  Ginger: 'ginger hair',
+  Auburn: 'auburn hair',
+  Grey: 'grey hair',
+  White: 'white hair',
+  Blue: 'blue hair',
+  Pink: 'pink hair',
+  Purple: 'purple hair',
+  Green: 'green hair',
+  'Ombre': 'ombre gradient hair',
+  'Highlights': 'hair with highlights',
+};
+
 const ACCESSORIES_DESC: Record<string, string> = {
   Tattoos: 'with visible tattoos',
   Piercing: 'with facial piercings',
@@ -210,6 +230,7 @@ export interface InfluencerSelections {
   leftLeg: string;
   rightLeg: string;
   hair: string;
+  hairColor: string;
   accessories: string;
   renderingStyle: string;
 }
@@ -235,6 +256,7 @@ const DEFAULTS: InfluencerSelections = {
   leftLeg: 'Normal leg',
   rightLeg: 'Normal leg',
   hair: 'Short hair',
+  hairColor: 'Dark Brown',
   accessories: '',
   renderingStyle: 'Hiper-realista',
 };
@@ -315,6 +337,10 @@ function buildPrompt(s: InfluencerSelections): string {
   // Hair
   const hair = HAIR_DESC[s.hair];
   if (hair) parts.push(hair);
+
+  // Hair color
+  const hairColor = HAIR_COLOR_DESC[s.hairColor];
+  if (hairColor) parts.push(hairColor);
 
   // Accessories
   const acc = s.accessories ? ACCESSORIES_DESC[s.accessories] : '';

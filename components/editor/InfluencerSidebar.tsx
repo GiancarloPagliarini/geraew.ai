@@ -210,6 +210,26 @@ const HAIR_OPTIONS = [
   { id: 'Spines', label: 'Espinhos', image: `${CDN}/35fd3acc-eda0-4b00-a19a-32ad85ce7766.webp` },
 ] as const;
 
+const HAIR_COLORS = [
+  { id: 'Black', label: 'Preto' },
+  { id: 'Dark Brown', label: 'Castanho escuro' },
+  { id: 'Brown', label: 'Castanho' },
+  { id: 'Light Brown', label: 'Castanho claro' },
+  { id: 'Blonde', label: 'Loiro' },
+  { id: 'Platinum Blonde', label: 'Platinado' },
+  { id: 'Red', label: 'Ruivo' },
+  { id: 'Ginger', label: 'Ruivo claro' },
+  { id: 'Auburn', label: 'Acaju' },
+  { id: 'Grey', label: 'Grisalho' },
+  { id: 'White', label: 'Branco' },
+  { id: 'Blue', label: 'Azul' },
+  { id: 'Pink', label: 'Rosa' },
+  { id: 'Purple', label: 'Roxo' },
+  { id: 'Green', label: 'Verde' },
+  { id: 'Ombre', label: 'Ombré' },
+  { id: 'Highlights', label: 'Mechas' },
+] as const;
+
 const ACCESSORIES_OPTIONS = [
   { id: 'Tattoos', label: 'Tatuagens', image: `${CDN}/2c4a9764-5449-4c78-a5c1-d6b13034d222.webp` },
   { id: 'Piercing', label: 'Piercing', image: `${CDN}/587f72de-6688-441a-8696-77bd251fa138.webp` },
@@ -599,6 +619,27 @@ export function InfluencerSidebar() {
                     value={selections.hair}
                     onChange={(v) => set('hair', v)}
                   />
+                </Section>
+                <Section title="COR DO CABELO" icon={Palette}>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {HAIR_COLORS.map((opt) => {
+                      const active = selections.hairColor === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          onClick={() => set('hairColor', opt.id)}
+                          className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold transition-all active:scale-95"
+                          style={{
+                            background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
+                            color: active ? '#a2dd00' : 'rgba(243,240,237,0.4)',
+                            border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </Section>
                 <Section title="ACESSÓRIOS & MARCAS" icon={Sparkles}>
                   <ImageOptionGrid
