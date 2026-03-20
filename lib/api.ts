@@ -242,6 +242,14 @@ export interface ImageToVideoRequest extends TextToVideoRequest {
   last_frame_mime_type?: string;
 }
 
+export interface MotionControlRequest {
+  video: string;
+  video_mime_type?: string;
+  image: string;
+  image_mime_type?: string;
+  resolution?: '480p' | '580p' | '720p';
+}
+
 // ─── Video Editor ─────────────────────────────────────────────────────────────
 
 export interface VideoProject {
@@ -365,6 +373,12 @@ export const api = {
     },
     imageToVideo(accessToken: string, payload: ImageToVideoRequest) {
       return authRequest<CreateGenerationResponse>('/api/v1/generations/image-to-video', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    motionControl(accessToken: string, payload: MotionControlRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/motion-control', accessToken, {
         method: 'POST',
         body: JSON.stringify(payload),
       });
@@ -506,7 +520,7 @@ export const api = {
 
   auth: {
     login(email: string, password: string) {
-      return request<AuthResponse>('/api/v1/auth/login', {
+      return request<AuthResponse>('api/v1/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });

@@ -1,6 +1,6 @@
 'use client';
 
-import { Hand, HelpCircle, ImageIcon, Minus, MousePointer2, PersonStanding, Plus, Trash2, Video } from 'lucide-react';
+import { Hand, HelpCircle, ImageIcon, Minus, MousePointer2, PersonStanding, Plus, Trash2, Video, Wand2 } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -19,6 +19,7 @@ interface BottomToolbarProps {
   onAddImage: () => void;
   onAddInfluencer: () => void;
   onAddVideo: () => void;
+  onAddMotionControl: () => void;
   onDelete: () => void;
   onFitView: () => void;
 }
@@ -34,6 +35,7 @@ export function BottomToolbar({
   onAddImage,
   onAddInfluencer,
   onAddVideo,
+  onAddMotionControl,
   onDelete,
   onFitView,
 }: BottomToolbarProps) {
@@ -76,6 +78,10 @@ export function BottomToolbar({
 
           <ToolbarButton tooltip="Gerar Vídeo" onClick={onAddVideo}>
             <Video className="h-4 w-4" />
+          </ToolbarButton>
+
+          <ToolbarButton tooltip="Motion Control" onClick={onAddMotionControl}>
+            <Wand2 className="h-4 w-4" />
           </ToolbarButton>
 
           <div className="mx-1.5 h-4 w-px bg-[#f3f0ed]/[0.08]" />

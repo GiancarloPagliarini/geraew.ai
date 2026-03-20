@@ -8,7 +8,7 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import { ImageIcon, Mic, User, Video } from 'lucide-react';
+import { ImageIcon, Mic, User, Video, Wand2 } from 'lucide-react';
 
 interface CanvasContextMenuProps {
     children: React.ReactNode;
@@ -33,6 +33,12 @@ const menuItems = [
         icon: Video,
         label: 'Gerar Vídeo',
         description: 'Criar vídeo com IA',
+    },
+    {
+        type: 'motion-control',
+        icon: Wand2,
+        label: 'Motion Control',
+        description: 'Substituir sujeito no vídeo',
     },
     {
         type: 'generate-voice',

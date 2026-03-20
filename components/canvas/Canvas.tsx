@@ -11,7 +11,7 @@ import {
   useNodesState,
   useReactFlow,
 } from '@xyflow/react';
-import { ImageIcon, PersonStanding, Video } from 'lucide-react';
+import { ImageIcon, PersonStanding, Video, Wand2 } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEditor } from '@/lib/editor-context';
@@ -86,7 +86,7 @@ function CanvasContent() {
 
   const handleAddPanel = useCallback(
     (type: string) => {
-      if (type !== 'generate-image' && type !== 'create-influencer' && type !== 'generate-video' && type !== 'generic') return;
+      if (type !== 'generate-image' && type !== 'create-influencer' && type !== 'generate-video' && type !== 'motion-control' && type !== 'generic') return;
 
       const NODE_W = 360;
       const NODE_H = 480;
@@ -209,6 +209,7 @@ function CanvasContent() {
         onAddImage={() => handleAddPanel('generate-image')}
         onAddInfluencer={() => handleAddPanel('create-influencer')}
         onAddVideo={() => handleAddPanel('generate-video')}
+        onAddMotionControl={() => handleAddPanel('motion-control')}
         onDelete={handleDelete}
         onFitView={() => fitView({ duration: 300, padding: 0.2 })}
       />
@@ -259,6 +260,16 @@ function CanvasContent() {
                   <Video className="h-6 w-6 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00]" />
                 </div>
                 <span className="text-sm font-medium text-[#f3f0ed]/90">Gerar vídeo</span>
+              </button>
+
+              <button
+                onClick={() => handleAddPanel('motion-control')}
+                className="group flex h-40 w-40 flex-col items-center justify-center gap-4 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10">
+                  <Wand2 className="h-6 w-6 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00]" />
+                </div>
+                <span className="text-sm font-medium text-[#f3f0ed]/90">Motion Control</span>
               </button>
             </div>
           </div>

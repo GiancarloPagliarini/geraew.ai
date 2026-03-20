@@ -6,6 +6,7 @@ import { useEditor } from '@/lib/editor-context';
 import { GenerateImagePanel } from '../editor/GenerateImagePanel';
 import { CreateInfluencerPanel } from '../editor/CreateInfluencerPanel';
 import { GenerateVideoPanel } from '../editor/GenerateVideoPanel';
+import { MotionControlPanel } from '../editor/MotionControlPanel';
 import { GenericPanel } from '../editor/GenericPanel';
 
 export function PanelNode({ id, data }: NodeProps) {
@@ -25,6 +26,9 @@ export function PanelNode({ id, data }: NodeProps) {
   }
   if (data.panelType === 'generate-video') {
     return <GenerateVideoPanel nodeId={id} onClose={handleClose} />;
+  }
+  if (data.panelType === 'motion-control') {
+    return <MotionControlPanel nodeId={id} onClose={handleClose} />;
   }
   if (data.panelType === 'generic') {
     return <GenericPanel nodeId={id} onClose={handleClose} />;
