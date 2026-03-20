@@ -3,6 +3,7 @@
 import {
   ArrowLeft,
   Clock,
+  Construction,
   Download,
   Film,
   GripVertical,
@@ -451,7 +452,33 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
   if (!open) return null;
 
   return (
-    <aside className="aside-in-left flex h-full w-2xl shrink-0 flex-col border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] text-[#f3f0ed] overflow-hidden">
+    <aside className="aside-in-left flex h-full w-xl shrink-0 flex-col border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] text-[#f3f0ed] overflow-hidden relative">
+      {/* Under construction overlay */}
+      <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 backdrop-blur-sm bg-[#1a2123]/80 pointer-events-auto">
+        <div className="flex flex-col items-center gap-3 px-6 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#a2dd00]/10 border border-[#a2dd00]/20">
+            <Construction className="h-6 w-6 text-[#a2dd00]" />
+          </div>
+          <h3 className="text-base font-bold text-[#f3f0ed]/90">Em construção</h3>
+          <p className="text-sm text-[#f3f0ed]/40 leading-relaxed max-w-[220px]">
+            O editor de vídeo está sendo desenvolvido e em breve estará disponível.
+          </p>
+          <div className="mt-1 flex items-center gap-2 rounded-full border border-[#a2dd00]/30 bg-[#a2dd00]/5 px-3 py-1">
+            <span className="text-[11px] font-medium text-[#a2dd00]/70">Em breve</span>
+            <div className="flex items-center gap-0.5">
+              <span className="h-1 w-1 rounded-full bg-[#a2dd00]/70 animate-bounce [animation-delay:0ms]" />
+              <span className="h-1 w-1 rounded-full bg-[#a2dd00]/70 animate-bounce [animation-delay:150ms]" />
+              <span className="h-1 w-1 rounded-full bg-[#a2dd00]/70 animate-bounce [animation-delay:300ms]" />
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={() => onOpenChange(false)}
+          className="mt-2 text-xs text-[#f3f0ed]/30 hover:text-[#f3f0ed]/60 transition-colors underline underline-offset-2"
+        >
+          Fechar
+        </button>
+      </div>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#f3f0ed]/[0.05] bg-gradient-to-b from-[#f3f0ed]/[0.02] to-transparent px-4 py-3.5">
         <div className="flex items-center gap-2.5">
@@ -717,10 +744,10 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
                         setSelectedClipId(range.clip.id === selectedClipId ? null : range.clip.id);
                       }}
                       className={`group relative h-full overflow-hidden cursor-pointer transition-all ${isSelected
-                          ? 'ring-2 ring-[#a2dd00] ring-inset z-[5]'
-                          : isActive
-                            ? 'ring-1 ring-[#a2dd00]/40 ring-inset'
-                            : ''
+                        ? 'ring-2 ring-[#a2dd00] ring-inset z-[5]'
+                        : isActive
+                          ? 'ring-1 ring-[#a2dd00]/40 ring-inset'
+                          : ''
                         }`}
                       style={{
                         width: `${widthPct}%`,

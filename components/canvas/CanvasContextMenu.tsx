@@ -45,6 +45,7 @@ const menuItems = [
         icon: Mic,
         label: 'Gerar Voz',
         description: 'Texto para áudio com IA',
+        comingSoon: true,
     },
 ];
 
@@ -62,13 +63,16 @@ export function CanvasContextMenu({ children, onAddPanel }: CanvasContextMenuPro
                     O QUE VOCÊ QUER GERAR?
                 </ContextMenuLabel>
 
-                {menuItems.map((item, i) => {
+                {menuItems.map((item) => {
                     const Icon = item.icon;
                     return (
                         <ContextMenuItem
                             key={item.type}
-                            onSelect={() => onAddPanel?.(item.type)}
-                            className="group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 outline-none transition-all focus:bg-[#1e494b]/40 data-[highlighted]:bg-[#1e494b]/40"
+                            onSelect={(e) => {
+                                if (item.comingSoon) { e.preventDefault(); return; }
+                                onAddPanel?.(item.type);
+                            }}
+                            className={`group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 outline-none transition-all focus:bg-[#1e494b]/40 data-highlighted:bg-[#1e494b]/40 ${item.comingSoon ? 'opacity-60 cursor-default' : ''}`}
                         >
                             {/* Icon box */}
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-focus:border-[#a2dd00]/30 group-focus:bg-[#a2dd00]/10">
@@ -76,7 +80,7 @@ export function CanvasContextMenu({ children, onAddPanel }: CanvasContextMenuPro
                             </div>
 
                             {/* Text */}
-                            <div className="flex flex-col">
+                            <div className="flex flex-col flex-1 min-w-0">
                                 <span className="text-sm font-semibold text-[#f3f0ed]/90">
                                     {item.label}
                                 </span>
@@ -84,6 +88,18 @@ export function CanvasContextMenu({ children, onAddPanel }: CanvasContextMenuPro
                                     {item.description}
                                 </span>
                             </div>
+
+                            {/* Coming soon badge */}
+                            {item.comingSoon && (
+                                <div className="flex items-center gap-1 rounded-full border border-[#a2dd00]/30 bg-[#a2dd00]/5 px-2 py-0.5 shrink-0">
+                                    <span className="text-[10px] font-medium text-[#a2dd00]/70">Em breve</span>
+                                    <div className="flex items-center gap-0.5">
+                                        <span className="h-0.5 w-0.5 rounded-full bg-[#a2dd00]/70 animate-bounce [animation-delay:0ms]" />
+                                        <span className="h-0.5 w-0.5 rounded-full bg-[#a2dd00]/70 animate-bounce [animation-delay:150ms]" />
+                                        <span className="h-0.5 w-0.5 rounded-full bg-[#a2dd00]/70 animate-bounce [animation-delay:300ms]" />
+                                    </div>
+                                </div>
+                            )}
                         </ContextMenuItem>
                     );
                 })}
