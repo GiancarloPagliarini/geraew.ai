@@ -1,6 +1,7 @@
 'use client';
 
 import { Coins, Loader2, PersonStanding, Sparkles, X } from 'lucide-react';
+import { GenerationErrorBanner, showGenerationError } from './GenerationError';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -128,7 +129,7 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
           clearProgressTimer();
           clearMsgTimer();
           setGenState('idle');
-          setErrorMsg(generation.errorMessage ?? 'Erro ao gerar influencer.');
+          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: 'Erro ao gerar influencer.' }));
           refetchCredits();
         }
       } catch {
@@ -136,7 +137,7 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
         clearProgressTimer();
         clearMsgTimer();
         setGenState('idle');
-        setErrorMsg('Erro ao verificar status da geração.');
+        setErrorMsg(showGenerationError({ fallback: 'Erro ao verificar status da geração.' }));
       }
     }, 3000);
   }
@@ -175,8 +176,7 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
           clearProgressTimer();
           clearMsgTimer();
           setGenState('idle');
-          const msg = errorMessage ?? 'Erro ao gerar influencer.';
-          setErrorMsg(creditsRefunded > 0 ? `${msg} (${creditsRefunded} créditos estornados)` : msg);
+          setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: 'Erro ao gerar influencer.' }));
           refetchCredits();
         },
         onError: () => {
@@ -187,7 +187,7 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
       clearProgressTimer();
       clearMsgTimer();
       setGenState('idle');
-      setErrorMsg(err instanceof Error ? err.message : 'Erro ao iniciar geração.');
+      setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: 'Erro ao iniciar geração.' }));
     }
   }
 
@@ -233,13 +233,9 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
 
       <div className="space-y-4 p-4">
         {/* ── Error message ────────────────────────────────────────────── */}
-        {errorMsg && (
-          <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-xs text-red-400">
-            {errorMsg}
-          </div>
-        )}
+        <GenerationErrorBanner msg={errorMsg} />
 
-        {/* ── Idle state — empty placeholder ────────────────────────── */}
+{/* ── Idle state — empty placeholder ────────────────────────── */}
         {genState === 'idle' && !generatedImageUrl && (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-[#f3f0ed]/10 bg-[#1e494b]/10 px-4 py-10">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f3f0ed]/[0.05]">
