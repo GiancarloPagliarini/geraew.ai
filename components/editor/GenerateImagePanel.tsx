@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowUpRight, Coins, Download, FolderOpen, FolderPlus, Image, ImagePlus, Loader2, Plus, Sparkles, Wand2, X } from 'lucide-react';
+import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
@@ -98,9 +99,10 @@ function proportionToAspectRatio(p: string): string {
 interface GenerateImagePanelProps {
   nodeId: string;
   onClose?: () => void;
+  onDuplicate?: () => void;
 }
 
-export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps) {
+export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateImagePanelProps) {
   const { setNodeImage, nodeUpscaleStates, setNodeUpscaleState, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker } =
     useEditor();
   const { accessToken } = useAuth();
@@ -547,12 +549,15 @@ export function GenerateImagePanel({ nodeId, onClose }: GenerateImagePanelProps)
               GERAR IMAGEM
             </span>
           </div>
-          <button
-            onClick={() => { localStorage.removeItem(storageKey); onClose?.(); }}
-            className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/[0.08] hover:text-[#f3f0ed]/80"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <PanelDuplicateButton onClick={onDuplicate} />
+            <button
+              onClick={() => { localStorage.removeItem(storageKey); onClose?.(); }}
+              className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4 p-4">

@@ -11,7 +11,7 @@ import {
   useNodesState,
   useReactFlow,
 } from '@xyflow/react';
-import { ImageIcon, PersonStanding, Video, Wand2 } from 'lucide-react';
+import { AudioWaveform, ImageIcon, PersonStanding, Video } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEditor } from '@/lib/editor-context';
@@ -73,7 +73,7 @@ function CanvasContent() {
     });
     const vp = loadStoredViewport();
     if (vp) setViewport(vp);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Persist nodes whenever they change
@@ -267,7 +267,7 @@ function CanvasContent() {
                 className="group flex h-40 w-40 flex-col items-center justify-center gap-4 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95"
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10">
-                  <Wand2 className="h-6 w-6 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00]" />
+                  <AudioWaveform className="h-6 w-6 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00]" />
                 </div>
                 <span className="text-sm font-medium text-[#f3f0ed]/90">Motion Control</span>
               </button>

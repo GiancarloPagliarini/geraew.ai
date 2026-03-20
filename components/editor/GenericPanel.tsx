@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2, Settings2, Wand2, X } from 'lucide-react';
+import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useState } from 'react';
 import { useEditor } from '@/lib/editor-context';
 
@@ -20,9 +21,10 @@ type GenState = 'idle' | 'generating' | 'done';
 interface GenericPanelProps {
   nodeId: string;
   onClose?: () => void;
+  onDuplicate?: () => void;
 }
 
-export function GenericPanel({ nodeId, onClose }: GenericPanelProps) {
+export function GenericPanel({ nodeId, onClose, onDuplicate }: GenericPanelProps) {
   const { consumeCredits } = useEditor();
 
   const [prompt, setPrompt] = useState('');
@@ -65,12 +67,15 @@ export function GenericPanel({ nodeId, onClose }: GenericPanelProps) {
             PAINEL CUSTOMIZÁVEL
           </span>
         </div>
-        <button
-          onClick={onClose}
-          className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/[0.08] hover:text-[#f3f0ed]/80"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <PanelDuplicateButton onClick={onDuplicate} />
+          <button
+            onClick={onClose}
+            className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       <div className="space-y-4 p-4">

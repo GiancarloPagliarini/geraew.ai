@@ -1,6 +1,7 @@
 'use client';
 
 import { Coins, Loader2, PersonStanding, Sparkles, X } from 'lucide-react';
+import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
@@ -33,9 +34,10 @@ const LOADING_MESSAGES = [
 interface CreateInfluencerPanelProps {
   nodeId: string;
   onClose?: () => void;
+  onDuplicate?: () => void;
 }
 
-export function CreateInfluencerPanel({ nodeId, onClose }: CreateInfluencerPanelProps) {
+export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateInfluencerPanelProps) {
   const { setNodeImage, consumeCredits, refetchCredits, prependToGallery } = useEditor();
   const { accessToken } = useAuth();
   const { prompt } = useInfluencerBuilder();
@@ -218,12 +220,15 @@ export function CreateInfluencerPanel({ nodeId, onClose }: CreateInfluencerPanel
             AI INFLUENCER
           </span>
         </div>
-        <button
-          onClick={(e) => { e.stopPropagation(); onClose?.(); }}
-          className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/[0.08] hover:text-[#f3f0ed]/80"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <PanelDuplicateButton onClick={onDuplicate} />
+          <button
+            onClick={(e) => { e.stopPropagation(); onClose?.(); }}
+            className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       <div className="space-y-4 p-4">

@@ -8,7 +8,7 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import { ImageIcon, Mic, User, Video, Wand2 } from 'lucide-react';
+import { AudioWaveform, ImageIcon, Mic, User, Video } from 'lucide-react';
 
 interface CanvasContextMenuProps {
     children: React.ReactNode;
@@ -36,7 +36,7 @@ const menuItems = [
     },
     {
         type: 'motion-control',
-        icon: Wand2,
+        icon: AudioWaveform,
         label: 'Motion Control',
         description: 'Substituir sujeito no vídeo',
     },

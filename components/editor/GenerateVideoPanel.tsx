@@ -21,6 +21,7 @@ import {
   Wand2,
   X
 } from 'lucide-react';
+import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
@@ -91,9 +92,10 @@ function proportionToAspectRatio(p: string): string {
 interface GenerateVideoPanelProps {
   nodeId: string;
   onClose?: () => void;
+  onDuplicate?: () => void;
 }
 
-export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps) {
+export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVideoPanelProps) {
   const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker } = useEditor();
   const { accessToken } = useAuth();
 
@@ -564,12 +566,15 @@ export function GenerateVideoPanel({ nodeId, onClose }: GenerateVideoPanelProps)
               GERAR VÍDEO
             </span>
           </div>
-          <button
-            onClick={() => { localStorage.removeItem(storageKey); onClose?.(); }}
-            className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <PanelDuplicateButton onClick={onDuplicate} />
+            <button
+              onClick={() => { localStorage.removeItem(storageKey); onClose?.(); }}
+              className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4 p-4">

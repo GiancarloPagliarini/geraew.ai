@@ -8,15 +8,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  AudioWaveform,
   Coins,
-  Download,
-  FolderOpen,
-  Image,
-  Loader2,
+  Download, Image,
   Video,
   Wand2,
-  X,
+  X
 } from 'lucide-react';
+import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
@@ -74,9 +73,10 @@ async function compressImage(dataUrl: string, mimeType: string): Promise<{ dataU
 interface MotionControlPanelProps {
   nodeId: string;
   onClose?: () => void;
+  onDuplicate?: () => void;
 }
 
-export function MotionControlPanel({ nodeId, onClose }: MotionControlPanelProps) {
+export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionControlPanelProps) {
   const { setNodeImage, consumeCredits, refetchCredits, prependToGallery } = useEditor();
   const { accessToken } = useAuth();
 
@@ -141,11 +141,15 @@ export function MotionControlPanel({ nodeId, onClose }: MotionControlPanelProps)
   useEffect(() => {
     try {
       localStorage.setItem(storageKey, JSON.stringify({
-        resolution, generatedVideoUrl, generationId, genState,
-        // Don't save large base64 data
+        resolution, generatedVideoUrl, generationId, genState, videoFile, imageFile,
       }));
-    } catch { /* quota exceeded */ }
-  }, [storageKey, resolution, generatedVideoUrl, generationId, genState]);
+    } catch {
+      // Quota exceeded (large base64 data) — save without files
+      localStorage.setItem(storageKey, JSON.stringify({
+        resolution, generatedVideoUrl, generationId, genState,
+      }));
+    }
+  }, [storageKey, resolution, generatedVideoUrl, generationId, genState, videoFile, imageFile]);
 
   // Document title
   useEffect(() => {
@@ -454,17 +458,20 @@ export function MotionControlPanel({ nodeId, onClose }: MotionControlPanelProps)
         {/* Header */}
         <div className="panel-drag-handle flex cursor-grab items-center justify-between border-b border-[#f3f0ed]/[0.07] px-4 py-3 active:cursor-grabbing">
           <div className="flex items-center gap-2">
-            <Wand2 className="h-4 w-4 text-[#a2dd00]" />
+            <AudioWaveform className="h-4 w-4 text-[#a2dd00]" />
             <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
               MOTION CONTROL
             </span>
           </div>
-          <button
-            onClick={() => { localStorage.removeItem(storageKey); onClose?.(); }}
-            className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <PanelDuplicateButton onClick={onDuplicate} />
+            <button
+              onClick={() => { localStorage.removeItem(storageKey); onClose?.(); }}
+              className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4 p-4">
@@ -604,18 +611,18 @@ export function MotionControlPanel({ nodeId, onClose }: MotionControlPanelProps)
               </div>
 
               {/* Resolution */}
-              <div>
-                <label className="mb-1.5 block text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
                   RESOLUÇÃO
                 </label>
                 <Select value={resolution} onValueChange={setResolution}>
-                  <SelectTrigger className="h-9 rounded-xl border-[#f3f0ed]/[0.08] bg-[#1e494b]/15 text-xs text-[#f3f0ed]/80">
+                  <SelectTrigger className="h-9 w-full rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 text-xs text-[#f3f0ed]/80 outline-none transition-all focus:border-[#a2dd00]/40 focus:ring-0 data-placeholder:text-[#f3f0ed]/35 [&>svg]:text-[#f3f0ed]/30">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-[#f3f0ed]/[0.08] bg-[#1a2123]">
-                    <SelectItem value="480p" className="text-xs text-[#f3f0ed]/80">480p</SelectItem>
-                    <SelectItem value="580p" className="text-xs text-[#f3f0ed]/80">580p</SelectItem>
-                    <SelectItem value="720p" className="text-xs text-[#f3f0ed]/80">720p</SelectItem>
+                  <SelectContent className="rounded-xl border border-[#f3f0ed]/8 bg-[#1a2123] p-1 shadow-2xl shadow-black/60 backdrop-blur-md">
+                    <SelectItem value="480p" className="cursor-pointer rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/70 transition-all focus:bg-[#1e494b]/40 focus:text-[#f3f0ed] data-[state=checked]:text-[#a2dd00] [&>span:last-child>svg]:text-[#a2dd00]">480p</SelectItem>
+                    <SelectItem value="580p" className="cursor-pointer rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/70 transition-all focus:bg-[#1e494b]/40 focus:text-[#f3f0ed] data-[state=checked]:text-[#a2dd00] [&>span:last-child>svg]:text-[#a2dd00]">580p</SelectItem>
+                    <SelectItem value="720p" className="cursor-pointer rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/70 transition-all focus:bg-[#1e494b]/40 focus:text-[#f3f0ed] data-[state=checked]:text-[#a2dd00] [&>span:last-child>svg]:text-[#a2dd00]">720p</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -627,26 +634,34 @@ export function MotionControlPanel({ nodeId, onClose }: MotionControlPanelProps)
                 </div>
               )}
 
+              {/* Credit estimate */}
+              <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
+                <div className="flex items-center gap-1.5">
+                  <Coins className="h-3 w-3 text-[#a2dd00]" />
+                  <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Custo</span>
+                </div>
+                {estimateLoading ? (
+                  <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
+                ) : estimate ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
+                    <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
+                  </div>
+                ) : null}
+              </div>
+
               {/* Generate button */}
               <button
-                disabled={!videoFile || !imageFile || estimateLoading}
+                disabled={!videoFile || !imageFile}
                 onClick={handleGenerate}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#a2dd00] text-sm font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:hover:brightness-100"
+                className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  background: '#a2dd00',
+                  color: '#1a2123',
+                }}
               >
-                {estimateLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Wand2 className="h-4 w-4" />
-                    Gerar
-                    {estimate && (
-                      <span className="flex items-center gap-1 rounded-full bg-[#1a2123]/20 px-2 py-0.5 text-[10px] font-bold">
-                        <Coins className="h-3 w-3" />
-                        {estimate.creditsRequired}
-                      </span>
-                    )}
-                  </>
-                )}
+                <Wand2 className="h-4 w-4" />
+                GERAR
               </button>
 
               <p className="text-center text-[10px] text-[#f3f0ed]/25">
