@@ -293,6 +293,109 @@ export interface Folder {
   createdAt: string;
 }
 
+// ─── Admin ───────────────────────────────────────────────────────────────────
+
+export interface AdminStats {
+  totalUsers: number;
+  activeSubscriptions: number;
+  totalRevenueCents: number;
+  totalGenerations: number;
+  generationsByStatus: {
+    pending: number;
+    processing: number;
+    completed: number;
+    failed: number;
+  };
+}
+
+export interface AdminPaginatedResponse<T> {
+  data: T[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  subscription: {
+    planSlug: string;
+    planName: string;
+    status: string;
+  } | null;
+  credits: {
+    planCreditsRemaining: number;
+    bonusCreditsRemaining: number;
+  } | null;
+}
+
+export interface AdminUserDetail {
+  id: string;
+  email: string;
+  name: string;
+  avatarUrl: string | null;
+  role: string;
+  isActive: boolean;
+  emailVerified: boolean;
+  oauthProvider: string | null;
+  createdAt: string;
+  updatedAt: string;
+  subscription: {
+    id: string;
+    planSlug: string;
+    planName: string;
+    status: string;
+    currentPeriodStart: string;
+    currentPeriodEnd: string;
+    cancelAtPeriodEnd: boolean;
+  } | null;
+  credits: {
+    planCreditsRemaining: number;
+    bonusCreditsRemaining: number;
+    planCreditsUsed: number;
+    periodStart: string;
+    periodEnd: string;
+  } | null;
+  recentGenerations: {
+    id: string;
+    type: string;
+    status: string;
+    prompt: string;
+    resolution: string;
+    creditsConsumed: number;
+    createdAt: string;
+    completedAt: string | null;
+  }[];
+}
+
+export interface AdminGeneration {
+  id: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+  };
+  type: string;
+  status: string;
+  prompt: string;
+  resolution: string;
+  durationSeconds: number | null;
+  hasAudio: boolean;
+  creditsConsumed: number;
+  outputUrls: string[];
+  errorMessage: string | null;
+  processingTimeMs: number | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
 export const api = {
   gallery: {
     list(accessToken: string, page = 1, limit = 20, filters?: { type?: string; favorited?: boolean; folderId?: string }) {
@@ -553,6 +656,37 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(selections),
       });
+    },
+  },
+
+  admin: {
+    stats(accessToken: string) {
+      return authRequest<AdminStats>('/api/v1/admin/stats', accessToken);
+    },
+    users(accessToken: string, page = 1, limit = 20) {
+      return authRequest<AdminPaginatedResponse<AdminUser>>(
+        `/api/v1/admin/users?page=${page}&limit=${limit}`,
+        accessToken,
+      );
+    },
+    user(accessToken: string, id: string) {
+      return authRequest<AdminUserDetail>(`/api/v1/admin/users/${id}`, accessToken);
+    },
+    adjustCredits(accessToken: string, userId: string, amount: number, description: string) {
+      return authRequest<{ success: boolean; message: string }>(
+        `/api/v1/admin/users/${userId}/credits`,
+        accessToken,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ amount, description }),
+        },
+      );
+    },
+    generations(accessToken: string, page = 1, limit = 20) {
+      return authRequest<AdminPaginatedResponse<AdminGeneration>>(
+        `/api/v1/admin/generations?page=${page}&limit=${limit}`,
+        accessToken,
+      );
     },
   },
 
