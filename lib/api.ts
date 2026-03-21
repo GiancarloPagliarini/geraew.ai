@@ -558,7 +558,7 @@ export const api = {
 
   auth: {
     login(email: string, password: string) {
-      return request<AuthResponse>('api/v1/auth/login', {
+      return request<AuthResponse>('/api/v1/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
