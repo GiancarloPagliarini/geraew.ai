@@ -153,7 +153,7 @@ export function PlansModal({ onClose }: PlansModalProps) {
   );
 
   function getPlanAction(targetSlug: string): 'upgrade' | 'downgrade' | 'create' {
-    if (!hasActiveSub || !currentPlanSlug) return 'create';
+    if (!hasActiveSub || !currentPlanSlug || currentPlanSlug === 'free') return 'create';
     const currentIdx = PLAN_ORDER.indexOf(currentPlanSlug);
     const targetIdx = PLAN_ORDER.indexOf(targetSlug);
     return targetIdx > currentIdx ? 'upgrade' : 'downgrade';
