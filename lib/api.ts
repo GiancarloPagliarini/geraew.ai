@@ -210,7 +210,7 @@ export interface CreditTransaction {
 }
 
 export interface CreditsEstimateRequest {
-  type: 'TEXT_TO_IMAGE' | 'IMAGE_TO_IMAGE' | 'TEXT_TO_VIDEO' | 'IMAGE_TO_VIDEO' | 'REFERENCE_VIDEO';
+  type: 'TEXT_TO_IMAGE' | 'IMAGE_TO_IMAGE' | 'TEXT_TO_VIDEO' | 'IMAGE_TO_VIDEO' | 'REFERENCE_VIDEO' | 'MOTION_CONTROL';
   resolution?: string;
   durationSeconds?: number;
   hasAudio?: boolean;
