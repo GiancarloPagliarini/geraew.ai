@@ -89,7 +89,8 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
     } catch { return null; }
   });
 
-  const [resolution, setResolution] = useState<string>(stored?.resolution ?? '480p');
+  const [resolution, setResolution] = useState<string>(stored?.resolution ?? '720p');
+  const [videoDuration, setVideoDuration] = useState<number>(stored?.videoDuration ?? 5);
   const [videoFile, setVideoFile] = useState<{ base64: string; mime_type: string; name: string } | null>(stored?.videoFile ?? null);
   const [imageFile, setImageFile] = useState<{ base64: string; mime_type: string; preview: string } | null>(stored?.imageFile ?? null);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(stored?.generatedVideoUrl ?? null);
@@ -101,12 +102,13 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
       : stored?.generatedVideoUrl ? 'done' : 'idle'
   );
 
+  const dbResolution = resolution === '1080p' ? 'RES_1080P' : 'RES_720P';
   const { data: estimate, isLoading: estimateLoading } = useQuery({
-    queryKey: ['credits', 'estimate', 'MOTION_CONTROL', 'RES_720P'],
+    queryKey: ['credits', 'estimate', 'MOTION_CONTROL', dbResolution, videoDuration],
     queryFn: () => api.credits.estimate(accessToken!, {
-      type: 'REFERENCE_VIDEO',
-      resolution: 'RES_720P',
-      durationSeconds: 5,
+      type: 'MOTION_CONTROL',
+      resolution: dbResolution,
+      durationSeconds: videoDuration,
       hasAudio: false,
     }),
     enabled: !!accessToken && genState === 'idle',
@@ -141,15 +143,15 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
   useEffect(() => {
     try {
       localStorage.setItem(storageKey, JSON.stringify({
-        resolution, generatedVideoUrl, generationId, genState, videoFile, imageFile,
+        resolution, videoDuration, generatedVideoUrl, generationId, genState, videoFile, imageFile,
       }));
     } catch {
       // Quota exceeded (large base64 data) — save without files
       localStorage.setItem(storageKey, JSON.stringify({
-        resolution, generatedVideoUrl, generationId, genState,
+        resolution, videoDuration, generatedVideoUrl, generationId, genState,
       }));
     }
-  }, [storageKey, resolution, generatedVideoUrl, generationId, genState, videoFile, imageFile]);
+  }, [storageKey, resolution, videoDuration, generatedVideoUrl, generationId, genState, videoFile, imageFile]);
 
   // Document title
   useEffect(() => {
@@ -169,6 +171,20 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
 
+  function readVideoDuration(file: File): Promise<number> {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const vid = document.createElement('video');
+      vid.preload = 'metadata';
+      vid.onloadedmetadata = () => {
+        URL.revokeObjectURL(url);
+        resolve(Math.ceil(vid.duration) || 5);
+      };
+      vid.onerror = () => { URL.revokeObjectURL(url); resolve(5); };
+      vid.src = url;
+    });
+  }
+
   function handleVideoSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -183,6 +199,8 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
       toast.error('Formato de vídeo inválido.');
       return;
     }
+
+    readVideoDuration(file).then(setVideoDuration);
 
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -244,6 +262,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
       if (videoF.size > MAX_VIDEO_SIZE) {
         toast.error('Vídeo deve ter no máximo 10MB.');
       } else {
+        readVideoDuration(videoF).then(setVideoDuration);
         const reader = new FileReader();
         reader.onload = (ev) => {
           const dataUrl = ev.target?.result as string;
@@ -375,7 +394,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
         video_mime_type: videoFile.mime_type as 'video/mp4',
         image: imageFile.base64,
         image_mime_type: imageFile.mime_type as 'image/jpeg',
-        resolution: resolution as '480p' | '580p' | '720p',
+        resolution: resolution as '720p' | '1080p',
       });
 
       const { id, creditsConsumed } = result;
@@ -620,9 +639,8 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border border-[#f3f0ed]/8 bg-[#1a2123] p-1 shadow-2xl shadow-black/60 backdrop-blur-md">
-                    <SelectItem value="480p" className="cursor-pointer rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/70 transition-all focus:bg-[#1e494b]/40 focus:text-[#f3f0ed] data-[state=checked]:text-[#a2dd00] [&>span:last-child>svg]:text-[#a2dd00]">480p</SelectItem>
-                    <SelectItem value="580p" className="cursor-pointer rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/70 transition-all focus:bg-[#1e494b]/40 focus:text-[#f3f0ed] data-[state=checked]:text-[#a2dd00] [&>span:last-child>svg]:text-[#a2dd00]">580p</SelectItem>
                     <SelectItem value="720p" className="cursor-pointer rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/70 transition-all focus:bg-[#1e494b]/40 focus:text-[#f3f0ed] data-[state=checked]:text-[#a2dd00] [&>span:last-child>svg]:text-[#a2dd00]">720p</SelectItem>
+                    <SelectItem value="1080p" className="cursor-pointer rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/70 transition-all focus:bg-[#1e494b]/40 focus:text-[#f3f0ed] data-[state=checked]:text-[#a2dd00] [&>span:last-child>svg]:text-[#a2dd00]">1080p</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -638,7 +656,9 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
               <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
                 <div className="flex items-center gap-1.5">
                   <Coins className="h-3 w-3 text-[#a2dd00]" />
-                  <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Custo</span>
+                  <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">
+                    Custo {videoFile ? `· ${videoDuration}s` : ''}
+                  </span>
                 </div>
                 {estimateLoading ? (
                   <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
