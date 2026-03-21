@@ -258,7 +258,7 @@ export interface MotionControlRequest {
   video_mime_type?: string;
   image: string;
   image_mime_type?: string;
-  resolution?: '480p' | '580p' | '720p';
+  resolution?: '480p' | '580p' | '720p' | '1080p';
 }
 
 // ─── Video Editor ─────────────────────────────────────────────────────────────
