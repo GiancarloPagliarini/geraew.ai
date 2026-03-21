@@ -522,7 +522,7 @@ export const api = {
       });
     },
     upgrade(accessToken: string, planSlug: string) {
-      return authRequest<Record<string, unknown> & { checkoutUrl?: string }>('/api/v1/subscriptions/upgrade', accessToken, {
+      return authRequest<{ checkoutUrl: string }>('/api/v1/subscriptions/upgrade', accessToken, {
         method: 'PATCH',
         body: JSON.stringify({ planSlug }),
       });

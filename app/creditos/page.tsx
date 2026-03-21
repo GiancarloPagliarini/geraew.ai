@@ -45,51 +45,45 @@ export default function CreditosPage() {
   const queryClient = useQueryClient();
   const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
 
-  const changeMutation = useMutation({
-    mutationFn: ({ planSlug, action }: { planSlug: string; action: 'upgrade' | 'downgrade' }) =>
-      action === 'upgrade'
-        ? api.subscriptions.upgrade(accessToken!, planSlug)
-        : api.subscriptions.downgrade(accessToken!, planSlug),
-    onSuccess: (data, { action }) => {
-      if (action === 'upgrade' && data.checkoutUrl) {
-        window.location.href = data.checkoutUrl as string;
-        return;
-      }
-      queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
-      queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
-      queryClient.invalidateQueries({ queryKey: ['plans'] });
-      if (action === 'upgrade') {
-        toast.success('Upgrade realizado', { description: 'Seu plano foi atualizado com sucesso.' });
-      } else {
-        toast.success('Downgrade agendado', { description: 'O novo plano entrará em vigor no próximo período.' });
-      }
-    },
-    onError: (_, { action }) =>
-      toast.error(action === 'upgrade' ? 'Erro ao fazer upgrade' : 'Erro ao fazer downgrade', {
-        description: 'Tente novamente.',
-      }),
-    onSettled: () => setSubscribingSlug(null),
-  });
-
   async function handleSubscribe(planSlug: string) {
     if (!accessToken || subscribingSlug) return;
     setSubscribingSlug(planSlug);
     const action = getPlanAction(planSlug);
-    if (action === 'create') {
-      try {
-        const { checkoutUrl } = await api.subscriptions.create(accessToken, planSlug);
-        window.location.href = checkoutUrl;
-      } catch (err: unknown) {
-        const status = (err as { status?: number })?.status;
-        if (status === 409) {
-          // Cache desatualizado — usuário já tem plano pago, usar upgrade
-          changeMutation.mutate({ planSlug, action: 'upgrade' });
-        } else {
+
+    try {
+      if (action === 'downgrade') {
+        await api.subscriptions.downgrade(accessToken, planSlug);
+        toast.success('Downgrade agendado', {
+          description: 'Seu plano será alterado na próxima renovação.',
+        });
+        queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
+        setSubscribingSlug(null);
+        return;
+      }
+
+      let checkoutUrl: string;
+      if (action === 'create') {
+        const res = await api.subscriptions.create(accessToken, planSlug);
+        checkoutUrl = res.checkoutUrl;
+      } else {
+        const res = await api.subscriptions.upgrade(accessToken, planSlug);
+        checkoutUrl = res.checkoutUrl;
+      }
+      window.location.href = checkoutUrl;
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      if (status === 409) {
+        try {
+          const res = await api.subscriptions.upgrade(accessToken, planSlug);
+          window.location.href = res.checkoutUrl;
+        } catch {
+          toast.error('Erro ao mudar de plano', { description: 'Tente novamente.' });
           setSubscribingSlug(null);
         }
+      } else {
+        toast.error('Erro ao mudar de plano', { description: 'Tente novamente.' });
+        setSubscribingSlug(null);
       }
-    } else {
-      changeMutation.mutate({ planSlug, action });
     }
   }
 
