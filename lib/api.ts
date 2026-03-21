@@ -645,10 +645,23 @@ export const api = {
   },
 
   promptEnhancer: {
-    enhance(accessToken: string, prompt: string) {
-      return authRequest<{ enhancedPrompt: string }>('/api/v1/prompt-enhancer/enhance', accessToken, {
+    enhance(accessToken: string, prompt: string, context?: {
+      type: 'image' | 'video';
+      model?: string;
+      resolution?: string;
+      aspectRatio?: string;
+      quality?: string;
+      durationSeconds?: number;
+      hasAudio?: boolean;
+      hasReferenceImages?: boolean;
+      hasFirstFrame?: boolean;
+      hasLastFrame?: boolean;
+      negativePrompt?: string;
+      sampleCount?: number;
+    }, images?: { base64: string; mime_type: string }[]) {
+      return authRequest<{ enhancedPrompt: string; negativePrompt: string }>('/api/v1/prompt-enhancer/enhance', accessToken, {
         method: 'POST',
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, context, images }),
       });
     },
     enhanceInfluencer(accessToken: string, selections: Record<string, string>) {

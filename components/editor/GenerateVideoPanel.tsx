@@ -424,7 +424,23 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     if (enhancePrompt && prompt.trim()) {
       setIsEnhancing(true);
       try {
-        const { enhancedPrompt: enhanced } = await api.promptEnhancer.enhance(accessToken, prompt);
+        const videoRefImages: { base64: string; mime_type: string }[] = [
+          ...refImages.map(img => ({ base64: img.base64, mime_type: img.mime_type })),
+          ...(firstFrame ? [{ base64: firstFrame.base64, mime_type: firstFrame.mime_type }] : []),
+          ...(lastFrame ? [{ base64: lastFrame.base64, mime_type: lastFrame.mime_type }] : []),
+        ];
+        const { enhancedPrompt: enhanced } = await api.promptEnhancer.enhance(accessToken, prompt, {
+          type: 'video',
+          model,
+          resolution,
+          aspectRatio: proportionToAspectRatio(proportion),
+          durationSeconds: durationToSeconds(effectiveDuration),
+          hasAudio: audio,
+          hasReferenceImages: refImages.length > 0,
+          hasFirstFrame: !!firstFrame,
+          hasLastFrame: !!lastFrame,
+          sampleCount,
+        }, videoRefImages.length > 0 ? videoRefImages : undefined);
         finalPrompt = enhanced;
         setPrompt(enhanced);
       } catch {

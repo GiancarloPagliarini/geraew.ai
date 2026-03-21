@@ -363,7 +363,14 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
     if (enhancePrompt && prompt.trim()) {
       setIsEnhancing(true);
       try {
-        const { enhancedPrompt } = await api.promptEnhancer.enhance(accessToken, prompt);
+        const { enhancedPrompt } = await api.promptEnhancer.enhance(accessToken, prompt, {
+          type: 'image',
+          model,
+          resolution: qualityToResolution(quality),
+          aspectRatio: proportionToAspectRatio(proportion),
+          quality,
+          hasReferenceImages: attachedImages.length > 0,
+        }, attachedImages.length > 0 ? attachedImages.map(img => ({ base64: img.base64, mime_type: img.mime_type })) : undefined);
         finalPrompt = enhancedPrompt;
         setPrompt(enhancedPrompt);
       } catch {
