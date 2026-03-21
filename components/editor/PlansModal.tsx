@@ -166,7 +166,7 @@ export function PlansModal({ onClose }: PlansModalProps) {
         : api.subscriptions.downgrade(accessToken!, planSlug),
     onSuccess: (data, { action }) => {
       if (action === 'upgrade' && data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
+        window.location.href = data.checkoutUrl as string;
         return;
       }
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
