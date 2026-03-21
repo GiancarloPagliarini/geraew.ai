@@ -3,7 +3,8 @@
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { Plan } from '@/lib/api';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useLoadingMessage } from '@/lib/loading-messages';
 import {
   ArrowLeft,
@@ -41,16 +42,44 @@ export default function CreditosPage() {
   const router = useRouter();
   const { user, accessToken, loading: authLoading } = useAuth();
   const loadingMsg = useLoadingMessage('creditos');
+  const queryClient = useQueryClient();
   const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
+
+  const changeMutation = useMutation({
+    mutationFn: ({ planSlug, action }: { planSlug: string; action: 'upgrade' | 'downgrade' }) =>
+      action === 'upgrade'
+        ? api.subscriptions.upgrade(accessToken!, planSlug)
+        : api.subscriptions.downgrade(accessToken!, planSlug),
+    onSuccess: (_, { action }) => {
+      queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
+      queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
+      queryClient.invalidateQueries({ queryKey: ['plans'] });
+      if (action === 'upgrade') {
+        toast.success('Upgrade realizado', { description: 'Seu plano foi atualizado com sucesso.' });
+      } else {
+        toast.success('Downgrade agendado', { description: 'O novo plano entrará em vigor no próximo período.' });
+      }
+    },
+    onError: (_, { action }) =>
+      toast.error(action === 'upgrade' ? 'Erro ao fazer upgrade' : 'Erro ao fazer downgrade', {
+        description: 'Tente novamente.',
+      }),
+    onSettled: () => setSubscribingSlug(null),
+  });
 
   async function handleSubscribe(planSlug: string) {
     if (!accessToken || subscribingSlug) return;
     setSubscribingSlug(planSlug);
-    try {
-      const { checkoutUrl } = await api.subscriptions.create(accessToken, planSlug);
-      window.location.href = checkoutUrl;
-    } catch {
-      setSubscribingSlug(null);
+    const action = getPlanAction(planSlug);
+    if (action === 'create') {
+      try {
+        const { checkoutUrl } = await api.subscriptions.create(accessToken, planSlug);
+        window.location.href = checkoutUrl;
+      } catch {
+        setSubscribingSlug(null);
+      }
+    } else {
+      changeMutation.mutate({ planSlug, action });
     }
   }
 
@@ -101,6 +130,16 @@ export default function CreditosPage() {
 
   const currentPlanSlug =
     (profile?.plan as Record<string, unknown> | null)?.slug as string | null ?? null;
+
+  const sub = profile?.subscription as Record<string, unknown> | null;
+  const hasActiveSub = sub?.status === 'ACTIVE' || sub?.status === 'active';
+
+  function getPlanAction(targetSlug: string): 'upgrade' | 'downgrade' | 'create' {
+    if (!hasActiveSub || !currentPlanSlug) return 'create';
+    const currentIdx = PLAN_ORDER.indexOf(currentPlanSlug);
+    const targetIdx = PLAN_ORDER.indexOf(targetSlug);
+    return targetIdx > currentIdx ? 'upgrade' : 'downgrade';
+  }
 
   const sortedPlans = (plans ?? []).slice().sort(
     (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),
@@ -271,7 +310,11 @@ export default function CreditosPage() {
                         ) : isCurrent ? (
                           'Plano ativo'
                         ) : (
-                          'Assinar'
+                          {
+                            upgrade: 'Fazer upgrade',
+                            downgrade: 'Fazer downgrade',
+                            create: 'Assinar',
+                          }[getPlanAction(plan.slug)]
                         )}
                       </button>
                     )}

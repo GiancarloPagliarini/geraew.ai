@@ -198,6 +198,17 @@ export interface PaginatedResponse<T> {
   };
 }
 
+export interface CreditTransaction {
+  id: string;
+  type: string;
+  amount: number;
+  source: string;
+  description: string;
+  generationId: string | null;
+  paymentId: string | null;
+  createdAt: string;
+}
+
 export interface CreditsEstimateRequest {
   type: 'TEXT_TO_IMAGE' | 'IMAGE_TO_IMAGE' | 'TEXT_TO_VIDEO' | 'IMAGE_TO_VIDEO' | 'REFERENCE_VIDEO';
   resolution?: string;
@@ -386,6 +397,9 @@ export const api = {
     get(accessToken: string, id: string) {
       return authRequest<Generation>(`/api/v1/generations/${id}`, accessToken);
     },
+    delete(accessToken: string, id: string) {
+      return authRequest<void>(`/api/v1/generations/${id}`, accessToken, { method: 'DELETE' });
+    },
     getFolders(accessToken: string, id: string) {
       return authRequest<Folder[]>(`/api/v1/generations/${id}/folders`, accessToken);
     },
@@ -409,6 +423,12 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ packageId }),
       });
+    },
+    transactions(accessToken: string, page = 1, limit = 20) {
+      return authRequest<PaginatedResponse<CreditTransaction>>(
+        `/api/v1/credits/transactions?page=${page}&limit=${limit}`,
+        accessToken,
+      );
     },
   },
 
@@ -499,6 +519,18 @@ export const api = {
     reactivate(accessToken: string) {
       return authRequest<Record<string, unknown>>('/api/v1/subscriptions/reactivate', accessToken, {
         method: 'POST',
+      });
+    },
+    upgrade(accessToken: string, planSlug: string) {
+      return authRequest<Record<string, unknown>>('/api/v1/subscriptions/upgrade', accessToken, {
+        method: 'PATCH',
+        body: JSON.stringify({ planSlug }),
+      });
+    },
+    downgrade(accessToken: string, planSlug: string) {
+      return authRequest<Record<string, unknown>>('/api/v1/subscriptions/downgrade', accessToken, {
+        method: 'PATCH',
+        body: JSON.stringify({ planSlug }),
       });
     },
   },

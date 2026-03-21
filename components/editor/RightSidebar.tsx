@@ -295,7 +295,7 @@ export function RightSidebar() {
   // Influencer builder sidebar
   if (panelType === 'create-influencer') {
     return (
-      <aside className="aside-in flex h-full w-80 shrink-0 flex-col border-l border-[#f3f0ed]/[0.07] bg-[#1a2123]">
+      <aside className="aside-in flex h-full w-96 shrink-0 flex-col border-l border-[#f3f0ed]/[0.07] bg-[#1a2123]">
         {/* Header */}
         <div className="flex items-center gap-2.5 border-b border-[#f3f0ed]/[0.05] bg-gradient-to-b from-[#f3f0ed]/[0.02] to-transparent px-4 py-3.5">
           <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#f3f0ed]/[0.05]">

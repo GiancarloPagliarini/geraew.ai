@@ -150,13 +150,12 @@ export function BuyCreditsModal({ onClose }: BuyCreditsModalProps) {
               return (
                 <div
                   key={pkg.id}
-                  className={`relative flex flex-col rounded-2xl border p-5 transition-all ${
-                    isBest
+                  className={`relative flex flex-col rounded-2xl border p-5 transition-all ${isBest
                       ? 'border-[#a2dd00]/50 bg-[#1e2b1f] shadow-[0_0_30px_rgba(162,221,0,0.1)]'
                       : isPopular
                         ? 'border-[#f3f0ed]/20 bg-[#1f2a2d]'
                         : 'border-[#f3f0ed]/8 bg-[#1c2527]'
-                  }`}
+                    }`}
                 >
                   {/* Badge */}
                   {isPopular && (
@@ -220,13 +219,12 @@ export function BuyCreditsModal({ onClose }: BuyCreditsModalProps) {
                   <button
                     onClick={() => handlePurchase(pkg.id)}
                     disabled={!!purchasingId}
-                    className={`mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${
-                      isBest
+                    className={`mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${isBest
                         ? 'bg-[#a2dd00] text-[#1a2123] hover:brightness-110'
                         : isPopular
                           ? 'border border-[#f3f0ed]/20 bg-transparent text-[#f3f0ed] hover:bg-[#f3f0ed]/8'
                           : 'bg-[#f3f0ed]/8 text-[#f3f0ed] hover:bg-[#f3f0ed]/12'
-                    }`}
+                      }`}
                   >
                     {isPurchasing ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

@@ -251,6 +251,52 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
     [favoriteMutation],
   );
 
+  // ── Delete generation ──────────────────────────────────────────────────────
+
+  const deleteGenerationMutation = useMutation({
+    mutationFn: (id: string) => api.generations.delete(accessToken!, id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['gallery'] });
+
+      const allKeys = [
+        ...TABS.map((t) => ['gallery', 'list', t.key]),
+        ...(activeFolderId ? [['gallery', 'list', activeFolderId]] : []),
+      ];
+
+      const snapshots: [string[], InfiniteData<PaginatedResponse<Generation>> | undefined][] = [];
+      for (const qk of allKeys) {
+        const prev = queryClient.getQueryData<InfiniteData<PaginatedResponse<Generation>>>(qk);
+        snapshots.push([qk, prev]);
+        if (prev) {
+          queryClient.setQueryData<InfiniteData<PaginatedResponse<Generation>>>(qk, {
+            ...prev,
+            pages: prev.pages.map((page) => ({
+              ...page,
+              data: page.data.filter((g) => g.id !== id),
+              meta: { ...page.meta, total: page.meta.total - 1 },
+            })),
+          });
+        }
+      }
+      return { snapshots };
+    },
+    onSuccess: () => {
+      setSelected(null);
+      toast.success('Geração excluída', { description: 'A geração foi removida com sucesso.' });
+    },
+    onError: (_err, _id, context) => {
+      if (context?.snapshots) {
+        for (const [qk, prev] of context.snapshots) {
+          if (prev) queryClient.setQueryData(qk, prev);
+        }
+      }
+      toast.error('Erro ao excluir', { description: 'Tente novamente.' });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+    },
+  });
+
   // ── IntersectionObserver — trigger next page ───────────────────────────────
 
   useEffect(() => {
@@ -477,6 +523,8 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
               onAddToFolder={(folderId) => handleAddToFolder(folderId, selected.id)}
               onRemoveFromFolder={(folderId) => handleRemoveFromFolder(folderId, selected.id)}
               onCreateFolderAndAdd={(name) => handleCreateFolderAndAdd(name, selected.id)}
+              onDelete={() => deleteGenerationMutation.mutate(selected.id)}
+              deleteIsPending={deleteGenerationMutation.isPending}
             />
           ) : galleryLoading ? (
             <SkeletonGrid />
@@ -566,7 +614,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
 
 // ─── Detail view ──────────────────────────────────────────────────────────────
 
-function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRemoveFromFolder, onCreateFolderAndAdd }: {
+function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRemoveFromFolder, onCreateFolderAndAdd, onDelete, deleteIsPending }: {
   item: Generation;
   onBack: () => void;
   toggleFavorite: (item: Generation, e?: React.MouseEvent) => void;
@@ -574,11 +622,14 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
   onAddToFolder: (folderId: string) => void;
   onRemoveFromFolder: (folderId: string) => void;
   onCreateFolderAndAdd: (name: string) => void;
+  onDelete: () => void;
+  deleteIsPending: boolean;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [lightbox, setLightbox] = useState<GenerationInputImage | null>(null);
   const [promptCopied, setPromptCopied] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const activeFolderIds = item.folder ? [item.folder.id] : [];
 
@@ -772,6 +823,34 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
             <Download className="h-4 w-4" />
             Download
           </button>
+
+          {confirmDelete ? (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={onDelete}
+                disabled={deleteIsPending}
+                className="flex items-center gap-1.5 rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-50"
+              >
+                {deleteIsPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                Confirmar
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleteIsPending}
+                className="rounded-lg px-2 py-1.5 text-xs text-[#f3f0ed]/40 hover:text-[#f3f0ed]/70 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-2 rounded-lg bg-red-500/8 px-3 py-1.5 text-xs font-medium text-red-400/70 hover:bg-red-500/15 hover:text-red-400 transition-colors"
+            >
+              <Trash2 className="h-4 w-4" />
+              Excluir
+            </button>
+          )}
         </div>
       </div>
 

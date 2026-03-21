@@ -35,6 +35,16 @@ const messages = {
     'Verificando se a IA aceitou seu Pix...',
     'Abrindo a carteira de créditos...',
   ],
+  uso: [
+    'Vasculhando seu histórico de crimes criativos...',
+    'Contando quantas vezes você culpou a IA...',
+    'Arqueologando suas gerações antigas...',
+    'Destrinchando seus gastos com estilo...',
+    'Recuperando os recibos do passado...',
+    'Abrindo o livro-caixa da criatividade...',
+    'Juntando todas as provas de uso...',
+    'Auditando sua conta sem julgamentos...',
+  ],
 };
 
 type PageKey = keyof typeof messages;

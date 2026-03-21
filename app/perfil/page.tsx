@@ -2,7 +2,8 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useLoadingMessage } from '@/lib/loading-messages';
 import {
   ArrowLeft,
@@ -21,15 +22,37 @@ import {
   ExternalLink,
   User,
   Coins,
+  AlertTriangle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
 export default function PerfilPage() {
   const router = useRouter();
   const { user, accessToken, loading: authLoading } = useAuth();
   const loadingMsg = useLoadingMessage('perfil');
+  const queryClient = useQueryClient();
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+
+  const cancelMutation = useMutation({
+    mutationFn: () => api.subscriptions.cancel(accessToken!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
+      setConfirmingCancel(false);
+      toast.success('Assinatura cancelada', { description: 'Você terá acesso até o fim do período atual.' });
+    },
+    onError: () => toast.error('Erro ao cancelar', { description: 'Tente novamente.' }),
+  });
+
+  const reactivateMutation = useMutation({
+    mutationFn: () => api.subscriptions.reactivate(accessToken!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
+      toast.success('Assinatura reativada', { description: 'Seu plano continua ativo normalmente.' });
+    },
+    onError: () => toast.error('Erro ao reativar', { description: 'Tente novamente.' }),
+  });
 
   const { data: profile, isLoading, error } = useQuery({
     queryKey: ['user', 'me'],
@@ -105,6 +128,7 @@ export default function PerfilPage() {
   // Subscription
   const sub = profile.subscription as Record<string, unknown> | null;
   const subStatus = (sub?.status as string) || null;
+  const cancelAtPeriodEnd = (sub?.cancelAtPeriodEnd as boolean) || false;
   const subEnd = sub?.currentPeriodEnd
     ? new Date(sub.currentPeriodEnd as string).toLocaleDateString('pt-BR', {
       day: '2-digit',
@@ -183,11 +207,6 @@ export default function PerfilPage() {
               <h1 className="truncate text-xl font-bold text-[#f3f0ed]">{profile.name}</h1>
               <p className="mt-0.5 text-sm text-[#f3f0ed]/50">{profile.email}</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                {/* Role badge */}
-                <span className="flex items-center gap-1 rounded-full border border-[#f3f0ed]/10 bg-[#f3f0ed]/6 px-2.5 py-0.5 text-[11px] font-medium text-[#f3f0ed]/60">
-                  <Shield className="h-3 w-3" />
-                  {profile.role}
-                </span>
                 {/* Plan badge */}
                 {planName && (
                   <span className="flex items-center gap-1 rounded-full border border-[#a2dd00]/20 bg-[#a2dd00]/8 px-2.5 py-0.5 text-[11px] font-bold text-[#a2dd00]">
@@ -331,10 +350,80 @@ export default function PerfilPage() {
               value={profile.emailVerified ? 'Verificado' : 'Não verificado'}
               valueColor={profile.emailVerified ? 'text-green-400' : 'text-red-400'}
             />
-            <InfoRow icon={Shield} label="Função" value={profile.role} />
             <InfoRow icon={Calendar} label="Membro desde" value={createdAt} />
           </div>
         </div>
+
+        {/* ── Cancelamento ── */}
+        {sub && subStatus?.toLowerCase() === 'active' && (
+          <div className="flex flex-col gap-3 rounded-2xl border border-red-500/15 bg-red-500/4 p-5">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-400/70" />
+              <h2 className="text-sm font-bold text-red-400/80">Cancelar assinatura</h2>
+            </div>
+
+            {cancelAtPeriodEnd ? (
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm font-medium text-[#f3f0ed]/60">
+                    Sua assinatura está programada para cancelar.
+                  </p>
+                  {subEnd && (
+                    <p className="text-xs text-[#f3f0ed]/35">
+                      Você terá acesso até <span className="font-medium text-[#f3f0ed]/50">{subEnd}</span>.
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => reactivateMutation.mutate()}
+                  disabled={reactivateMutation.isPending}
+                  className="flex h-9 w-fit items-center gap-2 rounded-xl border border-[#a2dd00]/20 px-4 text-xs font-medium text-[#a2dd00]/70 transition-colors hover:border-[#a2dd00]/40 hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {reactivateMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  Reativar assinatura
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs leading-relaxed text-[#f3f0ed]/40">
+                  Ao cancelar, sua assinatura permanece ativa até o fim do período atual.
+                  {subEnd && (
+                    <> Você perderá o acesso em <span className="font-medium text-[#f3f0ed]/60">{subEnd}</span>.</>
+                  )}
+                </p>
+
+                {confirmingCancel ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => cancelMutation.mutate()}
+                      disabled={cancelMutation.isPending}
+                      className="flex h-9 items-center gap-2 rounded-xl bg-red-500/20 px-4 text-xs font-bold text-red-400 transition-colors hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {cancelMutation.isPending ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : null}
+                      Confirmar cancelamento
+                    </button>
+                    <button
+                      onClick={() => setConfirmingCancel(false)}
+                      disabled={cancelMutation.isPending}
+                      className="h-9 rounded-xl px-4 text-xs text-[#f3f0ed]/40 transition-colors hover:text-[#f3f0ed]/70 disabled:opacity-50"
+                    >
+                      Voltar
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmingCancel(true)}
+                    className="flex h-9 w-fit items-center rounded-xl border border-red-500/20 px-4 text-xs font-medium text-red-400/70 transition-colors hover:border-red-500/40 hover:text-red-400"
+                  >
+                    Cancelar assinatura
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
       </div>
     </div>

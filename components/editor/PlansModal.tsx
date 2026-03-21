@@ -1,6 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   Check,
   Coins,
@@ -24,15 +25,23 @@ function formatPrice(priceCents: number) {
 interface PlanCardProps {
   plan: Plan;
   isCurrent: boolean;
+  planAction: 'upgrade' | 'downgrade' | 'create' | 'current';
   onSubscribe: (slug: string) => void;
   subscribingSlug: string | null;
 }
 
-function PlanCard({ plan, isCurrent, onSubscribe, subscribingSlug }: PlanCardProps) {
+function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug }: PlanCardProps) {
   const isFree = plan.priceCents === 0;
   const isPro = plan.slug === 'pro';
   const { main, sub } = formatPrice(plan.priceCents);
   const isSubscribing = subscribingSlug === plan.slug;
+
+  const actionLabel = {
+    upgrade: 'Fazer upgrade',
+    downgrade: 'Fazer downgrade',
+    create: 'Assinar',
+    current: 'Plano ativo',
+  }[planAction];
 
   const features = [
     `${plan.creditsPerMonth.toLocaleString('pt-BR')} créditos/mês`,
@@ -93,13 +102,7 @@ function PlanCard({ plan, isCurrent, onSubscribe, subscribingSlug }: PlanCardPro
                 : 'bg-[#f3f0ed]/8 text-[#f3f0ed] hover:bg-[#f3f0ed]/12'
           }`}
         >
-          {isSubscribing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : isCurrent ? (
-            'Plano ativo'
-          ) : (
-            'Assinar'
-          )}
+          {isSubscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : actionLabel}
         </button>
       )}
     </div>
@@ -112,6 +115,7 @@ interface PlansModalProps {
 
 export function PlansModal({ onClose }: PlansModalProps) {
   const { accessToken } = useAuth();
+  const queryClient = useQueryClient();
   const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
 
   const { data: plans, isLoading: plansLoading } = useQuery({
@@ -141,18 +145,55 @@ export function PlansModal({ onClose }: PlansModalProps) {
   const currentPlanSlug =
     (profile?.plan as Record<string, unknown> | null)?.slug as string | null ?? null;
 
+  const sub = profile?.subscription as Record<string, unknown> | null;
+  const hasActiveSub = sub?.status === 'ACTIVE' || sub?.status === 'active';
+
   const sorted = (plans ?? []).slice().sort(
     (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),
   );
 
+  function getPlanAction(targetSlug: string): 'upgrade' | 'downgrade' | 'create' {
+    if (!hasActiveSub || !currentPlanSlug) return 'create';
+    const currentIdx = PLAN_ORDER.indexOf(currentPlanSlug);
+    const targetIdx = PLAN_ORDER.indexOf(targetSlug);
+    return targetIdx > currentIdx ? 'upgrade' : 'downgrade';
+  }
+
+  const changeMutation = useMutation({
+    mutationFn: ({ planSlug, action }: { planSlug: string; action: 'upgrade' | 'downgrade' }) =>
+      action === 'upgrade'
+        ? api.subscriptions.upgrade(accessToken!, planSlug)
+        : api.subscriptions.downgrade(accessToken!, planSlug),
+    onSuccess: (_, { action }) => {
+      queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
+      queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
+      if (action === 'upgrade') {
+        toast.success('Upgrade realizado', { description: 'Seu plano foi atualizado com sucesso.' });
+      } else {
+        toast.success('Downgrade agendado', { description: 'O novo plano entrará em vigor no próximo período.' });
+      }
+      onClose();
+    },
+    onError: (_, { action }) =>
+      toast.error(action === 'upgrade' ? 'Erro ao fazer upgrade' : 'Erro ao fazer downgrade', {
+        description: 'Tente novamente.',
+      }),
+    onSettled: () => setSubscribingSlug(null),
+  });
+
   async function handleSubscribe(planSlug: string) {
     if (!accessToken || subscribingSlug) return;
     setSubscribingSlug(planSlug);
-    try {
-      const { checkoutUrl } = await api.subscriptions.create(accessToken, planSlug);
-      window.location.href = checkoutUrl;
-    } catch {
-      setSubscribingSlug(null);
+    const action = getPlanAction(planSlug);
+    if (action === 'create') {
+      try {
+        const { checkoutUrl } = await api.subscriptions.create(accessToken, planSlug);
+        window.location.href = checkoutUrl;
+      } catch {
+        setSubscribingSlug(null);
+      }
+    } else {
+      changeMutation.mutate({ planSlug, action });
     }
   }
 
@@ -193,15 +234,19 @@ export function PlansModal({ onClose }: PlansModalProps) {
             className="grid items-stretch gap-4"
             style={{ gridTemplateColumns: `repeat(${Math.min(sorted.length, 4)}, minmax(0, 1fr))` }}
           >
-            {sorted.map((plan) => (
+            {sorted.map((plan) => {
+              const isCurrent = currentPlanSlug === plan.slug;
+              return (
               <PlanCard
                 key={plan.id}
                 plan={plan}
-                isCurrent={currentPlanSlug === plan.slug}
+                isCurrent={isCurrent}
+                planAction={isCurrent ? 'current' : getPlanAction(plan.slug)}
                 onSubscribe={handleSubscribe}
                 subscribingSlug={subscribingSlug}
               />
-            ))}
+              );
+            })}
           </div>
         )}
 

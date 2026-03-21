@@ -1,6 +1,6 @@
 'use client';
 
-import { BadgePercent, Coins, CreditCard, Gift, LogOut, Plus, Settings, User } from 'lucide-react';
+import { BadgePercent, BatteryCharging, Coins, CreditCard, Gift, LogOut, Plus, Settings, User } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -72,7 +72,7 @@ export function TopNavbar() {
             className="flex items-center gap-1.5 rounded-full bg-[#a2dd00] px-4 py-1.5 text-xs font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95"
           >
             <Plus className="h-3.5 w-3.5" />
-            Comprar
+            Comprar Créditos
           </button>
 
           {/* Refer button — teal outline */}
@@ -125,6 +125,14 @@ export function TopNavbar() {
                     onClick={() => {
                       setMenuOpen(false);
                       setPlansModalOpen(true);
+                    }}
+                  />
+                  <DropdownItem
+                    icon={BatteryCharging}
+                    label="Uso"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      router.push('/uso');
                     }}
                   />
                 </div>

@@ -7,9 +7,11 @@ import Joyride, {
   STATUS,
 } from 'react-joyride';
 import { useEffect, useState } from 'react';
-import { Coins, GraduationCap, ImageIcon, Smile, Sparkles, X } from 'lucide-react';
+import { Coins, GraduationCap, ImageIcon, Smile, SquareMousePointer, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 const steps: Step[] = [
   {
@@ -76,9 +78,9 @@ const stepContent: Record<
     ),
   },
   finish: {
-    icon: <Sparkles className="h-5 w-5 text-[#a2dd00]" />,
+    icon: <SquareMousePointer className="h-5 w-5 text-[#a2dd00]" />,
     heading: 'Tudo pronto. Vamos criar!',
-    body: 'Use o botão "+" na barra inferior para adicionar um painel, escreva seu prompt e gere sua primeira imagem com IA.',
+    body: 'Use no painel "Gerar imagem" para adicionar um painel, escreva seu prompt e gere sua primeira imagem com IA :D',
   },
 };
 
@@ -165,6 +167,7 @@ function TourTooltip({
 export function OnboardingTour() {
   const { user, accessToken } = useAuth();
   const [run, setRun] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (user && user.hasCompletedOnboarding === false) {
@@ -178,29 +181,32 @@ export function OnboardingTour() {
     if (finished) {
       setRun(false);
       if (accessToken) {
-        api.users.completeOnboarding(accessToken).catch(() => {});
+        api.users.completeOnboarding(accessToken).then(() => {
+          queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
+          toast.success('Parabéns! Você acabou de ganhar créditos grátis 🎉');
+        });
       }
     }
   }
 
   return (
     <Joyride
-      run={run}
-      steps={steps}
-      continuous
-      disableScrolling
-      tooltipComponent={TourTooltip}
-      callback={handleCallback}
-      styles={{
-        options: {
-          zIndex: 9999,
-          overlayColor: 'rgba(0, 0, 0, 0.7)',
-        },
-        spotlight: {
-          borderRadius: 10,
-          boxShadow: '0 0 0 2px rgba(162, 221, 0, 0.3)',
-        },
-      }}
-    />
+        run={run}
+        steps={steps}
+        continuous
+        disableScrolling
+        tooltipComponent={TourTooltip}
+        callback={handleCallback}
+        styles={{
+          options: {
+            zIndex: 9999,
+            overlayColor: 'rgba(0, 0, 0, 0.7)',
+          },
+          spotlight: {
+            borderRadius: 10,
+            boxShadow: '0 0 0 2px rgba(162, 221, 0, 0.3)',
+          },
+        }}
+      />
   );
 }
