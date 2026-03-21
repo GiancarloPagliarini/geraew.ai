@@ -164,7 +164,11 @@ export function PlansModal({ onClose }: PlansModalProps) {
       action === 'upgrade'
         ? api.subscriptions.upgrade(accessToken!, planSlug)
         : api.subscriptions.downgrade(accessToken!, planSlug),
-    onSuccess: (_, { action }) => {
+    onSuccess: (data, { action }) => {
+      if (action === 'upgrade' && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
       queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
       if (action === 'upgrade') {
@@ -189,8 +193,14 @@ export function PlansModal({ onClose }: PlansModalProps) {
       try {
         const { checkoutUrl } = await api.subscriptions.create(accessToken, planSlug);
         window.location.href = checkoutUrl;
-      } catch {
-        setSubscribingSlug(null);
+      } catch (err: unknown) {
+        const status = (err as { status?: number })?.status;
+        if (status === 409) {
+          // Cache desatualizado — usuário já tem plano pago, usar upgrade
+          changeMutation.mutate({ planSlug, action: 'upgrade' });
+        } else {
+          setSubscribingSlug(null);
+        }
       }
     } else {
       changeMutation.mutate({ planSlug, action });
