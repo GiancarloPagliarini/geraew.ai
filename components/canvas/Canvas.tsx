@@ -11,7 +11,7 @@ import {
   useNodesState,
   useReactFlow,
 } from '@xyflow/react';
-import { AudioWaveform, ImageIcon, PersonStanding, Video } from 'lucide-react';
+import { AudioWaveform, ImageIcon, LayoutGrid, PersonStanding, Video } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEditor } from '@/lib/editor-context';
@@ -84,9 +84,18 @@ function CanvasContent() {
     localStorage.setItem(STORAGE_NODES_KEY, JSON.stringify(serializable));
   }, [nodes]);
 
+  const MAX_NODES = 10;
+  const [showMaxNodesWarning, setShowMaxNodesWarning] = useState(false);
+
   const handleAddPanel = useCallback(
     (type: string) => {
       if (type !== 'generate-image' && type !== 'create-influencer' && type !== 'generate-video' && type !== 'motion-control' && type !== 'generic') return;
+
+      if (nodes.length >= MAX_NODES) {
+        setShowMaxNodesWarning(false);
+        requestAnimationFrame(() => setShowMaxNodesWarning(true));
+        return;
+      }
 
       const NODE_W = 360;
       const NODE_H = 480;
@@ -160,6 +169,15 @@ function CanvasContent() {
           background: rgba(162, 221, 0, 0.08) !important;
           border: 1.5px solid rgba(162, 221, 0, 0.5) !important;
         }
+        @keyframes toast-in-out {
+          0%   { opacity: 0; transform: translateX(-50%) translateY(-16px); }
+          12%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+          80%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+          100% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+        }
+        .toast-animate {
+          animation: toast-in-out 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
       `}</style>
 
       <CanvasContextMenu onAddPanel={handleAddPanel}>
@@ -194,6 +212,23 @@ function CanvasContent() {
           />
         </div>
       </CanvasContextMenu>
+
+      {showMaxNodesWarning && (
+        <div
+          className="toast-animate pointer-events-none absolute left-1/2 top-6 z-50"
+          onAnimationEnd={() => setShowMaxNodesWarning(false)}
+        >
+          <div className="flex items-center gap-3 rounded-xl border border-[#a2dd00]/40 bg-[#1a2123]/95 px-5 py-3 shadow-[0_0_24px_rgba(162,221,0,0.12)] backdrop-blur-md">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#a2dd00]/10 ring-1 ring-[#a2dd00]/30">
+              <LayoutGrid className="h-4 w-4 text-[#a2dd00]" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold uppercase tracking-widest text-[#a2dd00]">Limite atingido</span>
+              <span className="text-sm text-[#f3f0ed]/70">Máximo de {MAX_NODES} painéis abertos simultaneamente.</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomToolbar
         zoom={zoom}

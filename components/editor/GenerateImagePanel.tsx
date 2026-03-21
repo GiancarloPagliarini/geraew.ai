@@ -24,6 +24,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api, Folder } from '@/lib/api';
 import { listenGeneration } from '@/lib/sse';
 import { toast } from 'sonner';
+import { GenerationErrorBanner, showGenerationError } from './GenerationError';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -334,14 +335,14 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
           clearProgressTimer();
           clearMsgTimer();
           setGenState('idle');
-          setErrorMsg(generation.errorMessage ?? 'Erro ao gerar imagem.');
+          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: 'Erro ao gerar imagem.' }));
           refetchCredits();
         }
       } catch {
         clearPollTimer();
         clearProgressTimer();
         setGenState('idle');
-        setErrorMsg('Erro ao verificar status da geração.');
+        setErrorMsg(showGenerationError({ fallback: 'Erro ao verificar status da geração.' }));
       }
     }, 3000);
   }
@@ -400,8 +401,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
           clearProgressTimer();
           clearMsgTimer();
           setGenState('idle');
-          const msg = errorMessage ?? 'Erro ao gerar imagem.';
-          setErrorMsg(creditsRefunded > 0 ? `${msg} (${creditsRefunded} créditos estornados)` : msg);
+          setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: 'Erro ao gerar imagem.' }));
           refetchCredits();
         },
         onError: () => {
@@ -413,7 +413,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
       clearProgressTimer();
       clearMsgTimer();
       setGenState('idle');
-      setErrorMsg(err instanceof Error ? err.message : 'Erro ao iniciar geração.');
+      setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: 'Erro ao iniciar geração.' }));
     }
   }
 
@@ -598,13 +598,9 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
           </button>
 
           {/* ── Error message ────────────────────────────────────────────── */}
-          {errorMsg && (
-            <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-xs text-red-400">
-              {errorMsg}
-            </div>
-          )}
+          <GenerationErrorBanner msg={errorMsg} />
 
-          {/* ── Generation area ─────────────────────────────────────────── */}
+{/* ── Generation area ─────────────────────────────────────────── */}
           {genState === 'generating' && (
             <div className="flex flex-col items-center gap-3 rounded-xl border border-[#f3f0ed]/[0.06] bg-[#1e494b]/10 py-8">
               {/* Circular SVG progress */}

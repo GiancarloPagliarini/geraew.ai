@@ -30,6 +30,7 @@ import { api } from '@/lib/api';
 import { listenGeneration } from '@/lib/sse';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
+import { GenerationErrorBanner, showGenerationError } from './GenerationError';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -394,14 +395,14 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           clearProgressTimer();
           clearMsgTimer();
           setGenState('idle');
-          setErrorMsg(generation.errorMessage ?? 'Erro ao gerar vídeo.');
+          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: 'Erro ao gerar vídeo.' }));
           refetchCredits();
         }
       } catch {
         clearPollTimer();
         clearProgressTimer();
         setGenState('idle');
-        setErrorMsg('Erro ao verificar status da geração.');
+        setErrorMsg(showGenerationError({ fallback: 'Erro ao verificar status da geração.' }));
       }
     }, 3000);
   }
@@ -487,8 +488,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           clearProgressTimer();
           clearMsgTimer();
           setGenState('idle');
-          const msg = errorMessage ?? 'Erro ao gerar vídeo.';
-          setErrorMsg(creditsRefunded > 0 ? `${msg} (${creditsRefunded} créditos estornados)` : msg);
+          setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: 'Erro ao gerar vídeo.' }));
           refetchCredits();
         },
         onError: () => {
@@ -499,7 +499,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       clearProgressTimer();
       clearMsgTimer();
       setGenState('idle');
-      setErrorMsg(err instanceof Error ? err.message : 'Erro ao iniciar geração.');
+      setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: 'Erro ao iniciar geração.' }));
     }
   }
 
@@ -843,13 +843,9 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           )}
 
           {/* Error message */}
-          {errorMsg && (
-            <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-xs text-red-400">
-              {errorMsg}
-            </div>
-          )}
+          <GenerationErrorBanner msg={errorMsg} />
 
-          {/* Generating state */}
+{/* Generating state */}
           {genState === 'generating' && (
             <div className="flex flex-col items-center gap-3 rounded-xl border border-[#f3f0ed]/6 bg-[#1e494b]/10 py-8">
               <div className="relative flex items-center justify-center">
