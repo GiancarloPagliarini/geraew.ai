@@ -2,7 +2,7 @@
 
 import { Eye, EyeOff, Mail, ArrowLeft, UserPlus, LogIn, Phone, ShieldCheck } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -51,7 +51,7 @@ const slides = [
 const SLIDE_DURATION = 5000;
 const TICK_MS = 50;
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const { login, register } = useAuth();
   const searchParams = useSearchParams();
@@ -738,5 +738,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginPageContent />
+    </Suspense>
   );
 }
