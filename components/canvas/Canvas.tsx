@@ -274,45 +274,45 @@ function CanvasContent() {
                 Escolha o que você deseja criar
               </p>
             </div>
-            <div className="flex items-center justify-center gap-4">
+            <div className="grid grid-cols-2 gap-3 px-2 sm:flex sm:items-center sm:justify-center sm:gap-4 sm:px-0">
               <button
                 onClick={() => handleAddPanel('generate-image')}
-                className="group flex h-40 w-40 flex-col items-center justify-center gap-4 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95"
+                className="group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10">
-                  <ImageIcon className="h-6 w-6 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00]" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">
+                  <ImageIcon className="h-5 w-5 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00] sm:h-6 sm:w-6" />
                 </div>
-                <span className="text-sm font-medium text-[#f3f0ed]/90">Gerar imagem</span>
+                <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">Gerar imagem</span>
               </button>
 
               <button
                 onClick={() => handleAddPanel('create-influencer')}
-                className="group flex h-40 w-40 flex-col items-center justify-center gap-4 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95"
+                className="group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10">
-                  <PersonStanding className="h-6 w-6 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00]" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">
+                  <PersonStanding className="h-5 w-5 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00] sm:h-6 sm:w-6" />
                 </div>
-                <span className="text-sm font-medium text-[#f3f0ed]/90">Criar influencer</span>
+                <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">Criar influencer</span>
               </button>
 
               <button
                 onClick={() => handleAddPanel('generate-video')}
-                className="group flex h-40 w-40 flex-col items-center justify-center gap-4 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95"
+                className="group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10">
-                  <Video className="h-6 w-6 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00]" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">
+                  <Video className="h-5 w-5 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00] sm:h-6 sm:w-6" />
                 </div>
-                <span className="text-sm font-medium text-[#f3f0ed]/90">Gerar vídeo</span>
+                <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">Gerar vídeo</span>
               </button>
 
               <button
                 onClick={() => handleAddPanel('motion-control')}
-                className="group flex h-40 w-40 flex-col items-center justify-center gap-4 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95"
+                className="group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10">
-                  <AudioWaveform className="h-6 w-6 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00]" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">
+                  <AudioWaveform className="h-5 w-5 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00] sm:h-6 sm:w-6" />
                 </div>
-                <span className="text-sm font-medium text-[#f3f0ed]/90">Motion Control</span>
+                <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">Motion Control</span>
               </button>
             </div>
           </div>

@@ -41,8 +41,8 @@ export function BottomToolbar({
 }: BottomToolbarProps) {
   return (
     <TooltipProvider>
-      <div className="pointer-events-none absolute bottom-5 left-1/2 z-50 -translate-x-1/2">
-        <div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-[#f3f0ed]/[0.08] bg-[#1a2123]/90 px-2 py-1.5 shadow-2xl backdrop-blur-md">
+      <div className="pointer-events-none absolute bottom-3 left-1/2 z-50 w-[calc(100%-1rem)] -translate-x-1/2 sm:bottom-5 sm:w-auto">
+        <div className="pointer-events-auto flex items-center justify-center gap-0.5 rounded-full border border-[#f3f0ed]/[0.08] bg-[#1a2123]/90 px-1.5 py-1.5 shadow-2xl backdrop-blur-md sm:px-2">
 
           {/* Mode toggle — Hand / Pointer */}
           <ModeButton
@@ -61,13 +61,9 @@ export function BottomToolbar({
             <MousePointer2 className="h-4 w-4" />
           </ModeButton>
 
-          <div className="mx-1.5 h-4 w-px bg-[#f3f0ed]/[0.08]" />
+          <div className="mx-1 h-4 w-px bg-[#f3f0ed]/[0.08] sm:mx-1.5" />
 
-          {/* Add panels
-          <ToolbarButton tooltip="Adicionar painel" onClick={onAdd}>
-            <Plus className="h-4 w-4" />
-          </ToolbarButton> */}
-
+          {/* Add panels */}
           <ToolbarButton tooltip="Gerar imagem" onClick={onAddImage}>
             <ImageIcon className="h-4 w-4" />
           </ToolbarButton>
@@ -84,32 +80,34 @@ export function BottomToolbar({
             <AudioWaveform className="h-4 w-4" />
           </ToolbarButton>
 
-          <div className="mx-1.5 h-4 w-px bg-[#f3f0ed]/[0.08]" />
+          <div className="mx-1 h-4 w-px bg-[#f3f0ed]/[0.08] sm:mx-1.5" />
 
-          {/* Zoom */}
-          <ToolbarButton tooltip="Reduzir" onClick={onZoomOut}>
-            <Minus className="h-4 w-4" />
-          </ToolbarButton>
+          {/* Zoom — hidden on mobile */}
+          <div className="hidden items-center sm:flex">
+            <ToolbarButton tooltip="Reduzir" onClick={onZoomOut}>
+              <Minus className="h-4 w-4" />
+            </ToolbarButton>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={onResetZoom}
-                className="flex h-7 min-w-[3rem] items-center justify-center rounded-full px-2 text-xs font-semibold text-[#f3f0ed]/60 transition-all hover:bg-[#a2dd00]/10 hover:text-[#a2dd00]"
-              >
-                {Math.round(zoom * 100)}%
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top" sideOffset={8}>
-              Resetar zoom
-            </TooltipContent>
-          </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onResetZoom}
+                  className="flex h-7 min-w-[3rem] items-center justify-center rounded-full px-2 text-xs font-semibold text-[#f3f0ed]/60 transition-all hover:bg-[#a2dd00]/10 hover:text-[#a2dd00]"
+                >
+                  {Math.round(zoom * 100)}%
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={8}>
+                Resetar zoom
+              </TooltipContent>
+            </Tooltip>
 
-          <ToolbarButton tooltip="Ampliar" onClick={onZoomIn}>
-            <Plus className="h-4 w-4" />
-          </ToolbarButton>
+            <ToolbarButton tooltip="Ampliar" onClick={onZoomIn}>
+              <Plus className="h-4 w-4" />
+            </ToolbarButton>
 
-          <div className="mx-1.5 h-4 w-px bg-[#f3f0ed]/[0.08]" />
+            <div className="mx-1.5 h-4 w-px bg-[#f3f0ed]/[0.08]" />
+          </div>
 
           {/* Actions */}
           <ToolbarButton tooltip="Excluir selecionado" onClick={onDelete}>

@@ -65,7 +65,7 @@ export function LeftSidebar() {
 
   return (
     <>
-      <aside className="flex h-full w-12 shrink-0 flex-col items-center gap-1.5 border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] py-3 z-50">
+      <aside className="flex h-full w-10 shrink-0 flex-col items-center gap-1.5 border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] py-3 z-50 sm:w-12">
         {navItems.map(({ id, icon: Icon, label }) => {
           const isActive = (id === 'gallery' && galleryOpen) || (id === 'videoEditor' && videoEditorOpen) || (id === 'tutorial' && tutorialOpen) || (id === 'prompts' && promptsOpen);
           return (

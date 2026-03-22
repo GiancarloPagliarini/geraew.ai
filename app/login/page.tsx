@@ -1,11 +1,17 @@
 'use client';
 
-import { Eye, EyeOff, Mail, ArrowLeft, UserPlus, LogIn, Phone } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Eye, EyeOff, Mail, ArrowLeft, UserPlus, LogIn, Phone, ShieldCheck } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
+<<<<<<< HEAD
 import { GoogleLogin } from '@react-oauth/google';
+=======
+import { api } from '@/lib/api';
+import { setupRecaptcha, sendSmsVerification, verifySmsCode } from '@/lib/firebase';
+import type { ConfirmationResult } from 'firebase/auth';
+>>>>>>> 55dd082173d4252e1a09a0552a2c1de717ae6020
 
 const slides = [
   {
@@ -51,7 +57,8 @@ const TICK_MS = 50;
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, register, googleLogin } = useAuth();
+  const { login, register } = useAuth();
+  const searchParams = useSearchParams();
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [progresses, setProgresses] = useState<number[]>(slides.map(() => 0));
@@ -67,6 +74,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+<<<<<<< HEAD
   const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
     if (!credentialResponse.credential) {
       setError('Erro ao entrar com Google');
@@ -84,6 +92,30 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+=======
+  // Phone verification state
+  const [registerStep, setRegisterStep] = useState<'form' | 'verify'>('form');
+  const [smsCode, setSmsCode] = useState('');
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [countdown, setCountdown] = useState(0);
+  const recaptchaInitialized = useRef(false);
+
+  // Show error from Google OAuth redirect if present
+  const googleError = searchParams.get('error');
+  useEffect(() => {
+    if (googleError) {
+      const messages: Record<string, string> = {
+        google_denied: 'Login com Google foi cancelado.',
+        google_exchange_failed: 'Erro ao autenticar com Google. Tente novamente.',
+        google_no_token: 'Erro ao obter credenciais do Google.',
+        auth_failed: 'Erro ao entrar com Google. Tente novamente.',
+        google_failed: 'Erro ao entrar com Google. Tente novamente.',
+        google_config: 'Configuração do Google incompleta.',
+      };
+      setError(messages[googleError] || 'Erro ao entrar com Google.');
+    }
+  }, [googleError]);
+>>>>>>> 55dd082173d4252e1a09a0552a2c1de717ae6020
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const videosRef = useRef<Map<number, HTMLVideoElement>>(new Map());
@@ -192,6 +224,13 @@ export default function LoginPage() {
     };
   }, [isPaused, currentSlide, nextSlide]);
 
+  // Countdown timer for SMS resend
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
   // Format phone as user types: (11) 99999-8888
   function formatPhoneDisplay(value: string) {
     const digits = value.replace(/\D/g, '');
@@ -203,6 +242,79 @@ export default function LoginPage() {
   function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
     const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
     setPhone(digits);
+  }
+
+  async function handleSendSms() {
+    setError('');
+    setLoading(true);
+    try {
+      // Check if email/phone are already taken before sending SMS
+      const availability = await api.auth.checkAvailability(email, phone);
+      if (availability.emailTaken) {
+        setError('Este email já está cadastrado.');
+        setLoading(false);
+        return;
+      }
+      if (availability.phoneTaken) {
+        setError('Este telefone já está cadastrado.');
+        setLoading(false);
+        return;
+      }
+
+      // Initialize recaptcha on the invisible container
+      if (!recaptchaInitialized.current) {
+        setupRecaptcha('recaptcha-container');
+        recaptchaInitialized.current = true;
+      }
+
+      const phoneE164 = `+55${phone}`;
+      const result = await sendSmsVerification(phoneE164);
+      setConfirmationResult(result);
+      setRegisterStep('verify');
+      setCountdown(60);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao enviar SMS. Tente novamente.';
+      if (message.includes('too-many-requests')) {
+        setError('Muitas tentativas. Aguarde alguns minutos.');
+      } else if (message.includes('invalid-phone-number')) {
+        setError('Número de telefone inválido.');
+      } else {
+        setError(message);
+      }
+      // Reset recaptcha on error
+      recaptchaInitialized.current = false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleVerifyAndRegister() {
+    if (!confirmationResult) return;
+    setError('');
+    setLoading(true);
+    try {
+      // Verify SMS code and get Firebase ID token
+      const firebaseToken = await verifySmsCode(confirmationResult, smsCode);
+
+      // Register with backend
+      await register(email, name, password, phone, firebaseToken);
+      router.push('/');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Código inválido ou expirado.';
+      if (message.includes('invalid-verification-code')) {
+        setError('Código inválido. Verifique e tente novamente.');
+      } else {
+        setError(message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResendSms() {
+    if (countdown > 0) return;
+    recaptchaInitialized.current = false;
+    await handleSendSms();
   }
 
   async function handleEmailSubmit(e: { preventDefault(): void }) {
@@ -222,18 +334,8 @@ export default function LoginPage() {
         setLoading(false);
       }
     } else {
-      // Register directly (phone verification happens inside the platform)
-      setLoading(true);
-      try {
-        await register(email, name, password, phone);
-        router.push('/');
-      } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Ocorreu um erro. Tente novamente.';
-        setError(message);
-      } finally {
-        setLoading(false);
-      }
+      // Register: send SMS verification first
+      await handleSendSms();
     }
   }
 
@@ -268,6 +370,7 @@ export default function LoginPage() {
             </p>
 
             {/* Google */}
+<<<<<<< HEAD
             <div className="w-full flex justify-center [&>div]:!w-full">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
@@ -279,6 +382,21 @@ export default function LoginPage() {
                 text="continue_with"
               />
             </div>
+=======
+            <button
+              onClick={() => { window.location.href = '/api/auth/google'; }}
+              disabled={loading}
+              className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.05] text-sm font-medium text-white transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z" />
+                <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z" />
+                <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z" />
+                <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z" />
+              </svg>
+              Continuar com Google
+            </button>
+>>>>>>> 55dd082173d4252e1a09a0552a2c1de717ae6020
 
             {error && view === 'options' && (
               <p className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs text-red-400">
@@ -315,11 +433,14 @@ export default function LoginPage() {
           </div>
         )}
 
+        {/* Invisible reCAPTCHA container */}
+        <div id="recaptcha-container" />
+
         {/* ── View: Email form ── */}
-        {view === 'email' && (
+        {view === 'email' && registerStep === 'form' && (
           <div className="w-full">
             <button
-              onClick={() => { setView('options'); setError(''); }}
+              onClick={() => { setView('options'); setError(''); setRegisterStep('form'); }}
               className="mb-5 flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -331,7 +452,7 @@ export default function LoginPage() {
               {(['login', 'register'] as const).map((m) => (
                 <button
                   key={m}
-                  onClick={() => { setMode(m); setError(''); }}
+                  onClick={() => { setMode(m); setError(''); setRegisterStep('form'); }}
                   className={`flex-1 rounded-lg py-2 text-xs font-medium transition-all ${mode === m
                     ? 'bg-white/10 text-white'
                     : 'text-white/30 hover:text-white/50'
@@ -451,8 +572,8 @@ export default function LoginPage() {
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#1a2123]/30 border-t-[#1a2123]" />
                 ) : mode === 'register' ? (
                   <>
-                    <UserPlus className="h-4 w-4" />
-                    Criar conta
+                    <Phone className="h-4 w-4" />
+                    Enviar codigo SMS
                   </>
                 ) : (
                   <>
@@ -465,6 +586,79 @@ export default function LoginPage() {
           </div>
         )}
 
+        {/* ── View: SMS Verification ── */}
+        {view === 'email' && registerStep === 'verify' && (
+          <div className="w-full">
+            <button
+              onClick={() => { setRegisterStep('form'); setError(''); setSmsCode(''); }}
+              className="mb-5 flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Voltar
+            </button>
+
+            <div className="mb-6 flex flex-col items-center gap-3">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#a2dd00]/10 border border-[#a2dd00]/20">
+                <ShieldCheck className="h-7 w-7 text-[#a2dd00]" />
+              </div>
+              <h2 className="text-base font-semibold text-white">Verifique seu telefone</h2>
+              <p className="text-center text-xs text-white/35">
+                Enviamos um codigo SMS para{' '}
+                <span className="text-white/60 font-medium">+55 {formatPhoneDisplay(phone)}</span>
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">
+                  CODIGO DE VERIFICACAO
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={smsCode}
+                  onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
+                  className="h-14 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-center text-2xl font-mono tracking-[0.5em] text-white placeholder:text-white/15 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]"
+                />
+              </div>
+
+              {error && (
+                <p className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs text-red-400">
+                  {error}
+                </p>
+              )}
+
+              <button
+                onClick={handleVerifyAndRegister}
+                disabled={loading || smsCode.length !== 6}
+                className="mt-1 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#a2dd00] font-bold text-[#1a2123] text-sm transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
+              >
+                {loading ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#1a2123]/30 border-t-[#1a2123]" />
+                ) : (
+                  <>
+                    <UserPlus className="h-4 w-4" />
+                    Criar conta
+                  </>
+                )}
+              </button>
+
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={handleResendSms}
+                  disabled={countdown > 0}
+                  className="text-[11px] text-[#a2dd00]/50 hover:text-[#a2dd00]/80 transition-colors disabled:text-white/20 disabled:cursor-not-allowed"
+                >
+                  {countdown > 0 ? `Reenviar em ${countdown}s` : 'Reenviar codigo'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Right panel – Stories carousel ── */}

@@ -7,8 +7,6 @@ export interface AuthUser {
   avatarUrl: string;
   role: string;
   emailVerified: boolean;
-  phone?: string;
-  phoneVerified: boolean;
   hasCompletedOnboarding: boolean;
   createdAt: string;
 }
@@ -721,17 +719,10 @@ export const api = {
       });
     },
 
-    sendVerification(phone: string) {
-      return request<{ message: string }>('/api/v1/auth/send-verification', {
-        method: 'POST',
-        body: JSON.stringify({ phone }),
-      });
-    },
-
-    register(email: string, name: string, password: string, phone: string) {
+    register(email: string, name: string, password: string, phone: string, firebaseToken: string) {
       return request<AuthResponse>('/api/v1/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email, name, password, phone }),
+        body: JSON.stringify({ email, name, password, phone, firebaseToken }),
       });
     },
 
@@ -746,13 +737,6 @@ export const api = {
       return request<AuthResponse>('/api/v1/auth/google', {
         method: 'POST',
         body: JSON.stringify({ googleToken }),
-      });
-    },
-
-    verifyPhone(accessToken: string, phone: string, code: string) {
-      return authRequest<AuthResponse>('/api/v1/auth/verify-phone', accessToken, {
-        method: 'POST',
-        body: JSON.stringify({ phone, code }),
       });
     },
 

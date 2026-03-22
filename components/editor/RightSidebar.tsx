@@ -8,6 +8,7 @@ import {
   ScanFace,
   Settings2,
   User,
+  X,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Section } from './Section';
@@ -285,7 +286,7 @@ function FaceSwapSection({ generatedImage }: { generatedImage: string }) {
 // ─── RightSidebar ─────────────────────────────────────────────────────────────
 
 export function RightSidebar() {
-  const { selectedNodeId, nodeImages, nodeUpscaleStates, nodePanelTypes } = useEditor();
+  const { selectedNodeId, setSelectedNodeId, nodeImages, nodeUpscaleStates, nodePanelTypes } = useEditor();
   const panelType = selectedNodeId ? nodePanelTypes[selectedNodeId] : null;
   const selectedImage = selectedNodeId ? nodeImages[selectedNodeId] : null;
   const upscaleDone = selectedNodeId
@@ -295,15 +296,18 @@ export function RightSidebar() {
   // Influencer builder sidebar
   if (panelType === 'create-influencer') {
     return (
-      <aside className="aside-in flex h-full w-96 shrink-0 flex-col border-l border-[#f3f0ed]/[0.07] bg-[#1a2123]">
+      <aside className="aside-in fixed inset-0 z-50 flex flex-col border-l border-[#f3f0ed]/[0.07] bg-[#1a2123] sm:static sm:h-full sm:w-96 sm:shrink-0">
         {/* Header */}
         <div className="flex items-center gap-2.5 border-b border-[#f3f0ed]/[0.05] bg-gradient-to-b from-[#f3f0ed]/[0.02] to-transparent px-4 py-3.5">
           <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#f3f0ed]/[0.05]">
             <User className="h-3.5 w-3.5 text-[#f3f0ed]/35" />
           </div>
-          <h2 className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
+          <h2 className="flex-1 text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
             INFLUENCER BUILDER
           </h2>
+          <button onClick={() => setSelectedNodeId(null)} className="flex h-6 w-6 items-center justify-center rounded-lg text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/60 sm:hidden">
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
         <InfluencerSidebar />
@@ -315,15 +319,18 @@ export function RightSidebar() {
   if (!selectedImage) return null;
 
   return (
-    <aside className="aside-in flex h-full w-72 shrink-0 flex-col border-l border-[#f3f0ed]/[0.07] bg-[#1a2123]">
+    <aside className="aside-in fixed inset-0 z-50 flex flex-col border-l border-[#f3f0ed]/[0.07] bg-[#1a2123] sm:static sm:h-full sm:w-72 sm:shrink-0">
       {/* Header */}
       <div className="flex items-center gap-2.5 border-b border-[#f3f0ed]/[0.05] bg-gradient-to-b from-[#f3f0ed]/[0.02] to-transparent px-4 py-3.5">
         <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#f3f0ed]/[0.05]">
           <Settings2 className="h-3.5 w-3.5 text-[#f3f0ed]/35" />
         </div>
-        <h2 className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
+        <h2 className="flex-1 text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
           CONFIGURAÇÕES
         </h2>
+        <button onClick={() => setSelectedNodeId(null)} className="flex h-6 w-6 items-center justify-center rounded-lg text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/60 sm:hidden">
+          <X className="h-4 w-4" />
+        </button>
       </div>
 
       <div className="sidebar-scroll flex-1 overflow-y-auto">
