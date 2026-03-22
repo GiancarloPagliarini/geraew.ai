@@ -97,7 +97,13 @@ interface GenerateVideoPanelProps {
 }
 
 export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVideoPanelProps) {
-  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker } = useEditor();
+  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker, pendingPromptRef, consumePendingPrompt } = useEditor();
+  const [initialPendingPrompt] = useState(() => {
+    if (pendingPromptRef.current?.panelType === 'generate-video') {
+      return consumePendingPrompt()!.prompt;
+    }
+    return null;
+  });
   const { accessToken } = useAuth();
 
   // ── Persistent state (survives page reload) ──────────────────────────────
@@ -109,7 +115,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     } catch { return null; }
   });
 
-  const [prompt, setPrompt] = useState<string>(stored?.prompt ?? '');
+  const [prompt, setPrompt] = useState<string>(initialPendingPrompt ?? stored?.prompt ?? '');
   const [audio, setAudio] = useState<boolean>(stored?.audio ?? true);
   const [model, setModel] = useState<string>(stored?.model ?? 'veo-3.1-generate-preview');
   const [duration, setDuration] = useState<string>(stored?.duration ?? '8s');

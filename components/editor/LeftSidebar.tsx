@@ -6,9 +6,10 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { GalleryDialog } from './GalleryDialog';
+import { PromptsDialog } from './PromptsDialog';
 import { TutorialDialog } from './TutorialDialog';
 import { VideoEditorDialog } from './VideoEditorDialog';
-import { Film, FolderOpen, GraduationCap } from 'lucide-react';
+import { Film, FolderOpen, GraduationCap, Type } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useEditor } from '@/lib/editor-context';
 
@@ -16,6 +17,7 @@ const navItems = [
   { id: 'gallery', icon: FolderOpen, label: 'Galeria' },
   { id: 'videoEditor', icon: Film, label: 'Editor de Video' },
   { id: 'tutorial', icon: GraduationCap, label: 'Tutorial' },
+  { id: 'prompts', icon: Type, label: 'Fábrica de Prompts' },
 ];
 
 export function LeftSidebar() {
@@ -23,12 +25,14 @@ export function LeftSidebar() {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [videoEditorOpen, setVideoEditorOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
+  const [promptsOpen, setPromptsOpen] = useState(false);
 
   useEffect(() => {
     if (galleryPickerRequest) {
       setGalleryOpen(true);
       setVideoEditorOpen(false);
       setTutorialOpen(false);
+      setPromptsOpen(false);
     }
   }, [galleryPickerRequest]);
 
@@ -37,16 +41,25 @@ export function LeftSidebar() {
       setGalleryOpen((v) => !v);
       setVideoEditorOpen(false);
       setTutorialOpen(false);
+      setPromptsOpen(false);
     }
     if (id === 'videoEditor') {
       setVideoEditorOpen((v) => !v);
       setGalleryOpen(false);
       setTutorialOpen(false);
+      setPromptsOpen(false);
     }
     if (id === 'tutorial') {
       setTutorialOpen((v) => !v);
       setGalleryOpen(false);
       setVideoEditorOpen(false);
+      setPromptsOpen(false);
+    }
+    if (id === 'prompts') {
+      setPromptsOpen((v) => !v);
+      setGalleryOpen(false);
+      setVideoEditorOpen(false);
+      setTutorialOpen(false);
     }
   }
 
@@ -54,7 +67,7 @@ export function LeftSidebar() {
     <>
       <aside className="flex h-full w-12 shrink-0 flex-col items-center gap-1.5 border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] py-3 z-50">
         {navItems.map(({ id, icon: Icon, label }) => {
-          const isActive = (id === 'gallery' && galleryOpen) || (id === 'videoEditor' && videoEditorOpen) || (id === 'tutorial' && tutorialOpen);
+          const isActive = (id === 'gallery' && galleryOpen) || (id === 'videoEditor' && videoEditorOpen) || (id === 'tutorial' && tutorialOpen) || (id === 'prompts' && promptsOpen);
           return (
             <Tooltip key={id}>
               <TooltipTrigger asChild>
@@ -86,6 +99,7 @@ export function LeftSidebar() {
       <GalleryDialog open={galleryOpen} onOpenChange={setGalleryOpen} />
       <VideoEditorDialog open={videoEditorOpen} onOpenChange={setVideoEditorOpen} />
       <TutorialDialog open={tutorialOpen} onOpenChange={setTutorialOpen} />
+      <PromptsDialog open={promptsOpen} onOpenChange={setPromptsOpen} />
     </>
   );
 }
