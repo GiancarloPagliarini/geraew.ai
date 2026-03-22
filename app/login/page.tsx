@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
-import { useGoogleOAuth } from '@react-oauth/google';
+import { useGoogleLogin } from '@react-oauth/google';
 
 const slides = [
   {
@@ -67,32 +67,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { clientId, scriptLoadedSuccessfully } = useGoogleOAuth();
-  const googleBtnRef = useRef<HTMLDivElement>(null);
-  const [googleReady, setGoogleReady] = useState(false);
-  const googleCallbackRef = useRef(async (response: { credential?: string }) => {
-    if (!response.credential) return;
-    setError('');
-    setLoading(true);
-    try {
-      await googleLogin(response.credential);
-      router.push('/');
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Erro ao entrar com Google';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  });
-
-  // Keep callback ref up to date
-  useEffect(() => {
-    googleCallbackRef.current = async (response: { credential?: string }) => {
-      if (!response.credential) return;
+  const handleGoogleClick = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
       setError('');
       setLoading(true);
       try {
-        await googleLogin(response.credential);
+        await googleLogin(tokenResponse.access_token);
         router.push('/');
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Erro ao entrar com Google';
@@ -100,66 +80,11 @@ export default function LoginPage() {
       } finally {
         setLoading(false);
       }
-    };
-  }, [googleLogin, router]);
-
-  // Initialize Google Sign-In and render hidden button
-  useEffect(() => {
-    if (!scriptLoadedSuccessfully || !googleBtnRef.current) return;
-    const g = (window as any).google;
-    if (!g?.accounts?.id) return;
-
-    if (!clientId) {
-      console.warn('Google Client ID not found. Check NEXT_PUBLIC_GOOGLE_CLIENT_ID environment variable.');
-      return;
-    }
-
-    try {
-      g.accounts.id.initialize({
-        client_id: clientId,
-        callback: (response: { credential?: string }) => googleCallbackRef.current(response),
-      });
-
-      g.accounts.id.renderButton(googleBtnRef.current, {
-        type: 'standard',
-        size: 'large',
-        width: 400,
-      });
-
-      setGoogleReady(true);
-    } catch (err) {
-      console.error('Error initializing Google One Tap:', err);
-    }
-  }, [scriptLoadedSuccessfully, clientId]);
-
-  function handleGoogleClick() {
-    const g = (window as any).google;
-
-    if (!clientId) {
-      setError('Configuração do Google incompleta (Client ID faltando)');
-      return;
-    }
-
-    if (!g?.accounts?.id) {
-      setError('Script do Google não carregado corretamente');
-      return;
-    }
-
-    // Attempt to trigger One Tap prompt as primary programmatic action
-    g.accounts.id.prompt((notification: any) => {
-      if (notification.isNotDisplayed()) {
-        console.log('One Tap not displayed:', notification.getNotDisplayedReason());
-        // If One Tap is suppressed, try clicking the hidden button as fallback
-        const btn = googleBtnRef.current?.querySelector('div[role="button"]') as HTMLElement | null
-          ?? googleBtnRef.current?.querySelector('iframe')?.parentElement as HTMLElement | null;
-        if (btn) {
-          btn.click();
-        } else {
-          setError('Não foi possível iniciar o login com Google. Tente novamente ou use outro método.');
-        }
-      }
-    });
-  }
+    },
+    onError: () => {
+      setError('Erro ao entrar com Google');
+    },
+  });
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const videosRef = useRef<Map<number, HTMLVideoElement>>(new Map());
@@ -343,13 +268,10 @@ export default function LoginPage() {
               Entre ou crie sua conta para começar a criar
             </p>
 
-            {/* Hidden Google button for ID token */}
-            <div ref={googleBtnRef} className="fixed overflow-hidden" style={{ top: -1000, left: -1000, opacity: 0 }} />
-
             {/* Google */}
             <button
               onClick={() => handleGoogleClick()}
-              disabled={loading || !googleReady}
+              disabled={loading}
               className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.05] text-sm font-medium text-white transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50"
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
