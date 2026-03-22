@@ -18,17 +18,17 @@ import type { CreditPackage } from '@/lib/api';
 // ─── helpers (mirrored from app/creditos/page.tsx) ────────────────────────────
 
 function getPerks(pkg: CreditPackage, isBest: boolean): string[] {
-  const images = Math.floor(pkg.credits / 38);
-  const videos = Math.floor(pkg.credits / 62);
+  const images = Math.floor(pkg.credits / 9);
+  const videos = Math.floor(pkg.credits / 15);
 
   const perks = [
     `Até ${images} imagens em alta qualidade`,
-    `Até ${videos} vídeos com movimento`,
+    `Até ${videos} vídeos com áudio`,
     'Combinação livre entre mídias',
   ];
 
-  if (pkg.credits >= 1000) perks[2] = 'Equilíbrio entre imagens e vídeos';
-  if (pkg.credits >= 2000) perks[2] = 'Produção intensa sem se preocupar';
+  if (pkg.credits >= 1600) perks[2] = 'Equilíbrio entre imagens e vídeos';
+  if (pkg.credits >= 3500) perks[2] = 'Produção intensa sem se preocupar';
   if (isBest) perks.push('Volume máximo para produção profissional');
 
   return perks;

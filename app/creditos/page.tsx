@@ -19,7 +19,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-const PLAN_ORDER = ['free', 'starter', 'pro', 'business'];
+const PLAN_ORDER = ['free', 'starter', 'creator', 'pro', 'studio'];
 
 function formatPrice(priceCents: number) {
   if (priceCents === 0) return { main: 'Grátis', sub: null };
@@ -247,12 +247,12 @@ export default function CreditosPage() {
             {/* Cards */}
             <div
               className="grid items-stretch gap-4"
-              style={{ gridTemplateColumns: `repeat(${Math.min(sortedPlans.length, 4)}, minmax(0, 1fr))` }}
+              style={{ gridTemplateColumns: `repeat(${Math.min(sortedPlans.length, 5)}, minmax(0, 1fr))` }}
             >
               {sortedPlans.map((plan) => {
                 const isCurrent = currentPlanSlug === plan.slug;
                 const isFree = plan.priceCents === 0;
-                const isPro = plan.slug === 'pro';
+                const isPro = plan.slug === 'creator';
                 const { main, sub } = formatPrice(plan.priceCents);
                 const features = getPlanFeatures(plan);
                 const isSubscribing = subscribingSlug === plan.slug;

@@ -105,11 +105,10 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
 
   const dbResolution = resolution === '1080p' ? 'RES_1080P' : 'RES_720P';
   const { data: estimate, isLoading: estimateLoading } = useQuery({
-    queryKey: ['credits', 'estimate', 'MOTION_CONTROL', dbResolution, videoDuration],
+    queryKey: ['credits', 'estimate', 'MOTION_CONTROL', dbResolution],
     queryFn: () => api.credits.estimate(accessToken!, {
       type: 'MOTION_CONTROL',
       resolution: dbResolution,
-      durationSeconds: videoDuration,
       hasAudio: false,
     }),
     enabled: !!accessToken && genState === 'idle',
@@ -653,7 +652,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
                 <div className="flex items-center gap-1.5">
                   <Coins className="h-3 w-3 text-[#a2dd00]" />
                   <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">
-                    Custo {videoFile ? `· ${videoDuration}s` : ''}
+                    Custo por clipe
                   </span>
                 </div>
                 {estimateLoading ? (

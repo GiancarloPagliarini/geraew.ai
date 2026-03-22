@@ -142,14 +142,16 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       : stored?.generatedVideoUrls?.length > 0 ? 'done' : 'idle'
   );
 
+  const videoModelVariant = model === 'veo-3.1-fast-generate-preview' ? 'VEO_FAST' : 'VEO_MAX';
+
   const { data: estimate, isLoading: estimateLoading } = useQuery({
-    queryKey: ['credits', 'estimate', videoType, resolution, effectiveDuration, audio, sampleCount],
+    queryKey: ['credits', 'estimate', videoType, resolution, audio, sampleCount, videoModelVariant],
     queryFn: () => api.credits.estimate(accessToken!, {
       type: videoType,
       resolution,
-      durationSeconds: durationToSeconds(effectiveDuration),
       hasAudio: audio,
       sampleCount,
+      modelVariant: videoModelVariant,
     }),
     enabled: !!accessToken && genState === 'idle',
     staleTime: 30_000,

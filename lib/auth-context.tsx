@@ -13,7 +13,7 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, name: string, password: string) => Promise<void>;
+  register: (email: string, name: string, password: string, phone: string, firebaseToken: string) => Promise<void>;
   googleLogin: (googleToken: string) => Promise<void>;
   logout: () => void;
   loginMutation: ReturnType<typeof useLoginMutation>;
@@ -83,8 +83,8 @@ function useLoginMutation(onSuccess: (res: Awaited<ReturnType<typeof api.auth.lo
 
 function useRegisterMutation(onSuccess: (res: Awaited<ReturnType<typeof api.auth.register>>) => void) {
   return useMutation({
-    mutationFn: ({ email, name, password }: { email: string; name: string; password: string }) =>
-      api.auth.register(email, name, password),
+    mutationFn: ({ email, name, password, phone, firebaseToken }: { email: string; name: string; password: string; phone: string; firebaseToken: string }) =>
+      api.auth.register(email, name, password, phone, firebaseToken),
     onSuccess,
   });
 }
@@ -169,8 +169,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const register = useCallback(
-    async (email: string, name: string, password: string) => {
-      await registerMutation.mutateAsync({ email, name, password });
+    async (email: string, name: string, password: string, phone: string, firebaseToken: string) => {
+      await registerMutation.mutateAsync({ email, name, password, phone, firebaseToken });
     },
     [registerMutation]
   );

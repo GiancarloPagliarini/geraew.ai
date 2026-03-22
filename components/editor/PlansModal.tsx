@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api, Plan } from '@/lib/api';
 
-const PLAN_ORDER = ['free', 'starter', 'pro', 'business'];
+const PLAN_ORDER = ['free', 'starter', 'creator', 'pro', 'studio'];
 
 function formatPrice(priceCents: number) {
   if (priceCents === 0) return { main: 'Grátis', sub: null };
@@ -32,7 +32,7 @@ interface PlanCardProps {
 
 function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug }: PlanCardProps) {
   const isFree = plan.priceCents === 0;
-  const isPro = plan.slug === 'pro';
+  const isPro = plan.slug === 'creator';
   const { main, sub } = formatPrice(plan.priceCents);
   const isSubscribing = subscribingSlug === plan.slug;
 
@@ -237,7 +237,7 @@ export function PlansModal({ onClose }: PlansModalProps) {
         {!isLoading && sorted.length > 0 && (
           <div
             className="grid items-stretch gap-4"
-            style={{ gridTemplateColumns: `repeat(${Math.min(sorted.length, 4)}, minmax(0, 1fr))` }}
+            style={{ gridTemplateColumns: `repeat(${Math.min(sorted.length, 5)}, minmax(0, 1fr))` }}
           >
             {sorted.map((plan) => {
               const isCurrent = currentPlanSlug === plan.slug;

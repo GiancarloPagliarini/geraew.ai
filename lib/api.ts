@@ -215,6 +215,7 @@ export interface CreditsEstimateRequest {
   durationSeconds?: number;
   hasAudio?: boolean;
   sampleCount?: number;
+  modelVariant?: string;
 }
 
 export interface CreditsEstimateResponse {
@@ -704,6 +705,13 @@ export const api = {
   },
 
   auth: {
+    checkAvailability(email?: string, phone?: string) {
+      return request<{ emailTaken: boolean; phoneTaken: boolean }>('/api/v1/auth/check-availability', {
+        method: 'POST',
+        body: JSON.stringify({ email, phone }),
+      });
+    },
+
     login(email: string, password: string) {
       return request<AuthResponse>('/api/v1/auth/login', {
         method: 'POST',
@@ -711,10 +719,10 @@ export const api = {
       });
     },
 
-    register(email: string, name: string, password: string) {
+    register(email: string, name: string, password: string, phone: string, firebaseToken: string) {
       return request<AuthResponse>('/api/v1/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email, name, password }),
+        body: JSON.stringify({ email, name, password, phone, firebaseToken }),
       });
     },
 

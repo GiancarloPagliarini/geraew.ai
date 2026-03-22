@@ -97,8 +97,9 @@ export default function AdminSubscriptionsPage() {
         {[
           { slug: 'free', label: 'Free', color: '#f3f0ed' },
           { slug: 'starter', label: 'Starter', color: '#60a5fa' },
+          { slug: 'creator', label: 'Creator', color: '#34d399' },
           { slug: 'pro', label: 'Pro', color: '#a78bfa' },
-          { slug: 'business', label: 'Business', color: '#fbbf24' },
+          { slug: 'studio', label: 'Studio', color: '#fbbf24' },
           { slug: '_active', label: 'Ativas', color: '#a2dd00' },
         ].map((p) => (
           <div

@@ -484,10 +484,11 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   }, []);
 
   const imageType = attachedImages.length > 0 ? 'IMAGE_TO_IMAGE' as const : 'TEXT_TO_IMAGE' as const;
+  const imageModelVariant = model === 'gemini-3-pro-image-preview' ? 'NBP' : 'NB2';
 
   const { data: estimate, isLoading: estimateLoading } = useQuery({
-    queryKey: ['credits', 'estimate', imageType, qualityToResolution(quality)],
-    queryFn: () => api.credits.estimate(accessToken!, { type: imageType, resolution: qualityToResolution(quality) }),
+    queryKey: ['credits', 'estimate', imageType, qualityToResolution(quality), imageModelVariant],
+    queryFn: () => api.credits.estimate(accessToken!, { type: imageType, resolution: qualityToResolution(quality), modelVariant: imageModelVariant }),
     enabled: !!accessToken && genState === 'idle',
     staleTime: 30_000,
   });
