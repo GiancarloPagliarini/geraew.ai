@@ -13,8 +13,9 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, name: string, password: string, phone: string, firebaseToken: string) => Promise<void>;
+  register: (email: string, name: string, password: string, phone: string) => Promise<void>;
   googleLogin: (googleToken: string) => Promise<void>;
+  verifyPhone: (phone: string, code: string) => Promise<void>;
   logout: () => void;
   loginMutation: ReturnType<typeof useLoginMutation>;
   registerMutation: ReturnType<typeof useRegisterMutation>;
@@ -83,8 +84,8 @@ function useLoginMutation(onSuccess: (res: Awaited<ReturnType<typeof api.auth.lo
 
 function useRegisterMutation(onSuccess: (res: Awaited<ReturnType<typeof api.auth.register>>) => void) {
   return useMutation({
-    mutationFn: ({ email, name, password, phone, firebaseToken }: { email: string; name: string; password: string; phone: string; firebaseToken: string }) =>
-      api.auth.register(email, name, password, phone, firebaseToken),
+    mutationFn: ({ email, name, password, phone }: { email: string; name: string; password: string; phone: string }) =>
+      api.auth.register(email, name, password, phone),
     onSuccess,
   });
 }
@@ -169,8 +170,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const register = useCallback(
-    async (email: string, name: string, password: string, phone: string, firebaseToken: string) => {
-      await registerMutation.mutateAsync({ email, name, password, phone, firebaseToken });
+    async (email: string, name: string, password: string, phone: string) => {
+      await registerMutation.mutateAsync({ email, name, password, phone });
     },
     [registerMutation]
   );
@@ -180,6 +181,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await googleLoginMutation.mutateAsync({ googleToken });
     },
     [googleLoginMutation]
+  );
+
+  const verifyPhone = useCallback(
+    async (phone: string, code: string) => {
+      if (!state.accessToken) throw new Error('Não autenticado');
+      const res = await api.auth.verifyPhone(state.accessToken, phone, code);
+      handleAuthSuccess(res);
+    },
+    [state.accessToken, handleAuthSuccess]
   );
 
   const logout = useCallback(async () => {
@@ -192,7 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [state.refreshToken, queryClient]);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, googleLogin, logout, loginMutation, registerMutation, googleLoginMutation }}>
+    <AuthContext.Provider value={{ ...state, login, register, googleLogin, verifyPhone, logout, loginMutation, registerMutation, googleLoginMutation }}>
       {children}
     </AuthContext.Provider>
   );
