@@ -2,7 +2,6 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import type { Plan } from '@/lib/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useLoadingMessage } from '@/lib/loading-messages';
@@ -14,115 +13,18 @@ import {
   CalendarDays,
   TrendingUp,
   Check,
-  Lock,
-  Zap,
-  AlertTriangle,
-  ShoppingCart,
-  ArrowRight,
+  Lock, AlertTriangle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-
-const PLAN_ORDER = ['free', 'starter', 'creator', 'pro', 'studio'];
-
-const PLAN_SUBTITLES: Record<string, string> = {
-  starter: 'Explorador',
-  creator: 'Criador',
-  pro: 'Produtor',
-  studio: 'Profissional',
-};
-
-interface PlanGenerationExample {
-  label: string;
-  count: string;
-  blocked?: boolean;
-}
-
-const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
-  free: [
-    { label: 'NB2 1K', count: '6 imgs/dia' },
-    { label: 'Motion 720p', count: '4 clips/dia' },
-    { label: 'Veo Fast 720p', count: 'bloqueado', blocked: true },
-    { label: 'Veo Max 720p', count: 'bloqueado', blocked: true },
-  ],
-  starter: [
-    { label: 'NB2 1K', count: '80 imgs' },
-    { label: 'Motion 720p', count: '57 clips' },
-    { label: 'Veo Fast 720p', count: '6 videos' },
-    { label: 'Veo Max 720p', count: '4 videos' },
-    { label: 'Veo Max 4K c/audio', count: '1 video' },
-  ],
-  creator: [
-    { label: 'NB2 1K', count: '240 imgs' },
-    { label: 'Motion 720p', count: '171 clips' },
-    { label: 'Veo Fast 720p', count: '20 videos' },
-    { label: 'Veo Max 720p', count: '12 videos' },
-    { label: 'Veo Max 4K c/audio', count: '4 videos' },
-  ],
-  pro: [
-    { label: 'NB2 1K', count: '600 imgs' },
-    { label: 'Motion 720p', count: '428 clips' },
-    { label: 'Veo Fast 720p', count: '50 videos' },
-    { label: 'Veo Max 720p', count: '30 videos' },
-    { label: 'Veo Max 4K c/audio', count: '10 videos' },
-  ],
-  studio: [
-    { label: 'NB2 1K', count: '1.600 imgs' },
-    { label: 'Motion 720p', count: '1.142 clips' },
-    { label: 'Veo Fast 720p', count: '133 videos' },
-    { label: 'Veo Max 720p', count: '80 videos' },
-    { label: 'Veo Max 4K c/audio', count: '28 videos' },
-  ],
-};
-
-const BOOST_LABELS: Record<string, string> = {
-  'boost-p': 'Emergencia',
-  'boost-m': 'Folego',
-  'boost-g': 'Pre-upgrade',
-};
-
-function formatPrice(priceCents: number) {
-  if (priceCents === 0) return { main: 'Gratis', sub: null };
-  const int = Math.floor(priceCents / 100);
-  const cents = String(priceCents % 100).padStart(2, '0');
-  return { main: `R$ ${int.toLocaleString('pt-BR')},${cents}`, sub: '/mes' };
-}
-
-function formatPricePerCredit(priceCents: number, credits: number): string {
-  if (credits === 0) return '';
-  const perCredit = priceCents / 100 / credits;
-  return `R$${perCredit.toFixed(4).replace('.', ',')}/cr`;
-}
-
-function getPlanFeatures(plan: Plan): string[] {
-  const features: string[] = [];
-
-  if (plan.slug === 'free') {
-    features.push('30 cr/dia \u00b7 nao acumula');
-    features.push('Com marca d\'agua');
-  } else {
-    features.push(`${plan.creditsPerMonth.toLocaleString('pt-BR')} creditos`);
-    features.push(formatPricePerCredit(plan.priceCents, plan.creditsPerMonth));
-  }
-
-  features.push(`Ate ${plan.maxConcurrentGenerations} geracoes simultaneas`);
-
-  if (!plan.hasWatermark && plan.slug !== 'free') {
-    features.push('Sem marca d\'agua');
-  }
-
-  if (plan.galleryRetentionDays) {
-    features.push(`Galeria por ${plan.galleryRetentionDays} dias`);
-  } else {
-    features.push('Galeria ilimitada');
-  }
-
-  if (plan.hasApiAccess) {
-    features.push('Acesso a API');
-  }
-
-  return features;
-}
+import {
+  PLAN_ORDER,
+  PLAN_SUBTITLES,
+  PLAN_GENERATIONS,
+  formatPrice,
+  getPlanFeatures,
+} from '@/lib/plans';
+import { CreditPackagesGrid } from '@/components/editor/CreditPackagesGrid';
 
 export default function CreditosPage() {
   const router = useRouter();
@@ -130,9 +32,6 @@ export default function CreditosPage() {
   const loadingMsg = useLoadingMessage('creditos');
   const queryClient = useQueryClient();
   const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
-  const [purchasingPackageId, setPurchasingPackageId] = useState<string | null>(null);
-  const [showBoostGHint, setShowBoostGHint] = useState(false);
-
   async function handleSubscribe(planSlug: string) {
     if (!accessToken || subscribingSlug) return;
     setSubscribingSlug(planSlug);
@@ -142,7 +41,7 @@ export default function CreditosPage() {
       if (action === 'downgrade') {
         await api.subscriptions.downgrade(accessToken, planSlug);
         toast.success('Downgrade agendado', {
-          description: 'Seu plano sera alterado na proxima renovacao.',
+          description: 'Seu plano será alterado na próxima renovação.',
         });
         queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
         setSubscribingSlug(null);
@@ -172,18 +71,6 @@ export default function CreditosPage() {
         toast.error('Erro ao mudar de plano', { description: 'Tente novamente.' });
         setSubscribingSlug(null);
       }
-    }
-  }
-
-  async function handlePurchaseBoost(packageId: string) {
-    if (!accessToken || purchasingPackageId) return;
-    setPurchasingPackageId(packageId);
-    try {
-      const res = await api.credits.purchase(accessToken, packageId);
-      window.location.href = res.checkoutUrl;
-    } catch {
-      toast.error('Erro ao comprar boost', { description: 'Tente novamente.' });
-      setPurchasingPackageId(null);
     }
   }
 
@@ -258,10 +145,6 @@ export default function CreditosPage() {
     (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),
   );
 
-  const sortedPackages = (packages ?? []).slice().sort(
-    (a, b) => a.sortOrder - b.sortOrder,
-  );
-
   // Low credits warning
   const creditsPercent = totalCredits > 0
     ? (balance!.totalCreditsAvailable / totalCredits) * 100
@@ -270,7 +153,7 @@ export default function CreditosPage() {
   const showZeroCreditsModal = !isFreeUser && balance && balance.totalCreditsAvailable === 0;
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#1a2123]">
+    <div className="flex min-h-screen flex-col bg-[#1a2123] overflow-y-auto sidebar-scroll">
       {/* Zero credits modal */}
       {showZeroCreditsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -279,7 +162,7 @@ export default function CreditosPage() {
               <AlertTriangle className="h-7 w-7 text-red-400" />
             </div>
             <div className="text-center">
-              <h3 className="text-lg font-bold text-[#f3f0ed]">Creditos esgotados</h3>
+              <h3 className="text-lg font-bold text-[#f3f0ed]">Créditos esgotados</h3>
               <p className="mt-2 text-sm text-[#f3f0ed]/50">
                 Renove seu plano ou compre um boost para continuar gerando.
               </p>
@@ -294,22 +177,15 @@ export default function CreditosPage() {
               >
                 Renovar agora
               </button>
-              {sortedPackages.length > 0 && (
-                <button
-                  onClick={() => handlePurchaseBoost(sortedPackages[0].id)}
-                  disabled={!!purchasingPackageId}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/15 text-sm font-medium text-[#f3f0ed]/70 transition-colors hover:bg-[#f3f0ed]/5"
-                >
-                  {purchasingPackageId === sortedPackages[0].id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      Boost P R$
-                      {(sortedPackages[0].priceCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
-                    </>
-                  )}
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  const boostSection = document.getElementById('boost-section');
+                  boostSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/15 text-sm font-medium text-[#f3f0ed]/70 transition-colors hover:bg-[#f3f0ed]/5"
+              >
+                Comprar créditos avulsos
+              </button>
             </div>
           </div>
         </div>
@@ -333,7 +209,7 @@ export default function CreditosPage() {
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-yellow-400" />
               <span className="text-sm text-yellow-300/80">
-                Seus creditos estao acabando ({balance!.totalCreditsAvailable.toLocaleString('pt-BR')} restantes)
+                Seus créditos estão acabando ({balance!.totalCreditsAvailable.toLocaleString('pt-BR')} restantes)
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -360,28 +236,28 @@ export default function CreditosPage() {
         </div>
       )}
 
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-4 py-10">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-12 px-4 py-10">
 
         {/* -- Balance -- */}
         {balance && (
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
               <Coins className="h-5 w-5 text-[#a2dd00]" />
-              <h1 className="text-lg font-bold text-[#f3f0ed]">Seus creditos</h1>
+              <h1 className="text-lg font-bold text-[#f3f0ed]">Seus créditos</h1>
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="col-span-2 flex flex-col justify-between rounded-2xl border border-[#a2dd00]/25 bg-[#a2dd00]/6 p-5">
                 <div className="flex items-center gap-2 text-[#a2dd00]/60">
                   <Sparkles className="h-3.5 w-3.5" />
-                  <span className="text-[10px] font-bold tracking-[0.15em]">DISPONIVEIS</span>
+                  <span className="text-[10px] font-bold tracking-[0.15em]">DISPONÍVEIS</span>
                 </div>
                 <p className="mt-3 text-3xl font-bold tabular-nums text-[#a2dd00] sm:text-4xl">
                   {balance.totalCreditsAvailable.toLocaleString('pt-BR')}
                 </p>
                 <div className="mt-4 flex gap-4 text-xs text-[#a2dd00]/50">
                   <span>{balance.planCreditsRemaining.toLocaleString('pt-BR')} do plano</span>
-                  <span>{balance.bonusCreditsRemaining.toLocaleString('pt-BR')} bonus</span>
+                  <span>{balance.bonusCreditsRemaining.toLocaleString('pt-BR')} bônus</span>
                 </div>
               </div>
 
@@ -398,11 +274,11 @@ export default function CreditosPage() {
               <div className="flex flex-col justify-between rounded-2xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 p-5">
                 <div className="flex items-center gap-1.5 text-[#f3f0ed]/40">
                   <CalendarDays className="h-3.5 w-3.5" />
-                  <span className="text-[10px] font-bold tracking-[0.12em]">PERIODO</span>
+                  <span className="text-[10px] font-bold tracking-[0.12em]">PERÍODO</span>
                 </div>
                 <p className="mt-3 text-sm font-medium text-[#f3f0ed]">
                   {isFreeUser ? (
-                    <span>Diario</span>
+                    <span>Diário</span>
                   ) : (
                     <>
                       {periodStart}
@@ -416,7 +292,7 @@ export default function CreditosPage() {
 
             <div className="rounded-2xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 px-5 py-4">
               <div className="flex items-center justify-between text-xs text-[#f3f0ed]/40">
-                <span className="font-medium">Consumo no periodo</span>
+                <span className="font-medium">Consumo no período</span>
                 <span>{usagePercent.toFixed(1)}% utilizado</span>
               </div>
               <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-[#f3f0ed]/8">
@@ -440,11 +316,11 @@ export default function CreditosPage() {
               </h2>
               <p className="flex items-center gap-1.5 text-xs text-[#f3f0ed]/40">
                 <Coins className="h-3 w-3 text-[#a2dd00]" />
-                Creditos do plano renovam mensalmente
+                Créditos do plano renovam mensalmente
               </p>
               <div className="flex items-center gap-1.5 text-[11px] text-[#f3f0ed]/30">
                 <Lock className="h-3 w-3" />
-                Pagamento seguro via Pix ou Cartao
+                Pagamento seguro via Pix ou Cartão
               </div>
             </div>
 
@@ -467,10 +343,10 @@ export default function CreditosPage() {
                   <div
                     key={plan.id}
                     className={`relative flex flex-col rounded-2xl border p-5 transition-all ${isCurrent
-                        ? 'border-[#a2dd00]/50 bg-[#1e2b1f] shadow-[0_0_30px_rgba(162,221,0,0.1)]'
-                        : isCreator
-                          ? 'border-[#a2dd00]/30 bg-[#1f2a2d] shadow-[0_0_20px_rgba(162,221,0,0.05)]'
-                          : 'border-[#f3f0ed]/8 bg-[#1c2527]'
+                      ? 'border-[#a2dd00]/50 bg-[#1e2b1f] shadow-[0_0_30px_rgba(162,221,0,0.1)]'
+                      : isCreator
+                        ? 'border-[#a2dd00]/30 bg-[#1f2a2d] shadow-[0_0_20px_rgba(162,221,0,0.05)]'
+                        : 'border-[#f3f0ed]/8 bg-[#1c2527]'
                       }`}
                   >
                     {/* "Mais popular" badge */}
@@ -506,7 +382,7 @@ export default function CreditosPage() {
 
                     {!isFree && (
                       <p className="mt-1 text-[11px] text-[#f3f0ed]/30">
-                        {plan.creditsPerMonth.toLocaleString('pt-BR')} creditos &middot; {formatPricePerCredit(plan.priceCents, plan.creditsPerMonth)}
+                        {plan.creditsPerMonth.toLocaleString('pt-BR')} créditos
                       </p>
                     )}
 
@@ -527,7 +403,7 @@ export default function CreditosPage() {
                       <>
                         <div className="my-3 h-px w-full bg-[#f3f0ed]/6" />
                         <div className="flex flex-col gap-1.5">
-                          <p className="text-[10px] font-bold tracking-[0.1em] text-[#f3f0ed]/25">GERACOES</p>
+                          <p className="text-[10px] font-bold tracking-[0.1em] text-[#f3f0ed]/25">GERAÇÕES</p>
                           {generationExamples.map((ex) => (
                             <div key={ex.label} className="flex items-center justify-between text-[11px]">
                               <span className="text-[#f3f0ed]/40">{ex.label}</span>
@@ -541,6 +417,7 @@ export default function CreditosPage() {
                               )}
                             </div>
                           ))}
+                          <p className="text-[10px] text-[#f3f0ed]/15 mt-1">Estimativa usando todos os créditos em um único modelo</p>
                         </div>
                       </>
                     )}
@@ -552,10 +429,10 @@ export default function CreditosPage() {
                         disabled={isCurrent || !!subscribingSlug}
                         onClick={() => handleSubscribe(plan.slug)}
                         className={`mt-5 flex h-10 w-full items-center justify-center rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${isCurrent
-                            ? 'bg-[#a2dd00]/20 text-[#a2dd00]'
-                            : isCreator
-                              ? 'bg-[#a2dd00] text-[#1a2123] hover:bg-[#b5e82d]'
-                              : 'bg-[#f3f0ed]/8 text-[#f3f0ed] hover:bg-[#f3f0ed]/12'
+                          ? 'bg-[#a2dd00]/20 text-[#a2dd00]'
+                          : isCreator
+                            ? 'bg-[#a2dd00] text-[#1a2123] hover:bg-[#b5e82d]'
+                            : 'bg-[#f3f0ed]/8 text-[#f3f0ed] hover:bg-[#f3f0ed]/12'
                           }`}
                       >
                         {isSubscribing ? (
@@ -578,95 +455,33 @@ export default function CreditosPage() {
 
             {/* Footer */}
             <p className="text-center text-xs text-[#f3f0ed]/20">
-              Creditos extras comprados nunca expiram &middot; Acumulam com os do plano
+              Créditos extras comprados nunca expiram &middot; Acumulam com os do plano
             </p>
           </div>
         )}
 
-        {/* -- Boost Packages -- */}
-        {sortedPackages.length > 0 && (
+        {/* -- Pacotes avulsos -- */}
+        {packages && packages.length > 0 && (
           <div id="boost-section" className="flex flex-col gap-6">
             <div className="flex flex-col items-center gap-2 text-center">
-              <h2 className="text-xl font-bold text-[#f3f0ed]">
-                <Zap className="mr-2 inline h-5 w-5 text-[#a2dd00]" />
-                Pacotes Boost (avulsos)
+              <h2 className="flex items-center gap-2 text-xl font-bold text-[#f3f0ed]">
+                <Coins className="h-5 w-5 text-[#a2dd00]" />
+                Pacotes de créditos
               </h2>
               <p className="text-xs text-[#f3f0ed]/40">
-                Creditos extras que nunca expiram. Compre quando precisar.
+                Créditos extras que nunca expiram. Compre quando precisar.
               </p>
+              <div className="flex items-center gap-1.5 text-[11px] text-[#f3f0ed]/30">
+                <Lock className="h-3 w-3" />
+                Pagamento seguro via Pix ou Cartão
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {sortedPackages.map((pkg) => {
-                const pkgPrice = pkg.priceCents / 100;
-                const perCredit = (pkg.priceCents / 100 / pkg.credits).toFixed(3).replace('.', ',');
-                const isPurchasing = purchasingPackageId === pkg.id;
-                const boostLabel = BOOST_LABELS[pkg.name.toLowerCase().replace(/\s+/g, '-')] ??
-                  BOOST_LABELS[`boost-${pkg.name.toLowerCase().charAt(pkg.name.length - 1)}`] ?? '';
-                // Detect Boost G by sort order (highest) or name
-                const isBoostG = pkg.sortOrder === Math.max(...sortedPackages.map(p => p.sortOrder));
+            <CreditPackagesGrid packages={packages} />
 
-                return (
-                  <div
-                    key={pkg.id}
-                    className="flex flex-col rounded-2xl border border-[#f3f0ed]/10 bg-[#1c2527] p-5 transition-all hover:border-[#f3f0ed]/20"
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-bold text-[#f3f0ed]">{pkg.name}</p>
-                      {boostLabel && (
-                        <span className="rounded-full bg-[#f3f0ed]/8 px-2 py-0.5 text-[10px] font-medium text-[#f3f0ed]/50">
-                          {boostLabel}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="mt-3 flex items-baseline gap-1">
-                      <span className="text-2xl font-bold tabular-nums text-[#f3f0ed]">
-                        R$ {pkgPrice.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
-                      </span>
-                    </div>
-
-                    <div className="mt-2 flex items-center gap-3 text-xs text-[#f3f0ed]/40">
-                      <span>{pkg.credits.toLocaleString('pt-BR')} creditos</span>
-                      <span>R${perCredit}/cr</span>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        if (isBoostG) {
-                          setShowBoostGHint(true);
-                          // Still allow purchase
-                          handlePurchaseBoost(pkg.id);
-                        } else {
-                          handlePurchaseBoost(pkg.id);
-                        }
-                      }}
-                      disabled={!!purchasingPackageId}
-                      className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#f3f0ed]/8 text-xs font-bold text-[#f3f0ed] transition-all hover:bg-[#f3f0ed]/12 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      {isPurchasing ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <ShoppingCart className="h-3.5 w-3.5" />
-                          Comprar
-                        </>
-                      )}
-                    </button>
-
-                    {/* Boost G upsell hint */}
-                    {isBoostG && showBoostGHint && (
-                      <div className="mt-3 flex items-start gap-2 rounded-lg border border-[#a2dd00]/20 bg-[#a2dd00]/8 p-3">
-                        <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#a2dd00]" />
-                        <p className="text-[11px] leading-relaxed text-[#a2dd00]/80">
-                          Por R$3 a mais voce assina o Starter e leva 80 creditos a mais
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <p className="text-center text-xs text-[#f3f0ed]/20">
+              Pagamento único · Sem assinatura · Créditos acumulam com os do plano
+            </p>
           </div>
         )}
 

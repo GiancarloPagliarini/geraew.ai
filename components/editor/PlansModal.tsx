@@ -1,26 +1,28 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Check,
   Coins,
   Loader2,
+  Lock,
+  ShoppingCart,
   Sparkles,
   X,
+  Zap,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { api, Plan } from '@/lib/api';
-
-const PLAN_ORDER = ['free', 'starter', 'creator', 'pro', 'studio'];
-
-function formatPrice(priceCents: number) {
-  if (priceCents === 0) return { main: 'Grátis', sub: null };
-  const int = Math.floor(priceCents / 100);
-  const cents = String(priceCents % 100).padStart(2, '0');
-  return { main: `R$ ${int.toLocaleString('pt-BR')},${cents}`, sub: '/mês' };
-}
+import { api, Plan, CreditPackage } from '@/lib/api';
+import {
+  PLAN_ORDER,
+  PLAN_GENERATIONS,
+  formatPrice,
+  formatBoostPrice,
+  getBoostMeta,
+  getPlanFeatures,
+} from '@/lib/plans';
 
 interface PlanCardProps {
   plan: Plan;
@@ -32,9 +34,11 @@ interface PlanCardProps {
 
 function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug }: PlanCardProps) {
   const isFree = plan.priceCents === 0;
-  const isPro = plan.slug === 'creator';
+  const isCreator = plan.slug === 'creator';
   const { main, sub } = formatPrice(plan.priceCents);
   const isSubscribing = subscribingSlug === plan.slug;
+  const features = getPlanFeatures(plan);
+  const generationExamples = PLAN_GENERATIONS[plan.slug] ?? [];
 
   const actionLabel = {
     upgrade: 'Fazer upgrade',
@@ -43,23 +47,24 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug }:
     current: 'Plano ativo',
   }[planAction];
 
-  const features = [
-    `${plan.creditsPerMonth.toLocaleString('pt-BR')} créditos/mês`,
-    `Até ${plan.maxConcurrentGenerations} gerações simultâneas`,
-    plan.hasWatermark ? null : 'Sem marca d\'água',
-    plan.galleryRetentionDays ? `Galeria por ${plan.galleryRetentionDays} dias` : 'Galeria ilimitada',
-    plan.hasApiAccess ? 'Acesso à API' : null,
-  ].filter(Boolean) as string[];
-
   return (
     <div
       className={`relative flex flex-col rounded-2xl border p-4 transition-all sm:p-5 ${isCurrent
         ? 'border-[#a2dd00]/50 bg-[#1e2b1f] shadow-[0_0_30px_rgba(162,221,0,0.1)]'
-        : isPro
-          ? 'border-[#f3f0ed]/20 bg-[#1f2a2d]'
+        : isCreator
+          ? 'border-[#a2dd00]/30 bg-[#1f2a2d] shadow-[0_0_20px_rgba(162,221,0,0.06)]'
           : 'border-[#f3f0ed]/8 bg-[#1c2527]'
         }`}
     >
+      {isCreator && !isCurrent && (
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
+          <span className="flex items-center gap-1 rounded-full bg-[#a2dd00] px-3 py-1 text-[10px] font-bold tracking-widest text-[#1a2123]">
+            <Sparkles className="h-2.5 w-2.5" />
+            MAIS POPULAR
+          </span>
+        </div>
+      )}
+
       {isCurrent && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
           <span className="flex items-center gap-1 rounded-full bg-[#a2dd00] px-3 py-1 text-[10px] font-bold tracking-widest text-[#1a2123]">
@@ -80,7 +85,7 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug }:
 
       <div className="my-4 h-px w-full bg-[#f3f0ed]/6" />
 
-      <ul className="flex flex-1 flex-col gap-2.5">
+      <ul className="flex flex-col gap-2">
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2 text-xs text-[#f3f0ed]/60">
             <Check className={`mt-px h-3.5 w-3.5 shrink-0 ${isCurrent ? 'text-[#a2dd00]' : 'text-[#a2dd00]/60'}`} />
@@ -89,13 +94,38 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug }:
         ))}
       </ul>
 
+      {generationExamples.length > 0 && (
+        <>
+          <div className="my-3 h-px w-full bg-[#f3f0ed]/6" />
+          <div className="flex flex-col gap-1.5">
+            <p className="text-[10px] font-bold tracking-[0.1em] text-[#f3f0ed]/25">GERAÇÕES</p>
+            {generationExamples.map((ex) => (
+              <div key={ex.label} className="flex items-center justify-between text-[11px]">
+                <span className="text-[#f3f0ed]/40">{ex.label}</span>
+                {ex.blocked ? (
+                  <span className="flex items-center gap-1 text-red-400/60">
+                    <Lock className="h-2.5 w-2.5" />
+                    bloqueado
+                  </span>
+                ) : (
+                  <span className="font-medium text-[#f3f0ed]/60">{ex.count}</span>
+                )}
+              </div>
+            ))}
+            <p className="text-[10px] text-[#f3f0ed]/15 mt-1">Estimativa usando todos os créditos em um único modelo</p>
+          </div>
+        </>
+      )}
+
+      <div className="flex-1" />
+
       {!isFree && (
         <button
           disabled={isCurrent || !!subscribingSlug}
           onClick={() => onSubscribe(plan.slug)}
           className={`mt-5 flex h-10 w-full items-center justify-center rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${isCurrent
             ? 'bg-[#a2dd00]/20 text-[#a2dd00]'
-            : isPro
+            : isCreator
               ? 'border border-[#f3f0ed]/20 bg-transparent text-[#f3f0ed] hover:bg-[#f3f0ed]/8'
               : 'bg-[#f3f0ed]/8 text-[#f3f0ed] hover:bg-[#f3f0ed]/12'
             }`}
@@ -115,6 +145,7 @@ export function PlansModal({ onClose }: PlansModalProps) {
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
   const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
+  const [purchasingPackageId, setPurchasingPackageId] = useState<string | null>(null);
 
   const { data: plans, isLoading: plansLoading } = useQuery({
     queryKey: ['plans'],
@@ -128,6 +159,13 @@ export function PlansModal({ onClose }: PlansModalProps) {
     queryFn: () => api.users.me(accessToken!),
     enabled: !!accessToken,
     staleTime: 60_000,
+  });
+
+  const { data: packages } = useQuery({
+    queryKey: ['credits', 'packages'],
+    queryFn: () => api.credits.packages(accessToken!),
+    enabled: !!accessToken,
+    staleTime: 5 * 60_000,
   });
 
   useEffect(() => {
@@ -149,6 +187,22 @@ export function PlansModal({ onClose }: PlansModalProps) {
   const sorted = (plans ?? []).slice().sort(
     (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),
   );
+
+  const sortedPackages = (packages ?? []).slice().sort(
+    (a, b) => a.sortOrder - b.sortOrder,
+  );
+
+  async function handlePurchaseBoost(packageId: string) {
+    if (!accessToken || purchasingPackageId) return;
+    setPurchasingPackageId(packageId);
+    try {
+      const res = await api.credits.purchase(accessToken, packageId);
+      window.location.href = res.checkoutUrl;
+    } catch {
+      toast.error('Erro ao comprar créditos', { description: 'Tente novamente.' });
+      setPurchasingPackageId(null);
+    }
+  }
 
   function getPlanAction(targetSlug: string): 'upgrade' | 'downgrade' | 'create' {
     if (!hasActiveSub || !currentPlanSlug || currentPlanSlug === 'free') return 'create';
@@ -205,7 +259,7 @@ export function PlansModal({ onClose }: PlansModalProps) {
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="relative mx-4 flex max-h-[90vh] w-full max-w-6xl flex-col gap-4 overflow-y-auto rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] p-4 shadow-2xl sm:gap-6 sm:overflow-visible sm:p-6">
+      <div className="relative mx-4 flex max-h-[90vh] w-full max-w-7xl flex-col gap-4 overflow-y-auto sidebar-scroll rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] p-4 shadow-2xl sm:gap-6 sm:p-6">
 
         {/* Close */}
         <button
