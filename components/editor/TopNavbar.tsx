@@ -39,7 +39,7 @@ export function TopNavbar() {
 
   return (
     <>
-      <header className="relative z-50 flex h-12 shrink-0 items-center justify-between border-b border-[#f3f0ed]/[0.07] bg-[#1a2123] px-4">
+      <header className="relative z-50 flex h-12 shrink-0 items-center justify-between border-b border-[#f3f0ed]/[0.07] bg-[#1a2123] px-2 sm:px-4">
         {/* Logo */}
         <div className="flex items-center gap-2.5">
           <Image
@@ -49,15 +49,15 @@ export function TopNavbar() {
             height={32}
             className="rounded-md mix-blend-lighten"
           />
-          <span className="text-sm font-medium text-[#f3f0ed]">
+          <span className="hidden text-sm font-medium text-[#f3f0ed] sm:inline">
             Geraew.AI
           </span>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Credit badge */}
-          <div className="flex items-center gap-1.5 rounded-full border border-[#f3f0ed]/10 bg-[#f3f0ed]/[0.05] px-3 py-1.5">
+          <div className="flex items-center gap-1.5 rounded-full border border-[#f3f0ed]/10 bg-[#f3f0ed]/[0.05] px-2 py-1.5 sm:px-3">
             <Coins className="h-3.5 w-3.5 text-[#a2dd00]" />
             {creditsLoading ? (
               <div className="h-3 w-10 animate-pulse rounded-full bg-[#f3f0ed]/10" />
@@ -66,17 +66,17 @@ export function TopNavbar() {
             )}
           </div>
 
-          {/* Buy button — accent lime */}
+          {/* Buy button — accent lime (icon-only on mobile) */}
           <button
             onClick={() => setBuyModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-full bg-[#a2dd00] px-4 py-1.5 text-xs font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95"
+            className="flex items-center gap-1.5 rounded-full bg-[#a2dd00] p-2 text-xs font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95 sm:px-4 sm:py-1.5"
           >
             <Plus className="h-3.5 w-3.5" />
-            Comprar Créditos
+            <span className="hidden sm:inline">Comprar Créditos</span>
           </button>
 
-          {/* Refer button — teal outline */}
-          <button className="flex items-center gap-1.5 rounded-full border border-[#1e494b] px-4 py-1.5 text-xs font-semibold text-[#f3f0ed]/80 transition-all hover:border-[#a2dd00]/50 hover:text-[#f3f0ed]">
+          {/* Refer button — hidden on mobile */}
+          <button className="hidden items-center gap-1.5 rounded-full border border-[#1e494b] px-4 py-1.5 text-xs font-semibold text-[#f3f0ed]/80 transition-all hover:border-[#a2dd00]/50 hover:text-[#f3f0ed] sm:flex">
             <Gift className="h-3.5 w-3.5" />
             Poste e ganhe
           </button>
