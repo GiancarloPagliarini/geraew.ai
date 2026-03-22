@@ -53,13 +53,12 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug }:
 
   return (
     <div
-      className={`relative flex flex-col rounded-2xl border p-5 transition-all ${
-        isCurrent
-          ? 'border-[#a2dd00]/50 bg-[#1e2b1f] shadow-[0_0_30px_rgba(162,221,0,0.1)]'
-          : isPro
-            ? 'border-[#f3f0ed]/20 bg-[#1f2a2d]'
-            : 'border-[#f3f0ed]/8 bg-[#1c2527]'
-      }`}
+      className={`relative flex flex-col rounded-2xl border p-4 transition-all sm:p-5 ${isCurrent
+        ? 'border-[#a2dd00]/50 bg-[#1e2b1f] shadow-[0_0_30px_rgba(162,221,0,0.1)]'
+        : isPro
+          ? 'border-[#f3f0ed]/20 bg-[#1f2a2d]'
+          : 'border-[#f3f0ed]/8 bg-[#1c2527]'
+        }`}
     >
       {isCurrent && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
@@ -94,13 +93,12 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug }:
         <button
           disabled={isCurrent || !!subscribingSlug}
           onClick={() => onSubscribe(plan.slug)}
-          className={`mt-5 flex h-10 w-full items-center justify-center rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${
-            isCurrent
-              ? 'bg-[#a2dd00]/20 text-[#a2dd00]'
-              : isPro
-                ? 'border border-[#f3f0ed]/20 bg-transparent text-[#f3f0ed] hover:bg-[#f3f0ed]/8'
-                : 'bg-[#f3f0ed]/8 text-[#f3f0ed] hover:bg-[#f3f0ed]/12'
-          }`}
+          className={`mt-5 flex h-10 w-full items-center justify-center rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${isCurrent
+            ? 'bg-[#a2dd00]/20 text-[#a2dd00]'
+            : isPro
+              ? 'border border-[#f3f0ed]/20 bg-transparent text-[#f3f0ed] hover:bg-[#f3f0ed]/8'
+              : 'bg-[#f3f0ed]/8 text-[#f3f0ed] hover:bg-[#f3f0ed]/12'
+            }`}
         >
           {isSubscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : actionLabel}
         </button>
@@ -207,7 +205,7 @@ export function PlansModal({ onClose }: PlansModalProps) {
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="relative mx-4 flex w-full max-w-4xl flex-col gap-6 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] p-6 shadow-2xl">
+      <div className="relative mx-4 flex max-h-[90vh] w-full max-w-6xl flex-col gap-4 overflow-y-auto rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] p-4 shadow-2xl sm:gap-6 sm:overflow-visible sm:p-6">
 
         {/* Close */}
         <button
@@ -219,7 +217,7 @@ export function PlansModal({ onClose }: PlansModalProps) {
 
         {/* Heading */}
         <div className="flex flex-col items-center gap-2 text-center">
-          <h2 className="text-xl font-bold text-[#f3f0ed]">Escolha seu plano</h2>
+          <h2 className="text-lg font-bold text-[#f3f0ed] sm:text-xl">Escolha seu plano</h2>
           <p className="text-[11px] text-[#f3f0ed]/40 flex items-center gap-1.5">
             <Coins className="h-3 w-3 text-[#a2dd00]" />
             Créditos do plano renovam mensalmente
@@ -236,20 +234,20 @@ export function PlansModal({ onClose }: PlansModalProps) {
         {/* Cards */}
         {!isLoading && sorted.length > 0 && (
           <div
-            className="grid items-stretch gap-4"
+            className="flex flex-col items-stretch gap-3 sm:grid sm:gap-4"
             style={{ gridTemplateColumns: `repeat(${Math.min(sorted.length, 5)}, minmax(0, 1fr))` }}
           >
             {sorted.map((plan) => {
               const isCurrent = currentPlanSlug === plan.slug;
               return (
-              <PlanCard
-                key={plan.id}
-                plan={plan}
-                isCurrent={isCurrent}
-                planAction={isCurrent ? 'current' : getPlanAction(plan.slug)}
-                onSubscribe={handleSubscribe}
-                subscribingSlug={subscribingSlug}
-              />
+                <PlanCard
+                  key={plan.id}
+                  plan={plan}
+                  isCurrent={isCurrent}
+                  planAction={isCurrent ? 'current' : getPlanAction(plan.slug)}
+                  onSubscribe={handleSubscribe}
+                  subscribingSlug={subscribingSlug}
+                />
               );
             })}
           </div>

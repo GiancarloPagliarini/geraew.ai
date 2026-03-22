@@ -61,7 +61,8 @@ function CanvasContent() {
   const [initialStoredNodes] = useState<Node[]>(() => loadStoredNodes());
   const [nodes, setNodes, onNodesChange] = useNodesState(initialStoredNodes);
   const { zoomIn, zoomOut, setViewport, fitView, screenToFlowPosition } = useReactFlow();
-  const [zoom, setZoom] = useState(1);
+  const defaultZoom = typeof window !== 'undefined' && window.innerWidth < 640 ? 0.65 : 1;
+  const [zoom, setZoom] = useState(defaultZoom);
   const [isSelectMode, setIsSelectMode] = useState(false);
   const { selectedNodeId, setSelectedNodeId, setNodePanelType, pendingPromptRef } = useEditor();
   const viewportSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -72,7 +73,11 @@ function CanvasContent() {
       if (node.data?.panelType) setNodePanelType(node.id, node.data.panelType as string);
     });
     const vp = loadStoredViewport();
-    if (vp) setViewport(vp);
+    if (vp) {
+      setViewport(vp);
+    } else {
+      setViewport({ x: 0, y: 0, zoom: defaultZoom });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

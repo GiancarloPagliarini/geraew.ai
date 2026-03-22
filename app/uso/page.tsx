@@ -73,7 +73,7 @@ function TransactionRow({ tx }: { tx: CreditTransaction }) {
   const debit = isDebit(tx.amount);
 
   return (
-    <div className="group flex items-center gap-4 rounded-xl border border-transparent px-4 py-3.5 transition-colors hover:border-[#f3f0ed]/6 hover:bg-[#f3f0ed]/2">
+    <div className="group flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 transition-colors hover:border-[#f3f0ed]/6 hover:bg-[#f3f0ed]/2 sm:gap-4 sm:px-4 sm:py-3.5">
       {/* Icon */}
       <div
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
@@ -87,11 +87,11 @@ function TransactionRow({ tx }: { tx: CreditTransaction }) {
 
       {/* Description */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-[#f3f0ed]/80">{tx.description}</p>
-        <div className="mt-0.5 flex items-center gap-2">
-          <span className="text-[11px] text-[#f3f0ed]/30">{getTransactionLabel(tx.type)}</span>
-          <span className="h-0.5 w-0.5 rounded-full bg-[#f3f0ed]/20" />
-          <span className="text-[11px] text-[#f3f0ed]/25">{formatDate(tx.createdAt)}</span>
+        <p className="truncate text-xs font-medium text-[#f3f0ed]/80 sm:text-sm">{tx.description}</p>
+        <div className="mt-0.5 flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+          <span className="text-[10px] text-[#f3f0ed]/30 sm:text-[11px]">{getTransactionLabel(tx.type)}</span>
+          <span className="hidden h-0.5 w-0.5 rounded-full bg-[#f3f0ed]/20 sm:block" />
+          <span className="text-[10px] text-[#f3f0ed]/25 sm:text-[11px]">{formatDate(tx.createdAt)}</span>
         </div>
       </div>
 
@@ -146,8 +146,8 @@ function Pagination({
 
   return (
     <div className="flex items-center justify-between px-1 pt-2">
-      <p className="text-xs text-[#f3f0ed]/30">
-        {from}–{to} de {total.toLocaleString('pt-BR')} transações
+      <p className="text-[10px] text-[#f3f0ed]/30 sm:text-xs">
+        {from}–{to} de {total.toLocaleString('pt-BR')}
       </p>
       <div className="flex items-center gap-1">
         <button
@@ -221,7 +221,7 @@ export default function UsoPage() {
         </button>
       </header>
 
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-10">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:py-10">
 
         {/* ── Title ── */}
         <div className="flex items-center gap-3">
@@ -238,7 +238,7 @@ export default function UsoPage() {
               <span className="text-[10px] font-bold tracking-[0.13em] text-[#f3f0ed]/35">
                 TOTAL DE TRANSAÇÕES
               </span>
-              <span className="text-2xl font-bold tabular-nums text-[#a2dd00]">
+              <span className="text-xl font-bold tabular-nums text-[#a2dd00] sm:text-2xl">
                 {meta.total.toLocaleString('pt-BR')}
               </span>
             </div>

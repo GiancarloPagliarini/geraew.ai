@@ -7,6 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useEditor } from '@/lib/editor-context';
 
 interface BottomToolbarProps {
   zoom: number;
@@ -39,9 +40,11 @@ export function BottomToolbar({
   onDelete,
   onFitView,
 }: BottomToolbarProps) {
+  const { leftPanelOpen } = useEditor();
+
   return (
     <TooltipProvider>
-      <div className="pointer-events-none absolute bottom-3 left-1/2 z-50 w-[calc(100%-1rem)] -translate-x-1/2 sm:bottom-5 sm:w-auto">
+      <div className={`pointer-events-none absolute bottom-3 left-1/2 z-50 w-[calc(100%-1rem)] -translate-x-1/2 sm:bottom-5 sm:w-auto ${leftPanelOpen ? 'hidden sm:block' : ''}`}>
         <div className="pointer-events-auto flex items-center justify-center gap-0.5 rounded-full border border-[#f3f0ed]/[0.08] bg-[#1a2123]/90 px-1.5 py-1.5 shadow-2xl backdrop-blur-md sm:px-2">
 
           {/* Mode toggle — Hand / Pointer */}

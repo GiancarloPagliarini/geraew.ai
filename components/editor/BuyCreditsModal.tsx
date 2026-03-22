@@ -94,7 +94,7 @@ export function BuyCreditsModal({ onClose }: BuyCreditsModalProps) {
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="relative mx-4 flex w-full max-w-3xl flex-col gap-6 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] p-6 shadow-2xl">
+      <div className="relative mx-4 flex max-h-[90vh] w-full max-w-5xl flex-col gap-4 overflow-y-auto rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] p-4 shadow-2xl sm:gap-6 sm:overflow-visible sm:p-6">
 
         {/* Close button */}
         <button
@@ -106,7 +106,7 @@ export function BuyCreditsModal({ onClose }: BuyCreditsModalProps) {
 
         {/* Heading */}
         <div className="flex flex-col items-center gap-2 text-center">
-          <h2 className="text-xl font-bold text-[#f3f0ed]">
+          <h2 className="text-lg font-bold text-[#f3f0ed] sm:text-xl">
             Escolha seu pacote de créditos
           </h2>
           <span className="rounded-full border border-[#f3f0ed]/10 px-4 py-1 text-[11px] text-[#f3f0ed]/50">
@@ -127,12 +127,8 @@ export function BuyCreditsModal({ onClose }: BuyCreditsModalProps) {
 
         {/* Cards */}
         {!isLoading && activePackages.length > 0 && (
-          <div
-            className="grid items-stretch gap-4"
-            style={{
-              gridTemplateColumns: `repeat(${Math.min(activePackages.length, 4)}, minmax(0, 1fr))`,
-            }}
-          >
+          <div className="flex flex-col items-stretch gap-5 sm:grid sm:gap-4" style={{ gridTemplateColumns: `repeat(${Math.min(activePackages.length, 4)}, minmax(0, 1fr))` }}>
+
             {activePackages.map((pkg, i) => {
               const badge = getBadge(i, activePackages.length);
               const isPopular = badge === 'popular';
@@ -150,11 +146,11 @@ export function BuyCreditsModal({ onClose }: BuyCreditsModalProps) {
               return (
                 <div
                   key={pkg.id}
-                  className={`relative flex flex-col rounded-2xl border p-5 transition-all ${isBest
-                      ? 'border-[#a2dd00]/50 bg-[#1e2b1f] shadow-[0_0_30px_rgba(162,221,0,0.1)]'
-                      : isPopular
-                        ? 'border-[#f3f0ed]/20 bg-[#1f2a2d]'
-                        : 'border-[#f3f0ed]/8 bg-[#1c2527]'
+                  className={`relative flex flex-col rounded-2xl border p-4 transition-all sm:p-5 ${isBest
+                    ? 'border-[#a2dd00]/50 bg-[#1e2b1f] shadow-[0_0_30px_rgba(162,221,0,0.1)]'
+                    : isPopular
+                      ? 'border-[#f3f0ed]/20 bg-[#1f2a2d]'
+                      : 'border-[#f3f0ed]/8 bg-[#1c2527]'
                     }`}
                 >
                   {/* Badge */}
@@ -220,10 +216,10 @@ export function BuyCreditsModal({ onClose }: BuyCreditsModalProps) {
                     onClick={() => handlePurchase(pkg.id)}
                     disabled={!!purchasingId}
                     className={`mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${isBest
-                        ? 'bg-[#a2dd00] text-[#1a2123] hover:brightness-110'
-                        : isPopular
-                          ? 'border border-[#f3f0ed]/20 bg-transparent text-[#f3f0ed] hover:bg-[#f3f0ed]/8'
-                          : 'bg-[#f3f0ed]/8 text-[#f3f0ed] hover:bg-[#f3f0ed]/12'
+                      ? 'bg-[#a2dd00] text-[#1a2123] hover:brightness-110'
+                      : isPopular
+                        ? 'border border-[#f3f0ed]/20 bg-transparent text-[#f3f0ed] hover:bg-[#f3f0ed]/8'
+                        : 'bg-[#f3f0ed]/8 text-[#f3f0ed] hover:bg-[#f3f0ed]/12'
                       }`}
                   >
                     {isPurchasing ? (

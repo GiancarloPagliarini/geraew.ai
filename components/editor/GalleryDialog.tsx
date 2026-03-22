@@ -349,7 +349,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
   if (!open) return null;
 
   return (
-    <aside className="aside-in-left flex h-full w-2xl shrink-0 flex-col border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] text-[#f3f0ed] overflow-hidden">
+    <aside className="aside-in-left fixed inset-0 z-50 flex flex-col border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] text-[#f3f0ed] overflow-hidden sm:static sm:h-full sm:w-2xl sm:shrink-0">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#f3f0ed]/[0.05] bg-gradient-to-b from-[#f3f0ed]/[0.02] to-transparent px-4 py-3.5">
         <div className="flex items-center gap-2.5">
@@ -358,7 +358,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
           </div>
           <div>
             <h2 className="text-sm font-bold text-[#f3f0ed]/60">Galeria</h2>
-            <p className="text-xs text-[#f3f0ed]/30">Suas imagens e vídeos gerados com IA</p>
+            <p className="hidden text-xs text-[#f3f0ed]/30 sm:block">Suas imagens e vídeos gerados com IA</p>
           </div>
         </div>
         <button

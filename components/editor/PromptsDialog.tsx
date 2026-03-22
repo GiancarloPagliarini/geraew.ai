@@ -87,7 +87,7 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
   if (!open) return null;
 
   return (
-    <aside className="aside-in-left flex h-full w-xl shrink-0 flex-col border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] text-[#f3f0ed] overflow-hidden">
+    <aside className="aside-in-left fixed inset-0 z-50 flex flex-col border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] text-[#f3f0ed] overflow-hidden sm:static sm:h-full sm:w-xl sm:shrink-0">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#f3f0ed]/[0.05] bg-gradient-to-b from-[#f3f0ed]/[0.02] to-transparent px-4 py-3.5">
         <div className="flex items-center gap-2.5">
@@ -96,7 +96,7 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
           </div>
           <div>
             <h2 className="text-sm font-bold text-[#f3f0ed]/60">Fábrica de Prompts</h2>
-            <p className="text-xs text-[#f3f0ed]/30">Escolha um prompt e abra em um painel</p>
+            <p className="hidden text-xs text-[#f3f0ed]/30 sm:block">Escolha um prompt e abra em um painel</p>
           </div>
         </div>
         <button
@@ -108,8 +108,8 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
       </div>
 
       {/* Content */}
-      <div className="flex flex-col flex-1 px-4 py-3 gap-4 overflow-y-auto sidebar-scroll">
-        <div className="grid grid-cols-2 gap-3">
+      <div className="flex flex-col flex-1 px-3 py-3 gap-4 overflow-y-auto sidebar-scroll sm:px-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
           {promptTemplates.map(({ id, title, image, prompt }) => (
             <div
               key={id}
@@ -125,15 +125,15 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
               </div>
 
               {/* Title + prompt preview */}
-              <div className="px-3 py-2.5 border-t border-[#f3f0ed]/5">
-                <p className="text-sm font-bold text-[#f3f0ed]">{title}</p>
-                <p className="mt-1 text-[10px] text-[#f3f0ed]/30 line-clamp-2 leading-relaxed">
+              <div className="px-2.5 py-2 border-t border-[#f3f0ed]/5 sm:px-3 sm:py-2.5">
+                <p className="text-xs font-bold text-[#f3f0ed] sm:text-sm">{title}</p>
+                <p className="mt-1 text-[10px] text-[#f3f0ed]/30 line-clamp-2 leading-relaxed hidden sm:block">
                   {prompt}
                 </p>
               </div>
 
               {/* Action buttons */}
-              <div className="flex items-center gap-1.5 px-3 pb-2.5">
+              <div className="flex items-center gap-1 px-2.5 pb-2 sm:gap-1.5 sm:px-3 sm:pb-2.5">
                 <button
                   onClick={() => handleOpenPanel('generate-image', prompt)}
                   className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#a2dd00]/10 px-2 py-1.5 text-[10px] font-bold text-[#a2dd00] ring-1 ring-[#a2dd00]/20 hover:bg-[#a2dd00]/20 transition-colors"

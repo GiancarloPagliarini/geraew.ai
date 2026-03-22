@@ -162,7 +162,7 @@ export default function CreditosPage() {
         </button>
       </header>
 
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-12 px-4 py-10">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-6 sm:gap-12 sm:py-10">
 
         {/* ── Balance ── */}
         {balance && (
@@ -178,7 +178,7 @@ export default function CreditosPage() {
                   <Sparkles className="h-3.5 w-3.5" />
                   <span className="text-[10px] font-bold tracking-[0.15em]">DISPONÍVEIS</span>
                 </div>
-                <p className="mt-3 text-4xl font-bold tabular-nums text-[#a2dd00]">
+                <p className="mt-3 text-3xl font-bold tabular-nums text-[#a2dd00] sm:text-4xl">
                   {balance.totalCreditsAvailable.toLocaleString('pt-BR')}
                 </p>
                 <div className="mt-4 flex gap-4 text-xs text-[#a2dd00]/50">
@@ -231,7 +231,7 @@ export default function CreditosPage() {
 
             {/* Heading */}
             <div className="flex flex-col items-center gap-3 text-center">
-              <h2 className="text-2xl font-bold text-[#f3f0ed]">
+              <h2 className="text-xl font-bold text-[#f3f0ed] sm:text-2xl">
                 Escolha seu plano
               </h2>
               <p className="flex items-center gap-1.5 text-xs text-[#f3f0ed]/40">
@@ -246,7 +246,7 @@ export default function CreditosPage() {
 
             {/* Cards */}
             <div
-              className="grid items-stretch gap-4"
+              className="flex flex-col items-stretch gap-5 sm:grid sm:gap-4"
               style={{ gridTemplateColumns: `repeat(${Math.min(sortedPlans.length, 5)}, minmax(0, 1fr))` }}
             >
               {sortedPlans.map((plan) => {
@@ -260,13 +260,12 @@ export default function CreditosPage() {
                 return (
                   <div
                     key={plan.id}
-                    className={`relative flex flex-col rounded-2xl border p-5 transition-all ${
-                      isCurrent
-                        ? 'border-[#a2dd00]/50 bg-[#1e2b1f] shadow-[0_0_30px_rgba(162,221,0,0.1)]'
-                        : isPro
-                          ? 'border-[#f3f0ed]/20 bg-[#1f2a2d]'
-                          : 'border-[#f3f0ed]/8 bg-[#1c2527]'
-                    }`}
+                    className={`relative flex flex-col rounded-2xl border p-4 transition-all sm:p-5 ${isCurrent
+                      ? 'border-[#a2dd00]/50 bg-[#1e2b1f] shadow-[0_0_30px_rgba(162,221,0,0.1)]'
+                      : isPro
+                        ? 'border-[#f3f0ed]/20 bg-[#1f2a2d]'
+                        : 'border-[#f3f0ed]/8 bg-[#1c2527]'
+                      }`}
                   >
                     {isCurrent && (
                       <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
@@ -301,13 +300,12 @@ export default function CreditosPage() {
                       <button
                         disabled={isCurrent || !!subscribingSlug}
                         onClick={() => handleSubscribe(plan.slug)}
-                        className={`mt-5 flex h-10 w-full items-center justify-center rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${
-                          isCurrent
-                            ? 'bg-[#a2dd00]/20 text-[#a2dd00]'
-                            : isPro
-                              ? 'border border-[#f3f0ed]/20 bg-transparent text-[#f3f0ed] hover:bg-[#f3f0ed]/8'
-                              : 'bg-[#f3f0ed]/8 text-[#f3f0ed] hover:bg-[#f3f0ed]/12'
-                        }`}
+                        className={`mt-5 flex h-10 w-full items-center justify-center rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${isCurrent
+                          ? 'bg-[#a2dd00]/20 text-[#a2dd00]'
+                          : isPro
+                            ? 'border border-[#f3f0ed]/20 bg-transparent text-[#f3f0ed] hover:bg-[#f3f0ed]/8'
+                            : 'bg-[#f3f0ed]/8 text-[#f3f0ed] hover:bg-[#f3f0ed]/12'
+                          }`}
                       >
                         {isSubscribing ? (
                           <Loader2 className="h-4 w-4 animate-spin" />

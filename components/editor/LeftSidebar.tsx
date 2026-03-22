@@ -21,11 +21,16 @@ const navItems = [
 ];
 
 export function LeftSidebar() {
-  const { galleryPickerRequest } = useEditor();
+  const { galleryPickerRequest, setLeftPanelOpen } = useEditor();
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [videoEditorOpen, setVideoEditorOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [promptsOpen, setPromptsOpen] = useState(false);
+
+  const anyOpen = galleryOpen || videoEditorOpen || tutorialOpen || promptsOpen;
+  useEffect(() => {
+    setLeftPanelOpen(anyOpen);
+  }, [anyOpen, setLeftPanelOpen]);
 
   useEffect(() => {
     if (galleryPickerRequest) {

@@ -5,13 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
-<<<<<<< HEAD
-import { GoogleLogin } from '@react-oauth/google';
-=======
 import { api } from '@/lib/api';
 import { setupRecaptcha, sendSmsVerification, verifySmsCode } from '@/lib/firebase';
 import type { ConfirmationResult } from 'firebase/auth';
->>>>>>> 55dd082173d4252e1a09a0552a2c1de717ae6020
 
 const slides = [
   {
@@ -74,25 +70,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-<<<<<<< HEAD
-  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
-    if (!credentialResponse.credential) {
-      setError('Erro ao entrar com Google');
-      return;
-    }
-    setError('');
-    setLoading(true);
-    try {
-      await googleLogin(credentialResponse.credential);
-      router.push('/');
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Erro ao entrar com Google';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  };
-=======
   // Phone verification state
   const [registerStep, setRegisterStep] = useState<'form' | 'verify'>('form');
   const [smsCode, setSmsCode] = useState('');
@@ -115,7 +92,6 @@ export default function LoginPage() {
       setError(messages[googleError] || 'Erro ao entrar com Google.');
     }
   }, [googleError]);
->>>>>>> 55dd082173d4252e1a09a0552a2c1de717ae6020
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const videosRef = useRef<Map<number, HTMLVideoElement>>(new Map());
@@ -370,19 +346,6 @@ export default function LoginPage() {
             </p>
 
             {/* Google */}
-<<<<<<< HEAD
-            <div className="w-full flex justify-center [&>div]:!w-full">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => setError('Erro ao entrar com Google')}
-                theme="filled_black"
-                size="large"
-                shape="rectangular"
-                width={400}
-                text="continue_with"
-              />
-            </div>
-=======
             <button
               onClick={() => { window.location.href = '/api/auth/google'; }}
               disabled={loading}
@@ -396,7 +359,6 @@ export default function LoginPage() {
               </svg>
               Continuar com Google
             </button>
->>>>>>> 55dd082173d4252e1a09a0552a2c1de717ae6020
 
             {error && view === 'options' && (
               <p className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs text-red-400">

@@ -65,7 +65,7 @@ export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
   if (!open) return null;
 
   return (
-    <aside className="aside-in-left flex h-full w-xl shrink-0 flex-col border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] text-[#f3f0ed] overflow-hidden">
+    <aside className="aside-in-left fixed inset-0 z-50 flex flex-col border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] text-[#f3f0ed] overflow-hidden sm:static sm:h-full sm:w-xl sm:shrink-0">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#f3f0ed]/[0.05] bg-gradient-to-b from-[#f3f0ed]/[0.02] to-transparent px-4 py-3.5">
         <div className="flex items-center gap-2.5">
