@@ -260,7 +260,7 @@ function CanvasContent() {
       {/* Empty state */}
       {nodes.length === 0 && (
         <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
-          <div className="pointer-events-auto flex flex-col items-center gap-6">
+          <div className="pointer-events-auto flex w-full flex-col items-center gap-6 px-5 sm:w-auto sm:px-0">
             <Image
               src="/logo_2.svg"
               alt="Geraew AI"
@@ -274,7 +274,7 @@ function CanvasContent() {
                 Escolha o que você deseja criar
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-3 px-2 sm:flex sm:items-center sm:justify-center sm:gap-4 sm:px-0">
+            <div className="grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto sm:items-center sm:justify-center sm:gap-4">
               <button
                 onClick={() => handleAddPanel('generate-image')}
                 className="group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
