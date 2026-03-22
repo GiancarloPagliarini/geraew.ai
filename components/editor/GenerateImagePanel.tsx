@@ -104,8 +104,14 @@ interface GenerateImagePanelProps {
 }
 
 export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateImagePanelProps) {
-  const { setNodeImage, nodeUpscaleStates, setNodeUpscaleState, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker } =
+  const { setNodeImage, nodeUpscaleStates, setNodeUpscaleState, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker, pendingPromptRef, consumePendingPrompt } =
     useEditor();
+  const [initialPendingPrompt] = useState(() => {
+    if (pendingPromptRef.current?.panelType === 'generate-image') {
+      return consumePendingPrompt()!.prompt;
+    }
+    return null;
+  });
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
   const upscaleState = nodeUpscaleStates[nodeId] ?? 'idle';
@@ -119,7 +125,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
     } catch { return null; }
   });
 
-  const [prompt, setPrompt] = useState<string>(stored?.prompt ?? '');
+  const [prompt, setPrompt] = useState<string>(initialPendingPrompt ?? stored?.prompt ?? '');
   const [model, setModel] = useState<string>(stored?.model ?? 'gemini-3-pro-image-preview');
   const [proportion, setProportion] = useState<string>(stored?.proportion ?? '9-16');
   const [quality, setQuality] = useState<string>(stored?.quality ?? 'hd');

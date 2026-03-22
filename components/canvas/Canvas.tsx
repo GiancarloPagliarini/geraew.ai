@@ -63,7 +63,7 @@ function CanvasContent() {
   const { zoomIn, zoomOut, setViewport, fitView, screenToFlowPosition } = useReactFlow();
   const [zoom, setZoom] = useState(1);
   const [isSelectMode, setIsSelectMode] = useState(false);
-  const { selectedNodeId, setSelectedNodeId, setNodePanelType } = useEditor();
+  const { selectedNodeId, setSelectedNodeId, setNodePanelType, pendingPromptRef } = useEditor();
   const viewportSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Restore nodePanelTypes and viewport on mount
@@ -134,6 +134,14 @@ function CanvasContent() {
     },
     [nodes, screenToFlowPosition, setNodes, setNodePanelType, setSelectedNodeId]
   );
+
+  // When a pending prompt is requested (from PromptsDialog), create the panel
+  useEffect(() => {
+    if (pendingPromptRef.current) {
+      handleAddPanel(pendingPromptRef.current.panelType);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPromptRef.current]);
 
   const handleDelete = useCallback(() => {
     setNodes((nds) => {
