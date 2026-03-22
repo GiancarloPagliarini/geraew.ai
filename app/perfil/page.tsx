@@ -123,7 +123,9 @@ export default function PerfilPage() {
   // Plan
   const plan = profile.plan as Record<string, unknown> | null;
   const planName = (plan?.name as string) || (plan?.planName as string) || null;
+  const planSlug = (plan?.slug as string) || null;
   const planStatus = (plan?.status as string) || null;
+  const isFreeUser = planSlug === 'free' || !planSlug;
 
   // Subscription
   const sub = profile.subscription as Record<string, unknown> | null;
@@ -243,25 +245,28 @@ export default function PerfilPage() {
 
           {balance ? (
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {/* Disponíveis */}
+              {/* Disponiveis */}
               <div className="col-span-2 rounded-xl border border-[#a2dd00]/20 bg-[#a2dd00]/6 p-4 sm:col-span-1">
-                <p className="text-[10px] font-bold tracking-[0.12em] text-[#a2dd00]/60">DISPONÍVEIS</p>
+                <p className="text-[10px] font-bold tracking-[0.12em] text-[#a2dd00]/60">DISPONIVEIS</p>
                 <p className="mt-1.5 text-3xl font-bold tabular-nums text-[#a2dd00]">
-                  {balance.totalCreditsAvailable.toLocaleString('pt-BR')}
+                  {isFreeUser ? '30' : balance.totalCreditsAvailable.toLocaleString('pt-BR')}
                 </p>
+                {isFreeUser && (
+                  <p className="mt-1 text-[11px] text-[#a2dd00]/50">creditos/dia</p>
+                )}
               </div>
 
               {/* Plano */}
               <div className="rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 p-4">
                 <p className="text-[10px] font-bold tracking-[0.12em] text-[#f3f0ed]/40">DO PLANO</p>
                 <p className="mt-1.5 text-2xl font-bold tabular-nums text-[#f3f0ed]">
-                  {balance.planCreditsRemaining.toLocaleString('pt-BR')}
+                  {isFreeUser ? '30/dia' : balance.planCreditsRemaining.toLocaleString('pt-BR')}
                 </p>
               </div>
 
-              {/* Bônus */}
+              {/* Bonus */}
               <div className="rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 p-4">
-                <p className="text-[10px] font-bold tracking-[0.12em] text-[#f3f0ed]/40">BÔNUS</p>
+                <p className="text-[10px] font-bold tracking-[0.12em] text-[#f3f0ed]/40">BONUS</p>
                 <p className="mt-1.5 text-2xl font-bold tabular-nums text-[#f3f0ed]">
                   {balance.bonusCreditsRemaining.toLocaleString('pt-BR')}
                 </p>
@@ -272,11 +277,13 @@ export default function PerfilPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-[#f3f0ed]/40">
                     <TrendingUp className="h-3.5 w-3.5" />
-                    <span className="text-[10px] font-bold tracking-[0.12em]">USO NO PERÍODO</span>
+                    <span className="text-[10px] font-bold tracking-[0.12em]">USO NO PERIODO</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[#f3f0ed]/40">
                     <CalendarDays className="h-3.5 w-3.5" />
-                    <span className="text-xs">{periodStart} — {periodEnd}</span>
+                    <span className="text-xs">
+                      {isFreeUser ? 'Diario' : `${periodStart} \u2014 ${periodEnd}`}
+                    </span>
                   </div>
                 </div>
                 <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-[#f3f0ed]/10">
