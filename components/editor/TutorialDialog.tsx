@@ -8,6 +8,7 @@ const tutorials = [
     id: 'image',
     icon: ImageIcon,
     showVideo: true,
+    videoUrl: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/utils/Design%20sem%20nome.mp4',
     title: 'Gerar sua primeira imagem',
     description:
       'Aprenda a usar o painel de geração de imagens para criar artes incríveis com IA em poucos cliques.',
@@ -22,6 +23,7 @@ const tutorials = [
     id: 'video',
     icon: VideoIcon,
     showVideo: true,
+    videoUrl: null,
     title: 'Gerar um vídeo',
     description:
       'Transforme imagens ou prompts em vídeos animados de alta qualidade usando modelos de IA de última geração.',
@@ -36,6 +38,7 @@ const tutorials = [
     id: 'influencer',
     icon: UserRound,
     showVideo: false,
+    videoUrl: null,
     title: 'Criar sua IA Influencer',
     description:
       'Crie uma influencer digital completa com identidade visual, personalidade e consistência visual entre gerações.',
@@ -96,14 +99,24 @@ export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
                 &larr; Voltar para tutoriais
               </button>
 
-              {/* Video placeholder */}
+              {/* Video */}
               {selectedTutorial.showVideo && (
-                <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-[#f3f0ed]/[0.03] ring-1 ring-[#f3f0ed]/[0.07] flex flex-col items-center justify-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#a2dd00]/10 ring-1 ring-[#a2dd00]/20">
-                    <PlayCircle className="h-7 w-7 text-[#a2dd00]" />
+                selectedTutorial.videoUrl ? (
+                  <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black ring-1 ring-[#f3f0ed]/[0.07]">
+                    <video
+                      src={selectedTutorial.videoUrl}
+                      controls
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  <p className="text-xs text-[#f3f0ed]/30 font-medium">Vídeo em breve</p>
-                </div>
+                ) : (
+                  <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-[#f3f0ed]/3 ring-1 ring-[#f3f0ed]/[0.07] flex flex-col items-center justify-center gap-3">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#a2dd00]/10 ring-1 ring-[#a2dd00]/20">
+                      <PlayCircle className="h-7 w-7 text-[#a2dd00]" />
+                    </div>
+                    <p className="text-xs text-[#f3f0ed]/30 font-medium">Vídeo em breve</p>
+                  </div>
+                )
               )}
 
               {/* Info */}
@@ -136,7 +149,7 @@ export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
                 <button
                   key={id}
                   onClick={() => setSelected(id)}
-                  className="group flex items-start gap-4 rounded-xl bg-[#f3f0ed]/[0.03] ring-[#f3f0ed]/[0.06] hover:ring-[#a2dd00]/30 hover:bg-[#a2dd00]/[0.04] p-4 text-left transition-all"
+                  className="group flex items-start gap-4 rounded-xl bg-[#f3f0ed]/3 ring-[#f3f0ed]/6 hover:ring-[#a2dd00]/30 hover:bg-[#a2dd00]/4 p-4 text-left transition-all"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#a2dd00]/10 ring-1 ring-[#a2dd00]/20 group-hover:bg-[#a2dd00]/15 transition-colors">
                     <Icon className="h-5 w-5 text-[#a2dd00]" />
