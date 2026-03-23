@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
 
 const slides = [
   {
@@ -50,7 +51,7 @@ const TICK_MS = 50;
 
 function LoginPageContent() {
   const router = useRouter();
-  const { login, register } = useAuth();
+  const { login } = useAuth();
   const searchParams = useSearchParams();
 
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -66,6 +67,7 @@ function LoginPageContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
 
   // Show error from Google OAuth redirect if present
@@ -207,14 +209,20 @@ function LoginPageContent() {
   async function handleEmailSubmit(e: { preventDefault(): void }) {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
     try {
       if (mode === 'login') {
         await login(email, password);
+        router.push('/');
       } else {
-        await register(email, name, password, phone);
+        await api.auth.register(email, name, password, phone);
+        setMode('login');
+        setName('');
+        setPassword('');
+        setPhone('');
+        setSuccess('Conta criada com sucesso! Faça login para continuar.');
       }
-      router.push('/');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Ocorreu um erro. Tente novamente.';
       setError(message);
@@ -256,7 +264,8 @@ function LoginPageContent() {
             {/* Google */}
             <button
               onClick={() => { window.location.href = '/api/v1/auth/google'; }}
-              disabled={loading}
+              // disabled={loading}
+              disabled={true}
               className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.05] text-sm font-medium text-white transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50"
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -411,6 +420,12 @@ function LoginPageContent() {
                     Usado para contato e recuperação de conta
                   </p>
                 </div>
+              )}
+
+              {success && (
+                <p className="rounded-xl border border-[#a2dd00]/20 bg-[#a2dd00]/10 px-3 py-2 text-xs text-[#a2dd00]">
+                  {success}
+                </p>
               )}
 
               {error && (
