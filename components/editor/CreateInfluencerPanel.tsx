@@ -208,8 +208,8 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
   );
 
   const { data: estimate, isLoading: estimateLoading } = useQuery({
-    queryKey: ['credits', 'estimate', 'TEXT_TO_IMAGE', 'RES_2K'],
-    queryFn: () => api.credits.estimate(accessToken!, { type: 'TEXT_TO_IMAGE', resolution: 'RES_2K' }),
+    queryKey: ['credits', 'estimate', 'TEXT_TO_IMAGE', 'RES_2K', 'NBP'],
+    queryFn: () => api.credits.estimate(accessToken!, { type: 'TEXT_TO_IMAGE', resolution: 'RES_2K', modelVariant: 'NBP' }),
     enabled: !!accessToken && genState === 'idle',
     staleTime: 30_000,
   });
