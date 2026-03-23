@@ -7,7 +7,7 @@ import Joyride, {
   STATUS,
 } from 'react-joyride';
 import { useEffect, useState } from 'react';
-import { Coins, GraduationCap, ImageIcon, Smile, SquareMousePointer, X } from 'lucide-react';
+import { GraduationCap, Smile, SquareMousePointer, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { useQueryClient } from '@tanstack/react-query';
@@ -51,31 +51,8 @@ const stepContent: Record<
   },
   tutorials: {
     icon: <GraduationCap className="h-5 w-5 text-[#a2dd00]" />,
-    heading: 'Assista e ganhe créditos',
-    body: 'Este botão abre os tutoriais da plataforma. Cada vídeo assistido te dá créditos grátis para gerar imagens e vídeos.',
-    extra: (
-      <div className="flex flex-col gap-1.5 mt-1">
-        {[
-          { label: 'Gerar sua primeira imagem', credits: '+30' },
-          { label: 'Gerar um vídeo', credits: '+40' },
-          { label: 'Criar sua IA Influencer', credits: '+50' },
-        ].map(({ label, credits }) => (
-          <div
-            key={label}
-            className="flex items-center justify-between rounded-lg bg-[#f3f0ed]/[0.04] px-3 py-2 ring-1 ring-[#f3f0ed]/[0.06]"
-          >
-            <div className="flex items-center gap-2">
-              <ImageIcon className="h-3 w-3 text-[#f3f0ed]/30" />
-              <span className="text-sm text-[#f3f0ed]/60">{label}</span>
-            </div>
-            <span className="flex items-center gap-1 text-[11px] font-bold text-[#a2dd00]">
-              <Coins className="h-3 w-3" />
-              {credits}
-            </span>
-          </div>
-        ))}
-      </div>
-    ),
+    heading: 'Tutoriais da plataforma',
+    body: 'Este botão abre os tutoriais da plataforma. Aprenda a gerar imagens, vídeos e criar sua IA Influencer.',
   },
   finish: {
     icon: <SquareMousePointer className="h-5 w-5 text-[#a2dd00]" />,
@@ -156,7 +133,7 @@ function TourTooltip({
             {...primaryProps}
             className="rounded-lg bg-[#a2dd00] px-3.5 py-1.5 text-[11px] font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95"
           >
-            {isLastStep ? 'Começar' : 'Próximo →'}
+            {isLastStep ? 'Receber créditos' : 'Próximo →'}
           </button>
         </div>
       </div>
@@ -177,7 +154,16 @@ export function OnboardingTour() {
   }, [user]);
 
   function handleCallback({ status }: CallBackProps) {
-    const finished = ([STATUS.FINISHED, STATUS.SKIPPED] as string[]).includes(status);
+    const skipped = (status as string) === STATUS.SKIPPED;
+    const finished = (status as string) === STATUS.FINISHED;
+
+    if (skipped) {
+      setRun(false);
+      if (accessToken) {
+        api.users.completeOnboarding(accessToken);
+      }
+    }
+
     if (finished) {
       setRun(false);
       if (accessToken) {
@@ -190,7 +176,8 @@ export function OnboardingTour() {
   }
 
   return (
-    <Joyride
+    <>
+      <Joyride
         run={run}
         steps={steps}
         continuous
@@ -208,5 +195,6 @@ export function OnboardingTour() {
           },
         }}
       />
+    </>
   );
 }

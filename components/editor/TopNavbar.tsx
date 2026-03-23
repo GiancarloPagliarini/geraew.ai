@@ -8,6 +8,7 @@ import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
 import { BuyCreditsModal } from './BuyCreditsModal';
 import { PlansModal } from './PlansModal';
+import { PostAndEarnModal } from './PostAndEarnModal';
 
 export function TopNavbar() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export function TopNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [buyModalOpen, setBuyModalOpen] = useState(false);
   const [plansModalOpen, setPlansModalOpen] = useState(false);
+  const [postAndEarnOpen, setPostAndEarnOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Fecha o menu ao clicar fora
@@ -76,7 +78,10 @@ export function TopNavbar() {
           </button>
 
           {/* Refer button — hidden on mobile */}
-          <button className="hidden items-center gap-1.5 rounded-full border border-[#1e494b] px-4 py-1.5 text-xs font-semibold text-[#f3f0ed]/80 transition-all hover:border-[#a2dd00]/50 hover:text-[#f3f0ed] sm:flex">
+          <button
+            onClick={() => setPostAndEarnOpen(true)}
+            className="hidden items-center gap-1.5 rounded-full border border-[#1e494b] px-4 py-1.5 text-xs font-semibold text-[#f3f0ed]/80 transition-all hover:border-[#a2dd00]/50 hover:text-[#f3f0ed] sm:flex"
+          >
             <Gift className="h-3.5 w-3.5" />
             Poste e ganhe
           </button>
@@ -157,6 +162,7 @@ export function TopNavbar() {
 
       {buyModalOpen && <BuyCreditsModal onClose={() => setBuyModalOpen(false)} />}
       {plansModalOpen && <PlansModal onClose={() => setPlansModalOpen(false)} />}
+      {postAndEarnOpen && <PostAndEarnModal onClose={() => setPostAndEarnOpen(false)} />}
     </>
   );
 }
