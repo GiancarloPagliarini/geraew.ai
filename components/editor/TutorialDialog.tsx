@@ -23,7 +23,7 @@ const tutorials = [
     id: 'video',
     icon: VideoIcon,
     showVideo: true,
-    videoUrl: null,
+    videoUrl: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/utils/video_geracao.mp4',
     title: 'Gerar um vídeo',
     description:
       'Transforme imagens ou prompts em vídeos animados de alta qualidade usando modelos de IA de última geração.',

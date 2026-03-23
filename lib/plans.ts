@@ -17,8 +17,8 @@ export interface PlanGenerationExample {
 
 export const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
   free: [
-    { label: 'Nano Banana 2', count: '3 imgs/dia' },
-    { label: 'Motion Control', count: '~4s max/dia' },
+    { label: 'Nano Banana 2', count: '3 imgs' },
+    { label: 'Motion Control', count: '~4s max' },
     { label: 'Veo 3.1 Fast', count: 'bloqueado', blocked: true },
     { label: 'Veo 3.1 Quality', count: 'bloqueado', blocked: true },
   ],
