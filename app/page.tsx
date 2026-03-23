@@ -47,10 +47,12 @@ export default function Home() {
       <InfluencerBuilderProvider>
         <div className="flex h-screen flex-col overflow-hidden bg-[#1a2123]">
           <TopNavbar />
-          <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
             <LeftSidebar />
-            <Canvas />
-            <RightSidebar />
+            <div className="flex flex-1 overflow-hidden">
+              <Canvas />
+              <RightSidebar />
+            </div>
           </div>
         </div>
         <OnboardingTour />
