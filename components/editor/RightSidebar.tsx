@@ -329,40 +329,4 @@ export function RightSidebar() {
       </aside>
     );
   }
-
-  // Generate image sidebar (only when image exists)
-  if (!selectedImage) return null;
-
-  return (
-    <aside className="aside-in fixed inset-0 z-50 flex flex-col border-l border-[#f3f0ed]/[0.07] bg-[#1a2123] sm:static sm:h-full sm:w-72 sm:shrink-0">
-      {/* Header */}
-      <div className="flex items-center gap-2.5 border-b border-[#f3f0ed]/[0.05] bg-gradient-to-b from-[#f3f0ed]/[0.02] to-transparent px-4 py-3.5">
-        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#f3f0ed]/[0.05]">
-          <Settings2 className="h-3.5 w-3.5 text-[#f3f0ed]/35" />
-        </div>
-        <h2 className="flex-1 text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
-          CONFIGURAÇÕES
-        </h2>
-        <button onClick={() => setSelectedNodeId(null)} className="flex h-6 w-6 items-center justify-center rounded-lg text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/60 sm:hidden">
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-
-      <div className="sidebar-scroll flex-1 overflow-y-auto">
-        <Section title="UPSCALE" icon={Maximize2} done={upscaleDone}>
-          <div className="relative pointer-events-none select-none">
-            <WipOverlay />
-            <UpscaleSection generatedImage={selectedImage} nodeId={selectedNodeId!} />
-          </div>
-        </Section>
-
-        <Section title="FACE SWAP" icon={ScanFace}>
-          <div className="relative pointer-events-none select-none">
-            <WipOverlay />
-            <FaceSwapSection generatedImage={selectedImage} />
-          </div>
-        </Section>
-      </div>
-    </aside>
-  );
 }

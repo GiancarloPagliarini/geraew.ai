@@ -126,7 +126,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   });
 
   const [prompt, setPrompt] = useState<string>(initialPendingPrompt ?? stored?.prompt ?? '');
-  const [model, setModel] = useState<string>(stored?.model ?? 'gemini-3-pro-image-preview');
+  const [model, setModel] = useState<string>(stored?.model ?? 'gemini-3.1-flash-image-preview');
   const [proportion, setProportion] = useState<string>(stored?.proportion ?? '9-16');
   const [quality, setQuality] = useState<string>(stored?.quality ?? 'hd');
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(stored?.generatedImageUrl ?? null);
