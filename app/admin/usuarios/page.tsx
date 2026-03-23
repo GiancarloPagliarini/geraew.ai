@@ -121,6 +121,9 @@ export default function AdminUsersPage() {
                   Créditos
                 </TableHead>
                 <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
+                  Status
+                </TableHead>
+                <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
                   Cadastro
                 </TableHead>
               </TableRow>
@@ -160,6 +163,18 @@ export default function AdminUsersPage() {
                     </div>
                   </TableCell>
                   <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={
+                        user.isActive
+                          ? 'border-green-500/30 bg-green-500/10 text-green-400'
+                          : 'border-red-500/30 bg-red-500/10 text-red-400'
+                      }
+                    >
+                      {user.isActive ? 'Ativo' : 'Inativo'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     <span className="text-xs tabular-nums text-[#f3f0ed]/40">
                       {new Date(user.createdAt).toLocaleDateString('pt-BR')}
                     </span>
@@ -168,7 +183,7 @@ export default function AdminUsersPage() {
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-32 text-center text-sm text-[#f3f0ed]/30">
+                  <TableCell colSpan={5} className="h-32 text-center text-sm text-[#f3f0ed]/30">
                     Nenhum usuário encontrado
                   </TableCell>
                 </TableRow>

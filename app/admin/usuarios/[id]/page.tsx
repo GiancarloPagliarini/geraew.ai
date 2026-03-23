@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import type { AdminUserGeneration } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -21,6 +22,14 @@ import {
   Image,
   Plus,
   Minus,
+  Power,
+  Trash2,
+  Play,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Video,
+  AlertTriangle,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -35,12 +44,12 @@ import {
 
 function genTypeLabel(type: string) {
   const map: Record<string, string> = {
-    TEXT_TO_IMAGE: 'Texto → Imagem',
-    IMAGE_TO_IMAGE: 'Imagem → Imagem',
-    TEXT_TO_VIDEO: 'Texto → Vídeo',
-    IMAGE_TO_VIDEO: 'Imagem → Vídeo',
+    TEXT_TO_IMAGE: 'Texto \u2192 Imagem',
+    IMAGE_TO_IMAGE: 'Imagem \u2192 Imagem',
+    TEXT_TO_VIDEO: 'Texto \u2192 V\u00eddeo',
+    IMAGE_TO_VIDEO: 'Imagem \u2192 V\u00eddeo',
     MOTION_CONTROL: 'Motion Control',
-    REFERENCE_VIDEO: 'Referência',
+    REFERENCE_VIDEO: 'Refer\u00eancia',
   };
   return map[type] ?? type;
 }
@@ -62,6 +71,84 @@ function statusBadge(status: string) {
   );
 }
 
+function isVideoMime(mimeType: string) {
+  return mimeType.startsWith('video/');
+}
+
+function MediaPreview({ output }: { output: AdminUserGeneration['outputs'][0] }) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (isVideoMime(output.mimeType)) {
+    return (
+      <>
+        <button
+          onClick={() => setExpanded(true)}
+          className="group relative aspect-video w-full overflow-hidden rounded-lg border border-[#f3f0ed]/8 bg-black"
+        >
+          {output.thumbnailUrl ? (
+            <img src={output.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-[#f3f0ed]/5">
+              <Video className="h-8 w-8 text-[#f3f0ed]/20" />
+            </div>
+          )}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
+            <Play className="h-8 w-8 text-white" />
+          </div>
+          <Badge className="absolute bottom-1.5 right-1.5 border-none bg-black/60 text-[10px] text-white">
+            VIDEO
+          </Badge>
+        </button>
+        {expanded && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+            onClick={() => setExpanded(false)}
+          >
+            <video
+              src={output.url}
+              controls
+              autoPlay
+              className="max-h-[85vh] max-w-[85vw] rounded-xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setExpanded(true)}
+        className="group relative aspect-square w-full overflow-hidden rounded-lg border border-[#f3f0ed]/8"
+      >
+        <img
+          src={output.thumbnailUrl || output.url}
+          alt=""
+          className="h-full w-full object-cover transition-transform group-hover:scale-105"
+        />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
+          <Eye className="h-6 w-6 text-white" />
+        </div>
+      </button>
+      {expanded && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setExpanded(false)}
+        >
+          <img
+            src={output.url}
+            alt=""
+            className="max-h-[85vh] max-w-[85vw] rounded-xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function AdminUserDetailPage() {
   const { accessToken } = useAuth();
   const { id } = useParams<{ id: string }>();
@@ -70,6 +157,8 @@ export default function AdminUserDetailPage() {
 
   const [creditAmount, setCreditAmount] = useState('');
   const [creditDesc, setCreditDesc] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [genPage, setGenPage] = useState(1);
 
   const { data: user, isLoading } = useQuery({
     queryKey: ['admin', 'user', id],
@@ -77,17 +166,47 @@ export default function AdminUserDetailPage() {
     enabled: !!accessToken && !!id,
   });
 
+  const { data: genData, isLoading: genLoading } = useQuery({
+    queryKey: ['admin', 'user', id, 'generations', genPage],
+    queryFn: () => api.admin.userGenerations(accessToken!, id, genPage, 12),
+    enabled: !!accessToken && !!id,
+  });
+
   const adjustMutation = useMutation({
     mutationFn: ({ amount, description }: { amount: number; description: string }) =>
       api.admin.adjustCredits(accessToken!, id, amount, description),
     onSuccess: () => {
-      toast.success('Créditos ajustados com sucesso');
+      toast.success('Cr\u00e9ditos ajustados com sucesso');
       setCreditAmount('');
       setCreditDesc('');
       queryClient.invalidateQueries({ queryKey: ['admin', 'user', id] });
     },
     onError: () => {
-      toast.error('Erro ao ajustar créditos');
+      toast.error('Erro ao ajustar cr\u00e9ditos');
+    },
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: (isActive: boolean) =>
+      api.admin.toggleUserStatus(accessToken!, id, isActive),
+    onSuccess: (_, isActive) => {
+      toast.success(isActive ? 'Usu\u00e1rio ativado' : 'Usu\u00e1rio desativado');
+      queryClient.invalidateQueries({ queryKey: ['admin', 'user', id] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+    onError: () => {
+      toast.error('Erro ao alterar status do usu\u00e1rio');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => api.admin.deleteUser(accessToken!, id),
+    onSuccess: () => {
+      toast.success('Usu\u00e1rio exclu\u00eddo com sucesso');
+      router.push('/admin/usuarios');
+    },
+    onError: () => {
+      toast.error('Erro ao excluir usu\u00e1rio');
     },
   });
 
@@ -115,6 +234,9 @@ export default function AdminUserDetailPage() {
     ? user.credits.planCreditsRemaining + user.credits.bonusCreditsRemaining
     : 0;
 
+  const generations = genData?.data ?? [];
+  const genTotalPages = genData?.meta?.totalPages ?? 1;
+
   return (
     <div className="flex flex-col gap-8">
       {/* Back */}
@@ -134,6 +256,16 @@ export default function AdminUserDetailPage() {
             <Badge variant="outline" className="border-[#a2dd00]/20 bg-[#a2dd00]/5 text-[#a2dd00]">
               {user.role}
             </Badge>
+            <Badge
+              variant="outline"
+              className={
+                user.isActive
+                  ? 'border-green-500/30 bg-green-500/10 text-green-400'
+                  : 'border-red-500/30 bg-red-500/10 text-red-400'
+              }
+            >
+              {user.isActive ? 'Ativo' : 'Inativo'}
+            </Badge>
           </div>
           <div className="flex flex-wrap gap-4 text-xs text-[#f3f0ed]/40">
             <span className="flex items-center gap-1.5">
@@ -151,11 +283,40 @@ export default function AdminUserDetailPage() {
           </div>
         </div>
 
-        {/* Credits summary */}
-        <div className="flex items-center gap-4">
-          <div className="flex flex-col items-end gap-1">
+        {/* Actions + Credits */}
+        <div className="flex items-center gap-3">
+          {/* Toggle status */}
+          <button
+            onClick={() => toggleStatusMutation.mutate(!user.isActive)}
+            disabled={toggleStatusMutation.isPending}
+            className={`flex h-9 items-center gap-1.5 rounded-xl px-4 text-xs font-bold transition-all active:scale-[0.97] disabled:opacity-50 ${
+              user.isActive
+                ? 'border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20'
+                : 'bg-[#a2dd00] text-[#1a2123] hover:bg-[#b5f000]'
+            }`}
+          >
+            {toggleStatusMutation.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Power className="h-3.5 w-3.5" />
+            )}
+            {user.isActive ? 'Desativar' : 'Ativar'}
+          </button>
+
+          {/* Delete */}
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={user.role === 'ADMIN'}
+            className="flex h-9 items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 text-xs font-bold text-red-400 transition-all hover:bg-red-500/20 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Excluir
+          </button>
+
+          {/* Credits summary */}
+          <div className="flex flex-col items-end gap-1 pl-3 border-l border-[#f3f0ed]/8">
             <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
-              Créditos
+              Cr\u00e9ditos
             </span>
             <div className="flex items-center gap-1.5">
               <Coins className="h-4 w-4 text-[#a2dd00]" />
@@ -166,6 +327,53 @@ export default function AdminUserDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowDeleteConfirm(false)}>
+          <div
+            className="flex w-full max-w-md flex-col gap-5 rounded-2xl border border-red-500/20 bg-[#1a2123] p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10">
+                <AlertTriangle className="h-5 w-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-[#f3f0ed]">Excluir usu\u00e1rio</h3>
+                <p className="text-xs text-[#f3f0ed]/40">Esta a\u00e7\u00e3o \u00e9 irrevers\u00edvel</p>
+              </div>
+            </div>
+            <p className="text-sm text-[#f3f0ed]/60">
+              Tem certeza que deseja excluir permanentemente <strong className="text-[#f3f0ed]">{user.name || user.email}</strong>?
+              Todos os dados, gera\u00e7\u00f5es e hist\u00f3rico ser\u00e3o removidos.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex h-9 items-center rounded-xl border border-[#f3f0ed]/10 px-4 text-xs font-bold text-[#f3f0ed]/60 transition-colors hover:bg-[#f3f0ed]/5"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  deleteMutation.mutate();
+                  setShowDeleteConfirm(false);
+                }}
+                disabled={deleteMutation.isPending}
+                className="flex h-9 items-center gap-1.5 rounded-xl bg-red-500 px-4 text-xs font-bold text-white transition-all hover:bg-red-600 active:scale-[0.97] disabled:opacity-50"
+              >
+                {deleteMutation.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
+                Confirmar exclus\u00e3o
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Subscription + Credits cards */}
       <div className="grid gap-4 sm:grid-cols-2">
@@ -188,16 +396,16 @@ export default function AdminUserDetailPage() {
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-[#f3f0ed]/40">Período</span>
+                <span className="text-xs text-[#f3f0ed]/40">Per\u00edodo</span>
                 <span className="text-xs tabular-nums text-[#f3f0ed]/60">
                   {new Date(user.subscription.currentPeriodStart).toLocaleDateString('pt-BR')}
-                  {' — '}
+                  {' \u2014 '}
                   {new Date(user.subscription.currentPeriodEnd).toLocaleDateString('pt-BR')}
                 </span>
               </div>
               {user.subscription.cancelAtPeriodEnd && (
                 <Badge variant="outline" className="w-fit border-red-500/30 bg-red-500/10 text-red-400">
-                  Cancela no fim do período
+                  Cancela no fim do per\u00edodo
                 </Badge>
               )}
             </div>
@@ -210,7 +418,7 @@ export default function AdminUserDetailPage() {
         <div className="rounded-2xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/[0.02] p-5">
           <div className="mb-4 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-[#a2dd00]/60" />
-            <h3 className="text-sm font-semibold text-[#f3f0ed]">Créditos</h3>
+            <h3 className="text-sm font-semibold text-[#f3f0ed]">Cr\u00e9ditos</h3>
           </div>
           {user.credits ? (
             <div className="flex flex-col gap-3">
@@ -221,20 +429,20 @@ export default function AdminUserDetailPage() {
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-[#f3f0ed]/40">Bônus</span>
+                <span className="text-xs text-[#f3f0ed]/40">B\u00f4nus</span>
                 <span className="text-sm font-medium tabular-nums text-[#a2dd00]">
                   {user.credits.bonusCreditsRemaining.toLocaleString('pt-BR')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-[#f3f0ed]/40">Usados no período</span>
+                <span className="text-xs text-[#f3f0ed]/40">Usados no per\u00edodo</span>
                 <span className="text-sm font-medium tabular-nums text-[#f3f0ed]/60">
                   {user.credits.planCreditsUsed.toLocaleString('pt-BR')}
                 </span>
               </div>
             </div>
           ) : (
-            <p className="text-sm text-[#f3f0ed]/30">Sem balanço</p>
+            <p className="text-sm text-[#f3f0ed]/30">Sem balan\u00e7o</p>
           )}
         </div>
       </div>
@@ -243,7 +451,7 @@ export default function AdminUserDetailPage() {
       <div className="rounded-2xl border border-[#a2dd00]/15 bg-[#a2dd00]/[0.03] p-5">
         <div className="mb-4 flex items-center gap-2">
           <Coins className="h-4 w-4 text-[#a2dd00]" />
-          <h3 className="text-sm font-semibold text-[#f3f0ed]">Ajustar Créditos</h3>
+          <h3 className="text-sm font-semibold text-[#f3f0ed]">Ajustar Cr\u00e9ditos</h3>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex flex-col gap-1.5">
@@ -264,7 +472,7 @@ export default function AdminUserDetailPage() {
               Motivo
             </label>
             <Input
-              placeholder="Ex: Compensação por erro no sistema"
+              placeholder="Ex: Compensa\u00e7\u00e3o por erro no sistema"
               value={creditDesc}
               onChange={(e) => setCreditDesc(e.target.value)}
               className="h-9 border-[#f3f0ed]/10 bg-[#f3f0ed]/[0.03] text-sm text-[#f3f0ed] placeholder:text-[#f3f0ed]/20 focus-visible:border-[#a2dd00]/30 focus-visible:ring-[#a2dd00]/10"
@@ -295,57 +503,104 @@ export default function AdminUserDetailPage() {
         </div>
       </div>
 
-      {/* Recent generations */}
+      {/* User Generations Gallery */}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2">
-          <Image className="h-4 w-4 text-[#f3f0ed]/40" />
-          <h3 className="text-sm font-semibold text-[#f3f0ed]">Últimas Gerações</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Image className="h-4 w-4 text-[#f3f0ed]/40" />
+            <h3 className="text-sm font-semibold text-[#f3f0ed]">
+              Gera\u00e7\u00f5es do Usu\u00e1rio
+            </h3>
+            {genData?.meta && (
+              <span className="text-xs text-[#f3f0ed]/30">
+                ({genData.meta.total.toLocaleString('pt-BR')} total)
+              </span>
+            )}
+          </div>
         </div>
 
-        {user.recentGenerations.length > 0 ? (
-          <div className="rounded-2xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/[0.02]">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-[#f3f0ed]/6 hover:bg-transparent">
-                  <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Tipo</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Status</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Prompt</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Créditos</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Data</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {user.recentGenerations.map((gen) => (
-                  <TableRow key={gen.id} className="border-[#f3f0ed]/4">
-                    <TableCell>
-                      <span className="text-xs font-medium text-[#f3f0ed]/70">
+        {genLoading ? (
+          <div className="flex h-48 items-center justify-center rounded-2xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/[0.02]">
+            <Loader2 className="h-5 w-5 animate-spin text-[#a2dd00]" />
+          </div>
+        ) : generations.length > 0 ? (
+          <>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {generations.map((gen) => (
+                <div
+                  key={gen.id}
+                  className="group flex flex-col gap-2 rounded-xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/[0.02] p-3"
+                >
+                  {/* Media outputs */}
+                  {gen.outputs.length > 0 ? (
+                    <MediaPreview output={gen.outputs[0]} />
+                  ) : (
+                    <div className="flex aspect-square w-full items-center justify-center rounded-lg border border-[#f3f0ed]/8 bg-[#f3f0ed]/5">
+                      {gen.status === 'PROCESSING' ? (
+                        <Loader2 className="h-6 w-6 animate-spin text-blue-400/50" />
+                      ) : gen.status === 'FAILED' ? (
+                        <XCircle className="h-6 w-6 text-red-400/50" />
+                      ) : (
+                        <Image className="h-6 w-6 text-[#f3f0ed]/15" />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Info */}
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-medium text-[#f3f0ed]/50">
                         {genTypeLabel(gen.type)}
                       </span>
-                    </TableCell>
-                    <TableCell>{statusBadge(gen.status)}</TableCell>
-                    <TableCell>
-                      <span className="line-clamp-1 max-w-[200px] text-xs text-[#f3f0ed]/50">
-                        {gen.prompt || '—'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-xs tabular-nums text-[#a2dd00]">
-                        {gen.creditsConsumed}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-xs tabular-nums text-[#f3f0ed]/40">
+                      {statusBadge(gen.status)}
+                    </div>
+                    {gen.prompt && (
+                      <p className="line-clamp-2 text-[11px] leading-tight text-[#f3f0ed]/40">
+                        {gen.prompt}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-[10px] tabular-nums text-[#f3f0ed]/30">
                         {new Date(gen.createdAt).toLocaleDateString('pt-BR')}
                       </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                      <span className="flex items-center gap-1 text-[10px] tabular-nums text-[#a2dd00]/70">
+                        <Coins className="h-2.5 w-2.5" />
+                        {gen.creditsConsumed}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {genTotalPages > 1 && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#f3f0ed]/30">
+                  P\u00e1gina {genPage} de {genTotalPages}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    disabled={genPage <= 1}
+                    onClick={() => setGenPage((p) => p - 1)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#f3f0ed]/8 text-[#f3f0ed]/50 transition-colors hover:bg-[#f3f0ed]/5 disabled:opacity-30"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    disabled={genPage >= genTotalPages}
+                    onClick={() => setGenPage((p) => p + 1)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#f3f0ed]/8 text-[#f3f0ed]/50 transition-colors hover:bg-[#f3f0ed]/5 disabled:opacity-30"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="flex h-32 items-center justify-center rounded-2xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/[0.02]">
-            <span className="text-sm text-[#f3f0ed]/30">Nenhuma geração encontrada</span>
+            <span className="text-sm text-[#f3f0ed]/30">Nenhuma gera\u00e7\u00e3o encontrada</span>
           </div>
         )}
       </div>

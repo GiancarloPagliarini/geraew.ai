@@ -371,9 +371,45 @@ export interface AdminUserDetail {
     prompt: string;
     resolution: string;
     creditsConsumed: number;
+    outputs: {
+      url: string;
+      thumbnailUrl: string | null;
+      mimeType: string;
+    }[];
     createdAt: string;
     completedAt: string | null;
   }[];
+}
+
+export interface AdminUserGeneration {
+  id: string;
+  type: string;
+  status: string;
+  prompt: string;
+  negativePrompt: string | null;
+  resolution: string;
+  durationSeconds: number | null;
+  hasAudio: boolean;
+  modelUsed: string | null;
+  creditsConsumed: number;
+  outputs: {
+    id: string;
+    url: string;
+    thumbnailUrl: string | null;
+    mimeType: string;
+  }[];
+  inputImages: {
+    id: string;
+    url: string;
+    role: string;
+    mimeType: string;
+  }[];
+  isFavorited: boolean;
+  isDeleted: boolean;
+  errorMessage: string | null;
+  processingTimeMs: number | null;
+  createdAt: string;
+  completedAt: string | null;
 }
 
 export interface AdminGeneration {
@@ -694,6 +730,29 @@ export const api = {
           method: 'PATCH',
           body: JSON.stringify({ amount, description }),
         },
+      );
+    },
+    toggleUserStatus(accessToken: string, userId: string, isActive: boolean) {
+      return authRequest<{ success: boolean; message: string }>(
+        `/api/v1/admin/users/${userId}/status`,
+        accessToken,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ isActive }),
+        },
+      );
+    },
+    deleteUser(accessToken: string, userId: string) {
+      return authRequest<{ success: boolean; message: string }>(
+        `/api/v1/admin/users/${userId}`,
+        accessToken,
+        { method: 'DELETE' },
+      );
+    },
+    userGenerations(accessToken: string, userId: string, page = 1, limit = 20) {
+      return authRequest<AdminPaginatedResponse<AdminUserGeneration>>(
+        `/api/v1/admin/users/${userId}/generations?page=${page}&limit=${limit}`,
+        accessToken,
       );
     },
     generations(accessToken: string, page = 1, limit = 20) {
