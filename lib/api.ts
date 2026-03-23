@@ -719,10 +719,10 @@ export const api = {
       });
     },
 
-    register(email: string, name: string, password: string, phone: string, firebaseToken: string) {
+    register(email: string, name: string, password: string, phone: string) {
       return request<AuthResponse>('/api/v1/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email, name, password, phone, firebaseToken }),
+        body: JSON.stringify({ email, name, password, phone }),
       });
     },
 
