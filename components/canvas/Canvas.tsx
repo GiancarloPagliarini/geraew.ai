@@ -317,7 +317,7 @@ function CanvasContent() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">
                   <AudioWaveform className="h-5 w-5 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00] sm:h-6 sm:w-6" />
                 </div>
-                <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">Motion Control</span>
+                <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">Copiar movimentos</span>
               </button>
             </div>
           </div>

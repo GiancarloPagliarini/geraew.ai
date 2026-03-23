@@ -32,13 +32,13 @@ function genTypeLabel(type: string) {
     IMAGE_TO_IMAGE: 'Imagem → Imagem',
     TEXT_TO_VIDEO: 'Texto → Vídeo',
     IMAGE_TO_VIDEO: 'Imagem → Vídeo',
-    MOTION_CONTROL: 'Motion Control',
+    MOTION_CONTROL: 'Copiar movimentos',
     REFERENCE_VIDEO: 'Referência',
     text_to_image: 'Texto → Imagem',
     image_to_image: 'Imagem → Imagem',
     text_to_video: 'Texto → Vídeo',
     image_to_video: 'Imagem → Vídeo',
-    motion_control: 'Motion Control',
+    motion_control: 'Copiar movimentos',
   };
   return map[type] ?? type;
 }

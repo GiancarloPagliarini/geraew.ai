@@ -79,7 +79,7 @@ export function BottomToolbar({
             <Video className="h-4 w-4" />
           </ToolbarButton>
 
-          <ToolbarButton tooltip="Motion Control" onClick={onAddMotionControl}>
+          <ToolbarButton tooltip="Copiar movimentos" onClick={onAddMotionControl}>
             <AudioWaveform className="h-4 w-4" />
           </ToolbarButton>
 

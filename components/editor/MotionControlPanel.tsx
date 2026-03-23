@@ -157,7 +157,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
   // Document title
   useEffect(() => {
     if (genState === 'generating') {
-      document.title = 'Geraew AI - Motion Control';
+      document.title = 'Geraew AI - Copiando movimentos';
     } else {
       document.title = 'Geraew AI';
     }
@@ -479,7 +479,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
           <div className="flex items-center gap-2">
             <AudioWaveform className="h-4 w-4 text-[#a2dd00]" />
             <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
-              MOTION CONTROL
+              COPIAR MOVIMENTOS
             </span>
           </div>
           <div className="flex items-center gap-1">
@@ -688,7 +688,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
               </button>
 
               <p className="text-center text-[10px] text-[#f3f0ed]/25">
-                Substitui o sujeito do vídeo pela imagem fornecida
+                Copia os movimentos do vídeo para a imagem fornecida
               </p>
             </>
           )}

@@ -37,8 +37,8 @@ const menuItems = [
     {
         type: 'motion-control',
         icon: AudioWaveform,
-        label: 'Motion Control',
-        description: 'Substituir sujeito no vídeo',
+        label: 'Copiar movimentos',
+        description: 'Copiar movimentos de um vídeo para outro',
     },
     {
         type: 'generate-voice',
