@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
   const origin = request.nextUrl.origin;
-  const redirectUri = `${origin}/api/auth/google/callback`;
+  const redirectUri = `${origin}/api/v1/auth/google/callback`;
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   if (!clientId) {

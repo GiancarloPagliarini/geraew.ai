@@ -347,7 +347,7 @@ function LoginPageContent() {
 
             {/* Google */}
             <button
-              onClick={() => { window.location.href = '/api/auth/google'; }}
+              onClick={() => { window.location.href = '/api/v1/auth/google'; }}
               disabled={loading}
               className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.05] text-sm font-medium text-white transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50"
             >
