@@ -648,7 +648,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
               {/* Error message */}
               <GenerationErrorBanner msg={errorMsg} />
 
-{/* Credit estimate */}
+              {/* Credit estimate */}
               <div className="flex flex-col gap-1.5 rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
@@ -661,14 +661,14 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
                     <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
                   ) : estimate ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} cr</span>
+                      <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
                       <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
                     </div>
                   ) : null}
                 </div>
                 {videoFile && (
                   <p className="text-[10px] text-[#f3f0ed]/30">
-                    {videoDuration}s × {resolution === '1080p' ? '10' : '7'} cr/s
+                    {videoDuration}s × {resolution === '1080p' ? '10' : '7'} créditos/s
                   </p>
                 )}
               </div>

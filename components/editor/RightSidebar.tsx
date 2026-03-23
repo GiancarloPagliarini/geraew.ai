@@ -3,6 +3,7 @@
 import { useEditor } from '@/lib/editor-context';
 import {
   CheckCircle2,
+  Construction,
   Loader2,
   Maximize2,
   ScanFace,
@@ -13,6 +14,20 @@ import {
 import { useRef, useState } from 'react';
 import { Section } from './Section';
 import { InfluencerSidebar } from './InfluencerSidebar';
+
+// ─── WipOverlay ───────────────────────────────────────────────────────────────
+
+function WipOverlay() {
+  return (
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-xl backdrop-blur-[2px] bg-[#1a2123]/60">
+      <div className="flex items-center gap-2 rounded-full border border-[#f3f0ed]/10 bg-[#1a2123]/80 px-3 py-1.5">
+        <Construction className="h-3.5 w-3.5 text-[#a2dd00]" />
+        <span className="text-[10px] font-bold tracking-widest text-[#f3f0ed]/60 uppercase">Em desenvolvimento</span>
+      </div>
+      <p className="text-[9px] text-[#f3f0ed]/30">Disponível em breve</p>
+    </div>
+  );
+}
 
 // ─── UpscaleSection ───────────────────────────────────────────────────────────
 
@@ -335,11 +350,17 @@ export function RightSidebar() {
 
       <div className="sidebar-scroll flex-1 overflow-y-auto">
         <Section title="UPSCALE" icon={Maximize2} done={upscaleDone}>
-          <UpscaleSection generatedImage={selectedImage} nodeId={selectedNodeId!} />
+          <div className="relative pointer-events-none select-none">
+            <WipOverlay />
+            <UpscaleSection generatedImage={selectedImage} nodeId={selectedNodeId!} />
+          </div>
         </Section>
 
         <Section title="FACE SWAP" icon={ScanFace}>
-          <FaceSwapSection generatedImage={selectedImage} />
+          <div className="relative pointer-events-none select-none">
+            <WipOverlay />
+            <FaceSwapSection generatedImage={selectedImage} />
+          </div>
         </Section>
       </div>
     </aside>

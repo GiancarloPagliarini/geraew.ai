@@ -252,7 +252,7 @@ export default function PerfilPage() {
                   {isFreeUser ? '30' : balance.totalCreditsAvailable.toLocaleString('pt-BR')}
                 </p>
                 {isFreeUser && (
-                  <p className="mt-1 text-[11px] text-[#a2dd00]/50">creditos/dia</p>
+                  <p className="mt-1 text-[11px] text-[#a2dd00]/50">creditos</p>
                 )}
               </div>
 
@@ -260,7 +260,7 @@ export default function PerfilPage() {
               <div className="rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 p-4">
                 <p className="text-[10px] font-bold tracking-[0.12em] text-[#f3f0ed]/40">DO PLANO</p>
                 <p className="mt-1.5 text-2xl font-bold tabular-nums text-[#f3f0ed]">
-                  {isFreeUser ? '30/dia' : balance.planCreditsRemaining.toLocaleString('pt-BR')}
+                  {isFreeUser ? '30' : balance.planCreditsRemaining.toLocaleString('pt-BR')}
                 </p>
               </div>
 
