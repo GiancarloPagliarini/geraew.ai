@@ -105,11 +105,12 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
 
   const dbResolution = resolution === '1080p' ? 'RES_1080P' : 'RES_720P';
   const { data: estimate, isLoading: estimateLoading } = useQuery({
-    queryKey: ['credits', 'estimate', 'MOTION_CONTROL', dbResolution],
+    queryKey: ['credits', 'estimate', 'MOTION_CONTROL', dbResolution, videoDuration],
     queryFn: () => api.credits.estimate(accessToken!, {
       type: 'MOTION_CONTROL',
       resolution: dbResolution,
       hasAudio: false,
+      durationSeconds: videoDuration,
     }),
     enabled: !!accessToken && genState === 'idle',
     staleTime: 60_000,
@@ -648,21 +649,28 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
               <GenerationErrorBanner msg={errorMsg} />
 
 {/* Credit estimate */}
-              <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
-                <div className="flex items-center gap-1.5">
-                  <Coins className="h-3 w-3 text-[#a2dd00]" />
-                  <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">
-                    Custo por clipe
-                  </span>
-                </div>
-                {estimateLoading ? (
-                  <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
-                ) : estimate ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
-                    <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
+              <div className="flex flex-col gap-1.5 rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Coins className="h-3 w-3 text-[#a2dd00]" />
+                    <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">
+                      Custo estimado
+                    </span>
                   </div>
-                ) : null}
+                  {estimateLoading ? (
+                    <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
+                  ) : estimate ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} cr</span>
+                      <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
+                    </div>
+                  ) : null}
+                </div>
+                {videoFile && (
+                  <p className="text-[10px] text-[#f3f0ed]/30">
+                    {videoDuration}s × {resolution === '1080p' ? '10' : '7'} cr/s
+                  </p>
+                )}
               </div>
 
               {/* Generate button */}
