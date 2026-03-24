@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
+import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
 import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
@@ -25,6 +26,7 @@ import { listenGeneration } from '@/lib/sse';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { GenerationErrorBanner, showGenerationError } from './GenerationError';
+import { CheckGenerationStatusButton } from './CheckGenerationStatusButton';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -92,8 +94,20 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
 
   const [resolution, setResolution] = useState<string>(stored?.resolution ?? '720p');
   const [videoDuration, setVideoDuration] = useState<number>(stored?.videoDuration ?? 5);
-  const [videoFile, setVideoFile] = useState<{ base64: string; mime_type: string; name: string } | null>(stored?.videoFile ?? null);
-  const [imageFile, setImageFile] = useState<{ base64: string; mime_type: string; preview: string } | null>(stored?.imageFile ?? null);
+  const [videoFile, setVideoFile] = useState<{ base64: string; mime_type: string; name: string } | null>(null);
+  const [imageFile, setImageFile] = useState<{ base64: string; mime_type: string; preview: string } | null>(null);
+
+  // Load files from IndexedDB on mount (too large for localStorage)
+  useEffect(() => {
+    idbLoad<{ videoFile: { base64: string; mime_type: string; name: string } | null; imageFile: { base64: string; mime_type: string; preview: string } | null }>(`${storageKey}-images`)
+      .then((data) => {
+        if (!data) return;
+        if (data.videoFile) setVideoFile(data.videoFile);
+        if (data.imageFile) setImageFile(data.imageFile);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(stored?.generatedVideoUrl ?? null);
 
   const [generationId, setGenerationId] = useState<string | null>(stored?.generationId ?? null);
@@ -144,15 +158,15 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
   useEffect(() => {
     try {
       localStorage.setItem(storageKey, JSON.stringify({
-        resolution, videoDuration, generatedVideoUrl, generationId, genState, videoFile, imageFile,
-      }));
-    } catch {
-      // Quota exceeded (large base64 data) — save without files
-      localStorage.setItem(storageKey, JSON.stringify({
         resolution, videoDuration, generatedVideoUrl, generationId, genState,
       }));
-    }
-  }, [storageKey, resolution, videoDuration, generatedVideoUrl, generationId, genState, videoFile, imageFile]);
+    } catch { /* ignore */ }
+  }, [storageKey, resolution, videoDuration, generatedVideoUrl, generationId, genState]);
+
+  // Save files to IndexedDB (too large for localStorage)
+  useEffect(() => {
+    idbSave(`${storageKey}-images`, { videoFile, imageFile }).catch(() => {});
+  }, [storageKey, videoFile, imageFile]);
 
   // Document title
   useEffect(() => {
@@ -485,7 +499,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
           <div className="flex items-center gap-1">
             <PanelDuplicateButton onClick={onDuplicate} />
             <button
-              onClick={() => { localStorage.removeItem(storageKey); onClose?.(); }}
+              onClick={() => { localStorage.removeItem(storageKey); idbDelete(`${storageKey}-images`).catch(() => {}); onClose?.(); }}
               className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
             >
               <X className="h-3.5 w-3.5" />
@@ -510,6 +524,23 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
                 <span className="text-lg font-bold text-[#a2dd00]">{progress}%</span>
               </div>
               <p className="animate-pulse text-[10px] font-bold tracking-[0.2em] text-[#f3f0ed]/30">{loadingMsg}</p>
+              <CheckGenerationStatusButton
+                generationId={generationId}
+                accessToken={accessToken}
+                onCompleted={(generation) => {
+                  clearPollTimer();
+                  finishWithVideo(generation.outputs[0]?.url);
+                  refetchCredits();
+                  prependToGallery(generation);
+                }}
+                onFailed={() => {
+                  clearPollTimer();
+                  clearProgressTimer();
+                  clearMsgTimer();
+                  setGenState('idle');
+                  refetchCredits();
+                }}
+              />
             </div>
           )}
 

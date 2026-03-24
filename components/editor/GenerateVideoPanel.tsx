@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
+import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
 import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
@@ -31,6 +32,7 @@ import { listenGeneration } from '@/lib/sse';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { GenerationErrorBanner, showGenerationError } from './GenerationError';
+import { CheckGenerationStatusButton } from './CheckGenerationStatusButton';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -125,9 +127,23 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   const [generatedVideoUrls, setGeneratedVideoUrls] = useState<string[]>(stored?.generatedVideoUrls ?? []);
 
   const [videoMode, setVideoMode] = useState<'text' | 'image'>(stored?.videoMode ?? 'text');
-  const [refImages, setRefImages] = useState<{ base64: string; mime_type: string; preview: string }[]>(stored?.refImages ?? []);
-  const [firstFrame, setFirstFrame] = useState<{ base64: string; mime_type: string; preview: string } | null>(stored?.firstFrame ?? null);
-  const [lastFrame, setLastFrame] = useState<{ base64: string; mime_type: string; preview: string } | null>(stored?.lastFrame ?? null);
+  const [refImages, setRefImages] = useState<{ base64: string; mime_type: string; preview: string }[]>([]);
+  const [firstFrame, setFirstFrame] = useState<{ base64: string; mime_type: string; preview: string } | null>(null);
+  const [lastFrame, setLastFrame] = useState<{ base64: string; mime_type: string; preview: string } | null>(null);
+
+  // Load reference images from IndexedDB on mount (too large for localStorage)
+  useEffect(() => {
+    type ImgEntry = { base64: string; mime_type: string; preview: string };
+    idbLoad<{ refImages: ImgEntry[]; firstFrame: ImgEntry | null; lastFrame: ImgEntry | null }>(`${storageKey}-images`)
+      .then((data) => {
+        if (!data) return;
+        if (data.refImages?.length) setRefImages(data.refImages);
+        if (data.firstFrame) setFirstFrame(data.firstFrame);
+        if (data.lastFrame) setLastFrame(data.lastFrame);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [enhancePrompt, setEnhancePrompt] = useState(stored?.enhancePrompt ?? false);
   const [isEnhancing, setIsEnhancing] = useState(false);
 
@@ -191,15 +207,14 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     try {
       localStorage.setItem(storageKey, JSON.stringify({
         prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, generationId, genState, enhancePrompt, videoMode,
-        refImages, firstFrame, lastFrame,
       }));
-    } catch {
-      // Quota exceeded (large base64 images) — save without reference images
-      localStorage.setItem(storageKey, JSON.stringify({
-        prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, generationId, genState, enhancePrompt, videoMode,
-      }));
-    }
-  }, [storageKey, prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, generationId, genState, enhancePrompt, videoMode, refImages, firstFrame, lastFrame]);
+    } catch { /* ignore */ }
+  }, [storageKey, prompt, audio, model, duration, proportion, resolution, sampleCount, generatedVideoUrls, generationId, genState, enhancePrompt, videoMode]);
+
+  // Save reference images to IndexedDB (too large for localStorage)
+  useEffect(() => {
+    idbSave(`${storageKey}-images`, { refImages, firstFrame, lastFrame }).catch(() => {});
+  }, [storageKey, refImages, firstFrame, lastFrame]);
 
   // Update document title while generating
   useEffect(() => {
@@ -593,7 +608,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           <div className="flex items-center gap-1">
             <PanelDuplicateButton onClick={onDuplicate} />
             <button
-              onClick={() => { localStorage.removeItem(storageKey); onClose?.(); }}
+              onClick={() => { localStorage.removeItem(storageKey); idbDelete(`${storageKey}-images`).catch(() => {}); onClose?.(); }}
               className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
             >
               <X className="h-3.5 w-3.5" />
@@ -892,6 +907,23 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
               <span className="text-[10px] animate-pulse font-bold tracking-[0.2em] text-[#f3f0ed]/30 transition-all duration-500">
                 {loadingMsg}
               </span>
+              <CheckGenerationStatusButton
+                generationId={generationId}
+                accessToken={accessToken}
+                onCompleted={(generation) => {
+                  clearPollTimer();
+                  finishWithVideos(generation.outputs.map((o) => o.url));
+                  refetchCredits();
+                  prependToGallery(generation);
+                }}
+                onFailed={() => {
+                  clearPollTimer();
+                  clearProgressTimer();
+                  clearMsgTimer();
+                  setGenState('idle');
+                  refetchCredits();
+                }}
+              />
             </div>
           )}
 

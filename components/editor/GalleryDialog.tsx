@@ -83,6 +83,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
   }, [galleryPickerRequest]);
   const [showFoldersList, setShowFoldersList] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
@@ -424,11 +425,18 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
               </button>
             ))}
             <button
-              onClick={() => queryClient.invalidateQueries({ queryKey: ['gallery'] })}
-              className="ml-auto flex h-6 w-6 items-center justify-center rounded-md text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70 transition-colors"
+              onClick={() => {
+                setIsRefreshing(true);
+                queryClient.invalidateQueries({ queryKey: ['gallery'] }).then(() => {
+                  setIsRefreshing(false);
+                  toast.success('Galeria atualizada', { description: 'As imagens foram recarregadas.' });
+                });
+              }}
+              disabled={isRefreshing}
+              className="ml-auto flex h-6 w-6 items-center justify-center rounded-md text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70 transition-colors disabled:opacity-50"
               title="Atualizar galeria"
             >
-              <RefreshCw className="h-3.5 w-3.5" />
+              <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
           </div>
         )}

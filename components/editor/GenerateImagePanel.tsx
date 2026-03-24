@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ArrowUpRight, Coins, Download, FolderOpen, FolderPlus, Image, ImagePlus, Loader2, Plus, Sparkles, Wand2, X } from 'lucide-react';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
+import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
@@ -25,6 +26,7 @@ import { api, Folder } from '@/lib/api';
 import { listenGeneration } from '@/lib/sse';
 import { toast } from 'sonner';
 import { GenerationErrorBanner, showGenerationError } from './GenerationError';
+import { CheckGenerationStatusButton } from './CheckGenerationStatusButton';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -140,7 +142,15 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   const [imageVisible, setImageVisible] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [generationId, setGenerationId] = useState<string | null>(stored?.generationId ?? null);
-  const [attachedImages, setAttachedImages] = useState<{ base64: string; mime_type: string; preview: string }[]>(stored?.attachedImages ?? []);
+  const [attachedImages, setAttachedImages] = useState<{ base64: string; mime_type: string; preview: string }[]>([]);
+
+  // Load attached images from IndexedDB on mount (they're too large for localStorage)
+  useEffect(() => {
+    idbLoad<{ base64: string; mime_type: string; preview: string }[]>(`${storageKey}-images`)
+      .then((imgs) => { if (imgs?.length) setAttachedImages(imgs); })
+      .catch(() => { });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [enhancePrompt, setEnhancePrompt] = useState(stored?.enhancePrompt ?? false);
@@ -167,12 +177,14 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   // Save form + result state whenever they change
   useEffect(() => {
     try {
-      localStorage.setItem(storageKey, JSON.stringify({ prompt, model, proportion, quality, generatedImageUrl, generationId, genState, enhancePrompt, attachedImages }));
-    } catch {
-      // Quota exceeded (large base64 images) — save without attachedImages
       localStorage.setItem(storageKey, JSON.stringify({ prompt, model, proportion, quality, generatedImageUrl, generationId, genState, enhancePrompt }));
-    }
-  }, [storageKey, prompt, model, proportion, quality, generatedImageUrl, generationId, genState, enhancePrompt, attachedImages]);
+    } catch { /* ignore */ }
+  }, [storageKey, prompt, model, proportion, quality, generatedImageUrl, generationId, genState, enhancePrompt]);
+
+  // Save attached images to IndexedDB (too large for localStorage)
+  useEffect(() => {
+    idbSave(`${storageKey}-images`, attachedImages).catch(() => { });
+  }, [storageKey, attachedImages]);
 
   // Update document title while generating
   useEffect(() => {
@@ -566,7 +578,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
           <div className="flex items-center gap-1">
             <PanelDuplicateButton onClick={onDuplicate} />
             <button
-              onClick={() => { localStorage.removeItem(storageKey); onClose?.(); }}
+              onClick={() => { localStorage.removeItem(storageKey); idbDelete(`${storageKey}-images`).catch(() => { }); onClose?.(); }}
               className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
             >
               <X className="h-3.5 w-3.5" />
@@ -614,7 +626,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
           {/* ── Error message ────────────────────────────────────────────── */}
           <GenerationErrorBanner msg={errorMsg} />
 
-{/* ── Generation area ─────────────────────────────────────────── */}
+          {/* ── Generation area ─────────────────────────────────────────── */}
           {genState === 'generating' && (
             <div className="flex flex-col items-center gap-3 rounded-xl border border-[#f3f0ed]/[0.06] bg-[#1e494b]/10 py-8">
               {/* Circular SVG progress */}
@@ -651,6 +663,23 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
               <span className="text-[10px] animate-pulse font-bold tracking-[0.2em] text-[#f3f0ed]/30 transition-all duration-500">
                 {loadingMsg}
               </span>
+              <CheckGenerationStatusButton
+                generationId={generationId}
+                accessToken={accessToken}
+                onCompleted={(generation) => {
+                  clearPollTimer();
+                  finishWithImage(generation.outputs[0].url, generation.id);
+                  refetchCredits();
+                  prependToGallery(generation);
+                }}
+                onFailed={() => {
+                  clearPollTimer();
+                  clearProgressTimer();
+                  clearMsgTimer();
+                  setGenState('idle');
+                  refetchCredits();
+                }}
+              />
             </div>
           )}
 
