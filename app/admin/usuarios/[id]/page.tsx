@@ -71,14 +71,16 @@ function statusBadge(status: string) {
   );
 }
 
-function isVideoMime(mimeType: string) {
-  return mimeType.startsWith('video/');
+function isVideoMime(mimeType: string | null) {
+  return mimeType?.startsWith('video/') ?? false;
 }
 
-function MediaPreview({ output }: { output: AdminUserGeneration['outputs'][0] }) {
+const VIDEO_GENERATION_TYPES = ['TEXT_TO_VIDEO', 'IMAGE_TO_VIDEO', 'MOTION_CONTROL', 'REFERENCE_VIDEO'];
+
+function MediaPreview({ output, genType }: { output: AdminUserGeneration['outputs'][0]; genType: string }) {
   const [expanded, setExpanded] = useState(false);
 
-  if (isVideoMime(output.mimeType)) {
+  if (isVideoMime(output.mimeType) || VIDEO_GENERATION_TYPES.includes(genType)) {
     return (
       <>
         <button
@@ -533,7 +535,7 @@ export default function AdminUserDetailPage() {
                 >
                   {/* Media outputs */}
                   {gen.outputs.length > 0 ? (
-                    <MediaPreview output={gen.outputs[0]} />
+                    <MediaPreview output={gen.outputs[0]} genType={gen.type} />
                   ) : (
                     <div className="flex aspect-square w-full items-center justify-center rounded-lg border border-[#f3f0ed]/8 bg-[#f3f0ed]/5">
                       {gen.status === 'PROCESSING' ? (

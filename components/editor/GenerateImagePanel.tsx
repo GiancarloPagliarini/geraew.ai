@@ -495,7 +495,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   const { data: estimate, isLoading: estimateLoading } = useQuery({
     queryKey: ['credits', 'estimate', imageType, qualityToResolution(quality), imageModelVariant],
     queryFn: () => api.credits.estimate(accessToken!, { type: imageType, resolution: qualityToResolution(quality), modelVariant: imageModelVariant }),
-    enabled: !!accessToken && genState === 'idle',
+    enabled: !!accessToken && genState !== 'generating',
     staleTime: 30_000,
   });
 

@@ -112,7 +112,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
       hasAudio: false,
       durationSeconds: videoDuration,
     }),
-    enabled: !!accessToken && genState === 'idle',
+    enabled: !!accessToken && genState !== 'generating',
     staleTime: 60_000,
   });
 

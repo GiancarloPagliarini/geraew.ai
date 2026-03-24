@@ -159,7 +159,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       sampleCount,
       modelVariant: videoModelVariant,
     }),
-    enabled: !!accessToken && genState === 'idle',
+    enabled: !!accessToken && genState !== 'generating',
     staleTime: 30_000,
   });
   const [progress, setProgress] = useState(0);
