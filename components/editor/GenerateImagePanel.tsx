@@ -26,7 +26,7 @@ import { api, Folder } from '@/lib/api';
 import { listenGeneration } from '@/lib/sse';
 import { toast } from 'sonner';
 import { GenerationErrorBanner, showGenerationError } from './GenerationError';
-import { CheckGenerationStatusButton } from './CheckGenerationStatusButton';
+import { GenerationPreview } from './GenerationPreview';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -332,7 +332,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
       setGeneratedImageUrl(url);
       if (genId) setGenerationId(genId);
       setNodeImage(nodeId, url);
-      setTimeout(() => setImageVisible(true), 60);
+      // imageVisible is set via onLoad on the <img> element
     }, 380);
   }
 
@@ -367,6 +367,12 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
 
   async function handleGenerate() {
     if (!accessToken) return;
+
+    // If there's already an image, blur it out first then start the loading aurora
+    if (genState === 'done') {
+      setImageVisible(false);
+      await new Promise<void>((resolve) => setTimeout(resolve, 650));
+    }
 
     setGenState('generating');
     setProgress(0);
@@ -556,6 +562,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
     onError: () => toast.error('Erro ao criar pasta', { description: 'Tente novamente.' }),
   });
 
+  const isGenerating = genState === 'generating';
   const dashOffset = CIRCUMFERENCE * (1 - progress / 100);
 
   return (
@@ -603,6 +610,8 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
             style={{
               background: enhancePrompt ? 'rgba(162,221,0,0.06)' : 'transparent',
               borderColor: enhancePrompt ? 'rgba(162,221,0,0.2)' : 'rgba(243,240,237,0.07)',
+              opacity: isGenerating ? 0.4 : 1,
+              pointerEvents: isGenerating ? 'none' : undefined,
             }}
           >
             <div className="flex items-center gap-1.5">
@@ -626,135 +635,44 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
           {/* ── Error message ────────────────────────────────────────────── */}
           <GenerationErrorBanner msg={errorMsg} />
 
-          {/* ── Generation area ─────────────────────────────────────────── */}
-          {genState === 'generating' && (
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-[#f3f0ed]/[0.06] bg-[#1e494b]/10 py-8">
-              {/* Circular SVG progress */}
-              <div className="relative flex items-center justify-center">
-                <svg width="90" height="90" viewBox="0 0 90 90" className="-rotate-90">
-                  {/* Track */}
-                  <circle
-                    cx="45"
-                    cy="45"
-                    r={RADIUS}
-                    fill="none"
-                    stroke="#f3f0ed"
-                    strokeOpacity={0.07}
-                    strokeWidth="4"
-                  />
-                  {/* Progress arc */}
-                  <circle
-                    cx="45"
-                    cy="45"
-                    r={RADIUS}
-                    fill="none"
-                    stroke="#a2dd00"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeDasharray={CIRCUMFERENCE}
-                    strokeDashoffset={dashOffset}
-                    style={{ transition: 'stroke-dashoffset 0.18s ease-out' }}
-                  />
-                </svg>
-                {/* Percentage label */}
-                <span className="absolute text-sm font-bold text-[#f3f0ed]/80">{progress}%</span>
+          {/* ── Generation area + Generated image (crossfade) ───────────── */}
+          <GenerationPreview
+            proportion={proportion}
+            genState={genState}
+            imageVisible={imageVisible}
+            onImageLoad={() => setImageVisible(true)}
+            progress={progress}
+            generatedImageUrl={generatedImageUrl}
+            imageRef={draggableImgRef}
+            onImageClick={() => window.open(generatedImageUrl!, '_blank')}
+            onImageDragStart={(e) => {
+              e.stopPropagation();
+              e.dataTransfer.setData('text/geraew-image-url', generatedImageUrl!);
+              e.dataTransfer.effectAllowed = 'copy';
+            }}
+            imageFilter={upscaleState === 'done' ? 'blur(0px) brightness(1.06) contrast(1.04) saturate(1.12)' : undefined}
+          >
+            {/* Upscale done badge */}
+            {upscaleState === 'done' && (
+              <div className="absolute left-2 top-2 flex items-center justify-center rounded-full bg-[#a2dd00] px-2 py-0.5">
+                <span className="text-[8px] font-black tracking-widest text-[#1a2123]">HD+</span>
               </div>
-
-              <span className="text-[10px] animate-pulse font-bold tracking-[0.2em] text-[#f3f0ed]/30 transition-all duration-500">
-                {loadingMsg}
-              </span>
-              <CheckGenerationStatusButton
-                generationId={generationId}
-                accessToken={accessToken}
-                onCompleted={(generation) => {
-                  clearPollTimer();
-                  finishWithImage(generation.outputs[0].url, generation.id);
-                  refetchCredits();
-                  prependToGallery(generation);
-                }}
-                onFailed={() => {
-                  clearPollTimer();
-                  clearProgressTimer();
-                  clearMsgTimer();
-                  setGenState('idle');
-                  refetchCredits();
-                }}
-              />
-            </div>
-          )}
-
-          {/* ── Generated image ─────────────────────────────────────────── */}
-          {genState === 'done' && generatedImageUrl && (
-            <div
-              className="group relative overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08]"
-              style={{
-                opacity: imageVisible ? 1 : 0,
-                transform: imageVisible ? 'scale(1)' : 'scale(0.96)',
-                transition: 'opacity 0.4s ease, transform 0.4s ease',
-              }}
-            >
-              {/* Image — draggable to video panel, click to expand */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                ref={draggableImgRef}
-                src={generatedImageUrl}
-                alt="Imagem gerada"
-                className="nopan nodrag h-auto w-full object-cover cursor-pointer"
-                draggable="true"
-                onClick={() => window.open(generatedImageUrl, '_blank')}
-                onDragStart={(e) => {
-                  e.stopPropagation();
-                  e.dataTransfer.setData('text/geraew-image-url', generatedImageUrl);
-                  e.dataTransfer.effectAllowed = 'copy';
-                }}
-                style={{
-                  transition: 'filter 0.8s ease',
-                  filter:
-                    upscaleState === 'done'
-                      ? 'brightness(1.06) contrast(1.04) saturate(1.12)'
-                      : 'none',
-                }}
-              />
-
-              {/* Upscale done badge */}
-              {upscaleState === 'done' && (
-                <div className="absolute left-2 top-2 flex items-center justify-center rounded-full bg-[#a2dd00] px-2 py-0.5">
-                  <span className="text-[8px] font-black tracking-widest text-[#1a2123]">HD+</span>
-                </div>
-              )}
-
-              {/* Overlay — visible on hover */}
-              <div className="absolute inset-0 flex items-start justify-end gap-1.5 bg-gradient-to-b from-black/50 via-transparent to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                {/* Expand */}
-                <ActionButton
-                  title="Expandir"
-                  onClick={() => window.open(generatedImageUrl, '_blank')}
-                >
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                </ActionButton>
-
-                {/* Download */}
-                <ActionButton
-                  title="Baixar"
-                  onClick={() => handleDownload(generatedImageUrl)}
-                >
-                  <Download className="h-3.5 w-3.5" />
-                </ActionButton>
-
-                {/* Add to folder */}
-                {generationId && (
-                  <ActionButton title="Adicionar à pasta" onClick={() => setFolderDialogOpen(true)}>
-                    <FolderPlus className="h-3.5 w-3.5" />
-                  </ActionButton>
-                )}
-
-                {/* Discard */}
-                <ActionButton title="Descartar" onClick={handleDiscard}>
-                  <X className="h-3.5 w-3.5" />
-                </ActionButton>
-              </div>
-            </div>
-          )}
+            )}
+            <ActionButton title="Expandir" onClick={() => window.open(generatedImageUrl!, '_blank')}>
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </ActionButton>
+            <ActionButton title="Baixar" onClick={() => handleDownload(generatedImageUrl!)}>
+              <Download className="h-3.5 w-3.5" />
+            </ActionButton>
+            {generationId && (
+              <ActionButton title="Adicionar à pasta" onClick={() => setFolderDialogOpen(true)}>
+                <FolderPlus className="h-3.5 w-3.5" />
+              </ActionButton>
+            )}
+            <ActionButton title="Descartar" onClick={handleDiscard}>
+              <X className="h-3.5 w-3.5" />
+            </ActionButton>
+          </GenerationPreview>
 
           {/* ── Folder dialog ───────────────────────────────────────── */}
           {generationId && (
@@ -769,7 +687,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
           )}
 
           {/* ── Bottom section (model + proportion + quality + refs) ──── */}
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
             <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
               MODELO
             </label>
@@ -783,7 +701,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
                 PROPORÇÃO
@@ -816,7 +734,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
           </div>
 
           {/* References */}
-          <div className="space-y-2">
+          <div className="space-y-2" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
                 REFERÊNCIAS (OPCIONAL)
@@ -1060,7 +978,7 @@ function PanelSelect({
       <SelectTrigger className="h-9 w-full rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 text-xs text-[#f3f0ed]/80 outline-none transition-all focus:border-[#a2dd00]/40 focus:ring-0 data-[placeholder]:text-[#f3f0ed]/35 [&>svg]:text-[#f3f0ed]/30">
         <SelectValue />
       </SelectTrigger>
-      <SelectContent className="rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] p-1 shadow-2xl shadow-black/60 backdrop-blur-md">
+      <SelectContent className="rounded-xl border border-[#f3f0ed]/8 bg-[#1a2123] p-1 shadow-2xl shadow-black/60 backdrop-blur-md">
         {options.map((opt) => (
           <SelectItem
             key={opt.value}

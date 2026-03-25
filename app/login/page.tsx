@@ -68,6 +68,8 @@ function LoginPageContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
+  const [showResend, setShowResend] = useState(false);
 
 
   // Show error from Google OAuth redirect if present
@@ -210,6 +212,7 @@ function LoginPageContent() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setShowResend(false);
     setLoading(true);
     try {
       if (mode === 'login') {
@@ -226,8 +229,27 @@ function LoginPageContent() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Ocorreu um erro. Tente novamente.';
       setError(message);
+      if (message.toLowerCase().includes('verificado') || message.toLowerCase().includes('verified')) {
+        setShowResend(true);
+      }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleResendVerification() {
+    setResendLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await api.auth.resendVerificationByEmail(email);
+      setSuccess(res.message);
+      setShowResend(false);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao reenviar email. Tente novamente.';
+      setError(message);
+    } finally {
+      setResendLoading(false);
     }
   }
 
@@ -428,9 +450,21 @@ function LoginPageContent() {
               )}
 
               {error && (
-                <p className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs text-red-400">
-                  {error}
-                </p>
+                <div className="flex flex-col gap-2">
+                  <p className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs text-red-400">
+                    {error}
+                  </p>
+                  {showResend && (
+                    <button
+                      type="button"
+                      onClick={handleResendVerification}
+                      disabled={resendLoading}
+                      className="text-xs text-[#a2dd00]/70 hover:text-[#a2dd00] transition-colors disabled:opacity-50"
+                    >
+                      {resendLoading ? 'Reenviando...' : 'Reenviar email de verificação'}
+                    </button>
+                  )}
+                </div>
               )}
 
               {mode === 'login' && (

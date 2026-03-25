@@ -43,19 +43,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!user || user.role !== 'ADMIN') return null;
 
   return (
-    <div className="flex min-h-screen bg-[#111618]">
+    <div className="flex min-h-screen overflow-x-hidden bg-[#111618]">
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 z-30 flex h-screen w-56 flex-col border-r border-[#f3f0ed]/6 bg-[#141a1c]">
+      <aside className="fixed left-0 top-0 z-30 flex h-screen w-14 flex-col border-r border-[#f3f0ed]/6 bg-[#141a1c] md:w-56">
         {/* Logo */}
-        <div className="flex h-14 items-center gap-2.5 border-b border-[#f3f0ed]/6 px-5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#a2dd00]/15">
+        <div className="flex h-14 items-center justify-center border-b border-[#f3f0ed]/6 md:justify-start md:gap-2.5 md:px-5">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#a2dd00]/15">
             <Shield className="h-3.5 w-3.5 text-[#a2dd00]" />
           </div>
-          <span className="text-sm font-bold text-[#f3f0ed]">Geraew Admin</span>
+          <span className="hidden text-sm font-bold text-[#f3f0ed] md:block">Geraew Admin</span>
         </div>
 
         {/* Navigation */}
-        <nav className="flex flex-1 flex-col gap-1 p-3">
+        <nav className="flex flex-1 flex-col gap-1 p-2 md:p-3">
           {NAV_ITEMS.map((item) => {
             const isActive =
               item.href === '/admin'
@@ -66,33 +66,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all ${isActive
+                title={item.label}
+                className={`flex items-center justify-center rounded-xl p-2.5 transition-all md:justify-start md:gap-2.5 md:px-3 md:py-2.5 md:text-[13px] md:font-medium ${
+                  isActive
                     ? 'bg-[#a2dd00]/10 text-[#a2dd00]'
                     : 'text-[#f3f0ed]/50 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/80'
-                  }`}
+                }`}
               >
-                <Icon className="h-4 w-4" />
-                {item.label}
+                <Icon className="h-5 w-5 shrink-0 md:h-4 md:w-4" />
+                <span className="hidden md:block">{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
         {/* Back to app */}
-        <div className="border-t border-[#f3f0ed]/6 p-3">
+        <div className="border-t border-[#f3f0ed]/6 p-2 md:p-3">
           <Link
             href="/"
-            className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] text-[#f3f0ed]/40 transition-colors hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70"
+            title="Voltar ao app"
+            className="flex items-center justify-center rounded-xl p-2.5 text-[#f3f0ed]/40 transition-colors hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70 md:justify-start md:gap-2 md:px-3 md:py-2.5 md:text-[13px]"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Voltar ao app
+            <ArrowLeft className="h-5 w-5 shrink-0 md:h-4 md:w-4" />
+            <span className="hidden md:block">Voltar ao app</span>
           </Link>
         </div>
       </aside>
 
       {/* Main content */}
-      <main className="ml-56 flex-1">
-        <div className="mx-auto max-w-7xl px-8 py-8">{children}</div>
+      <main className="ml-14 min-w-0 w-[calc(100%-3.5rem)] md:ml-56 md:w-[calc(100%-14rem)]">
+        <div className="w-full px-4 py-6 md:px-8 md:py-8">{children}</div>
       </main>
     </div>
   );

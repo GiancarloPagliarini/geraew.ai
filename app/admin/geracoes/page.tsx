@@ -14,6 +14,7 @@ import {
   XCircle,
   Cog,
   UserCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -73,7 +74,7 @@ export default function AdminGenerationsPage() {
   const [page, setPage] = useState(1);
   const limit = 20;
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['admin', 'generations', page],
     queryFn: () => api.admin.generations(accessToken!, page, limit),
     enabled: !!accessToken,
@@ -87,11 +88,20 @@ export default function AdminGenerationsPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#f3f0ed]">Gerações</h1>
-        <p className="mt-1 text-sm text-[#f3f0ed]/40">
-          Monitoramento em tempo real · {total.toLocaleString('pt-BR')} gerações
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[#f3f0ed]">Gerações</h1>
+          <p className="mt-1 text-sm text-[#f3f0ed]/40">
+            Monitoramento em tempo real · {total.toLocaleString('pt-BR')} gerações
+          </p>
+        </div>
+        <button
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#f3f0ed]/8 text-[#f3f0ed]/40 transition-colors hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70 disabled:opacity-40"
+        >
+          <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+        </button>
       </div>
 
       {/* Table */}

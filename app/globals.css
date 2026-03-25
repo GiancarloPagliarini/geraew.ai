@@ -116,6 +116,34 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* ─── Fluid / aurora loading blobs ─────────────────────────────────────────── */
+
+@keyframes fluid-blob-1 {
+  0%, 100% { transform: translate(0%, 0%)   rotate(0deg)   scale(1);    }
+  25%       { transform: translate(8%, -12%) rotate(90deg)  scale(1.12); }
+  50%       { transform: translate(-6%, 10%) rotate(200deg) scale(0.92); }
+  75%       { transform: translate(12%, 6%)  rotate(300deg) scale(1.08); }
+}
+
+@keyframes fluid-blob-2 {
+  0%, 100% { transform: translate(0%, 0%)    rotate(0deg)    scale(1);    }
+  33%       { transform: translate(-10%, 8%)  rotate(-130deg) scale(1.15); }
+  66%       { transform: translate(7%, -10%)  rotate(-260deg) scale(0.88); }
+}
+
+@keyframes fluid-blob-3 {
+  0%, 100% { transform: translate(0%, 0%)   rotate(0deg)   scale(1);    }
+  40%       { transform: translate(6%, 14%)  rotate(160deg) scale(1.1);  }
+  80%       { transform: translate(-8%, -6%) rotate(320deg) scale(0.94); }
+}
+
+@keyframes fluid-blob-4 {
+  0%, 100% { transform: translate(0%, 0%)    rotate(0deg)   scale(1);    }
+  20%       { transform: translate(-12%, 8%)  rotate(70deg)  scale(1.18); }
+  55%       { transform: translate(10%, -14%) rotate(200deg) scale(0.85); }
+  80%       { transform: translate(4%, 10%)   rotate(310deg) scale(1.1);  }
+}
+
 /* ─── Aside slide-in ───────────────────────────────────────────────────────── */
 
 @keyframes aside-in {

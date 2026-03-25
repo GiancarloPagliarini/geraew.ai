@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useInfluencerBuilder } from '@/lib/influencer-builder-context';
 import { api } from '@/lib/api';
 import { listenGeneration } from '@/lib/sse';
+import { GenerationPreview } from './GenerationPreview';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -108,7 +109,7 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
       setGenState('done');
       setGeneratedImageUrl(url);
       setNodeImage(nodeId, url);
-      setTimeout(() => setImageVisible(true), 60);
+      // imageVisible set via onLoad on <img> inside GenerationPreview
     }, 380);
   }
 
@@ -258,71 +259,15 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
           </div>
         )}
 
-        {/* ── Generating state ──────────────────────────────────────── */}
-        {genState === 'generating' && (
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-[#f3f0ed]/[0.06] bg-[#1e494b]/10 py-8">
-            <div className="relative flex items-center justify-center">
-              <svg width="90" height="90" viewBox="0 0 90 90" className="-rotate-90">
-                <circle
-                  cx="45" cy="45" r={RADIUS}
-                  fill="none"
-                  stroke="#f3f0ed"
-                  strokeOpacity={0.07}
-                  strokeWidth="4"
-                />
-                <circle
-                  cx="45" cy="45" r={RADIUS}
-                  fill="none"
-                  stroke="#a2dd00"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  strokeDasharray={CIRCUMFERENCE}
-                  strokeDashoffset={dashOffset}
-                  style={{ transition: 'stroke-dashoffset 0.18s ease-out' }}
-                />
-              </svg>
-              <span className="absolute text-sm font-bold text-[#f3f0ed]/80">
-                {progress}%
-              </span>
-            </div>
-            <span className="text-[10px] animate-pulse font-bold tracking-[0.2em] text-[#f3f0ed]/30 transition-all duration-500">
-              {loadingMsg}
-            </span>
-          </div>
-        )}
-
-        {/* ── Done state — generated preview ────────────────────────── */}
-        {genState === 'done' && generatedImageUrl && (
-          <div
-            className="group relative overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08]"
-            style={{
-              opacity: imageVisible ? 1 : 0,
-              transform: imageVisible ? 'scale(1)' : 'scale(0.96)',
-              transition: 'opacity 0.4s ease, transform 0.4s ease',
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={generatedImageUrl}
-              alt="Influencer gerada"
-              className="h-auto w-full object-cover"
-              draggable={false}
-            />
-          </div>
-        )}
-
-        {/* ── Idle: show generated image from previous run ──────────── */}
-        {genState === 'idle' && generatedImageUrl && (
-          <div className="group relative overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={generatedImageUrl}
-              alt="Influencer gerada"
-              className="h-auto w-full object-cover"
-              draggable={false}
-            />
-          </div>
-        )}
+        {/* ── Generation preview (aurora + crossfade) ───────────────── */}
+        <GenerationPreview
+          proportion="9-16"
+          genState={genState}
+          imageVisible={imageVisible}
+          onImageLoad={() => setImageVisible(true)}
+          progress={progress}
+          generatedImageUrl={generatedImageUrl}
+        />
 
         {/* Credit estimate */}
         {genState !== 'generating' && (

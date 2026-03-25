@@ -32,7 +32,7 @@ import { listenGeneration } from '@/lib/sse';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { GenerationErrorBanner, showGenerationError } from './GenerationError';
-import { CheckGenerationStatusButton } from './CheckGenerationStatusButton';
+import { GenerationPreview } from './GenerationPreview';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -141,15 +141,15 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
         if (data.firstFrame) setFirstFrame(data.firstFrame);
         if (data.lastFrame) setLastFrame(data.lastFrame);
       })
-      .catch(() => {});
+      .catch(() => { });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [enhancePrompt, setEnhancePrompt] = useState(stored?.enhancePrompt ?? false);
   const [isEnhancing, setIsEnhancing] = useState(false);
 
-  // With references + 1080P/4K → only 8s allowed
+  // With references (text mode) OR references + 1080P/4K → only 8s allowed
   const forceEightSeconds =
-    refImages.length > 0 && (resolution === 'RES_1080P' || resolution === 'RES_4K');
+    refImages.length > 0 && (videoMode === 'text' || resolution === 'RES_1080P' || resolution === 'RES_4K');
   const effectiveDuration = forceEightSeconds ? '8s' : duration;
   const videoType = videoMode === 'image'
     ? 'IMAGE_TO_VIDEO' as const
@@ -164,6 +164,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       : stored?.generatedVideoUrls?.length > 0 ? 'done' : 'idle'
   );
 
+  const isGenerating = genState === 'generating';
   const videoModelVariant = model === 'veo-3.1-fast-generate-preview' ? 'VEO_FAST' : 'VEO_MAX';
 
   const { data: estimate, isLoading: estimateLoading } = useQuery({
@@ -213,7 +214,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
   // Save reference images to IndexedDB (too large for localStorage)
   useEffect(() => {
-    idbSave(`${storageKey}-images`, { refImages, firstFrame, lastFrame }).catch(() => {});
+    idbSave(`${storageKey}-images`, { refImages, firstFrame, lastFrame }).catch(() => { });
   }, [storageKey, refImages, firstFrame, lastFrame]);
 
   // Update document title while generating
@@ -397,7 +398,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       setGeneratedVideoUrls(urls);
       setSelectedVideoIdx(0);
       setNodeImage(nodeId, urls[0]);
-      setTimeout(() => setVideosVisible(true), 60);
+      // videosVisible set via onLoadedData on <video> inside GenerationPreview
     }, 380);
   }
 
@@ -608,7 +609,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           <div className="flex items-center gap-1">
             <PanelDuplicateButton onClick={onDuplicate} />
             <button
-              onClick={() => { localStorage.removeItem(storageKey); idbDelete(`${storageKey}-images`).catch(() => {}); onClose?.(); }}
+              onClick={() => { localStorage.removeItem(storageKey); idbDelete(`${storageKey}-images`).catch(() => { }); onClose?.(); }}
               className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
             >
               <X className="h-3.5 w-3.5" />
@@ -670,6 +671,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
               style={{
                 background: enhancePrompt ? 'rgba(162,221,0,0.06)' : 'transparent',
                 borderColor: enhancePrompt ? 'rgba(162,221,0,0.2)' : 'rgba(243,240,237,0.07)',
+                opacity: isGenerating ? 0.4 : 1,
+                pointerEvents: isGenerating ? 'none' : undefined,
               }}
             >
               <div className="flex items-center gap-1.5">
@@ -693,7 +696,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
           {/* Reference images (text mode) */}
           {videoMode === 'text' && (
-            <div className="space-y-2">
+            <div className="space-y-2" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
                   IMAGENS DE REFERÊNCIA (opcional)
@@ -753,7 +756,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
           {/* First / Last frame (image mode) */}
           {videoMode === 'image' && (
-            <div className="space-y-3">
+            <div className="space-y-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
               {/* First frame — required */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
@@ -884,109 +887,65 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           {/* Error message */}
           <GenerationErrorBanner msg={errorMsg} />
 
-{/* Generating state */}
-          {genState === 'generating' && (
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-[#f3f0ed]/6 bg-[#1e494b]/10 py-8">
-              <div className="relative flex items-center justify-center">
-                <svg width="90" height="90" viewBox="0 0 90 90" className="-rotate-90">
-                  <circle
-                    cx="45" cy="45" r={RADIUS}
-                    fill="none" stroke="#f3f0ed" strokeOpacity={0.07} strokeWidth="4"
-                  />
-                  <circle
-                    cx="45" cy="45" r={RADIUS}
-                    fill="none" stroke="#a2dd00" strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeDasharray={CIRCUMFERENCE}
-                    strokeDashoffset={dashOffset}
-                    style={{ transition: 'stroke-dashoffset 0.18s ease-out' }}
-                  />
-                </svg>
-                <span className="absolute text-sm font-bold text-[#f3f0ed]/80">{progress}%</span>
-              </div>
-              <span className="text-[10px] animate-pulse font-bold tracking-[0.2em] text-[#f3f0ed]/30 transition-all duration-500">
-                {loadingMsg}
-              </span>
-              <CheckGenerationStatusButton
-                generationId={generationId}
-                accessToken={accessToken}
-                onCompleted={(generation) => {
-                  clearPollTimer();
-                  finishWithVideos(generation.outputs.map((o) => o.url));
-                  refetchCredits();
-                  prependToGallery(generation);
-                }}
-                onFailed={() => {
-                  clearPollTimer();
-                  clearProgressTimer();
-                  clearMsgTimer();
-                  setGenState('idle');
-                  refetchCredits();
-                }}
+          {/* ── Generation preview (aurora + crossfade) ───────────────── */}
+          <GenerationPreview
+            proportion={proportion}
+            genState={genState}
+            imageVisible={videosVisible}
+            progress={progress}
+            renderMedia={generatedVideoUrls.length > 0 ? () => (
+              <video
+                key={generatedVideoUrls[selectedVideoIdx]}
+                src={generatedVideoUrls[selectedVideoIdx]}
+                controls
+                preload="metadata"
+                className="h-full w-full object-contain bg-black"
+                onLoadedData={() => setVideosVisible(true)}
               />
-            </div>
-          )}
+            ) : undefined}
+          >
+            <ActionButton title="Abrir" onClick={() => window.open(generatedVideoUrls[selectedVideoIdx], '_blank')}>
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </ActionButton>
+            <ActionButton title="Baixar" onClick={() => handleDownload(generatedVideoUrls[selectedVideoIdx])}>
+              <Download className="h-3.5 w-3.5" />
+            </ActionButton>
+            <ActionButton title="Descartar" onClick={handleDiscard}>
+              <X className="h-3.5 w-3.5" />
+            </ActionButton>
+          </GenerationPreview>
 
-          {/* Generated videos */}
-          {genState === 'done' && generatedVideoUrls.length > 0 && (
+          {/* Thumbnail strip — outside preview to avoid clipping */}
+          {genState === 'done' && generatedVideoUrls.length > 1 && (
             <div
-              className="flex flex-col gap-2"
+              className="grid gap-1.5"
               style={{
+                gridTemplateColumns: `repeat(${generatedVideoUrls.length}, 1fr)`,
                 opacity: videosVisible ? 1 : 0,
-                transform: videosVisible ? 'scale(1)' : 'scale(0.96)',
-                transition: 'opacity 0.4s ease, transform 0.4s ease',
+                transition: 'opacity 0.4s ease',
               }}
             >
-              {/* Main player */}
-              <div className="group relative overflow-hidden rounded-xl border border-[#f3f0ed]/8">
-                <video
-                  key={generatedVideoUrls[selectedVideoIdx]}
-                  src={generatedVideoUrls[selectedVideoIdx]}
-                  controls
-                  preload="metadata"
-                  className="w-full rounded-xl bg-black"
-                />
-                <div className="pointer-events-none absolute inset-0 flex items-start justify-end gap-1.5 bg-linear-to-b from-black/50 via-transparent to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                  <div className="pointer-events-auto flex gap-1.5">
-                    <ActionButton title="Abrir" onClick={() => window.open(generatedVideoUrls[selectedVideoIdx], '_blank')}>
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    </ActionButton>
-                    <ActionButton title="Baixar" onClick={() => handleDownload(generatedVideoUrls[selectedVideoIdx])}>
-                      <Download className="h-3.5 w-3.5" />
-                    </ActionButton>
-                    <ActionButton title="Descartar" onClick={handleDiscard}>
-                      <X className="h-3.5 w-3.5" />
-                    </ActionButton>
+              {generatedVideoUrls.map((url, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedVideoIdx(i)}
+                  className="group/thumb relative aspect-video overflow-hidden rounded-lg bg-black transition-all"
+                  style={{
+                    outline: i === selectedVideoIdx ? '2px solid #a2dd00' : '2px solid transparent',
+                    outlineOffset: '1px',
+                  }}
+                >
+                  <video src={url} preload="metadata" muted className="h-full w-full object-cover" />
+                  <div className="absolute bottom-1 right-1 rounded-md bg-black/70 px-1 py-0.5 text-[8px] font-bold text-white">
+                    {i + 1}
                   </div>
-                </div>
-              </div>
-
-              {/* Thumbnail strip — only when multiple videos */}
-              {generatedVideoUrls.length > 1 && (
-                <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${generatedVideoUrls.length}, 1fr)` }}>
-                  {generatedVideoUrls.map((url, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setSelectedVideoIdx(i)}
-                      className="group/thumb relative overflow-hidden rounded-lg aspect-video bg-black transition-all"
-                      style={{
-                        outline: i === selectedVideoIdx ? '2px solid #a2dd00' : '2px solid transparent',
-                        outlineOffset: '1px',
-                      }}
-                    >
-                      <video src={url} preload="metadata" muted className="h-full w-full object-cover" />
-                      <div className="absolute bottom-1 right-1 rounded-md bg-black/70 px-1 py-0.5 text-[8px] font-bold text-white">
-                        {i + 1}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+                </button>
+              ))}
             </div>
           )}
 
           {/* Audio toggle */}
-          <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/10 px-3 py-2.5">
+          <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/10 px-3 py-2.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
             <div className="flex items-center gap-1.5">
               <span className="text-[11px] font-bold text-[#f3f0ed]/60">Áudio</span>
               <Info className="h-3 w-3 text-[#f3f0ed]/20" />
@@ -995,7 +954,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           </div>
 
           {/* Model + Resolution */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
                 MODELO
@@ -1027,7 +986,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           </div>
 
           {/* Duration + Proportion */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
                 DURAÇÃO
@@ -1041,8 +1000,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       key={d}
                       onClick={() => !disabled && setDuration(d)}
                       disabled={disabled}
-                      title={disabled ? 'Apenas 8s disponível com referências em 1080p/4K' : undefined}
-                      className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
+                      title={disabled ? 'Apenas 8s disponível com referências' : undefined}
+                      className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-30"
                       style={{
                         background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
                         color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
@@ -1086,7 +1045,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           </div>
 
           {/* Sample count */}
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
             <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
               QUANTIDADE
             </label>

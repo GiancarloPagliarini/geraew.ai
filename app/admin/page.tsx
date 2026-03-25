@@ -32,29 +32,26 @@ function StatCard({
 }) {
   return (
     <div
-      className={`flex flex-col justify-between rounded-2xl border p-5 ${
-        accent
+      className={`flex flex-col justify-between rounded-2xl border p-4 md:p-5 ${accent
           ? 'border-[#a2dd00]/20 bg-[#a2dd00]/5'
           : 'border-[#f3f0ed]/6 bg-[#f3f0ed]/[0.02]'
-      }`}
+        }`}
     >
       <div className="flex items-center justify-between">
         <span
-          className={`text-[10px] font-bold uppercase tracking-[0.12em] ${
-            accent ? 'text-[#a2dd00]/50' : 'text-[#f3f0ed]/30'
-          }`}
+          className={`text-[9px] font-bold uppercase tracking-widest md:text-[10px] md:tracking-[0.12em] ${accent ? 'text-[#a2dd00]/50' : 'text-[#f3f0ed]/30'
+            }`}
         >
           {label}
         </span>
         <div
-          className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-            accent ? 'bg-[#a2dd00]/10' : 'bg-[#f3f0ed]/5'
-          }`}
+          className={`flex h-7 w-7 items-center justify-center rounded-lg md:h-8 md:w-8 ${accent ? 'bg-[#a2dd00]/10' : 'bg-[#f3f0ed]/5'
+            }`}
         >
-          <Icon className={`h-4 w-4 ${accent ? 'text-[#a2dd00]' : 'text-[#f3f0ed]/40'}`} />
+          <Icon className={`h-3.5 w-3.5 md:h-4 md:w-4 ${accent ? 'text-[#a2dd00]' : 'text-[#f3f0ed]/40'}`} />
         </div>
       </div>
-      <p className={`mt-3 text-3xl font-bold tabular-nums ${accent ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'}`}>
+      <p className={`mt-2 text-xl font-bold tabular-nums md:mt-3 md:text-3xl ${accent ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'}`}>
         {value}
       </p>
       {sub && <p className="mt-1 text-xs text-[#f3f0ed]/30">{sub}</p>}
@@ -111,7 +108,7 @@ function StatusBar({ stats }: { stats: AdminStats }) {
               <div className="flex flex-col">
                 <span className="text-xs font-medium text-[#f3f0ed]/60">{seg.label}</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-lg font-bold tabular-nums text-[#f3f0ed]">
+                  <span className="text-base font-bold tabular-nums text-[#f3f0ed] md:text-lg">
                     {seg.value.toLocaleString('pt-BR')}
                   </span>
                   <span className="text-[10px] text-[#f3f0ed]/30">
@@ -151,7 +148,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-5 md:gap-8">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-[#f3f0ed]">Dashboard</h1>

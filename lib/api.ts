@@ -832,5 +832,12 @@ export const api = {
         method: 'POST',
       });
     },
+
+    resendVerificationByEmail(email: string) {
+      return request<{ message: string }>('/api/v1/auth/resend-verification', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+    },
   },
 };

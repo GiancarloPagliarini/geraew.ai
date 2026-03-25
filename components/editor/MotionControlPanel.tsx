@@ -26,7 +26,7 @@ import { listenGeneration } from '@/lib/sse';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { GenerationErrorBanner, showGenerationError } from './GenerationError';
-import { CheckGenerationStatusButton } from './CheckGenerationStatusButton';
+import { GenerationPreview } from './GenerationPreview';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -105,7 +105,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
         if (data.videoFile) setVideoFile(data.videoFile);
         if (data.imageFile) setImageFile(data.imageFile);
       })
-      .catch(() => {});
+      .catch(() => { });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(stored?.generatedVideoUrl ?? null);
@@ -165,7 +165,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
 
   // Save files to IndexedDB (too large for localStorage)
   useEffect(() => {
-    idbSave(`${storageKey}-images`, { videoFile, imageFile }).catch(() => {});
+    idbSave(`${storageKey}-images`, { videoFile, imageFile }).catch(() => { });
   }, [storageKey, videoFile, imageFile]);
 
   // Document title
@@ -359,7 +359,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
       setGenState('done');
       setGeneratedVideoUrl(url);
       setNodeImage(nodeId, url);
-      setTimeout(() => setVideoVisible(true), 60);
+      // videoVisible set via onLoadedData on <video> inside GenerationPreview
     }, 380);
   }
 
@@ -499,7 +499,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
           <div className="flex items-center gap-1">
             <PanelDuplicateButton onClick={onDuplicate} />
             <button
-              onClick={() => { localStorage.removeItem(storageKey); idbDelete(`${storageKey}-images`).catch(() => {}); onClose?.(); }}
+              onClick={() => { localStorage.removeItem(storageKey); idbDelete(`${storageKey}-images`).catch(() => { }); onClose?.(); }}
               className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
             >
               <X className="h-3.5 w-3.5" />
@@ -508,60 +508,29 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
         </div>
 
         <div className="space-y-4 p-4">
-          {/* ── GENERATING STATE ──────────────────────────────── */}
-          {genState === 'generating' && (
-            <div className="flex flex-col items-center gap-5 py-8">
-              <div className="relative flex h-24 w-24 items-center justify-center">
-                <svg className="absolute inset-0 -rotate-90" viewBox="0 0 80 80">
-                  <circle cx="40" cy="40" r={RADIUS} fill="none" stroke="rgba(162,221,0,0.10)" strokeWidth="5" />
-                  <circle
-                    cx="40" cy="40" r={RADIUS} fill="none" stroke="#a2dd00" strokeWidth="5"
-                    strokeDasharray={CIRCUMFERENCE} strokeDashoffset={dashOffset}
-                    strokeLinecap="round"
-                    className="transition-[stroke-dashoffset] duration-700 ease-out"
-                  />
-                </svg>
-                <span className="text-lg font-bold text-[#a2dd00]">{progress}%</span>
-              </div>
-              <p className="animate-pulse text-[10px] font-bold tracking-[0.2em] text-[#f3f0ed]/30">{loadingMsg}</p>
-              <CheckGenerationStatusButton
-                generationId={generationId}
-                accessToken={accessToken}
-                onCompleted={(generation) => {
-                  clearPollTimer();
-                  finishWithVideo(generation.outputs[0]?.url);
-                  refetchCredits();
-                  prependToGallery(generation);
-                }}
-                onFailed={() => {
-                  clearPollTimer();
-                  clearProgressTimer();
-                  clearMsgTimer();
-                  setGenState('idle');
-                  refetchCredits();
-                }}
+          {/* ── Generation preview (aurora + crossfade) ───────────────── */}
+          <GenerationPreview
+            proportion="16-9"
+            genState={genState}
+            imageVisible={videoVisible}
+            progress={progress}
+            renderMedia={generatedVideoUrl ? () => (
+              <video
+                src={generatedVideoUrl}
+                className="h-full w-full object-cover"
+                controls
+                autoPlay
+                loop
+                muted
+                playsInline
+                onLoadedData={() => setVideoVisible(true)}
               />
-            </div>
-          )}
+            ) : undefined}
+          />
 
-          {/* ── DONE STATE ───────────────────────────────────── */}
-          {genState === 'done' && generatedVideoUrl && (
-            <div className="space-y-3">
-              <div
-                className="overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08] transition-all duration-500"
-                style={{ opacity: videoVisible ? 1 : 0, transform: videoVisible ? 'scale(1)' : 'scale(0.95)' }}
-              >
-                <video
-                  src={generatedVideoUrl}
-                  className="w-full"
-                  controls
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                />
-              </div>
-
+          {/* ── Actions (download + discard) — shown after video loads ── */}
+          {genState === 'done' && generatedVideoUrl && videoVisible && (
+            <div className="space-y-2">
               <div className="flex gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -570,7 +539,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
                       download
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 text-xs font-semibold text-[#f3f0ed]/60 transition-all hover:border-[#a2dd00]/30 hover:text-[#a2dd00]"
+                      className="flex h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/8 bg-[#1e494b]/20 text-xs font-semibold text-[#f3f0ed]/60 transition-all hover:border-[#a2dd00]/30 hover:text-[#a2dd00]"
                     >
                       <Download className="h-3.5 w-3.5" />
                       Download
@@ -579,10 +548,9 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
                   <TooltipContent side="bottom" sideOffset={4}>Baixar vídeo</TooltipContent>
                 </Tooltip>
               </div>
-
               <button
                 onClick={handleDiscard}
-                className="flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/[0.06] text-xs font-semibold text-[#f3f0ed]/40 transition-all hover:border-[#f3f0ed]/15 hover:text-[#f3f0ed]/70"
+                className="flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/6 text-xs font-semibold text-[#f3f0ed]/40 transition-all hover:border-[#f3f0ed]/15 hover:text-[#f3f0ed]/70"
               >
                 Gerar outro
               </button>

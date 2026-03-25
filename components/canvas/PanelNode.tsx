@@ -3,6 +3,7 @@
 import { Node, NodeProps, useReactFlow } from '@xyflow/react';
 import { useCallback } from 'react';
 import { useEditor } from '@/lib/editor-context';
+import { idbLoad, idbSave } from '@/lib/panel-idb';
 import { GenerateImagePanel } from '../editor/GenerateImagePanel';
 import { CreateInfluencerPanel } from '../editor/CreateInfluencerPanel';
 import { GenerateVideoPanel } from '../editor/GenerateVideoPanel';
@@ -34,7 +35,7 @@ export function PanelNode({ id, data }: NodeProps) {
     if (selectedNodeId === id) setSelectedNodeId(null);
   }, [id, selectedNodeId, setNodes, setSelectedNodeId]);
 
-  const handleDuplicate = useCallback(() => {
+  const handleDuplicate = useCallback(async () => {
     const panelType = data.panelType as string;
     const newId = `${panelType}-${Date.now()}`;
 
@@ -42,7 +43,10 @@ export function PanelNode({ id, data }: NodeProps) {
     const prefix = STORAGE_KEY_PREFIX[panelType];
     if (prefix) {
       try {
-        const raw = localStorage.getItem(`${prefix}${id}`);
+        const oldStorageKey = `${prefix}${id}`;
+        const newStorageKey = `${prefix}${newId}`;
+
+        const raw = localStorage.getItem(oldStorageKey);
         if (raw) {
           const parsed = JSON.parse(raw);
           parsed.genState = 'idle';
@@ -50,7 +54,13 @@ export function PanelNode({ id, data }: NodeProps) {
           parsed.generatedVideoUrls = [];
           parsed.generatedVideoUrl = null;
           parsed.generatedImageUrl = null;
-          localStorage.setItem(`${prefix}${newId}`, JSON.stringify(parsed));
+          localStorage.setItem(newStorageKey, JSON.stringify(parsed));
+        }
+
+        // Copy IndexedDB images to the new node
+        const idbData = await idbLoad(`${oldStorageKey}-images`);
+        if (idbData) {
+          await idbSave(`${newStorageKey}-images`, idbData);
         }
       } catch { /* ignore */ }
     }
