@@ -1047,7 +1047,7 @@ const GalleryItem = memo(function GalleryItem({
           alt={item.prompt ?? 'Geração'}
           fill
           sizes="(max-width: 640px) 50vw, 33vw"
-          quality={60}
+          unoptimized
           priority={priority}
           placeholder={item.blurDataUrl ? 'blur' : 'empty'}
           blurDataURL={item.blurDataUrl}
