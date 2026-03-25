@@ -175,6 +175,27 @@ export interface Generation {
   completedAt?: string;
 }
 
+/** Lightweight gallery list item — only essential fields for grid rendering */
+export interface GalleryItem {
+  id: string;
+  type: string;
+  status: GenerationStatus;
+  prompt?: string;
+  resolution?: string;
+  durationSeconds?: number;
+  hasAudio?: boolean;
+  hasWatermark?: boolean;
+  creditsConsumed: number;
+  isFavorited?: boolean;
+  thumbnailUrl?: string;
+  blurDataUrl?: string;
+  outputUrl?: string;
+  outputCount: number;
+  folder?: { id: string; name: string } | null;
+  createdAt?: string;
+  completedAt?: string;
+}
+
 export interface GalleryStats {
   totalGenerations: number;
   totalCreditsUsed: number;
@@ -444,7 +465,7 @@ export const api = {
       if (filters?.type) params.set('type', filters.type);
       if (filters?.favorited) params.set('favorited', 'true');
       if (filters?.folderId) params.set('folderId', filters.folderId);
-      return authRequest<PaginatedResponse<Generation>>(
+      return authRequest<PaginatedResponse<GalleryItem>>(
         `/api/v1/gallery?${params.toString()}`,
         accessToken,
       );
@@ -753,6 +774,16 @@ export const api = {
       return authRequest<AdminPaginatedResponse<AdminUserGeneration>>(
         `/api/v1/admin/users/${userId}/generations?page=${page}&limit=${limit}`,
         accessToken,
+      );
+    },
+    changeUserPlan(accessToken: string, userId: string, planSlug: string) {
+      return authRequest<{ success: boolean; message: string }>(
+        `/api/v1/admin/users/${userId}/plan`,
+        accessToken,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ planSlug }),
+        },
       );
     },
     generations(accessToken: string, page = 1, limit = 20) {

@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import type { AdminUserGeneration } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import {
   Loader2,
@@ -30,6 +30,7 @@ import {
   Eye,
   Video,
   AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -161,6 +162,7 @@ export default function AdminUserDetailPage() {
   const [creditDesc, setCreditDesc] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [genPage, setGenPage] = useState(1);
+  const [selectedPlan, setSelectedPlan] = useState('');
 
   const { data: user, isLoading } = useQuery({
     queryKey: ['admin', 'user', id],
@@ -173,6 +175,32 @@ export default function AdminUserDetailPage() {
     queryFn: () => api.admin.userGenerations(accessToken!, id, genPage, 12),
     enabled: !!accessToken && !!id,
   });
+
+  const { data: plans } = useQuery({
+    queryKey: ['plans'],
+    queryFn: () => api.plans.list(accessToken!),
+    enabled: !!accessToken,
+  });
+
+  const changePlanMutation = useMutation({
+    mutationFn: (planSlug: string) =>
+      api.admin.changeUserPlan(accessToken!, id, planSlug),
+    onSuccess: () => {
+      toast.success('Plano alterado com sucesso');
+      setSelectedPlan('');
+      queryClient.invalidateQueries({ queryKey: ['admin', 'user', id] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+    onError: () => {
+      toast.error('Erro ao alterar plano');
+    },
+  });
+
+  const currentPlanSlug = user?.subscription?.planSlug ?? 'free';
+  const availablePlans = useMemo(
+    () => (plans ?? []).filter((p) => p.slug !== currentPlanSlug),
+    [plans, currentPlanSlug],
+  );
 
   const adjustMutation = useMutation({
     mutationFn: ({ amount, description }: { amount: number; description: string }) =>
@@ -446,6 +474,54 @@ export default function AdminUserDetailPage() {
           ) : (
             <p className="text-sm text-[#f3f0ed]/30">Sem balan\u00e7o</p>
           )}
+        </div>
+      </div>
+
+      {/* Change plan */}
+      <div className="rounded-2xl border border-purple-500/15 bg-purple-500/[0.03] p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <RefreshCw className="h-4 w-4 text-purple-400" />
+          <h3 className="text-sm font-semibold text-[#f3f0ed]">Alterar Plano</h3>
+          <Badge variant="outline" className="border-[#f3f0ed]/10 bg-[#f3f0ed]/5 text-[#f3f0ed]/50 text-[10px]">
+            Atual: {user.subscription?.planName ?? 'Free'}
+          </Badge>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
+              Novo plano
+            </label>
+            <select
+              value={selectedPlan}
+              onChange={(e) => setSelectedPlan(e.target.value)}
+              className="h-9 rounded-xl border border-[#f3f0ed]/10 bg-[#f3f0ed]/[0.03] px-3 text-sm text-[#f3f0ed] focus:border-purple-500/30 focus:outline-none focus:ring-1 focus:ring-purple-500/10"
+            >
+              <option value="" className="bg-[#1a2123]">Selecione um plano</option>
+              {availablePlans.map((p) => (
+                <option key={p.slug} value={p.slug} className="bg-[#1a2123]">
+                  {p.name} — {p.creditsPerMonth} créditos/mês — R$ {(p.priceCents / 100).toFixed(2)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={() => {
+              if (!selectedPlan) {
+                toast.error('Selecione um plano');
+                return;
+              }
+              changePlanMutation.mutate(selectedPlan);
+            }}
+            disabled={changePlanMutation.isPending || !selectedPlan}
+            className="flex h-9 items-center gap-1.5 rounded-xl bg-purple-500 px-4 text-xs font-bold text-white transition-all hover:bg-purple-600 active:scale-[0.97] disabled:opacity-50"
+          >
+            {changePlanMutation.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            Alterar Plano
+          </button>
         </div>
       </div>
 

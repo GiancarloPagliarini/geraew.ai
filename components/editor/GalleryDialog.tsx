@@ -38,7 +38,7 @@ import { toast } from 'sonner';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, InfiniteData } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-context';
 import { useEditor } from '@/lib/editor-context';
-import { api, Folder, Generation, GenerationInputImage, PaginatedResponse } from '@/lib/api';
+import { api, Folder, Generation, GenerationInputImage, GalleryItem as GalleryItemType, PaginatedResponse } from '@/lib/api';
 
 type GalleryTab = 'all' | 'photos' | 'videos' | 'favorites';
 
@@ -189,7 +189,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
   // ── Favorite mutation (optimistic) ───────────────────────────────────────────
 
   const favoriteMutation = useMutation({
-    mutationFn: (item: Generation) =>
+    mutationFn: (item: { id: string; isFavorited?: boolean }) =>
       item.isFavorited
         ? api.gallery.unfavorite(accessToken!, item.id)
         : api.gallery.favorite(accessToken!, item.id),
@@ -201,13 +201,13 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
 
       // Optimistically update all gallery list caches
       const queryKeys = TABS.map((t) => ['gallery', 'list', t.key]);
-      const snapshots: [string[], InfiniteData<PaginatedResponse<Generation>> | undefined][] = [];
+      const snapshots: [string[], InfiniteData<PaginatedResponse<GalleryItemType>> | undefined][] = [];
 
       for (const qk of queryKeys) {
-        const prev = queryClient.getQueryData<InfiniteData<PaginatedResponse<Generation>>>(qk);
+        const prev = queryClient.getQueryData<InfiniteData<PaginatedResponse<GalleryItemType>>>(qk);
         snapshots.push([qk, prev]);
         if (prev) {
-          queryClient.setQueryData<InfiniteData<PaginatedResponse<Generation>>>(qk, {
+          queryClient.setQueryData<InfiniteData<PaginatedResponse<GalleryItemType>>>(qk, {
             ...prev,
             pages: prev.pages.map((page) => ({
               ...page,
@@ -245,7 +245,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
   });
 
   const toggleFavorite = useCallback(
-    (item: Generation, e?: React.MouseEvent) => {
+    (item: { id: string; isFavorited?: boolean }, e?: React.MouseEvent) => {
       e?.stopPropagation();
       favoriteMutation.mutate(item);
     },
@@ -264,12 +264,12 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
         ...(activeFolderId ? [['gallery', 'list', activeFolderId]] : []),
       ];
 
-      const snapshots: [string[], InfiniteData<PaginatedResponse<Generation>> | undefined][] = [];
+      const snapshots: [string[], InfiniteData<PaginatedResponse<GalleryItemType>> | undefined][] = [];
       for (const qk of allKeys) {
-        const prev = queryClient.getQueryData<InfiniteData<PaginatedResponse<Generation>>>(qk);
+        const prev = queryClient.getQueryData<InfiniteData<PaginatedResponse<GalleryItemType>>>(qk);
         snapshots.push([qk, prev]);
         if (prev) {
-          queryClient.setQueryData<InfiniteData<PaginatedResponse<Generation>>>(qk, {
+          queryClient.setQueryData<InfiniteData<PaginatedResponse<GalleryItemType>>>(qk, {
             ...prev,
             pages: prev.pages.map((page) => ({
               ...page,
@@ -541,12 +541,13 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
           ) : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-1">
-                {items.map((item) => {
-                  const itemUrl = item.outputs?.[0]?.url;
+                {items.map((item, index) => {
+                  const itemUrl = item.outputUrl;
                   return (
                     <GalleryItem
                       key={item.id}
                       item={item}
+                      priority={index < 6}
                       onClick={() => {
                         if (galleryPickerRequest && itemUrl && !item.durationSeconds) {
                           setPickerSelectedUrls((prev) => {
@@ -558,8 +559,10 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
                             }
                             return next;
                           });
-                        } else if (!galleryPickerRequest) {
-                          setSelected(item);
+                        } else if (!galleryPickerRequest && accessToken) {
+                          api.generations.get(accessToken, item.id).then(setSelected).catch(() => {
+                            toast.error('Erro ao carregar detalhes');
+                          });
                         }
                       }}
                       onToggleFavorite={toggleFavorite}
@@ -625,7 +628,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
 function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRemoveFromFolder, onCreateFolderAndAdd, onDelete, deleteIsPending }: {
   item: Generation;
   onBack: () => void;
-  toggleFavorite: (item: Generation, e?: React.MouseEvent) => void;
+  toggleFavorite: (item: { id: string; isFavorited?: boolean }, e?: React.MouseEvent) => void;
   folders: Folder[];
   onAddToFolder: (folderId: string) => void;
   onRemoveFromFolder: (folderId: string) => void;
@@ -991,10 +994,11 @@ const GalleryItem = memo(function GalleryItem({
   pickerMode = false,
   pickerSelected = false,
   pickerDisabled = false,
+  priority = false,
 }: {
-  item: Generation;
+  item: GalleryItemType;
   onClick: () => void;
-  onToggleFavorite: (item: Generation, e?: React.MouseEvent) => void;
+  onToggleFavorite: (item: { id: string; isFavorited?: boolean }, e?: React.MouseEvent) => void;
   folders: Folder[];
   onAddToFolder: (folderId: string) => void;
   onRemoveFromFolder: (folderId: string) => void;
@@ -1002,23 +1006,24 @@ const GalleryItem = memo(function GalleryItem({
   pickerMode?: boolean;
   pickerSelected?: boolean;
   pickerDisabled?: boolean;
+  priority?: boolean;
 }) {
   const [loaded, setLoaded] = useState(false);
   const [folderDropdownOpen, setFolderDropdownOpen] = useState(false);
-  const url = item.outputs?.[0]?.url;
+  const displayUrl = item.thumbnailUrl ?? item.outputUrl;
+  const fullUrl = item.outputUrl;
   const isVideo = !!item.durationSeconds;
-  const hasRefs = (item.inputImages?.length ?? 0) > 0;
-  const outputCount = item.outputs?.length ?? 0;
+  const outputCount = item.outputCount ?? 0;
   const itemFolderIds = item.folder ? [item.folder.id] : [];
 
   return (
     <div
       role="button"
       tabIndex={0}
-      draggable={!isVideo && !!url}
+      draggable={!isVideo && !!fullUrl}
       onDragStart={(e) => {
-        if (!url || isVideo) return;
-        e.dataTransfer.setData('text/geraew-image-url', url);
+        if (!fullUrl || isVideo) return;
+        e.dataTransfer.setData('text/geraew-image-url', fullUrl);
         e.dataTransfer.effectAllowed = 'copy';
       }}
       onClick={() => { if (!folderDropdownOpen) onClick(); }}
@@ -1036,24 +1041,23 @@ const GalleryItem = memo(function GalleryItem({
       {/* Static placeholder until media loads */}
       {!loaded && <div className="absolute inset-0 bg-[#f3f0ed]/6" />}
 
-      {isVideo ? (
-        <video
-          src={url}
-          muted
-          preload="metadata"
-          className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
-          onLoadedMetadata={() => setLoaded(true)}
-        />
-      ) : (
+      {displayUrl ? (
         <Image
-          src={url!}
-          alt={item.prompt ?? 'Imagem gerada'}
+          src={displayUrl}
+          alt={item.prompt ?? 'Geração'}
           fill
           sizes="(max-width: 640px) 50vw, 33vw"
-          quality={40}
+          quality={60}
+          priority={priority}
+          placeholder={item.blurDataUrl ? 'blur' : 'empty'}
+          blurDataURL={item.blurDataUrl}
           className={`object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
           onLoad={() => setLoaded(true)}
         />
+      ) : (
+        <div className="h-full w-full bg-[#f3f0ed]/6 flex items-center justify-center" ref={() => setLoaded(true)}>
+          <Play className="h-6 w-6 text-[#f3f0ed]/20" />
+        </div>
       )}
 
       {/* Picker selected overlay */}
@@ -1104,12 +1108,6 @@ const GalleryItem = memo(function GalleryItem({
 
       {/* Top-left badges (hidden in picker mode) */}
       {!pickerMode && <div className="absolute top-2 left-2 flex items-center gap-1">
-        {hasRefs && (
-          <div className="flex items-center gap-0.5 rounded-md bg-black/60 px-1 py-0.5 backdrop-blur-sm">
-            <ScanFace className="h-3 w-3 text-[#a2dd00]" />
-            <span className="text-[8px] font-bold text-[#a2dd00]">{item.inputImages!.length}</span>
-          </div>
-        )}
         <div
           role="button"
           onClick={(e) => onToggleFavorite(item, e)}

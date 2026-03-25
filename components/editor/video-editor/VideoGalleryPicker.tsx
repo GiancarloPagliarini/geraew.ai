@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { Loader2, Plus, X } from 'lucide-react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { api, Generation } from '@/lib/api';
+import { api, GalleryItem } from '@/lib/api';
 
 export function VideoGalleryPicker({
   accessToken,
@@ -11,7 +11,7 @@ export function VideoGalleryPicker({
   onClose,
 }: {
   accessToken: string | null;
-  onSelect: (gen: Generation) => void;
+  onSelect: (gen: GalleryItem) => void;
   onClose: () => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -76,26 +76,16 @@ export function VideoGalleryPicker({
           <>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {items.map((item) => {
-                const output = item.outputs?.[0];
-                if (!output) return null;
-                const thumb = output.thumbnailUrl ?? output.url;
+                if (!item.outputUrl) return null;
+                const thumb = item.thumbnailUrl ?? item.outputUrl;
                 return (
                   <button
                     key={item.id}
                     onClick={() => onSelect(item)}
                     className="relative aspect-video rounded-lg overflow-hidden ring-2 ring-transparent transition-all opacity-80 hover:opacity-100 hover:ring-[#a2dd00]/50"
                   >
-                    {item.durationSeconds ? (
-                      <video
-                        src={output.url}
-                        preload="metadata"
-                        muted
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={thumb} alt="" className="h-full w-full object-cover" loading="lazy" />
-                    )}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={thumb} alt="" className="h-full w-full object-cover" loading="lazy" />
                     <div className="absolute bottom-1 right-1 rounded bg-black/70 px-1 py-0.5 text-[8px] font-bold text-white/80">
                       {item.durationSeconds ?? '?'}s
                     </div>

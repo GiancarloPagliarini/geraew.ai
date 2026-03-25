@@ -27,7 +27,7 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import {
   api,
-  Generation,
+  GalleryItem,
   VideoClip,
   VideoProject,
 } from '@/lib/api';
@@ -856,11 +856,10 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
               <VideoGalleryPicker
                 accessToken={accessToken}
                 onSelect={(gen) => {
-                  const output = gen.outputs?.[0];
-                  if (!output) return;
+                  if (!gen.outputUrl) return;
                   addClipMutation.mutate({
-                    sourceUrl: output.url,
-                    thumbnailUrl: output.thumbnailUrl,
+                    sourceUrl: gen.outputUrl,
+                    thumbnailUrl: gen.thumbnailUrl,
                     durationMs: (gen.durationSeconds ?? 8) * 1000,
                   });
                 }}
@@ -1109,7 +1108,7 @@ function VideoGalleryPicker({
   onClose,
 }: {
   accessToken: string | null;
-  onSelect: (gen: Generation) => void;
+  onSelect: (gen: GalleryItem) => void;
   onClose: () => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -1174,9 +1173,8 @@ function VideoGalleryPicker({
           <>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {items.map((item) => {
-                const output = item.outputs?.[0];
-                if (!output) return null;
-                const thumb = output.thumbnailUrl ?? output.url;
+                if (!item.outputUrl) return null;
+                const thumb = item.thumbnailUrl ?? item.outputUrl;
                 return (
                   <button
                     key={item.id}
@@ -1185,7 +1183,7 @@ function VideoGalleryPicker({
                   >
                     {item.durationSeconds ? (
                       <video
-                        src={output.url}
+                        src={item.outputUrl}
                         preload="metadata"
                         muted
                         className="h-full w-full object-cover"

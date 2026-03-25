@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
 import { InfiniteData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './auth-context';
-import { api, CreditsBalance, Generation, PaginatedResponse } from './api';
+import { api, CreditsBalance, Generation, GalleryItem, PaginatedResponse } from './api';
 
 type UpscaleState = 'idle' | 'upscaling' | 'done';
 
@@ -67,6 +67,26 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
 
   const prependToGallery = useCallback(
     (generation: Generation) => {
+      // Convert full Generation to lightweight GalleryItem for cache
+      const galleryItem: GalleryItem = {
+        id: generation.id,
+        type: generation.type,
+        status: generation.status,
+        prompt: generation.prompt,
+        resolution: generation.resolution,
+        durationSeconds: generation.durationSeconds,
+        hasAudio: generation.hasAudio,
+        hasWatermark: generation.hasWatermark,
+        creditsConsumed: generation.creditsConsumed,
+        isFavorited: generation.isFavorited,
+        thumbnailUrl: generation.outputs?.[0]?.thumbnailUrl,
+        outputUrl: generation.outputs?.[0]?.url,
+        outputCount: generation.outputs?.length ?? 0,
+        folder: generation.folder,
+        createdAt: generation.createdAt,
+        completedAt: generation.completedAt,
+      };
+
       // Update every cached gallery list variant (each tab / folder has its own key)
       const keys = queryClient
         .getQueryCache()
@@ -74,7 +94,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         .map((q) => q.queryKey);
 
       for (const key of keys) {
-        queryClient.setQueryData<InfiniteData<PaginatedResponse<Generation>>>(key, (old) => {
+        queryClient.setQueryData<InfiniteData<PaginatedResponse<GalleryItem>>>(key, (old) => {
           if (!old?.pages.length) return old;
           const [firstPage, ...rest] = old.pages;
           return {
@@ -82,7 +102,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
             pages: [
               {
                 ...firstPage,
-                data: [generation, ...firstPage.data],
+                data: [galleryItem, ...firstPage.data],
                 meta: { ...firstPage.meta, total: firstPage.meta.total + 1 },
               },
               ...rest,
