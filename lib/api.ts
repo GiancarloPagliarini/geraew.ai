@@ -805,5 +805,32 @@ export const api = {
         body: JSON.stringify({ refreshToken }),
       });
     },
+
+    forgotPassword(email: string) {
+      return request<{ message: string; resetToken?: string }>('/api/v1/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+    },
+
+    resetPassword(token: string, password: string) {
+      return request<{ message: string }>('/api/v1/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ token, password }),
+      });
+    },
+
+    verifyEmail(token: string) {
+      return request<{ message: string }>('/api/v1/auth/verify-email', {
+        method: 'POST',
+        body: JSON.stringify({ token }),
+      });
+    },
+
+    resendVerification(accessToken: string) {
+      return authRequest<{ message: string }>('/api/v1/auth/resend-verification', accessToken, {
+        method: 'POST',
+      });
+    },
   },
 };

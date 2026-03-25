@@ -221,7 +221,7 @@ function LoginPageContent() {
         setName('');
         setPassword('');
         setPhone('');
-        setSuccess('Conta criada com sucesso! Faça login para continuar.');
+        setSuccess('Conta criada! Verifique seu email para confirmar sua conta, depois faça login.');
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Ocorreu um erro. Tente novamente.';
@@ -438,6 +438,7 @@ function LoginPageContent() {
                 <div className="flex justify-end">
                   <button
                     type="button"
+                    onClick={() => router.push('/forgot-password')}
                     className="text-[11px] text-[#a2dd00]/50 hover:text-[#a2dd00]/80 transition-colors"
                   >
                     Esqueceu a senha?
