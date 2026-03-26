@@ -4,6 +4,7 @@ import { Eye, EyeOff, Mail, ArrowLeft, UserPlus, LogIn, Phone } from 'lucide-rea
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 
@@ -322,13 +323,13 @@ function LoginPageContent() {
 
             <p className="mt-4 text-center text-[11px] text-white/18 leading-relaxed">
               Ao continuar, você concorda com nossos{' '}
-              <span className="text-[#a2dd00]/50 cursor-pointer hover:text-[#a2dd00]/80 transition-colors">
+              <Link href="/termos-de-uso" className="text-[#a2dd00]/50 hover:text-[#a2dd00]/80 transition-colors">
                 Termos de Uso
-              </span>{' '}
+              </Link>{' '}
               e{' '}
-              <span className="text-[#a2dd00]/50 cursor-pointer hover:text-[#a2dd00]/80 transition-colors">
+              <Link href="/politica-de-privacidade" className="text-[#a2dd00]/50 hover:text-[#a2dd00]/80 transition-colors">
                 Política de Privacidade
-              </span>
+              </Link>
             </p>
           </div>
         )}

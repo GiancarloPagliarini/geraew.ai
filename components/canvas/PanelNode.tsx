@@ -8,7 +8,6 @@ import { GenerateImagePanel } from '../editor/GenerateImagePanel';
 import { CreateInfluencerPanel } from '../editor/CreateInfluencerPanel';
 import { GenerateVideoPanel } from '../editor/GenerateVideoPanel';
 import { MotionControlPanel } from '../editor/MotionControlPanel';
-import { GenericPanel } from '../editor/GenericPanel';
 
 const PANEL_NODE_STYLE = {
   background: 'transparent',
@@ -96,8 +95,8 @@ export function PanelNode({ id, data }: NodeProps) {
   if (data.panelType === 'motion-control') {
     return <MotionControlPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />;
   }
-  if (data.panelType === 'generic') {
-    return <GenericPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />;
-  }
+  // if (data.panelType === 'generic') {
+  //   return <GenericPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />;
+  // }
   return null;
 }

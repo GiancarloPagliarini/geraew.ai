@@ -35,7 +35,8 @@
       "Bash(npm install:*)",
       "Bash(grep -l \"auth\" /c/Users/gianc/geraew-ai/lib/*.ts*)",
       "Bash(xargs grep -l \"useAuth\\\\|google\\\\|GoogleOAuth\")",
-      "Bash(ls /c/Users/gianc/geraew-ai/lib/plan*.ts)"
+      "Bash(ls /c/Users/gianc/geraew-ai/lib/plan*.ts)",
+      "Bash(python3 -c \":*)"
     ]
   }
 }

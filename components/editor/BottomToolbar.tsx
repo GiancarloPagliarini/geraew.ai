@@ -1,6 +1,6 @@
 'use client';
 
-import { AudioWaveform, Hand, HelpCircle, ImageIcon, Minus, MousePointer2, PersonStanding, Plus, Trash2, Video } from 'lucide-react';
+import { AudioWaveform, Hand, HelpCircle, ImageIcon, LayoutGrid, Minus, MousePointer2, PersonStanding, Plus, Trash2, Video } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -82,6 +82,10 @@ export function BottomToolbar({
           <ToolbarButton tooltip="Copiar movimentos" onClick={onAddMotionControl}>
             <AudioWaveform className="h-4 w-4" />
           </ToolbarButton>
+          {/* 
+          <ToolbarButton tooltip="Painel customizável" onClick={onAdd}>
+            <LayoutGrid className="h-4 w-4" />
+          </ToolbarButton> */}
 
           <div className="mx-1 h-4 w-px bg-[#f3f0ed]/[0.08] sm:mx-1.5" />
 

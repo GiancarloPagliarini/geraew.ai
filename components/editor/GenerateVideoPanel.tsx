@@ -15,6 +15,7 @@ import {
   Image,
   ImagePlus, Info,
   Loader2,
+  Settings,
   Sparkles,
   Type,
   Video,
@@ -146,6 +147,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   }, []);
   const [enhancePrompt, setEnhancePrompt] = useState(stored?.enhancePrompt ?? false);
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [optionsOpen, setOptionsOpen] = useState(true);
 
   // With references (text mode) OR references + 1080P/4K → only 8s allowed
   const forceEightSeconds =
@@ -435,6 +437,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     if (!accessToken || !prompt.trim()) return;
     if (videoMode === 'image' && !firstFrame) return;
 
+    setOptionsOpen(false);
+    await new Promise<void>((resolve) => setTimeout(resolve, 320));
     setGenState('generating');
     setProgress(0);
     setVideosVisible(false);
@@ -617,7 +621,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           </div>
         </div>
 
-        <div className="space-y-4 p-4">
+        <div className="space-y-3.5 p-4">
           {/* Mode selector */}
           <div className="flex gap-2">
             {([
@@ -653,9 +657,6 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
           {/* Prompt */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-              PROMPT
-            </label>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -694,69 +695,9 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
             </button>
           </div>
 
-          {/* Reference images (text mode) */}
-          {videoMode === 'text' && (
-            <div className="space-y-2" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                  IMAGENS DE REFERÊNCIA (opcional)
-                </label>
-                <span className="text-[10px] text-[#f3f0ed]/25">{refImages.length}/3</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {refImages.map((img, i) => (
-                  <div key={i} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#f3f0ed]/10">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img.preview} alt="" className="h-full w-full object-cover" />
-                    <button
-                      onClick={() => setRefImages((prev) => prev.filter((_, idx) => idx !== i))}
-                      className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
-                    >
-                      <X className="h-3.5 w-3.5 text-white" />
-                    </button>
-                  </div>
-                ))}
-                {refImages.length < 3 && (
-                  <>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => fileInputRef.current?.click()}
-                          className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
-                        >
-                          <ImagePlus className="h-5 w-5" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" sideOffset={6}>Enviar do dispositivo</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => openGalleryPicker({ nodeId, remaining: 3 - refImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success('Imagem adicionada como referência!'); } })}
-                          className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
-                        >
-                          <FolderOpen className="h-5 w-5" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" sideOffset={6}>Escolher da galeria</TooltipContent>
-                    </Tooltip>
-                  </>
-                )}
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={handleFileSelect}
-              />
-            </div>
-          )}
-
           {/* First / Last frame (image mode) */}
           {videoMode === 'image' && (
-            <div className="space-y-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+            <div className="space-y-1" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
               {/* First frame — required */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
@@ -944,174 +885,265 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
             </div>
           )}
 
-          {/* Audio toggle */}
-          <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/10 px-3 py-2.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-bold text-[#f3f0ed]/60">Áudio</span>
-              <Info className="h-3 w-3 text-[#f3f0ed]/20" />
-            </div>
-            <ToggleSwitch checked={audio} onChange={setAudio} />
+          {/* ── Options toggle ─────────────────────────────────────── */}
+          <div className="flex justify-end">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setOptionsOpen((o) => !o)}
+                  className="flex h-6 w-6 items-center justify-center rounded-full text-[#a2dd00]/60 transition-all hover:bg-[#a2dd00]/10 hover:text-[#a2dd00]"
+                >
+                  <Settings
+                    className="h-5 w-5 transition-transform duration-500"
+                    style={{ transform: optionsOpen ? 'rotate(0deg)' : 'rotate(-180deg)' }}
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="left" sideOffset={6}>
+                {optionsOpen ? 'Ocultar opções' : 'Mostrar opções'}
+              </TooltipContent>
+            </Tooltip>
           </div>
 
-          {/* Model + Resolution */}
-          <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                MODELO
-              </label>
-              <PanelSelect
-                value={model}
-                onValueChange={setModel}
-                options={[
-                  { value: 'veo-3.1-generate-preview', label: 'Veo 3.1' },
-                  { value: 'veo-3.1-fast-generate-preview', label: 'Veo 3.1 Fast' },
-                  // { value: 'kling-2.6', label: 'Kling 2.6' },
-                ]}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                RESOLUÇÃO
-              </label>
-              <PanelSelect
-                value={resolution}
-                onValueChange={setResolution}
-                options={[
-                  { value: 'RES_720P', label: '720p' },
-                  { value: 'RES_1080P', label: '1080p' },
-                  { value: 'RES_4K', label: '4K' },
-                ]}
-              />
-            </div>
-          </div>
-
-          {/* Duration + Proportion */}
-          <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                DURAÇÃO
-              </label>
-              <div className="flex gap-1.5">
-                {['4s', '6s', '8s'].map((d) => {
-                  const active = effectiveDuration === d;
-                  const disabled = forceEightSeconds && d !== '8s';
-                  return (
-                    <button
-                      key={d}
-                      onClick={() => !disabled && setDuration(d)}
-                      disabled={disabled}
-                      title={disabled ? 'Apenas 8s disponível com referências' : undefined}
-                      className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-30"
-                      style={{
-                        background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
-                        color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
-                        border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
-                        boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
-                      }}
-                    >
-                      {d}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                PROPORÇÃO
-              </label>
-              <div className="flex gap-1.5">
-                {['16:9', '9:16', '1:1'].map((p) => {
-                  const val = p.replace(':', '-');
-                  const active = proportion === val;
-                  return (
-                    <button
-                      key={p}
-                      onClick={() => setProportion(val)}
-                      className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95"
-                      style={{
-                        background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
-                        color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
-                        border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
-                        boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
-                      }}
-                    >
-                      {p}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Sample count */}
-          <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-            <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-              QUANTIDADE
-            </label>
-            <div className="flex gap-1.5">
-              {[1, 2, 3, 4].map((n) => {
-                const active = sampleCount === n;
-                return (
-                  <button
-                    key={n}
-                    onClick={() => setSampleCount(n)}
-                    className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95"
-                    style={{
-                      background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
-                      color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
-                      border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
-                      boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
-                    }}
-                  >
-                    {n}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Credit estimate */}
-          {genState !== 'generating' && (
-            <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
-              <div className="flex items-center gap-1.5">
-                <Coins className="h-3 w-3 text-[#a2dd00]" />
-                <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Custo</span>
-              </div>
-              {estimateLoading ? (
-                <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
-              ) : estimate ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
-                  <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
-                </div>
-              ) : null}
-            </div>
-          )}
-
-          {/* Generate button */}
-          <button
-            onClick={handleGenerate}
-            disabled={genState === 'generating' || !prompt.trim() || (videoMode === 'image' && !firstFrame)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+          <div
             style={{
-              background: genState === 'generating' ? 'rgba(162,221,0,0.12)' : '#a2dd00',
-              color: genState === 'generating' ? '#a2dd00' : '#1a2123',
-              border: genState === 'generating' ? '1px solid rgba(162,221,0,0.2)' : 'none',
+              maxHeight: optionsOpen ? '900px' : '0px',
+              overflow: 'hidden',
+              transition: optionsOpen ? 'max-height 400ms ease' : 'max-height 300ms ease',
             }}
           >
-            {genState === 'generating' ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                GERANDO...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                {genState === 'done' ? 'GERAR NOVAMENTE' : 'GERAR'}
-              </>
-            )}
-          </button>
+            <div className="space-y-3.5 pt-0.5">
+
+              {/* Audio toggle */}
+              <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/10 px-3 py-2.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-bold text-[#f3f0ed]/60">Áudio</span>
+                  <Info className="h-3 w-3 text-[#f3f0ed]/20" />
+                </div>
+                <ToggleSwitch checked={audio} onChange={setAudio} />
+              </div>
+
+              {/* Model + Resolution */}
+              <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                    MODELO
+                  </label>
+                  <PanelSelect
+                    value={model}
+                    onValueChange={setModel}
+                    options={[
+                      { value: 'veo-3.1-generate-preview', label: 'Veo 3.1' },
+                      { value: 'veo-3.1-fast-generate-preview', label: 'Veo 3.1 Fast' },
+                      // { value: 'kling-2.6', label: 'Kling 2.6' },
+                    ]}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                    RESOLUÇÃO
+                  </label>
+                  <PanelSelect
+                    value={resolution}
+                    onValueChange={setResolution}
+                    options={[
+                      { value: 'RES_720P', label: '720p' },
+                      { value: 'RES_1080P', label: '1080p' },
+                      { value: 'RES_4K', label: '4K' },
+                    ]}
+                  />
+                </div>
+              </div>
+
+              {/* Duration + Proportion */}
+              <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                    DURAÇÃO
+                  </label>
+                  <div className="flex gap-1.5">
+                    {['4s', '6s', '8s'].map((d) => {
+                      const active = effectiveDuration === d;
+                      const disabled = forceEightSeconds && d !== '8s';
+                      return (
+                        <button
+                          key={d}
+                          onClick={() => !disabled && setDuration(d)}
+                          disabled={disabled}
+                          title={disabled ? 'Apenas 8s disponível com referências' : undefined}
+                          className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-30"
+                          style={{
+                            background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
+                            color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
+                            border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
+                            boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
+                          }}
+                        >
+                          {d}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                    PROPORÇÃO
+                  </label>
+                  <div className="flex gap-1.5">
+                    {['16:9', '9:16', '1:1'].map((p) => {
+                      const val = p.replace(':', '-');
+                      const active = proportion === val;
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => setProportion(val)}
+                          className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95"
+                          style={{
+                            background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
+                            color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
+                            border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
+                            boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
+                          }}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Sample count */}
+              <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                  QUANTIDADE
+                </label>
+                <div className="flex gap-1.5">
+                  {[1, 2, 3, 4].map((n) => {
+                    const active = sampleCount === n;
+                    return (
+                      <button
+                        key={n}
+                        onClick={() => setSampleCount(n)}
+                        className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95"
+                        style={{
+                          background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
+                          color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
+                          border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
+                          boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
+                        }}
+                      >
+                        {n}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Reference images (text mode) */}
+              {videoMode === 'text' && (
+                <div className="space-y-2" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                      IMAGENS DE REFERÊNCIA (opcional)
+                    </label>
+                    <span className="text-[10px] text-[#f3f0ed]/25">{refImages.length}/3</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {refImages.map((img, i) => (
+                      <div key={i} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#f3f0ed]/10">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={img.preview} alt="" className="h-full w-full object-cover" />
+                        <button
+                          onClick={() => setRefImages((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
+                        >
+                          <X className="h-3.5 w-3.5 text-white" />
+                        </button>
+                      </div>
+                    ))}
+                    {refImages.length < 3 && (
+                      <>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => fileInputRef.current?.click()}
+                              className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                            >
+                              <ImagePlus className="h-5 w-5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" sideOffset={6}>Enviar do dispositivo</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => openGalleryPicker({ nodeId, remaining: 3 - refImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success('Imagem adicionada como referência!'); } })}
+                              className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                            >
+                              <FolderOpen className="h-5 w-5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" sideOffset={6}>Escolher da galeria</TooltipContent>
+                        </Tooltip>
+                      </>
+                    )}
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+                </div>
+              )}
+
+              {/* Credit estimate */}
+              {genState !== 'generating' && (
+                <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
+                  <div className="flex items-center gap-1.5">
+                    <Coins className="h-3 w-3 text-[#a2dd00]" />
+                    <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Custo</span>
+                  </div>
+                  {estimateLoading ? (
+                    <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
+                  ) : estimate ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
+                      <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
+                    </div>
+                  ) : null}
+                </div>
+              )}
+
+              {/* Generate button */}
+              <button
+                onClick={handleGenerate}
+                disabled={genState === 'generating' || !prompt.trim() || (videoMode === 'image' && !firstFrame)}
+                className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  background: genState === 'generating' ? 'rgba(162,221,0,0.12)' : '#a2dd00',
+                  color: genState === 'generating' ? '#a2dd00' : '#1a2123',
+                  border: genState === 'generating' ? '1px solid rgba(162,221,0,0.2)' : 'none',
+                }}
+              >
+                {genState === 'generating' ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    GERANDO...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    {genState === 'done' ? 'GERAR NOVAMENTE' : 'GERAR'}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </TooltipProvider>
