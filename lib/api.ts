@@ -851,10 +851,10 @@ export const api = {
       });
     },
 
-    verifyEmail(token: string) {
+    verifyEmail(code: string) {
       return request<{ message: string }>('/api/v1/auth/verify-email', {
         method: 'POST',
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ code }),
       });
     },
 

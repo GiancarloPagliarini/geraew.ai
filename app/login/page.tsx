@@ -221,11 +221,7 @@ function LoginPageContent() {
         router.push('/');
       } else {
         await api.auth.register(email, name, password, phone);
-        setMode('login');
-        setName('');
-        setPassword('');
-        setPhone('');
-        setSuccess('Conta criada! Verifique seu email para confirmar sua conta, depois faça login.');
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Ocorreu um erro. Tente novamente.';
