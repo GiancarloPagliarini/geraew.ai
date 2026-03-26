@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, EyeOff, Mail, ArrowLeft, UserPlus, LogIn, Phone } from 'lucide-react';
+import { Eye, EyeOff, Mail, ArrowLeft, UserPlus, LogIn, Phone, CheckCircle, XCircle, Loader2, RefreshCw } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Image from 'next/image';
@@ -59,7 +59,7 @@ function LoginPageContent() {
   const [progresses, setProgresses] = useState<number[]>(slides.map(() => 0));
   const [isPaused, setIsPaused] = useState(false);
 
-  const [view, setView] = useState<'options' | 'email'>('options');
+  const [view, setView] = useState<'options' | 'email' | 'verify' | 'forgot' | 'reset'>('options');
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -72,6 +72,35 @@ function LoginPageContent() {
   const [resendLoading, setResendLoading] = useState(false);
   const [showResend, setShowResend] = useState(false);
 
+  // Forgot/Reset password state
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
+  const [resetToken, setResetToken] = useState('');
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('');
+  const [resetShowPassword, setResetShowPassword] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState(false);
+
+  // Verify email state
+  const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [verifyStatus, setVerifyStatus] = useState<'input' | 'loading' | 'success' | 'error'>('input');
+  const [verifyMessage, setVerifyMessage] = useState('');
+  const [resendVerifyLoading, setResendVerifyLoading] = useState(false);
+  const [resendVerifySuccess, setResendVerifySuccess] = useState('');
+  const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Detect reset token in URL
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (token) {
+      setResetToken(token);
+      setView('reset');
+    }
+  }, [searchParams]);
 
   // Show error from Google OAuth redirect if present
   const googleError = searchParams.get('error');
@@ -209,6 +238,123 @@ function LoginPageContent() {
     setPhone(digits);
   }
 
+  useEffect(() => {
+    if (view === 'verify') {
+      setTimeout(() => inputsRef.current[0]?.focus(), 50);
+    }
+  }, [view]);
+
+  function handleDigitChange(index: number, value: string) {
+    if (!/^\d*$/.test(value)) return;
+    const newDigits = [...digits];
+    if (value.length > 1) {
+      const pasted = value.replace(/\D/g, '').slice(0, 6);
+      for (let i = 0; i < 6; i++) newDigits[i] = pasted[i] || '';
+      setDigits(newDigits);
+      const focusIdx = Math.min(pasted.length, 5);
+      inputsRef.current[focusIdx]?.focus();
+      if (pasted.length === 6) submitCode(newDigits.join(''));
+      return;
+    }
+    newDigits[index] = value;
+    setDigits(newDigits);
+    if (value && index < 5) inputsRef.current[index + 1]?.focus();
+    const code = newDigits.join('');
+    if (code.length === 6) submitCode(code);
+  }
+
+  function handleDigitKeyDown(index: number, e: React.KeyboardEvent) {
+    if (e.key === 'Backspace' && !digits[index] && index > 0) {
+      inputsRef.current[index - 1]?.focus();
+    }
+  }
+
+  function handleDigitPaste(e: React.ClipboardEvent) {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+    const newDigits = [...digits];
+    for (let i = 0; i < 6; i++) newDigits[i] = pasted[i] || '';
+    setDigits(newDigits);
+    inputsRef.current[Math.min(pasted.length, 5)]?.focus();
+    if (pasted.length === 6) submitCode(newDigits.join(''));
+  }
+
+  async function submitCode(code: string) {
+    setVerifyStatus('loading');
+    setVerifyMessage('');
+    try {
+      await api.auth.verifyEmail(code);
+      await login(email, password);
+      router.push('/');
+    } catch (err) {
+      setVerifyStatus('error');
+      setVerifyMessage(err instanceof Error ? err.message : 'Código inválido ou expirado.');
+    }
+  }
+
+  function handleVerifyRetry() {
+    setDigits(['', '', '', '', '', '']);
+    setVerifyStatus('input');
+    setVerifyMessage('');
+    setResendVerifySuccess('');
+    setTimeout(() => inputsRef.current[0]?.focus(), 50);
+  }
+
+  async function handleResendVerify() {
+    if (!email) return;
+    setResendVerifyLoading(true);
+    setResendVerifySuccess('');
+    try {
+      const res = await api.auth.resendVerificationByEmail(email);
+      setResendVerifySuccess(res.message || 'Código reenviado!');
+    } catch (err) {
+      setResendVerifySuccess(err instanceof Error ? err.message : 'Erro ao reenviar.');
+    } finally {
+      setResendVerifyLoading(false);
+    }
+  }
+
+  async function handleForgotSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setForgotError('');
+    setForgotLoading(true);
+    try {
+      await api.auth.forgotPassword(forgotEmail);
+      setForgotSent(true);
+    } catch (err) {
+      setForgotError(err instanceof Error ? err.message : 'Erro ao enviar email. Tente novamente.');
+    } finally {
+      setForgotLoading(false);
+    }
+  }
+
+  async function handleResetSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setResetError('');
+    if (resetNewPassword !== resetConfirmPassword) {
+      setResetError('As senhas não coincidem.');
+      return;
+    }
+    if (resetNewPassword.length < 8) {
+      setResetError('A senha deve ter no mínimo 8 caracteres.');
+      return;
+    }
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(resetNewPassword)) {
+      setResetError('A senha deve conter pelo menos uma letra maiúscula, uma minúscula e um número.');
+      return;
+    }
+    setResetLoading(true);
+    try {
+      await api.auth.resetPassword(resetToken, resetNewPassword);
+      setResetSuccess(true);
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : 'Erro ao redefinir senha. Tente novamente.');
+    } finally {
+      setResetLoading(false);
+    }
+  }
+
   async function handleEmailSubmit(e: { preventDefault(): void }) {
     e.preventDefault();
     setError('');
@@ -221,7 +367,7 @@ function LoginPageContent() {
         router.push('/');
       } else {
         await api.auth.register(email, name, password, phone);
-        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+        setView('verify');
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Ocorreu um erro. Tente novamente.';
@@ -327,6 +473,237 @@ function LoginPageContent() {
                 Política de Privacidade
               </Link>
             </p>
+          </div>
+        )}
+
+        {/* ── View: Forgot password ── */}
+        {view === 'forgot' && (
+          <div className="w-full">
+            <button
+              onClick={() => { setView('email'); setForgotEmail(''); setForgotError(''); setForgotSent(false); }}
+              className="mb-5 flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Voltar
+            </button>
+
+            {forgotSent ? (
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#a2dd00]/15">
+                  <CheckCircle className="h-7 w-7 text-[#a2dd00]" />
+                </div>
+                <h2 className="text-lg font-bold text-white">Email enviado!</h2>
+                <p className="text-sm text-white/50">
+                  Se o email <span className="text-white/70">{forgotEmail}</span> estiver cadastrado, você receberá um link para redefinir sua senha.
+                </p>
+                <p className="text-xs text-white/30">Verifique também sua pasta de spam.</p>
+                <button
+                  onClick={() => { setView('email'); setForgotEmail(''); setForgotSent(false); }}
+                  className="mt-1 flex items-center gap-1.5 text-xs text-[#a2dd00]/60 hover:text-[#a2dd00]/90 transition-colors"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Voltar ao login
+                </button>
+              </div>
+            ) : (
+              <>
+                <h2 className="mb-1 text-lg font-bold text-white">Esqueceu sua senha?</h2>
+                <p className="mb-5 text-xs text-white/40">
+                  Digite seu email e enviaremos um link para redefinir sua senha.
+                </p>
+                <form onSubmit={handleForgotSubmit} className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">EMAIL</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/25" />
+                      <input
+                        type="email"
+                        required
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        placeholder="seu@email.com"
+                        className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-10 pr-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]"
+                      />
+                    </div>
+                  </div>
+                  {forgotError && (
+                    <p className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs text-red-400">
+                      {forgotError}
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={forgotLoading}
+                    className="mt-1 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#a2dd00] font-bold text-[#1a2123] text-sm transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
+                  >
+                    {forgotLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Enviar link de reset'}
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── View: Reset password ── */}
+        {view === 'reset' && (
+          <div className="w-full">
+            {resetSuccess ? (
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#a2dd00]/15">
+                  <CheckCircle className="h-7 w-7 text-[#a2dd00]" />
+                </div>
+                <h2 className="text-lg font-bold text-white">Senha alterada!</h2>
+                <p className="text-sm text-white/50">Sua senha foi redefinida com sucesso.</p>
+                <button
+                  onClick={() => { setView('email'); setResetSuccess(false); setResetNewPassword(''); setResetConfirmPassword(''); }}
+                  className="mt-1 flex items-center gap-2 rounded-xl bg-[#a2dd00] px-5 py-2.5 text-sm font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-[0.98]"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Fazer login
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => setView('email')}
+                  className="mb-5 flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Voltar
+                </button>
+                <h2 className="mb-1 text-lg font-bold text-white">Redefinir senha</h2>
+                <p className="mb-5 text-xs text-white/40">Escolha uma nova senha para sua conta.</p>
+                <form onSubmit={handleResetSubmit} className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">NOVA SENHA</label>
+                    <div className="relative">
+                      <input
+                        type={resetShowPassword ? 'text' : 'password'}
+                        required
+                        value={resetNewPassword}
+                        onChange={(e) => setResetNewPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 pr-10 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setResetShowPassword((v) => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors"
+                      >
+                        {resetShowPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">CONFIRMAR SENHA</label>
+                    <input
+                      type={resetShowPassword ? 'text' : 'password'}
+                      required
+                      value={resetConfirmPassword}
+                      onChange={(e) => setResetConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]"
+                    />
+                  </div>
+                  <p className="text-[10px] text-white/25">
+                    Mínimo 8 caracteres, com letra maiúscula, minúscula e número.
+                  </p>
+                  {resetError && (
+                    <p className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs text-red-400">
+                      {resetError}
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={resetLoading}
+                    className="mt-1 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#a2dd00] font-bold text-[#1a2123] text-sm transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
+                  >
+                    {resetLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Redefinir senha'}
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── View: Verify email ── */}
+        {view === 'verify' && (
+          <div className="w-full flex flex-col items-center gap-6">
+            <div className="text-center">
+              <h2 className="text-xl font-bold text-[#f3f0ed]">Verifique seu email</h2>
+              <p className="mt-2 text-sm text-[#f3f0ed]/50">
+                Enviamos um código de 6 dígitos para{' '}
+                <span className="text-[#f3f0ed]/70">{email}</span>
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              {digits.map((digit, i) => (
+                <input
+                  key={i}
+                  ref={(el) => { inputsRef.current[i] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={digit}
+                  onChange={(e) => handleDigitChange(i, e.target.value)}
+                  onKeyDown={(e) => handleDigitKeyDown(i, e)}
+                  onPaste={handleDigitPaste}
+                  disabled={verifyStatus === 'loading'}
+                  className={`h-14 w-12 rounded-xl border text-center text-xl font-bold outline-none transition-all ${
+                    verifyStatus === 'error'
+                      ? 'border-red-400/40 bg-red-400/10 text-red-400'
+                      : 'border-white/[0.08] bg-white/[0.04] text-white focus:border-[#a2dd00]/50 focus:bg-white/[0.06]'
+                  } disabled:opacity-50`}
+                />
+              ))}
+            </div>
+
+            {verifyStatus === 'loading' && (
+              <div className="flex items-center gap-2 text-[#f3f0ed]/50">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Verificando...</span>
+              </div>
+            )}
+
+            {verifyStatus === 'error' && (
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex items-center gap-2 text-red-400">
+                  <XCircle className="h-4 w-4" />
+                  <span className="text-sm">{verifyMessage}</span>
+                </div>
+                <button
+                  onClick={handleVerifyRetry}
+                  className="text-xs text-[#a2dd00]/70 hover:text-[#a2dd00] transition-colors"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            )}
+
+            {resendVerifySuccess && (
+              <p className="rounded-xl border border-[#a2dd00]/20 bg-[#a2dd00]/10 px-3 py-2 text-xs text-[#a2dd00]">
+                {resendVerifySuccess}
+              </p>
+            )}
+
+            <div className="flex flex-col items-center gap-3 pt-1">
+              <button
+                onClick={handleResendVerify}
+                disabled={resendVerifyLoading}
+                className="flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${resendVerifyLoading ? 'animate-spin' : ''}`} />
+                {resendVerifyLoading ? 'Reenviando...' : 'Reenviar código'}
+              </button>
+              <button
+                onClick={() => { setView('email'); setVerifyStatus('input'); setDigits(['', '', '', '', '', '']); }}
+                className="flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Voltar
+              </button>
+            </div>
           </div>
         )}
 
@@ -468,7 +845,7 @@ function LoginPageContent() {
                 <div className="flex justify-end">
                   <button
                     type="button"
-                    onClick={() => router.push('/forgot-password')}
+                    onClick={() => { setForgotEmail(email); setView('forgot'); }}
                     className="text-[11px] text-[#a2dd00]/50 hover:text-[#a2dd00]/80 transition-colors"
                   >
                     Esqueceu a senha?
