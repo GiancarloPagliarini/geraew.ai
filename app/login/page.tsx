@@ -25,7 +25,7 @@ const slides = [
     description: 'Crie conteúdo visual consistente para campanhas, redes sociais e muito mais.',
     bg: 'bg-black',
     accent: '#ff6b9d',
-    video: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/s3/ai-generations/generations/cmmxjmvws00fyus01sxwu628l/5727b0ea-86d6-4887-8707-57eeb1db17bf/output_2.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=2e3c372ae61232c26638c35c24b50688%2F20260319%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260319T140847Z&X-Amz-Expires=604800&X-Amz-Signature=c3731915c49b12256ff55a1e49c813ecd37e17c347d933fd7748f12478edd98c&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject',
+    video: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmmxjmvws00fyus01sxwu628l/5727b0ea-86d6-4887-8707-57eeb1db17bf/output_2.mp4',
   },
   {
     id: 2,
