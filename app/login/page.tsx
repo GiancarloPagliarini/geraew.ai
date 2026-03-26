@@ -16,7 +16,7 @@ const slides = [
     description: 'Transforme texto em vídeo em segundos com modelos de última geração.',
     bg: 'bg-black',
     accent: '#a2dd00',
-    video: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/s3/ai-generations/generations/cmmwn2wq5007vus01furnxyh4/22c243fd-ce57-4c3e-aa8a-afadc811da46/output_0.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=2e3c372ae61232c26638c35c24b50688%2F20260318%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260318T225640Z&X-Amz-Expires=604800&X-Amz-Signature=7f71f694387a2b2614006ea57b8204993040e992c97f886d7ca619d03588dda0&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject',
+    video: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmmwn2wq5007vus01furnxyh4/22c243fd-ce57-4c3e-aa8a-afadc811da46/output_0.mp4',
   },
   {
     id: 1,
