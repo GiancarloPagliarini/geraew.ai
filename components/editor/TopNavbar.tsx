@@ -67,7 +67,7 @@ export function TopNavbar() {
           ) : user ? (
             <>
               {/* Credit badge */}
-              <div className="flex items-center gap-1.5 rounded-full border border-[#f3f0ed]/10 bg-[#f3f0ed]/[0.05] px-2 py-1.5 sm:px-3">
+              <div className="flex items-center gap-1.5 rounded-full border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 px-2 py-1.5 sm:px-3">
                 <Coins className="h-3.5 w-3.5 text-[#a2dd00]" />
                 {creditsLoading ? (
                   <div className="h-3 w-10 animate-pulse rounded-full bg-[#f3f0ed]/10" />
@@ -106,16 +106,16 @@ export function TopNavbar() {
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-64 overflow-hidden rounded-xl border border-[#f3f0ed]/8 bg-[#1a2123] shadow-2xl">
+                /* Desktop dropdown only */
+                <div className="absolute right-0 top-full mt-2 hidden w-64 overflow-hidden rounded-xl border border-[#f3f0ed]/8 bg-[#1a2123] shadow-2xl sm:block">
                   <div className="px-4 py-3 border-b border-[#f3f0ed]/6">
                     <p className="text-xs font-semibold text-[#f3f0ed]">Faça login para gerar</p>
                     <p className="mt-0.5 text-[11px] text-[#f3f0ed]/40">Acesso gratuito com créditos iniciais</p>
                   </div>
                   <div className="p-3 flex flex-col gap-2">
-                    {/* Google login */}
                     <button
                       onClick={() => { window.location.href = '/api/v1/auth/google'; }}
-                      className="flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-[#f3f0ed]/10 bg-[#f3f0ed]/[0.05] text-xs font-medium text-[#f3f0ed] transition-all hover:bg-[#f3f0ed]/10 active:scale-[0.98]"
+                      className="flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 text-xs font-medium text-[#f3f0ed] transition-all hover:bg-[#f3f0ed]/10 active:scale-[0.98]"
                     >
                       <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
                         <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
@@ -125,10 +125,9 @@ export function TopNavbar() {
                       </svg>
                       Continuar com Google
                     </button>
-                    {/* Email login */}
                     <button
                       onClick={() => { setMenuOpen(false); router.push('/login'); }}
-                      className="flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-[#f3f0ed]/10 bg-[#f3f0ed]/[0.05] text-xs font-medium text-[#f3f0ed] transition-all hover:bg-[#f3f0ed]/10 active:scale-[0.98]"
+                      className="flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 text-xs font-medium text-[#f3f0ed] transition-all hover:bg-[#f3f0ed]/10 active:scale-[0.98]"
                     >
                       <LogIn className="h-3.5 w-3.5" />
                       Entrar com e-mail
@@ -196,6 +195,46 @@ export function TopNavbar() {
       </header>
 
       {/* Mobile aside — fora do header para escapar do stacking context */}
+      {/* Mobile aside — deslogado */}
+      {!user && menuOpen && (
+        <div className="fixed inset-0 z-200 sm:hidden">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
+          <aside ref={asideRef} className="absolute right-0 top-0 flex h-full w-72 flex-col border-l border-[#f3f0ed]/8 bg-[#1a2123]">
+            <div className="flex items-center justify-between border-b border-[#f3f0ed]/6 px-4 py-4">
+              <div>
+                <p className="text-sm font-semibold text-[#f3f0ed]">Faça login para gerar</p>
+                <p className="mt-0.5 text-[11px] text-[#f3f0ed]/40">Acesso gratuito com créditos iniciais</p>
+              </div>
+              <button onClick={() => setMenuOpen(false)} className="flex h-7 w-7 items-center justify-center rounded-full text-[#f3f0ed]/40 transition-colors hover:bg-[#f3f0ed]/6 hover:text-[#f3f0ed]">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-2 p-4">
+              <button
+                onClick={() => { window.location.href = '/api/v1/auth/google'; }}
+                className="flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 text-sm font-medium text-[#f3f0ed] transition-all hover:bg-[#f3f0ed]/10 active:scale-[0.98]"
+              >
+                <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                  <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
+                  <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" />
+                  <path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z" />
+                  <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z" />
+                </svg>
+                Continuar com Google
+              </button>
+              <button
+                onClick={() => { setMenuOpen(false); router.push('/login'); }}
+                className="flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 text-sm font-medium text-[#f3f0ed] transition-all hover:bg-[#f3f0ed]/10 active:scale-[0.98]"
+              >
+                <LogIn className="h-4 w-4" />
+                Entrar com e-mail
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* Mobile aside — logado */}
       {user && menuOpen && (
         <div className="fixed inset-0 z-200 sm:hidden">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
