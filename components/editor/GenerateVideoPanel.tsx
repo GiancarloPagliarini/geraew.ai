@@ -22,6 +22,7 @@ import {
   Wand2,
   X
 } from 'lucide-react';
+import { EnhancePromptToggle } from './EnhancePromptToggle';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
 import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
@@ -397,6 +398,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     setProgress(100);
     setTimeout(() => {
       setGenState('done');
+      setEnhancePrompt(false);
       setGeneratedVideoUrls(urls);
       setSelectedVideoIdx(0);
       setNodeImage(nodeId, urls[0]);
@@ -666,33 +668,13 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
             />
 
             {/* Enhance prompt toggle */}
-            <button
-              onClick={() => setEnhancePrompt(!enhancePrompt)}
-              className="flex w-full items-center justify-between rounded-xl border px-3 py-2 transition-all"
-              style={{
-                background: enhancePrompt ? 'rgba(162,221,0,0.06)' : 'transparent',
-                borderColor: enhancePrompt ? 'rgba(162,221,0,0.2)' : 'rgba(243,240,237,0.07)',
-                opacity: isGenerating ? 0.4 : 1,
-                pointerEvents: isGenerating ? 'none' : undefined,
-              }}
-            >
-              <div className="flex items-center gap-1.5">
-                <Wand2 className="h-3 w-3" style={{ color: enhancePrompt ? '#a2dd00' : 'rgba(243,240,237,0.3)' }} />
-                <span className="text-[10px] font-bold tracking-[0.12em]" style={{ color: enhancePrompt ? '#a2dd00' : 'rgba(243,240,237,0.4)' }}>
-                  {isEnhancing ? 'MELHORANDO...' : 'MELHORAR PROMPT'}
-                </span>
-                {isEnhancing && <Loader2 className="h-3 w-3 animate-spin text-[#a2dd00]" />}
-              </div>
-              <div
-                className="relative h-4 w-7 rounded-full transition-colors"
-                style={{ background: enhancePrompt ? '#a2dd00' : 'rgba(243,240,237,0.12)' }}
-              >
-                <div
-                  className="absolute top-0.5 h-3 w-3 rounded-full bg-white shadow-sm transition-transform"
-                  style={{ transform: enhancePrompt ? 'translateX(13px)' : 'translateX(2px)' }}
-                />
-              </div>
-            </button>
+            <EnhancePromptToggle
+              enabled={enhancePrompt}
+              onToggle={setEnhancePrompt}
+              isEnhancing={isEnhancing}
+              disabled={isGenerating}
+              icon={<Wand2 className="h-3 w-3" />}
+            />
           </div>
 
           {/* First / Last frame (image mode) */}

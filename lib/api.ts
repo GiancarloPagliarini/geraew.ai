@@ -561,6 +561,9 @@ export const api = {
     delete(accessToken: string, id: string) {
       return authRequest<void>(`/api/v1/generations/${id}`, accessToken, { method: 'DELETE' });
     },
+    deleteOutput(accessToken: string, generationId: string, outputId: string) {
+      return authRequest<void>(`/api/v1/generations/${generationId}/outputs/${outputId}`, accessToken, { method: 'DELETE' });
+    },
     getFolders(accessToken: string, id: string) {
       return authRequest<Folder[]>(`/api/v1/generations/${id}/folders`, accessToken);
     },

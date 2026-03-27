@@ -8,6 +8,7 @@ import {
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useEditor } from '@/lib/editor-context';
+import { useAuth } from '@/lib/auth-context';
 
 interface Prompt {
   id: string;
@@ -463,11 +464,18 @@ interface PromptsDialogProps {
 
 export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
   const { requestPanelWithPrompt } = useEditor();
+  const { user } = useAuth();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
   function toggleCategory(categoryId: string) {
+    if (!user) {
+      toast.error('Faça login para ver os prompts', {
+        action: { label: 'Entrar', onClick: () => { window.location.href = '/login'; } },
+      });
+      return;
+    }
     setExpandedCategories((prev) => {
       const next = new Set(prev);
       if (next.has(categoryId)) {

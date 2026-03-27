@@ -1,6 +1,6 @@
 'use client';
 
-import { AudioWaveform, Hand, HelpCircle, ImageIcon, LayoutGrid, Minus, MousePointer2, PersonStanding, Plus, Trash2, Video } from 'lucide-react';
+import { AudioWaveform, Fullscreen, Hand, HelpCircle, ImageIcon, LayoutGrid, Minus, MousePointer2, PersonStanding, Plus, Trash2, Video } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -44,7 +44,7 @@ export function BottomToolbar({
 
   return (
     <TooltipProvider>
-      <div className={`pointer-events-none absolute bottom-3 left-1/2 z-50 w-[calc(100%-1rem)] -translate-x-1/2 sm:bottom-5 sm:w-auto ${leftPanelOpen ? 'hidden sm:block' : ''}`}>
+      <div className={`pointer-events-none absolute top-3 left-1/2 z-50 w-[calc(100%-1rem)] -translate-x-1/2 sm:top-auto sm:bottom-5 sm:w-auto ${leftPanelOpen ? 'hidden sm:block' : ''}`}>
         <div className="pointer-events-auto flex items-center justify-center gap-0.5 rounded-full border border-[#f3f0ed]/[0.08] bg-[#1a2123]/90 px-1.5 py-1.5 shadow-2xl backdrop-blur-md sm:px-2">
 
           {/* Mode toggle — Hand / Pointer */}
@@ -56,13 +56,15 @@ export function BottomToolbar({
             <Hand className="h-4 w-4" />
           </ModeButton>
 
-          <ModeButton
-            tooltip="Selecionar nodes (arrastar para selecionar vários)"
-            active={isSelectMode}
-            onClick={() => !isSelectMode && onToggleSelectMode()}
-          >
-            <MousePointer2 className="h-4 w-4" />
-          </ModeButton>
+          <div className="hidden sm:block">
+            <ModeButton
+              tooltip="Selecionar nodes (arrastar para selecionar vários)"
+              active={isSelectMode}
+              onClick={() => !isSelectMode && onToggleSelectMode()}
+            >
+              <MousePointer2 className="h-4 w-4" />
+            </ModeButton>
+          </div>
 
           <div className="mx-1 h-4 w-px bg-[#f3f0ed]/[0.08] sm:mx-1.5" />
 
@@ -89,8 +91,8 @@ export function BottomToolbar({
 
           <div className="mx-1 h-4 w-px bg-[#f3f0ed]/[0.08] sm:mx-1.5" />
 
-          {/* Zoom — hidden on mobile */}
-          <div className="hidden items-center sm:flex">
+          {/* Zoom */}
+          <div className="flex items-center">
             <ToolbarButton tooltip="Reduzir" onClick={onZoomOut}>
               <Minus className="h-4 w-4" />
             </ToolbarButton>
@@ -104,7 +106,7 @@ export function BottomToolbar({
                   {Math.round(zoom * 100)}%
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="top" sideOffset={8}>
+              <TooltipContent side="bottom" sideOffset={8}>
                 Resetar zoom
               </TooltipContent>
             </Tooltip>
@@ -113,7 +115,7 @@ export function BottomToolbar({
               <Plus className="h-4 w-4" />
             </ToolbarButton>
 
-            <div className="mx-1.5 h-4 w-px bg-[#f3f0ed]/[0.08]" />
+            <div className="mx-1 h-4 w-px bg-[#f3f0ed]/8 sm:mx-1.5" />
           </div>
 
           {/* Actions */}
@@ -122,7 +124,7 @@ export function BottomToolbar({
           </ToolbarButton>
 
           <ToolbarButton tooltip="Encaixar na tela" onClick={onFitView}>
-            <HelpCircle className="h-4 w-4" />
+            <Fullscreen className="h-4 w-4" />
           </ToolbarButton>
         </div>
       </div>

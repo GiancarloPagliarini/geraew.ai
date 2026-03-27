@@ -113,7 +113,7 @@ export function getPlanFeatures(plan: Plan): string[] {
   if (plan.slug === 'free') {
     features.push('30 créditos');
     features.push('Suporte por e-mail');
-    features.push('Galeria ilimitada');
+    features.push('7 dias de galeria');
     return features;
   }
 
@@ -123,14 +123,14 @@ export function getPlanFeatures(plan: Plan): string[] {
     features.push('Prioridade na fila de gerações');
     features.push('Velocidade maior nas gerações');
     features.push('Suporte prioritário');
-    features.push('Galeria ilimitada');
+    features.push('365 dias de galeria');
   } else if (plan.slug === 'creator') {
     features.push('Velocidade maior nas gerações');
     features.push('Suporte por e-mail');
-    features.push('Galeria ilimitada');
+    features.push('180 dias de galeria');
   } else {
     features.push('Suporte por e-mail');
-    features.push('Galeria ilimitada');
+    features.push('90 dias de galeria');
   }
 
   return features;

@@ -3,6 +3,7 @@
 import '@xyflow/react/dist/style.css';
 
 import {
+  MiniMap,
   Node,
   NodeTypes,
   ReactFlow,
@@ -58,12 +59,20 @@ function loadStoredViewport(): { x: number; y: number; zoom: number } | null {
 // ─── inner canvas — lives inside ReactFlowProvider ───────────────────────────
 
 function CanvasContent() {
+  const [mounted, setMounted] = useState(false);
   const [initialStoredNodes] = useState<Node[]>(() => loadStoredNodes());
   const [nodes, setNodes, onNodesChange] = useNodesState(initialStoredNodes);
-  const { zoomIn, zoomOut, setViewport, fitView, screenToFlowPosition } = useReactFlow();
-  const defaultZoom = typeof window !== 'undefined' && window.innerWidth < 640 ? 0.65 : 1;
-  const [zoom, setZoom] = useState(defaultZoom);
+  const { zoomIn, zoomOut, setViewport, fitView, screenToFlowPosition, setCenter } = useReactFlow();
+  const [zoom, setZoom] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
   const [isSelectMode, setIsSelectMode] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const mobile = window.innerWidth < 640;
+    setIsMobile(mobile);
+    setZoom(mobile ? 0.65 : 1);
+  }, []);
   const { selectedNodeId, setSelectedNodeId, setNodePanelType, pendingPromptRef } = useEditor();
   const viewportSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -76,7 +85,7 @@ function CanvasContent() {
     if (vp) {
       setViewport(vp);
     } else {
-      setViewport({ x: 0, y: 0, zoom: defaultZoom });
+      setViewport({ x: 0, y: 0, zoom: window.innerWidth < 640 ? 0.65 : 1 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -222,7 +231,30 @@ function CanvasContent() {
             nodesFocusable={false}
             proOptions={{ hideAttribution: true }}
             style={{ width: '100%', height: '100%', background: '#1a2123' }}
-          />
+          >
+            {isMobile && nodes.length > 0 && (
+              <MiniMap
+                position="bottom-left"
+                style={{
+                  background: '#1e2a2d',
+                  border: '1px solid rgba(243,240,237,0.08)',
+                  borderRadius: '10px',
+                  width: 120,
+                  height: 80,
+                }}
+                maskColor="rgba(26,33,35,0.7)"
+                nodeColor="#a2dd00"
+                nodeStrokeWidth={3}
+                onNodeClick={(_, node) =>
+                  setCenter(
+                    node.position.x + (node.measured?.width ?? 180) / 2,
+                    node.position.y + (node.measured?.height ?? 240) / 2,
+                    { duration: 300, zoom: 1 },
+                  )
+                }
+              />
+            )}
+          </ReactFlow>
         </div>
       </CanvasContextMenu>
 
@@ -263,7 +295,7 @@ function CanvasContent() {
       />
 
       {/* Empty state */}
-      {nodes.length === 0 && (
+      {mounted && nodes.length === 0 && (
         <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
           <div className="pointer-events-auto flex w-full flex-col items-center gap-6 px-5 sm:w-auto sm:px-0">
             <Image

@@ -252,6 +252,24 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
     [favoriteMutation],
   );
 
+  // ── Delete single output ───────────────────────────────────────────────────
+
+  const deleteOutputMutation = useMutation({
+    mutationFn: ({ generationId, outputId }: { generationId: string; outputId: string }) =>
+      api.generations.deleteOutput(accessToken!, generationId, outputId),
+    onSuccess: (_data, { outputId }) => {
+      setSelected((prev) => {
+        if (!prev) return null;
+        const newOutputs = prev.outputs.filter((o) => o.id !== outputId);
+        if (newOutputs.length === 0) return null;
+        return { ...prev, outputs: newOutputs };
+      });
+      toast.success('Versão excluída', { description: 'A versão foi removida com sucesso.' });
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+    },
+    onError: () => toast.error('Erro ao excluir versão', { description: 'Tente novamente.' }),
+  });
+
   // ── Delete generation ──────────────────────────────────────────────────────
 
   const deleteGenerationMutation = useMutation({
@@ -543,8 +561,14 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
               onAddToFolder={(folderId) => handleAddToFolder(folderId, selected.id)}
               onRemoveFromFolder={(folderId) => handleRemoveFromFolder(folderId, selected.id)}
               onCreateFolderAndAdd={(name) => handleCreateFolderAndAdd(name, selected.id)}
-              onDelete={() => deleteGenerationMutation.mutate(selected.id)}
-              deleteIsPending={deleteGenerationMutation.isPending}
+              onDelete={(outputId) => {
+                if (outputId && (selected.outputs?.length ?? 0) > 1) {
+                  deleteOutputMutation.mutate({ generationId: selected.id, outputId });
+                } else {
+                  deleteGenerationMutation.mutate(selected.id);
+                }
+              }}
+              deleteIsPending={deleteGenerationMutation.isPending || deleteOutputMutation.isPending}
             />
           ) : galleryLoading ? (
             <SkeletonGrid />
@@ -645,7 +669,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
   onAddToFolder: (folderId: string) => void;
   onRemoveFromFolder: (folderId: string) => void;
   onCreateFolderAndAdd: (name: string) => void;
-  onDelete: () => void;
+  onDelete: (outputId?: string) => void;
   deleteIsPending: boolean;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -657,6 +681,16 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
   const activeFolderIds = item.folder ? [item.folder.id] : [];
 
   const outputs = item.outputs ?? [];
+
+  // Adjust activeIndex when an output is deleted to avoid pointing to an empty slot
+  useEffect(() => {
+    if (activeIndex >= outputs.length && outputs.length > 0) {
+      setActiveIndex(outputs.length - 1);
+      setLoaded(false);
+      setConfirmDelete(false);
+    }
+  }, [outputs.length, activeIndex]);
+
   const activeOutput = outputs[activeIndex];
   const url = activeOutput?.url;
   const isVideo = !!item.durationSeconds;
@@ -850,7 +884,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
           {confirmDelete ? (
             <div className="flex items-center gap-1.5">
               <button
-                onClick={onDelete}
+                onClick={() => onDelete(activeOutput?.id)}
                 disabled={deleteIsPending}
                 className="flex items-center gap-1.5 rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-50"
               >
@@ -871,7 +905,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
               className="flex items-center gap-2 rounded-lg bg-red-500/8 px-3 py-1.5 text-xs font-medium text-red-400/70 hover:bg-red-500/15 hover:text-red-400 transition-colors"
             >
               <Trash2 className="h-4 w-4" />
-              Excluir
+              {multipleOutputs ? 'Excluir versão' : 'Excluir'}
             </button>
           )}
         </div>

@@ -15,7 +15,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ArrowBigUp, ArrowUpRight, ChevronDown, Coins, Download, FolderOpen, FolderPlus, Image, ImagePlus, Loader2, Plus, Settings, Sparkles, Wand2, X } from 'lucide-react';
+import { ArrowBigUp, ArrowUpRight, ChevronDown, Coins, Download, FolderOpen, FolderPlus, Image, ImagePlus, Loader2, Plus, Settings, Wand2, X } from 'lucide-react';
+import { EnhancePromptToggle } from './EnhancePromptToggle';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
 import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
@@ -331,6 +332,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
     setProgress(100);
     setTimeout(() => {
       setGenState('done');
+      setEnhancePrompt(false);
       setGeneratedImageUrl(url);
       if (genId) setGenerationId(genId);
       setNodeImage(nodeId, url);
@@ -609,33 +611,12 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
           />
 
           {/* Enhance prompt toggle */}
-          <button
-            onClick={() => setEnhancePrompt(!enhancePrompt)}
-            className="flex w-full items-center justify-between rounded-xl border px-3 py-2 transition-all"
-            style={{
-              background: enhancePrompt ? 'rgba(162,221,0,0.06)' : 'transparent',
-              borderColor: enhancePrompt ? 'rgba(162,221,0,0.2)' : 'rgba(243,240,237,0.07)',
-              opacity: isGenerating ? 0.4 : 1,
-              pointerEvents: isGenerating ? 'none' : undefined,
-            }}
-          >
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="h-3 w-3" style={{ color: enhancePrompt ? '#a2dd00' : 'rgba(243,240,237,0.3)' }} />
-              <span className="text-[10px] font-bold tracking-[0.12em]" style={{ color: enhancePrompt ? '#a2dd00' : 'rgba(243,240,237,0.4)' }}>
-                {isEnhancing ? 'MELHORANDO...' : 'MELHORAR PROMPT'}
-              </span>
-              {isEnhancing && <Loader2 className="h-3 w-3 animate-spin text-[#a2dd00]" />}
-            </div>
-            <div
-              className="relative h-4 w-7 rounded-full transition-colors"
-              style={{ background: enhancePrompt ? '#a2dd00' : 'rgba(243,240,237,0.12)' }}
-            >
-              <div
-                className="absolute top-0.5 h-3 w-3 rounded-full bg-white shadow-sm transition-transform"
-                style={{ transform: enhancePrompt ? 'translateX(13px)' : 'translateX(2px)' }}
-              />
-            </div>
-          </button>
+          <EnhancePromptToggle
+            enabled={enhancePrompt}
+            onToggle={setEnhancePrompt}
+            isEnhancing={isEnhancing}
+            disabled={isGenerating}
+          />
 
           {/* ── Error message ────────────────────────────────────────────── */}
           <GenerationErrorBanner msg={errorMsg} />

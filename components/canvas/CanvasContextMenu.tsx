@@ -9,6 +9,7 @@ import {
     ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { AudioWaveform, ImageIcon, Mic, User, Video } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface CanvasContextMenuProps {
     children: React.ReactNode;
@@ -50,6 +51,11 @@ const menuItems = [
 ];
 
 export function CanvasContextMenu({ children, onAddPanel }: CanvasContextMenuProps) {
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => { setIsMobile(window.innerWidth < 640); }, []);
+
+    if (isMobile) return <>{children}</>;
+
     return (
         <ContextMenu>
             <ContextMenuTrigger className="flex h-full w-full" asChild>

@@ -10,7 +10,7 @@ import { PromptsDialog } from './PromptsDialog';
 import { TutorialDialog } from './TutorialDialog';
 import { VideoEditorDialog } from './VideoEditorDialog';
 import { Film, FolderOpen, GraduationCap, Type } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEditor } from '@/lib/editor-context';
 
 const navItems = [
@@ -27,44 +27,54 @@ export function LeftSidebar() {
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [promptsOpen, setPromptsOpen] = useState(false);
 
+  const CLOSE_DURATION = 250; // slightly above the 200ms aside-out-left animation to avoid overlap
+  const switchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openDialog = useCallback((id: string) => {
+    setGalleryOpen(id === 'gallery');
+    setVideoEditorOpen(id === 'videoEditor');
+    setTutorialOpen(id === 'tutorial');
+    setPromptsOpen(id === 'prompts');
+  }, []);
+
   const anyOpen = galleryOpen || videoEditorOpen || tutorialOpen || promptsOpen;
   useEffect(() => {
     setLeftPanelOpen(anyOpen);
   }, [anyOpen, setLeftPanelOpen]);
 
   useEffect(() => {
-    if (galleryPickerRequest) {
-      setGalleryOpen(true);
-      setVideoEditorOpen(false);
-      setTutorialOpen(false);
-      setPromptsOpen(false);
-    }
-  }, [galleryPickerRequest]);
+    if (galleryPickerRequest) openDialog('gallery');
+  }, [galleryPickerRequest, openDialog]);
+
+  useEffect(() => () => { if (switchTimerRef.current) clearTimeout(switchTimerRef.current); }, []);
 
   function handleNavClick(id: string) {
-    if (id === 'gallery') {
-      setGalleryOpen((v) => !v);
-      setVideoEditorOpen(false);
-      setTutorialOpen(false);
-      setPromptsOpen(false);
+    if (switchTimerRef.current) clearTimeout(switchTimerRef.current);
+
+    const currentlyOpen =
+      (id !== 'gallery' && galleryOpen) ||
+      (id !== 'videoEditor' && videoEditorOpen) ||
+      (id !== 'tutorial' && tutorialOpen) ||
+      (id !== 'prompts' && promptsOpen);
+
+    const isToggleOff =
+      (id === 'gallery' && galleryOpen) ||
+      (id === 'videoEditor' && videoEditorOpen) ||
+      (id === 'tutorial' && tutorialOpen) ||
+      (id === 'prompts' && promptsOpen);
+
+    if (isToggleOff) {
+      // Just close the current one
+      openDialog('none');
+      return;
     }
-    if (id === 'videoEditor') {
-      setVideoEditorOpen((v) => !v);
-      setGalleryOpen(false);
-      setTutorialOpen(false);
-      setPromptsOpen(false);
-    }
-    if (id === 'tutorial') {
-      setTutorialOpen((v) => !v);
-      setGalleryOpen(false);
-      setVideoEditorOpen(false);
-      setPromptsOpen(false);
-    }
-    if (id === 'prompts') {
-      setPromptsOpen((v) => !v);
-      setGalleryOpen(false);
-      setVideoEditorOpen(false);
-      setTutorialOpen(false);
+
+    if (currentlyOpen) {
+      // Close current first, then open new after animation completes
+      openDialog('none');
+      switchTimerRef.current = setTimeout(() => openDialog(id), CLOSE_DURATION);
+    } else {
+      openDialog(id);
     }
   }
 
