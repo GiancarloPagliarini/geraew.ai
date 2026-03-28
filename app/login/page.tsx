@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 
 const slides = [
   {
@@ -372,7 +372,7 @@ function LoginPageContent() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Ocorreu um erro. Tente novamente.';
       setError(message);
-      if (message.toLowerCase().includes('verificado') || message.toLowerCase().includes('verified')) {
+      if (err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED') {
         setShowResend(true);
       }
     } finally {
