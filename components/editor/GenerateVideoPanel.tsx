@@ -25,11 +25,13 @@ import {
 import { EnhancePromptToggle } from './EnhancePromptToggle';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
 import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
+import { PlansModal } from './PlansModal';
 import { listenGeneration } from '@/lib/sse';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
@@ -109,6 +111,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     return null;
   });
   const { accessToken } = useAuth();
+  const [plansModalOpen, setPlansModalOpen] = useState(false);
 
   // ── Persistent state (survives page reload) ──────────────────────────────
   const storageKey = `geraew-panel-video-${nodeId}`;
@@ -545,6 +548,10 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       clearProgressTimer();
       clearMsgTimer();
       setGenState('idle');
+      if (err instanceof ApiError && [400, 402, 403].includes(err.status)) {
+        setPlansModalOpen(true);
+        return;
+      }
       setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: 'Erro ao iniciar geração.' }));
     }
   }
@@ -596,6 +603,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   const dashOffset = CIRCUMFERENCE * (1 - progress / 100);
 
   return (
+    <>
     <TooltipProvider>
       <div
         ref={panelRef}
@@ -1129,6 +1137,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
         </div>
       </div>
     </TooltipProvider>
+    {plansModalOpen && createPortal(<PlansModal onClose={() => setPlansModalOpen(false)} />, document.body)}
+    </>
   );
 }
 

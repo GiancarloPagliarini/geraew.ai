@@ -19,11 +19,13 @@ import { ArrowBigUp, ArrowUpRight, ChevronDown, Coins, Download, FolderOpen, Fol
 import { EnhancePromptToggle } from './EnhancePromptToggle';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
-import { api, Folder } from '@/lib/api';
+import { api, ApiError, Folder } from '@/lib/api';
+import { PlansModal } from './PlansModal';
 import { listenGeneration } from '@/lib/sse';
 import { toast } from 'sonner';
 import { GenerationErrorBanner, showGenerationError } from './GenerationError';
@@ -118,6 +120,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
   const upscaleState = nodeUpscaleStates[nodeId] ?? 'idle';
+  const [plansModalOpen, setPlansModalOpen] = useState(false);
 
   // ── Persistent state (survives page reload) ──────────────────────────────
   const storageKey = `geraew-panel-image-${nodeId}`;
@@ -451,6 +454,10 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
       clearProgressTimer();
       clearMsgTimer();
       setGenState('idle');
+      if (err instanceof ApiError && [400, 402, 403].includes(err.status)) {
+        setPlansModalOpen(true);
+        return;
+      }
       setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: 'Erro ao iniciar geração.' }));
     }
   }
@@ -573,6 +580,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   const dashOffset = CIRCUMFERENCE * (1 - progress / 100);
 
   return (
+    <>
     <TooltipProvider>
       <div
         ref={panelRef}
@@ -852,6 +860,8 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
         </div>
       </div>
     </TooltipProvider>
+    {plansModalOpen && createPortal(<PlansModal onClose={() => setPlansModalOpen(false)} />, document.body)}
+    </>
   );
 }
 

@@ -7,6 +7,8 @@ export interface AuthUser {
   avatarUrl: string;
   role: string;
   emailVerified: boolean;
+  phone?: string;
+  phoneVerified: boolean;
   hasCompletedOnboarding: boolean;
   createdAt: string;
 }
@@ -966,6 +968,20 @@ export const api = {
       return request<{ message: string }>('/api/v1/auth/resend-verification', {
         method: 'POST',
         body: JSON.stringify({ email }),
+      });
+    },
+
+    sendPhoneVerification(phone: string) {
+      return request<{ message: string }>('/api/v1/auth/send-verification', {
+        method: 'POST',
+        body: JSON.stringify({ phone }),
+      });
+    },
+
+    verifyPhone(accessToken: string, phone: string, code: string) {
+      return authRequest<AuthResponse>('/api/v1/auth/verify-phone', accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ phone, code }),
       });
     },
   },

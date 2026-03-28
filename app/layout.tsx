@@ -32,6 +32,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth-context";
 import { QueryProvider } from "@/lib/query-provider";
 import { GoogleAuthWrapper } from "@/lib/google-auth-wrapper";
+import { PhoneVerificationModal } from "@/components/PhoneVerificationModal";
+import { PhoneVerificationProvider } from "@/lib/phone-verification-context";
 import { Toaster } from "sonner";
 
 export default function RootLayout({
@@ -47,8 +49,10 @@ export default function RootLayout({
         <QueryProvider>
           <GoogleAuthWrapper>
           <AuthProvider>
+            <PhoneVerificationProvider>
             <TooltipProvider delayDuration={0}>
               {children}
+              <PhoneVerificationModal />
               <Toaster
                 theme="dark"
                 position="bottom-right"
@@ -76,6 +80,7 @@ export default function RootLayout({
                 }}
               />
             </TooltipProvider>
+            </PhoneVerificationProvider>
           </AuthProvider>
           </GoogleAuthWrapper>
         </QueryProvider>
