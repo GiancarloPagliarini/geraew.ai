@@ -829,6 +829,11 @@ export const api = {
         method: 'POST',
       });
     },
+    billingPortal(accessToken: string) {
+      return authRequest<{ portalUrl: string }>('/api/v1/subscriptions/billing-portal', accessToken, {
+        method: 'POST',
+      });
+    },
   },
 
   plans: {

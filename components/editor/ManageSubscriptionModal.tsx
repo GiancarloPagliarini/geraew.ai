@@ -31,6 +31,7 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
   const [isDowngrading, setIsDowngrading] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [showPlanOptions, setShowPlanOptions] = useState(false);
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['user', 'me'],
@@ -230,6 +231,19 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
     }
   }
 
+  async function openBillingPortal() {
+    if (!accessToken) return;
+    setIsOpeningPortal(true);
+    try {
+      const { portalUrl } = await api.subscriptions.billingPortal(accessToken);
+      window.open(portalUrl, '_blank');
+    } catch {
+      toast.error('Erro ao abrir portal', { description: 'Tente novamente.' });
+    } finally {
+      setIsOpeningPortal(false);
+    }
+  }
+
   const sorted = (plans ?? []).slice().sort(
     (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),
   );
@@ -345,6 +359,22 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
               </div>
             </div>
           </div>
+
+          {/* Billing portal — manage cards and invoices */}
+          {!isFreeUser && (
+            <button
+              onClick={openBillingPortal}
+              disabled={isOpeningPortal}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/[0.03] px-4 py-2.5 text-xs text-[#f3f0ed]/50 transition-colors hover:border-[#f3f0ed]/15 hover:bg-[#f3f0ed]/[0.06] hover:text-[#f3f0ed]/70 disabled:opacity-50"
+            >
+              {isOpeningPortal ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <CreditCard className="h-3.5 w-3.5" />
+              )}
+              Gerenciar cartões e faturas
+            </button>
+          )}
 
           {/* Actions — only show for active paid subscriptions */}
           {isActive && !isFreeUser && (
