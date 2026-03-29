@@ -311,6 +311,13 @@ export function PlansModal({ onClose }: PlansModalProps) {
     (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),
   );
 
+  // On mobile (single column), show the most popular plan (creator) first
+  const mobileSorted = sorted.slice().sort((a, b) => {
+    if (a.slug === 'creator') return -1;
+    if (b.slug === 'creator') return 1;
+    return 0;
+  });
+
   function getPlanAction(targetSlug: string): 'upgrade' | 'downgrade' | 'create' {
     if (!hasActiveSub || !currentPlanSlug || currentPlanSlug === 'free') return 'create';
     const currentIdx = PLAN_ORDER.indexOf(currentPlanSlug);
@@ -418,23 +425,42 @@ export function PlansModal({ onClose }: PlansModalProps) {
           </div>
         )}
 
-        {/* Plans — single row of 5 */}
+        {/* Plans — mobile: popular first, desktop: normal order */}
         {!isLoading && sorted.length > 0 && (
-          <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:gap-3">
-            {sorted.map((plan) => {
-              const isCurrent = currentPlanSlug === plan.slug;
-              return (
-                <PlanCard
-                  key={plan.id}
-                  plan={plan}
-                  isCurrent={isCurrent}
-                  planAction={isCurrent ? 'current' : getPlanAction(plan.slug)}
-                  onSubscribe={handleSubscribe}
-                  subscribingSlug={subscribingSlug}
-                />
-              );
-            })}
-          </div>
+          <>
+            {/* Mobile: creator (most popular) first */}
+            <div className="grid grid-cols-1 items-stretch gap-3 sm:hidden">
+              {mobileSorted.map((plan) => {
+                const isCurrent = currentPlanSlug === plan.slug;
+                return (
+                  <PlanCard
+                    key={plan.id}
+                    plan={plan}
+                    isCurrent={isCurrent}
+                    planAction={isCurrent ? 'current' : getPlanAction(plan.slug)}
+                    onSubscribe={handleSubscribe}
+                    subscribingSlug={subscribingSlug}
+                  />
+                );
+              })}
+            </div>
+            {/* Desktop: normal order */}
+            <div className="hidden items-stretch gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-5 lg:gap-3">
+              {sorted.map((plan) => {
+                const isCurrent = currentPlanSlug === plan.slug;
+                return (
+                  <PlanCard
+                    key={plan.id}
+                    plan={plan}
+                    isCurrent={isCurrent}
+                    planAction={isCurrent ? 'current' : getPlanAction(plan.slug)}
+                    onSubscribe={handleSubscribe}
+                    subscribingSlug={subscribingSlug}
+                  />
+                );
+              })}
+            </div>
+          </>
         )}
 
         {/* Trust bar */}
