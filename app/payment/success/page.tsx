@@ -26,7 +26,7 @@ export default function PaymentSuccessPage() {
         </p>
       </div>
       <button
-        onClick={() => router.push('/')}
+        onClick={() => router.push('/workspace')}
         className="flex items-center gap-2 rounded-xl bg-[#a2dd00] px-6 py-3 text-sm font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-[0.98]"
       >
         Ir para o editor

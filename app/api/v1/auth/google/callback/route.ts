@@ -50,8 +50,17 @@ export async function GET(request: NextRequest) {
 
     const authData = await authRes.json();
 
+    // Check if there's a plan redirect cookie from the landing page
+    const planRedirect = request.cookies.get('geraew-plan-redirect')?.value;
+    const redirectTo = planRedirect ? `/creditos?plan=${planRedirect}` : '/workspace';
+
     // Set the same cookies the client-side auth context expects
-    const response = NextResponse.redirect(new URL('/', origin));
+    const response = NextResponse.redirect(new URL(redirectTo, origin));
+
+    // Clear the plan redirect cookie
+    if (planRedirect) {
+      response.cookies.set('geraew-plan-redirect', '', { path: '/', maxAge: 0 });
+    }
 
     response.cookies.set('geraew-access-token', authData.accessToken, {
       path: '/',

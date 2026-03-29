@@ -16,6 +16,7 @@ interface AuthContextValue extends AuthState {
   register: (email: string, name: string, password: string, phone: string) => Promise<void>;
   googleLogin: (googleToken: string) => Promise<void>;
   logout: () => void;
+  updateAuth: (data: { accessToken: string; refreshToken: string; user: AuthUser }) => void;
   loginMutation: ReturnType<typeof useLoginMutation>;
   registerMutation: ReturnType<typeof useRegisterMutation>;
   googleLoginMutation: ReturnType<typeof useGoogleLoginMutation>;
@@ -67,7 +68,7 @@ function clearAuth() {
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('geraew-')) keysToRemove.push(key);
+      if (key && key.startsWith('geraew-') && !key.startsWith('geraew-phone-modal-shown-')) keysToRemove.push(key);
     }
     keysToRemove.forEach((key) => localStorage.removeItem(key));
   }
@@ -182,6 +183,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [googleLoginMutation]
   );
 
+  const updateAuth = useCallback((data: { accessToken: string; refreshToken: string; user: AuthUser }) => {
+    saveAuth(data);
+    setState({ user: data.user, accessToken: data.accessToken, refreshToken: data.refreshToken, loading: false });
+  }, []);
+
   const logout = useCallback(async () => {
     if (state.refreshToken) {
       api.auth.logout(state.refreshToken).catch(() => {});
@@ -192,7 +198,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [state.refreshToken, queryClient]);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, googleLogin, logout, loginMutation, registerMutation, googleLoginMutation }}>
+    <AuthContext.Provider value={{ ...state, login, register, googleLogin, logout, updateAuth, loginMutation, registerMutation, googleLoginMutation }}>
       {children}
     </AuthContext.Provider>
   );

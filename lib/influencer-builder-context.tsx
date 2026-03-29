@@ -235,6 +235,12 @@ export interface InfluencerSelections {
   renderingStyle: string;
 }
 
+export interface ReferenceImage {
+  base64: string;
+  mimeType: string;
+  preview: string; // object URL for display
+}
+
 const DEFAULTS: InfluencerSelections = {
   characterType: 'Human',
   gender: 'Female',
@@ -367,12 +373,15 @@ interface InfluencerBuilderContextValue {
   set: <K extends keyof InfluencerSelections>(key: K, value: InfluencerSelections[K]) => void;
   reset: () => void;
   prompt: string;
+  referenceImage: ReferenceImage | null;
+  setReferenceImage: (img: ReferenceImage | null) => void;
 }
 
 const InfluencerBuilderContext = createContext<InfluencerBuilderContextValue | null>(null);
 
 export function InfluencerBuilderProvider({ children }: { children: React.ReactNode }) {
   const [selections, setSelections] = useState<InfluencerSelections>(DEFAULTS);
+  const [referenceImage, setReferenceImageState] = useState<ReferenceImage | null>(null);
 
   const set = useCallback(
     <K extends keyof InfluencerSelections>(key: K, value: InfluencerSelections[K]) => {
@@ -381,12 +390,25 @@ export function InfluencerBuilderProvider({ children }: { children: React.ReactN
     [],
   );
 
-  const reset = useCallback(() => setSelections(DEFAULTS), []);
+  const reset = useCallback(() => {
+    setSelections(DEFAULTS);
+    if (referenceImage) {
+      URL.revokeObjectURL(referenceImage.preview);
+      setReferenceImageState(null);
+    }
+  }, [referenceImage]);
+
+  const setReferenceImage = useCallback((img: ReferenceImage | null) => {
+    setReferenceImageState((prev) => {
+      if (prev) URL.revokeObjectURL(prev.preview);
+      return img;
+    });
+  }, []);
 
   const prompt = useMemo(() => buildPrompt(selections), [selections]);
 
   return (
-    <InfluencerBuilderContext.Provider value={{ selections, set, reset, prompt }}>
+    <InfluencerBuilderContext.Provider value={{ selections, set, reset, prompt, referenceImage, setReferenceImage }}>
       {children}
     </InfluencerBuilderContext.Provider>
   );

@@ -17,38 +17,38 @@ export interface PlanGenerationExample {
 
 export const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
   free: [
-    { label: 'Nano Banana 2', count: '3 imgs' },
-    { label: 'Motion Control', count: '~4s max' },
-    { label: 'Veo 3.1 Fast', count: 'bloqueado', blocked: true },
-    { label: 'Veo 3.1 Quality', count: 'bloqueado', blocked: true },
+    { label: 'Nano Banana 2', count: '3 Imagens' },
+    { label: 'Motion Control', count: '1 Geração' },
+    { label: 'Veo 3.1 Fast', count: '2 Vídeos Grátis' },
+    { label: 'Veo 3.1 Quality', count: '2 Vídeos Grátis' },
   ],
   starter: [
-    { label: 'Nano Banana 2', count: '44 imgs' },
-    { label: 'Motion Control', count: '5 clips' },
-    { label: 'Veo 3.1 Fast', count: '6 vídeos' },
-    { label: 'Veo 3.1 Quality', count: '4 vídeos' },
-    { label: 'Veo 3.1 Quality 4K', count: '1 vídeo' },
+    { label: 'Nano Banana 2', count: '44 Imagens' },
+    { label: 'Motion Control', count: '5 Gerações' },
+    { label: 'Veo 3.1 Fast', count: '6 Vídeos' },
+    { label: 'Veo 3.1 Quality', count: '4 Vídeos' },
+    { label: 'Veo 3.1 Quality 4K', count: '1 Vídeo' },
   ],
   creator: [
-    { label: 'Nano Banana 2', count: '133 imgs' },
-    { label: 'Motion Control', count: '17 clips' },
-    { label: 'Veo 3.1 Fast', count: '20 vídeos' },
-    { label: 'Veo 3.1 Quality', count: '12 vídeos' },
-    { label: 'Veo 3.1 Quality 4K', count: '4 vídeos' },
+    { label: 'Nano Banana 2', count: '133 Imagens' },
+    { label: 'Motion Control', count: '17 Gerações' },
+    { label: 'Veo 3.1 Fast', count: '20 Vídeos' },
+    { label: 'Veo 3.1 Quality', count: '12 Vídeos' },
+    { label: 'Veo 3.1 Quality 4K', count: '4 Vídeos' },
   ],
   pro: [
-    { label: 'Nano Banana 2', count: '333 imgs' },
-    { label: 'Motion Control', count: '42 clips' },
-    { label: 'Veo 3.1 Fast', count: '50 vídeos' },
-    { label: 'Veo 3.1 Quality', count: '30 vídeos' },
-    { label: 'Veo 3.1 Quality 4K', count: '10 vídeos' },
+    { label: 'Nano Banana 2', count: '333 Imagens' },
+    { label: 'Motion Control', count: '42 Gerações' },
+    { label: 'Veo 3.1 Fast', count: '50 Vídeos' },
+    { label: 'Veo 3.1 Quality', count: '30 Vídeos' },
+    { label: 'Veo 3.1 Quality 4K', count: '10 Vídeos' },
   ],
   studio: [
-    { label: 'Nano Banana 2', count: '888 imgs' },
-    { label: 'Motion Control', count: '114 clips' },
-    { label: 'Veo 3.1 Fast', count: '133 vídeos' },
-    { label: 'Veo 3.1 Quality', count: '80 vídeos' },
-    { label: 'Veo 3.1 Quality 4K', count: '28 vídeos' },
+    { label: 'Nano Banana 2', count: '888 Imagens' },
+    { label: 'Motion Control', count: '114 Gerações' },
+    { label: 'Veo 3.1 Fast', count: '133 Vídeos' },
+    { label: 'Veo 3.1 Quality', count: '80 Vídeos' },
+    { label: 'Veo 3.1 Quality 4K', count: '28 Vídeos' },
   ],
 };
 
@@ -98,6 +98,28 @@ export function getPackageBadge(
   return null;
 }
 
+/* ── Discount / anchor pricing ── */
+
+export const PLAN_ORIGINAL_PRICES: Record<string, number> = {
+  starter: 6900,
+  creator: 14900,
+  pro: 29900,
+  studio: 69900,
+};
+
+export const PLAN_DISCOUNT_LABELS: Record<string, string> = {
+  starter: '29% OFF',
+  creator: '33% OFF',
+  pro: '33% OFF',
+  studio: '28% OFF',
+};
+
+export const PLAN_SOCIAL_PROOF: Record<string, string> = {
+  creator: '🔥 Escolha de 68% dos criadores',
+  pro: '⚡ Para quem leva a sério',
+  studio: '🏆 Para equipes e agências',
+};
+
 /* ── Price formatting ── */
 
 export function formatPrice(priceCents: number) {
@@ -107,11 +129,17 @@ export function formatPrice(priceCents: number) {
   return { main: `R$ ${int.toLocaleString('pt-BR')},${cents}`, sub: '/mês' };
 }
 
+export function formatPriceRaw(priceCents: number) {
+  const int = Math.floor(priceCents / 100);
+  const cents = String(priceCents % 100).padStart(2, '0');
+  return `R$ ${int.toLocaleString('pt-BR')},${cents}`;
+}
+
 export function getPlanFeatures(plan: Plan): string[] {
   const features: string[] = [];
 
   if (plan.slug === 'free') {
-    features.push('30 créditos');
+    features.push('350 créditos');
     features.push('Suporte por e-mail');
     features.push('7 dias de galeria');
     return features;

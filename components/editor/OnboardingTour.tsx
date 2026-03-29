@@ -10,8 +10,6 @@ import { useEffect, useState } from 'react';
 import { GraduationCap, Smile, SquareMousePointer, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 
 const steps: Step[] = [
   {
@@ -133,7 +131,7 @@ function TourTooltip({
             {...primaryProps}
             className="rounded-lg bg-[#a2dd00] px-3.5 py-1.5 text-[11px] font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95"
           >
-            {isLastStep ? 'Receber créditos' : 'Próximo →'}
+            {isLastStep ? 'Começar a criar' : 'Próximo →'}
           </button>
         </div>
       </div>
@@ -142,9 +140,8 @@ function TourTooltip({
 }
 
 export function OnboardingTour() {
-  const { user, accessToken } = useAuth();
+  const { user, accessToken, refreshToken, updateAuth } = useAuth();
   const [run, setRun] = useState(false);
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (user && user.hasCompletedOnboarding === false) {
@@ -153,25 +150,29 @@ export function OnboardingTour() {
     }
   }, [user]);
 
+  function completeAndUpdateAuth() {
+    if (!accessToken || !refreshToken || !user) return;
+    api.users.completeOnboarding(accessToken).then(() => {
+      updateAuth({
+        accessToken,
+        refreshToken,
+        user: { ...user, hasCompletedOnboarding: true },
+      });
+    });
+  }
+
   function handleCallback({ status }: CallBackProps) {
     const skipped = (status as string) === STATUS.SKIPPED;
     const finished = (status as string) === STATUS.FINISHED;
 
     if (skipped) {
       setRun(false);
-      if (accessToken) {
-        api.users.completeOnboarding(accessToken);
-      }
+      completeAndUpdateAuth();
     }
 
     if (finished) {
       setRun(false);
-      if (accessToken) {
-        api.users.completeOnboarding(accessToken).then(() => {
-          queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
-          toast.success('Parabéns! Você acabou de ganhar créditos grátis 🎉');
-        });
-      }
+      completeAndUpdateAuth();
     }
   }
 

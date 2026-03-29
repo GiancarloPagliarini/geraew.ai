@@ -7,46 +7,78 @@ import { toast } from 'sonner';
 import { useLoadingMessage } from '@/lib/loading-messages';
 import {
   ArrowLeft,
+  ArrowRight,
   Coins,
   Loader2,
   Sparkles,
   CalendarDays,
   TrendingUp,
   Check,
-  Lock, AlertTriangle
+  Lock,
+  AlertTriangle,
+  Zap,
+  Crown,
+  Users,
+  Shield,
+  Flame,
+  Video,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import {
   PLAN_ORDER,
   PLAN_SUBTITLES,
   PLAN_GENERATIONS,
+  PLAN_ORIGINAL_PRICES,
+  PLAN_DISCOUNT_LABELS,
+  PLAN_SOCIAL_PROOF,
   formatPrice,
+  formatPriceRaw,
   getPlanFeatures,
 } from '@/lib/plans';
 import { CreditPackagesGrid } from '@/components/editor/CreditPackagesGrid';
+import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 
-export default function CreditosPage() {
+function CreditosPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, accessToken, loading: authLoading } = useAuth();
+  const autoSubscribeTriggered = useRef(false);
   const loadingMsg = useLoadingMessage('creditos');
   const queryClient = useQueryClient();
   const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
+  const [pendingDowngradeSlug, setPendingDowngradeSlug] = useState<string | null>(null);
+  const [isDowngrading, setIsDowngrading] = useState(false);
+
+  async function executeDowngrade(planSlug: string) {
+    if (!accessToken) return;
+    setIsDowngrading(true);
+    try {
+      await api.subscriptions.downgrade(accessToken, planSlug);
+      toast.success('Downgrade agendado', {
+        description: 'Seu plano será alterado na próxima renovação.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
+      setPendingDowngradeSlug(null);
+    } catch {
+      toast.error('Erro ao fazer downgrade', { description: 'Tente novamente.' });
+    } finally {
+      setIsDowngrading(false);
+    }
+  }
+
   async function handleSubscribe(planSlug: string) {
     if (!accessToken || subscribingSlug) return;
-    setSubscribingSlug(planSlug);
     const action = getPlanAction(planSlug);
 
+    if (action === 'downgrade') {
+      setPendingDowngradeSlug(planSlug);
+      return;
+    }
+
+    setSubscribingSlug(planSlug);
+
     try {
-      if (action === 'downgrade') {
-        await api.subscriptions.downgrade(accessToken, planSlug);
-        toast.success('Downgrade agendado', {
-          description: 'Seu plano será alterado na próxima renovação.',
-        });
-        queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
-        setSubscribingSlug(null);
-        return;
-      }
 
       let checkoutUrl: string;
       if (action === 'create') {
@@ -104,6 +136,25 @@ export default function CreditosPage() {
   useEffect(() => {
     if (!authLoading && !user) router.push('/login');
   }, [authLoading, user, router]);
+
+  // Auto-trigger checkout when redirected from landing page with ?plan=
+  const planFromUrl = searchParams.get('plan');
+  useEffect(() => {
+    if (
+      planFromUrl &&
+      !autoSubscribeTriggered.current &&
+      accessToken &&
+      !plansLoading &&
+      plans &&
+      plans.length > 0
+    ) {
+      const targetPlan = plans.find((p) => p.slug === planFromUrl);
+      if (targetPlan && targetPlan.priceCents > 0) {
+        autoSubscribeTriggered.current = true;
+        handleSubscribe(targetPlan.slug);
+      }
+    }
+  }, [planFromUrl, accessToken, plansLoading, plans]);
 
   const isLoading = authLoading || balanceLoading || plansLoading || profileLoading || packagesLoading;
 
@@ -194,7 +245,7 @@ export default function CreditosPage() {
       {/* Header */}
       <header className="flex h-12 shrink-0 items-center border-b border-[#f3f0ed]/7 px-4">
         <button
-          onClick={() => router.push('/')}
+          onClick={() => router.push('/workspace')}
           className="flex items-center gap-2 text-sm text-[#f3f0ed]/60 transition-colors hover:text-[#f3f0ed]"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -237,6 +288,26 @@ export default function CreditosPage() {
       )}
 
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-12 px-4 py-10">
+
+        {/* -- Free video generations banner -- */}
+        {balance && balance.freeVeoGenerationsRemaining > 0 && (
+          <div className="flex items-center gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/6 p-5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15">
+              <Video className="h-5 w-5 text-emerald-400" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-bold text-emerald-400">
+                Gerações de Vídeo Gratuitas
+              </span>
+              <span className="text-xs text-[#f3f0ed]/50">
+                {balance.freeVeoGenerationsRemaining} restante{balance.freeVeoGenerationsRemaining !== 1 ? 's' : ''} · Veo 3.1 Fast ou Quality · 1080p
+              </span>
+            </div>
+            <span className="ml-auto text-2xl font-bold tabular-nums text-emerald-400">
+              {balance.freeVeoGenerationsRemaining}
+            </span>
+          </div>
+        )}
 
         {/* -- Balance -- */}
         {balance && (
@@ -307,156 +378,255 @@ export default function CreditosPage() {
 
         {/* -- Plans -- */}
         {sortedPlans.length > 0 && (
-          <div id="plans-section" className="flex flex-col gap-8">
+          <div id="plans-section" className="flex flex-col gap-10">
 
             {/* Heading */}
             <div className="flex flex-col items-center gap-3 text-center">
-              <h2 className="text-xl font-bold text-[#f3f0ed] sm:text-2xl">
-                Escolha seu plano
+              <div className="flex items-center gap-2 rounded-full border border-[#a2dd00]/20 bg-[#a2dd00]/8 px-4 py-1.5">
+                <Flame className="h-3.5 w-3.5 text-[#a2dd00]" />
+                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#a2dd00]">Oferta por tempo limitado</span>
+              </div>
+              <h2 className="text-2xl font-bold text-[#f3f0ed] sm:text-3xl">
+                Escolha seu plano e comece a criar
               </h2>
-              <p className="flex items-center gap-1.5 text-xs text-[#f3f0ed]/40">
-                <Coins className="h-3 w-3 text-[#a2dd00]" />
-                Créditos do plano renovam mensalmente
+              <p className="max-w-md text-sm text-[#f3f0ed]/45">
+                Mais de <span className="font-semibold text-[#f3f0ed]/70">2.400 criadores</span> já estão gerando conteúdo. Comece grátis e escale quando quiser.
               </p>
-              <div className="flex items-center gap-1.5 text-[11px] text-[#f3f0ed]/30">
-                <Lock className="h-3 w-3" />
-                Pagamento seguro via Pix ou Cartão
+              <div className="mt-1 flex items-center gap-4 text-[11px] text-[#f3f0ed]/30">
+                <span className="flex items-center gap-1.5">
+                  <Shield className="h-3 w-3" />
+                  Garantia de 7 dias
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Lock className="h-3 w-3" />
+                  Pagamento seguro
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Zap className="h-3 w-3" />
+                  Cancele quando quiser
+                </span>
               </div>
             </div>
 
-            {/* Cards */}
-            <div
-              className="flex flex-col items-stretch gap-5 sm:grid sm:gap-4"
-              style={{ gridTemplateColumns: `repeat(${Math.min(sortedPlans.length, 5)}, minmax(0, 1fr))` }}
-            >
-              {sortedPlans.map((plan) => {
+            {/* Cards — 3 top row + 2 bottom row centered */}
+            {(() => {
+              const topPlans = sortedPlans.slice(0, 3);
+              const bottomPlans = sortedPlans.slice(3);
+
+              function renderCard(plan: typeof sortedPlans[number]) {
                 const isCurrent = currentPlanSlug === plan.slug;
                 const isFree = plan.priceCents === 0;
                 const isCreator = plan.slug === 'creator';
+                const isPro = plan.slug === 'pro';
+                const isStudio = plan.slug === 'studio';
                 const { main, sub } = formatPrice(plan.priceCents);
                 const features = getPlanFeatures(plan);
                 const isSubscribing = subscribingSlug === plan.slug;
-                const subtitle = PLAN_SUBTITLES[plan.slug];
+                const isDowngrade = !isCurrent && getPlanAction(plan.slug) === 'downgrade';
                 const generationExamples = PLAN_GENERATIONS[plan.slug] ?? [];
+                const originalPrice = PLAN_ORIGINAL_PRICES[plan.slug];
+                const discountLabel = PLAN_DISCOUNT_LABELS[plan.slug];
+                const socialProof = PLAN_SOCIAL_PROOF[plan.slug];
+
+                const actionLabel = isCurrent
+                  ? 'Plano ativo'
+                  : isFree
+                    ? 'Plano atual'
+                    : { upgrade: 'Fazer upgrade', downgrade: 'Fazer downgrade', create: 'Começar agora' }[getPlanAction(plan.slug)];
+
+                const PlanIcon = isStudio ? Crown : isPro ? Zap : isCreator ? Sparkles : isFree ? Users : Coins;
 
                 return (
                   <div
                     key={plan.id}
-                    className={`relative flex flex-col rounded-2xl border p-5 transition-all ${isCurrent
-                      ? 'border-[#a2dd00]/50 bg-[#1e2b1f] shadow-[0_0_30px_rgba(162,221,0,0.1)]'
-                      : isCreator
-                        ? 'border-[#a2dd00]/30 bg-[#1f2a2d] shadow-[0_0_20px_rgba(162,221,0,0.05)]'
-                        : 'border-[#f3f0ed]/8 bg-[#1c2527]'
+                    className={`group relative flex flex-col rounded-[22px] border transition-all duration-300 ${isDowngrade
+                      ? 'border-[#f3f0ed]/5 bg-[#1c2527]/60 opacity-40 pointer-events-none'
+                      : isCurrent
+                        ? 'border-[#f3f0ed]/25 bg-[#1e2325] ring-1 ring-[#f3f0ed]/10'
+                        : isCreator
+                          ? 'border-[#a2dd00]/30 bg-gradient-to-b from-[#1f2d20] to-[#1a2523] ring-1 ring-[#a2dd00]/15 shadow-[0_0_40px_rgba(162,221,0,0.08)] hover:shadow-[0_0_60px_rgba(162,221,0,0.12)]'
+                          : 'border-[#f3f0ed]/[0.06] bg-[#171e20] hover:border-[#f3f0ed]/[0.12] hover:bg-[#1a1f21]'
                       }`}
                   >
-                    {/* "Mais popular" badge */}
-                    {isCreator && !isCurrent && (
-                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                        <span className="flex items-center gap-1 rounded-full bg-[#a2dd00] px-3 py-1 text-[10px] font-bold tracking-widest text-[#1a2123]">
-                          <Sparkles className="h-2.5 w-2.5" />
-                          MAIS POPULAR
-                        </span>
-                      </div>
-                    )}
-
-                    {isCurrent && (
-                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                        <span className="flex items-center gap-1 rounded-full bg-[#a2dd00] px-3 py-1 text-[10px] font-bold tracking-widest text-[#1a2123]">
-                          <Sparkles className="h-2.5 w-2.5" />
-                          SEU PLANO
-                        </span>
-                      </div>
-                    )}
-
-                    <p className="mt-3 text-sm font-bold text-[#f3f0ed]">{plan.name}</p>
-                    {subtitle && (
-                      <p className="mt-0.5 text-[11px] text-[#f3f0ed]/35">{subtitle}</p>
-                    )}
-
-                    <div className="mt-2 flex items-baseline gap-1">
-                      <span className={`text-2xl font-bold tabular-nums ${isCurrent ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'}`}>
-                        {main}
-                      </span>
-                      {sub && <span className="text-[11px] text-[#f3f0ed]/40">{sub}</span>}
-                    </div>
-
-                    {!isFree && (
-                      <p className="mt-1 text-[11px] text-[#f3f0ed]/30">
-                        {plan.creditsPerMonth.toLocaleString('pt-BR')} créditos
-                      </p>
-                    )}
-
-                    <div className="my-4 h-px w-full bg-[#f3f0ed]/6" />
-
-                    {/* Plan features */}
-                    <ul className="flex flex-col gap-2">
-                      {features.map((f) => (
-                        <li key={f} className="flex items-start gap-2 text-xs text-[#f3f0ed]/60">
-                          <Check className={`mt-px h-3.5 w-3.5 shrink-0 ${isCurrent ? 'text-[#a2dd00]' : 'text-[#a2dd00]/60'}`} />
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-
-                    {/* Generation examples */}
-                    {generationExamples.length > 0 && (
+                    {isCreator && !isDowngrade && (
                       <>
-                        <div className="my-3 h-px w-full bg-[#f3f0ed]/6" />
-                        <div className="flex flex-col gap-1.5">
-                          <p className="text-[10px] font-bold tracking-[0.1em] text-[#f3f0ed]/25">GERAÇÕES</p>
-                          {generationExamples.map((ex) => (
-                            <div key={ex.label} className="flex items-center justify-between text-[11px]">
-                              <span className="text-[#f3f0ed]/40">{ex.label}</span>
-                              {ex.blocked ? (
-                                <span className="flex items-center gap-1 text-red-400/60">
-                                  <Lock className="h-2.5 w-2.5" />
-                                  bloqueado
-                                </span>
-                              ) : (
-                                <span className="font-medium text-[#f3f0ed]/60">{ex.count}</span>
-                              )}
-                            </div>
-                          ))}
-                          <p className="text-[10px] text-[#f3f0ed]/15 mt-1">Estimativa usando todos os créditos em um único modelo</p>
-                        </div>
+                        <div
+                          className="pointer-events-none absolute -inset-px rounded-[22px]"
+                          style={{ background: 'linear-gradient(180deg, rgba(162,221,0,0.15) 0%, rgba(162,221,0,0) 50%)' }}
+                        />
+                        <div
+                          className="pointer-events-none absolute -top-[1px] left-8 right-8 h-[2px]"
+                          style={{ background: 'linear-gradient(90deg, transparent, rgba(162,221,0,0.6), transparent)' }}
+                        />
                       </>
                     )}
 
-                    <div className="flex-1" />
-
-                    {!isFree && (
-                      <button
-                        disabled={isCurrent || !!subscribingSlug}
-                        onClick={() => handleSubscribe(plan.slug)}
-                        className={`mt-5 flex h-10 w-full items-center justify-center rounded-xl text-xs font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${isCurrent
-                          ? 'bg-[#a2dd00]/20 text-[#a2dd00]'
-                          : isCreator
-                            ? 'bg-[#a2dd00] text-[#1a2123] hover:bg-[#b5e82d]'
-                            : 'bg-[#f3f0ed]/8 text-[#f3f0ed] hover:bg-[#f3f0ed]/12'
-                          }`}
-                      >
-                        {isSubscribing ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : isCurrent ? (
-                          'Plano ativo'
-                        ) : (
-                          {
-                            upgrade: 'Fazer upgrade',
-                            downgrade: 'Fazer downgrade',
-                            create: 'Assinar',
-                          }[getPlanAction(plan.slug)]
-                        )}
-                      </button>
+                    {isCurrent && !isCreator && (
+                      <div
+                        className="pointer-events-none absolute -inset-px rounded-[22px] opacity-40"
+                        style={{ background: 'linear-gradient(180deg, rgba(243,240,237,0.06) 0%, rgba(243,240,237,0) 35%)' }}
+                      />
                     )}
+
+                    {isCurrent && (
+                      <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
+                        <div className="flex items-center gap-1.5 rounded-full bg-[#f3f0ed] px-4 py-1 shadow-[0_0_16px_rgba(243,240,237,0.15)]">
+                          <Check className="h-3 w-3 text-[#1a2123]" />
+                          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#1a2123]">Seu Plano</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {isCreator && !isCurrent && (
+                      <div className="absolute -top-3.5 left-1/2 z-10 -translate-x-1/2">
+                        <div className="flex items-center gap-1.5 rounded-full bg-[#a2dd00] px-5 py-1.5 shadow-[0_0_30px_rgba(162,221,0,0.4)]">
+                          <Flame className="h-3.5 w-3.5 text-[#141a1c]" />
+                          <span className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#141a1c]">Mais Popular</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="relative flex flex-1 flex-col p-5 sm:p-6">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${isCreator ? 'bg-[#a2dd00]/15' : isCurrent ? 'bg-[#f3f0ed]/10' : 'bg-[#f3f0ed]/[0.05]'
+                          }`}>
+                          <PlanIcon className={`h-4 w-4 ${isCreator ? 'text-[#a2dd00]' : isCurrent ? 'text-[#f3f0ed]/70' : 'text-[#f3f0ed]/40'}`} />
+                        </div>
+                        <div>
+                          <h3 className="text-[15px] font-bold text-[#f3f0ed]">{plan.name}</h3>
+                          {PLAN_SUBTITLES[plan.slug] && (
+                            <span className="text-[10px] text-[#f3f0ed]/30">{PLAN_SUBTITLES[plan.slug]}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mt-5 min-h-[60px]">
+                        {originalPrice && !isFree && (
+                          <div className="mb-1 flex items-center gap-2">
+                            <span className="text-[12px] text-[#f3f0ed]/25 line-through">{formatPriceRaw(originalPrice)}</span>
+                            {discountLabel && (
+                              <span className="rounded-md bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold text-[#a2dd00]">{discountLabel}</span>
+                            )}
+                          </div>
+                        )}
+                        <div className="flex items-baseline gap-0.5">
+                          <span className={`text-[22px] font-extrabold leading-none tracking-tight ${isFree ? 'text-[#a2dd00]' : isCreator ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'
+                            }`}>{main}</span>
+                          {sub && <span className="text-[11px] text-[#f3f0ed]/30">{sub}</span>}
+                        </div>
+                      </div>
+
+                      <div className={`mt-4 flex items-center gap-2 rounded-xl px-3.5 py-2.5 ${isCreator ? 'bg-[#a2dd00]/10 border border-[#a2dd00]/15' : 'bg-[#f3f0ed]/[0.03] border border-[#f3f0ed]/[0.05]'
+                        }`}>
+                        <Coins className={`h-4 w-4 ${isCreator ? 'text-[#a2dd00]' : 'text-[#f3f0ed]/40'}`} />
+                        <div>
+                          <span className={`text-[16px] font-extrabold tabular-nums ${isCreator ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'}`}>
+                            {isFree ? plan.creditsPerMonth : plan.creditsPerMonth.toLocaleString('pt-BR')}
+                          </span>
+                          <span className="ml-1.5 text-[11px] text-[#f3f0ed]/30">créditos{isFree ? '' : '/mês'}</span>
+                        </div>
+                      </div>
+
+                      {socialProof && !isDowngrade && (
+                        <p className="mt-3 text-[11px] font-medium text-[#a2dd00]/70">{socialProof}</p>
+                      )}
+
+                      <div className="my-4 h-px w-full bg-[#f3f0ed]/[0.06]" />
+
+                      <ul className="flex min-h-[110px] flex-col gap-2.5">
+                        {features.map((f) => (
+                          <li key={f} className="flex items-start gap-2.5">
+                            <div className={`mt-[2px] flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full ${isCreator ? 'bg-[#a2dd00]/20' : isCurrent ? 'bg-[#f3f0ed]/10' : 'bg-[#f3f0ed]/[0.06]'
+                              }`}>
+                              <Check className={`h-2.5 w-2.5 ${isCreator ? 'text-[#a2dd00]' : isCurrent ? 'text-[#f3f0ed]/60' : 'text-[#f3f0ed]/45'}`} />
+                            </div>
+                            <span className="text-[12px] leading-snug text-[#f3f0ed]/55">{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <div className="mt-4 flex min-h-[100px] flex-col gap-1.5">
+                        {generationExamples.length > 0 && (
+                          <>
+                            <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/20">O que dá pra criar</p>
+                            {generationExamples.map((ex) => (
+                              <div key={ex.label} className="flex items-center justify-between">
+                                <span className="text-[10px] text-[#f3f0ed]/35">{ex.label}</span>
+                                <span className={`text-[10px] font-semibold ${isCreator ? 'text-[#a2dd00]/60' : isCurrent ? 'text-[#f3f0ed]/55' : 'text-[#f3f0ed]/45'}`}>{ex.count}</span>
+                              </div>
+                            ))}
+                          </>
+                        )}
+                      </div>
+
+                      <div className="flex-1" />
+
+                      {!isFree && !isDowngrade && (
+                        <button
+                          disabled={isCurrent || !!subscribingSlug}
+                          onClick={() => handleSubscribe(plan.slug)}
+                          className={`mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[13px] font-bold transition-all duration-300 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 ${isCurrent
+                            ? 'bg-[#f3f0ed]/10 text-[#f3f0ed]/60'
+                            : isCreator
+                              ? 'bg-[#a2dd00] text-[#141a1c] shadow-[0_4px_20px_rgba(162,221,0,0.3)] hover:shadow-[0_4px_30px_rgba(162,221,0,0.4)] hover:brightness-110'
+                              : 'border border-[#f3f0ed]/[0.1] bg-[#f3f0ed]/[0.03] text-[#f3f0ed]/80 hover:border-[#f3f0ed]/[0.2] hover:bg-[#f3f0ed]/[0.06] hover:text-[#f3f0ed]'
+                            }`}
+                        >
+                          {isSubscribing ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              {actionLabel}
+                              {!isCurrent && <ArrowRight className="h-3.5 w-3.5" />}
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {/* {isCreator && !isCurrent && !isDowngrade && (
+                        <p className="mt-2.5 text-center text-[10px] text-[#f3f0ed]/25">
+                          Preço promocional · Pode aumentar a qualquer momento
+                        </p>
+                      )} */}
+                    </div>
                   </div>
                 );
-              })}
-            </div>
+              }
 
-            {/* Footer */}
-            <p className="text-center text-xs text-[#f3f0ed]/20">
-              Créditos extras comprados nunca expiram &middot; Acumulam com os do plano
-            </p>
+              return (
+                <div className="flex flex-col gap-4">
+                  <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
+                    {topPlans.map(renderCard)}
+                  </div>
+                  {bottomPlans.length > 0 && (
+                    <div className="mx-auto grid w-full max-w-[calc(66.666%+0.5rem)] grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:gap-4">
+                      {bottomPlans.map(renderCard)}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Trust bar */}
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-[#f3f0ed]/25">
+                <span className="flex items-center gap-1.5">
+                  <Check className="h-3 w-3 text-[#a2dd00]/50" />
+                  Sem taxa de cancelamento
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Check className="h-3 w-3 text-[#a2dd00]/50" />
+                  Créditos renovam mensalmente
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Check className="h-3 w-3 text-[#a2dd00]/50" />
+                  Garantia de reembolso em 7 dias
+                </span>
+              </div>
+              <p className="text-center text-[11px] text-[#f3f0ed]/15">
+                Créditos extras comprados nunca expiram &middot; Acumulam com os do plano
+              </p>
+            </div>
           </div>
         )}
 
@@ -486,6 +656,43 @@ export default function CreditosPage() {
         )}
 
       </div>
+
+      {/* Retention modal for downgrade */}
+      {pendingDowngradeSlug && (() => {
+        const allPlans = (plans ?? []).slice().sort(
+          (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),
+        );
+        const currentPlan = allPlans.find((p) => p.slug === currentPlanSlug);
+        const targetPlan = allPlans.find((p) => p.slug === pendingDowngradeSlug);
+        const currentFeatures = currentPlan ? getPlanFeatures(currentPlan) : [];
+        const targetFeatures = targetPlan ? getPlanFeatures(targetPlan) : [];
+        const lostBenefits = currentFeatures.filter((f) => !targetFeatures.includes(f));
+        if (currentPlan && targetPlan) {
+          const creditDiff = currentPlan.creditsPerMonth - targetPlan.creditsPerMonth;
+          if (creditDiff > 0) {
+            lostBenefits.unshift(`${creditDiff.toLocaleString('pt-BR')} créditos mensais a menos`);
+          }
+        }
+        return (
+          <CancelRetentionModal
+            action="downgrade"
+            onClose={() => setPendingDowngradeSlug(null)}
+            onConfirm={() => executeDowngrade(pendingDowngradeSlug)}
+            isLoading={isDowngrading}
+            currentPlanName={currentPlan?.name}
+            targetPlanName={targetPlan?.name}
+            lostBenefits={lostBenefits.length > 0 ? lostBenefits : ['Créditos e funcionalidades do plano atual']}
+          />
+        );
+      })()}
     </div>
+  );
+}
+
+export default function CreditosPage() {
+  return (
+    <Suspense>
+      <CreditosPageContent />
+    </Suspense>
   );
 }

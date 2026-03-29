@@ -8,7 +8,7 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import { AudioWaveform, ImageIcon, Mic, User, Video } from 'lucide-react';
+import { AudioWaveform, ImageIcon, Mic, Repeat2, Shirt, User, Video } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface CanvasContextMenuProps {
@@ -40,6 +40,18 @@ const menuItems = [
         icon: AudioWaveform,
         label: 'Copiar movimentos',
         description: 'Copiar movimentos de um vídeo para outro',
+    },
+    {
+        type: 'virtual-try-on',
+        icon: Shirt,
+        label: 'Provador Virtual',
+        description: 'Vista roupas na sua influencer de IA',
+    },
+    {
+        type: 'face-swap',
+        icon: Repeat2,
+        label: 'Troca de Rosto',
+        description: 'Troque rostos em imagens com IA',
     },
     {
         type: 'generate-voice',

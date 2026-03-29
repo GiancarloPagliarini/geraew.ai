@@ -10,14 +10,16 @@ import {
   PersonStanding,
   RotateCcw,
   Sparkles,
+  Upload,
   User,
   Users,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Section } from './Section';
-import { useInfluencerBuilder } from '@/lib/influencer-builder-context';
+import { useInfluencerBuilder, type ReferenceImage } from '@/lib/influencer-builder-context';
 
 // ─── CDN Base URL ─────────────────────────────────────────────────────────────
 
@@ -252,19 +254,22 @@ function ImageOptionGrid({
   options,
   value,
   onChange,
+  disabled,
 }: {
   options: ReadonlyArray<{ id: string; label: string; image: string }>;
   value: string;
   onChange: (v: string) => void;
+  disabled?: boolean;
 }) {
   return (
-    <div className="grid grid-cols-3 gap-2 mt-2">
+    <div className={`grid grid-cols-3 gap-2 mt-2 ${disabled ? 'opacity-30 pointer-events-none' : ''}`}>
       {options.map((opt) => {
         const active = value === opt.id;
         return (
           <button
             key={opt.id}
             onClick={() => onChange(opt.id)}
+            disabled={disabled}
             className="group relative aspect-square overflow-hidden rounded-xl transition-all active:scale-95"
             style={{
               border: `2px solid ${active ? 'rgba(162,221,0,0.6)' : 'rgba(243,240,237,0.06)'}`,
@@ -305,19 +310,22 @@ function OptionPills({
   options,
   value,
   onChange,
+  disabled,
 }: {
   options: string[];
   value: string;
   onChange: (v: string) => void;
+  disabled?: boolean;
 }) {
   return (
-    <div className="flex flex-wrap gap-1.5 mt-2">
+    <div className={`flex flex-wrap gap-1.5 mt-2 ${disabled ? 'opacity-30 pointer-events-none' : ''}`}>
       {options.map((opt) => {
         const active = value === opt;
         return (
           <button
             key={opt}
             onClick={() => onChange(opt)}
+            disabled={disabled}
             className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold transition-all active:scale-95"
             style={{
               background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
@@ -377,9 +385,41 @@ function AdvancedTabCard({
 // ─── InfluencerSidebar ────────────────────────────────────────────────────────
 
 export function InfluencerSidebar() {
-  const { selections, set, reset, prompt } = useInfluencerBuilder();
+  const { selections, set, reset, prompt, referenceImage, setReferenceImage } = useInfluencerBuilder();
   const [tab, setTab] = useState<'builder' | 'prompt'>('builder');
   const [advancedTab, setAdvancedTab] = useState<'face' | 'body' | 'style'>('face');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const hasReference = !!referenceImage;
+
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // result is "data:<mime>;base64,<data>"
+      const base64 = result.split(',')[1];
+      const mimeType = file.type === 'image/webp' ? 'image/png' : file.type;
+      setReferenceImage({
+        base64,
+        mimeType,
+        preview: URL.createObjectURL(file),
+      });
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input so same file can be re-selected
+    e.target.value = '';
+  }, [setReferenceImage]);
+
+  const handleRemoveReference = useCallback(() => {
+    setReferenceImage(null);
+  }, [setReferenceImage]);
 
   return (
     <>
@@ -435,12 +475,78 @@ export function InfluencerSidebar() {
           </div>
         ) : (
           <>
+            {/* ── Imagem de Referência ─────────────────────────────────── */}
+            <div className="border-b border-[#f3f0ed]/[0.05] px-4 py-4">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#a2dd00]/10">
+                  <Upload className="h-3.5 w-3.5 text-[#a2dd00]" />
+                </div>
+                <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/55">
+                  IMAGEM DE REFERÊNCIA
+                </span>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+
+              {hasReference ? (
+                <div className="relative overflow-hidden rounded-xl border border-[#a2dd00]/20">
+                  <img
+                    src={referenceImage.preview}
+                    alt="Referência"
+                    className="w-full max-h-48 object-cover"
+                  />
+                  <button
+                    onClick={handleRemoveReference}
+                    className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-[#f3f0ed]/70 transition-all hover:bg-black/80 hover:text-[#f3f0ed]"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-2">
+                    <p className="text-[10px] font-semibold text-[#a2dd00]">
+                      Referência ativa
+                    </p>
+                    <p className="text-[9px] text-[#f3f0ed]/40">
+                      As opções do construtor estão desativadas
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex w-full flex-col items-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 bg-[#1e494b]/10 px-4 py-6 transition-all hover:border-[#a2dd00]/20 hover:bg-[#1e494b]/20"
+                >
+                  <Upload className="h-5 w-5 text-[#f3f0ed]/25" />
+                  <div className="text-center">
+                    <p className="text-[10px] font-semibold text-[#f3f0ed]/50">
+                      Envie uma foto de referência
+                    </p>
+                    <p className="mt-0.5 text-[9px] text-[#f3f0ed]/25">
+                      A IA criará uma pessoa inspirada nela
+                    </p>
+                  </div>
+                </button>
+              )}
+
+              {hasReference && (
+                <p className="mt-2 text-[9px] leading-relaxed text-[#f3f0ed]/30">
+                  A IA vai gerar uma pessoa original inspirada na imagem enviada, mantendo a essência e estética geral mas criando um indivíduo único.
+                </p>
+              )}
+            </div>
+
             {/* ── Seções básicas ──────────────────────────────────────── */}
             <Section title="TIPO DE PERSONAGEM" icon={Users}>
               <ImageOptionGrid
                 options={CHARACTER_TYPES}
                 value={selections.characterType}
                 onChange={(v) => set('characterType', v)}
+                disabled={hasReference}
               />
             </Section>
 
@@ -449,6 +555,7 @@ export function InfluencerSidebar() {
                 options={GENDER_TYPES}
                 value={selections.gender}
                 onChange={(v) => set('gender', v)}
+                disabled={hasReference}
               />
             </Section>
 
@@ -457,6 +564,7 @@ export function InfluencerSidebar() {
                 options={ETHNICITY_TYPES}
                 value={selections.ethnicity}
                 onChange={(v) => set('ethnicity', v)}
+                disabled={hasReference}
               />
             </Section>
 
@@ -465,6 +573,7 @@ export function InfluencerSidebar() {
                 options={SKIN_COLORS}
                 value={selections.skinColor}
                 onChange={(v) => set('skinColor', v)}
+                disabled={hasReference}
               />
             </Section>
 
@@ -473,6 +582,7 @@ export function InfluencerSidebar() {
                 options={EYE_COLORS}
                 value={selections.eyeColor}
                 onChange={(v) => set('eyeColor', v)}
+                disabled={hasReference}
               />
             </Section>
 
@@ -481,6 +591,7 @@ export function InfluencerSidebar() {
                 options={SKIN_CONDITIONS}
                 value={selections.skinCondition}
                 onChange={(v) => set('skinCondition', v)}
+                disabled={hasReference}
               />
             </Section>
 
@@ -489,6 +600,7 @@ export function InfluencerSidebar() {
                 options={['Adolescente', 'Jovem adulto', 'Adulto', 'Meia-idade', 'Idoso']}
                 value={selections.age}
                 onChange={(v) => set('age', v)}
+                disabled={hasReference}
               />
             </Section>
 
@@ -524,6 +636,7 @@ export function InfluencerSidebar() {
                     options={EYES_TYPES}
                     value={selections.eyeType}
                     onChange={(v) => set('eyeType', v)}
+                    disabled={hasReference}
                   />
                 </Section>
                 <Section title="OLHOS - DETALHES" icon={Eye}>
@@ -531,6 +644,7 @@ export function InfluencerSidebar() {
                     options={EYES_DETAILS}
                     value={selections.eyeDetails}
                     onChange={(v) => set('eyeDetails', v)}
+                    disabled={hasReference}
                   />
                 </Section>
                 <Section title="BOCA & DENTES" icon={User}>
@@ -538,6 +652,7 @@ export function InfluencerSidebar() {
                     options={MOUTH_TEETH}
                     value={selections.mouth}
                     onChange={(v) => set('mouth', v)}
+                    disabled={hasReference}
                   />
                 </Section>
                 <Section title="ORELHAS" icon={User}>
@@ -545,6 +660,7 @@ export function InfluencerSidebar() {
                     options={EARS_OPTIONS}
                     value={selections.ears}
                     onChange={(v) => set('ears', v)}
+                    disabled={hasReference}
                   />
                 </Section>
                 <Section title="CHIFRES" icon={User}>
@@ -552,6 +668,7 @@ export function InfluencerSidebar() {
                     options={HORNS_OPTIONS}
                     value={selections.horns}
                     onChange={(v) => set('horns', v)}
+                    disabled={hasReference}
                   />
                 </Section>
                 <Section title="MATERIAL DA PELE" icon={User}>
@@ -559,6 +676,7 @@ export function InfluencerSidebar() {
                     options={FACE_SKIN_MATERIAL}
                     value={selections.faceSkinMaterial}
                     onChange={(v) => set('faceSkinMaterial', v)}
+                    disabled={hasReference}
                   />
                 </Section>
                 <Section title="PADRÃO DE SUPERFÍCIE" icon={User}>
@@ -566,6 +684,7 @@ export function InfluencerSidebar() {
                     options={SURFACE_PATTERNS}
                     value={selections.surfacePattern}
                     onChange={(v) => set('surfacePattern', v)}
+                    disabled={hasReference}
                   />
                 </Section>
               </>
@@ -578,6 +697,7 @@ export function InfluencerSidebar() {
                     options={BODY_TYPES}
                     value={selections.bodyType}
                     onChange={(v) => set('bodyType', v)}
+                    disabled={hasReference}
                   />
                 </Section>
                 <Section title="BRAÇO ESQUERDO" icon={Hand}>
@@ -585,6 +705,7 @@ export function InfluencerSidebar() {
                     options={LEFT_ARM_OPTIONS}
                     value={selections.leftArm}
                     onChange={(v) => set('leftArm', v)}
+                    disabled={hasReference}
                   />
                 </Section>
                 <Section title="BRAÇO DIREITO" icon={Hand}>
@@ -592,6 +713,7 @@ export function InfluencerSidebar() {
                     options={RIGHT_ARM_OPTIONS}
                     value={selections.rightArm}
                     onChange={(v) => set('rightArm', v)}
+                    disabled={hasReference}
                   />
                 </Section>
                 <Section title="PERNA ESQUERDA" icon={PersonStanding}>
@@ -599,6 +721,7 @@ export function InfluencerSidebar() {
                     options={LEFT_LEG_OPTIONS}
                     value={selections.leftLeg}
                     onChange={(v) => set('leftLeg', v)}
+                    disabled={hasReference}
                   />
                 </Section>
                 <Section title="PERNA DIREITA" icon={PersonStanding}>
@@ -606,6 +729,7 @@ export function InfluencerSidebar() {
                     options={RIGHT_LEG_OPTIONS}
                     value={selections.rightLeg}
                     onChange={(v) => set('rightLeg', v)}
+                    disabled={hasReference}
                   />
                 </Section>
               </>
@@ -618,16 +742,18 @@ export function InfluencerSidebar() {
                     options={HAIR_OPTIONS}
                     value={selections.hair}
                     onChange={(v) => set('hair', v)}
+                    disabled={hasReference}
                   />
                 </Section>
                 <Section title="COR DO CABELO" icon={Palette}>
-                  <div className="flex flex-wrap gap-1.5 mt-2">
+                  <div className={`flex flex-wrap gap-1.5 mt-2 ${hasReference ? 'opacity-30 pointer-events-none' : ''}`}>
                     {HAIR_COLORS.map((opt) => {
                       const active = selections.hairColor === opt.id;
                       return (
                         <button
                           key={opt.id}
                           onClick={() => set('hairColor', opt.id)}
+                          disabled={hasReference}
                           className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold transition-all active:scale-95"
                           style={{
                             background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
@@ -646,6 +772,7 @@ export function InfluencerSidebar() {
                     options={ACCESSORIES_OPTIONS}
                     value={selections.accessories}
                     onChange={(v) => set('accessories', v)}
+                    disabled={hasReference}
                   />
                 </Section>
                 <Section title="ESTILO DE RENDERIZAÇÃO" icon={Palette}>
@@ -653,6 +780,7 @@ export function InfluencerSidebar() {
                     options={['Hiper-realista', 'Anime', 'Cartoon', 'Ilustração 2D']}
                     value={selections.renderingStyle}
                     onChange={(v) => set('renderingStyle', v)}
+                    disabled={hasReference}
                   />
                 </Section>
               </>

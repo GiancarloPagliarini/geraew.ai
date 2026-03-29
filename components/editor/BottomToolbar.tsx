@@ -1,6 +1,6 @@
 'use client';
 
-import { AudioWaveform, Fullscreen, Hand, HelpCircle, ImageIcon, LayoutGrid, Minus, MousePointer2, PersonStanding, Plus, Trash2, Video } from 'lucide-react';
+import { AudioWaveform, Fullscreen, Hand, HelpCircle, ImageIcon, LayoutGrid, Minus, MousePointer2, PersonStanding, Plus, Repeat2, Shirt, Trash2, Video } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -21,6 +21,8 @@ interface BottomToolbarProps {
   onAddInfluencer: () => void;
   onAddVideo: () => void;
   onAddMotionControl: () => void;
+  onAddVirtualTryOn: () => void;
+  onAddFaceSwap: () => void;
   onDelete: () => void;
   onFitView: () => void;
 }
@@ -37,6 +39,8 @@ export function BottomToolbar({
   onAddInfluencer,
   onAddVideo,
   onAddMotionControl,
+  onAddVirtualTryOn,
+  onAddFaceSwap,
   onDelete,
   onFitView,
 }: BottomToolbarProps) {
@@ -84,7 +88,15 @@ export function BottomToolbar({
           <ToolbarButton tooltip="Copiar movimentos" onClick={onAddMotionControl}>
             <AudioWaveform className="h-4 w-4" />
           </ToolbarButton>
-          {/* 
+
+          <ToolbarButton tooltip="Provador Virtual" onClick={onAddVirtualTryOn}>
+            <Shirt className="h-4 w-4" />
+          </ToolbarButton>
+
+          <ToolbarButton tooltip="Troca de Rosto" onClick={onAddFaceSwap}>
+            <Repeat2 className="h-4 w-4" />
+          </ToolbarButton>
+          {/*
           <ToolbarButton tooltip="Painel customizável" onClick={onAdd}>
             <LayoutGrid className="h-4 w-4" />
           </ToolbarButton> */}

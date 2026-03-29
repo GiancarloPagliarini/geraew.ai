@@ -18,7 +18,7 @@ export default function PaymentCancelPage() {
         </p>
       </div>
       <button
-        onClick={() => router.push('/')}
+        onClick={() => router.push('/workspace')}
         className="flex items-center gap-2 rounded-xl bg-[#f3f0ed]/8 px-6 py-3 text-sm font-bold text-[#f3f0ed] transition-all hover:bg-[#f3f0ed]/12 active:scale-[0.98]"
       >
         <ArrowLeft className="h-4 w-4" />

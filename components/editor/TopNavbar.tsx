@@ -1,6 +1,6 @@
 'use client';
 
-import { BadgePercent, BatteryCharging, Coins, CreditCard, Gift, LogIn, LogOut, Plus, Settings, User, X } from 'lucide-react';
+import { BadgePercent, BatteryCharging, Coins, CreditCard, Gift, LogIn, LogOut, Phone, Plus, Settings, User, X } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -9,11 +9,13 @@ import { useAuth } from '@/lib/auth-context';
 import { BuyCreditsModal } from './BuyCreditsModal';
 import { PlansModal } from './PlansModal';
 import { PostAndEarnModal } from './PostAndEarnModal';
+import { usePhoneVerification } from '@/lib/phone-verification-context';
 
 export function TopNavbar() {
   const router = useRouter();
   const { credits, creditsLoading, creditsBalance } = useEditor();
   const { user, logout, loading: authLoading } = useAuth();
+  const { openModal: openPhoneVerification } = usePhoneVerification();
   const [menuOpen, setMenuOpen] = useState(false);
   const [buyModalOpen, setBuyModalOpen] = useState(false);
   const [plansModalOpen, setPlansModalOpen] = useState(false);
@@ -84,6 +86,17 @@ export function TopNavbar() {
                 <Plus className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Comprar Créditos</span>
               </button>
+
+              {/* Verify phone button — red, only when phone not verified */}
+              {user.emailVerified && !user.phoneVerified && (
+                <button
+                  onClick={openPhoneVerification}
+                  className="flex items-center gap-1.5 rounded-full bg-red-500 p-2 text-xs font-bold text-white transition-all hover:bg-red-600 active:scale-95 sm:px-4 sm:py-1.5"
+                >
+                  <Phone className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Verificar telefone</span>
+                </button>
+              )}
 
               {/* Refer button — hidden on mobile */}
               <button
@@ -163,7 +176,7 @@ export function TopNavbar() {
               <span className="pointer-events-none absolute inset-0 rounded-full bg-[#a2dd00]/0 transition-colors group-hover:bg-[#a2dd00]/10" />
               <span className="flex h-8 w-8 overflow-hidden rounded-full border border-transparent transition-all">
                 {user?.avatarUrl ? (
-                  <Image src={user.avatarUrl} alt={user.name} width={32} height={32} className="h-full w-full object-cover" />
+                  <img src={user.avatarUrl} alt={user.name} width={32} height={32} className="h-full w-full object-cover" />
                 ) : (
                   <span className="flex h-full w-full items-center justify-center bg-[#1e494b]">
                     <User className="h-4 w-4 text-[#f3f0ed]/40" />

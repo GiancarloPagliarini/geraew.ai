@@ -8,6 +8,8 @@ import { GenerateImagePanel } from '../editor/GenerateImagePanel';
 import { CreateInfluencerPanel } from '../editor/CreateInfluencerPanel';
 import { GenerateVideoPanel } from '../editor/GenerateVideoPanel';
 import { MotionControlPanel } from '../editor/MotionControlPanel';
+import { VirtualTryOnPanel } from '../editor/VirtualTryOnPanel';
+import { FaceSwapPanel } from '../editor/FaceSwapPanel';
 
 const PANEL_NODE_STYLE = {
   background: 'transparent',
@@ -23,6 +25,8 @@ const STORAGE_KEY_PREFIX: Partial<Record<string, string>> = {
   'generate-image': 'geraew-panel-image-',
   'generate-video': 'geraew-panel-video-',
   'motion-control': 'geraew-panel-motion-control-',
+  'virtual-try-on': 'geraew-panel-virtual-try-on-',
+  'face-swap': 'geraew-panel-face-swap-',
 };
 
 export function PanelNode({ id, data }: NodeProps) {
@@ -94,6 +98,12 @@ export function PanelNode({ id, data }: NodeProps) {
   }
   if (data.panelType === 'motion-control') {
     return <MotionControlPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />;
+  }
+  if (data.panelType === 'virtual-try-on') {
+    return <VirtualTryOnPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />;
+  }
+  if (data.panelType === 'face-swap') {
+    return <FaceSwapPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />;
   }
   // if (data.panelType === 'generic') {
   //   return <GenericPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />;

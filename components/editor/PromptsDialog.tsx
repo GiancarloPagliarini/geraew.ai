@@ -14,6 +14,7 @@ interface Prompt {
   id: string;
   type: string;
   prompt: string;
+  image?: string;
 }
 
 interface Category {
@@ -193,93 +194,93 @@ const promptSections: Section[] = [
   // =============================================
   // SECAO 3: FACE SWAP
   // =============================================
-  {
-    id: 'face-swap',
-    icon: RefreshCw,
-    title: 'Face Swap',
-    description: 'Prompts para trocar rostos em imagens de forma realista',
-    categories: [
-      {
-        id: 'face-swap-basico',
-        title: 'Face Swap — Troca de Rosto',
-        prompts: [
-          {
-            id: 'face-swap-pose',
-            type: 'POSE E ROUPA',
-            prompt: 'Recreate the scene in Image 2 (clothing, body pose, and setting) replacing the person with the woman in Image 1. The skin tone in Image 1 must be applied evenly across the entire body\u2014face, neck, arms, hands, legs, and any visible skin areas\u2014ensuring absolute consistency in coloring. Facial features, face shape, hair, and expression must be preserved with complete fidelity to Image 1. The integration between face and body must be perfect in lighting, shadows, skin texture, and anatomical proportions, resulting in a photorealistic image indistinguishable from an authentic photo.',
-          },
-        ],
-      },
-    ],
-  },
+  // {
+  //   id: 'face-swap',
+  //   icon: RefreshCw,
+  //   title: 'Face Swap',
+  //   description: 'Prompts para trocar rostos em imagens de forma realista',
+  //   categories: [
+  //     {
+  //       id: 'face-swap-basico',
+  //       title: 'Face Swap — Troca de Rosto',
+  //       prompts: [
+  //         {
+  //           id: 'face-swap-pose',
+  //           type: 'POSE E ROUPA',
+  //           prompt: 'Recreate the scene in Image 2 (clothing, body pose, and setting) replacing the person with the woman in Image 1. The skin tone in Image 1 must be applied evenly across the entire body\u2014face, neck, arms, hands, legs, and any visible skin areas\u2014ensuring absolute consistency in coloring. Facial features, face shape, hair, and expression must be preserved with complete fidelity to Image 1. The integration between face and body must be perfect in lighting, shadows, skin texture, and anatomical proportions, resulting in a photorealistic image indistinguishable from an authentic photo.',
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // },
 
   // =============================================
   // SECAO 4: REFERENCE LOOKALIKE
   // =============================================
-  {
-    id: 'reference-lookalike',
-    icon: Users,
-    title: 'Reference Lookalike',
-    description: 'Crie influenciadoras baseadas em referências visuais',
-    categories: [
-      {
-        id: 'reference-lookalike-base',
-        title: 'Referência Visual',
-        prompts: [
-          {
-            id: 'reference-lookalike-prompt',
-            type: 'LOOKALIKE',
-            prompt: 'I would like a woman who looks like the one in the photo.',
-          },
-        ],
-      },
-    ],
-  },
+  // {
+  //   id: 'reference-lookalike',
+  //   icon: Users,
+  //   title: 'Reference Lookalike',
+  //   description: 'Crie influenciadoras baseadas em referências visuais',
+  //   categories: [
+  //     {
+  //       id: 'reference-lookalike-base',
+  //       title: 'Referência Visual',
+  //       prompts: [
+  //         {
+  //           id: 'reference-lookalike-prompt',
+  //           type: 'LOOKALIKE',
+  //           prompt: 'I would like a woman who looks like the one in the photo.',
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // },
 
   // =============================================
   // SECAO 5: PROVADOR VIRTUAL
   // =============================================
-  {
-    id: 'virtual-tryon',
-    icon: Shirt,
-    title: 'Provador Virtual',
-    description: 'Prompts para vestir roupas em pessoas de forma realista',
-    categories: [
-      {
-        id: 'tryon-multiplas-pecas',
-        title: 'Combinar Múltiplas Peças',
-        prompts: [
-          {
-            id: 'tryon-multiplas',
-            type: 'MÚLTIPLAS PEÇAS',
-            prompt: 'Dress the woman in Image 1 with all the clothing items sent in the other images, combining them into a single complete and coherent look. Each piece should fit the woman\'s body naturally, respecting her proportions, curves, and posture\u2014with realistic draping, including folds, pleats, fabric texture, and shading consistent with the lighting in the scene. The pieces should work harmoniously together, with natural overlaps and fits (e.g., blouse tucked into pants, jacket over blouse, accessories positioned correctly). Skin tone should remain uniform across all visible areas of the body. The face, features, hair, facial expression, and scenery/background of Image 1 must be preserved with complete fidelity. The final result should look like a real photo of the same woman wearing that complete outfit, without any signs of editing or artificial overlays.',
-          },
-        ],
-      },
-      {
-        id: 'tryon-look-completo',
-        title: 'Transferir Look Completo',
-        prompts: [
-          {
-            id: 'tryon-look-completo',
-            type: 'LOOK COMPLETO',
-            prompt: 'Dress the person in Image 1 with the complete outfit shown in Image 2. Transfer the entire look exactly as it appears in the reference image, including all clothing items, accessories, and styling details. The outfit should fit the person\'s body naturally, respecting their unique proportions, body shape, curves, and posture. Adapt the clothing to their body type with realistic draping, folds, wrinkles, fabric texture, and shadows that match the lighting conditions of Image 1. The outfit should look like it was tailored for this person, maintaining the original style, colors, patterns, and design details from Image 2, but adjusted to fit this specific body perfectly. Preserve the face, facial features, hair, skin tone, expression, and complete background/scenery from Image 1 with absolute fidelity. The final result must look like an authentic, unedited photograph of this person naturally wearing that exact outfit.',
-          },
-        ],
-      },
-      {
-        id: 'tryon-promover-produto',
-        title: 'Promover Produto',
-        prompts: [
-          {
-            id: 'tryon-promover-produto',
-            type: 'FOTO PROMOCIONAL',
-            prompt: 'Image 1 is the reference person. Image 2 is the product. Recreate the person in Image 1 holding the product in Image 2 in a natural and promotional way, as if they were doing a professional promotion for social media or advertising. The product must remain completely faithful to Image 2\u2014same packaging, color, label, logo, shape, and actual proportions. The person should hold or interact with the product in a spontaneous and attractive way, with anatomically correct hand and finger positions, without distortions. The facial expression should convey confidence and connection with the product. The face, features, skin tone (uniform throughout the body), hair, and physical characteristics of Image 1 must be preserved with complete fidelity. Lighting, shadows, and reflections must be consistent between the person and the product, as if both were in the same environment. The result should be a photorealistic image with advertising campaign quality, indistinguishable from a real professional photo, without any signs of editing, collage, or artificial montage.',
-          },
-        ],
-      },
-    ],
-  },
+  // {
+  //   id: 'virtual-tryon',
+  //   icon: Shirt,
+  //   title: 'Provador Virtual',
+  //   description: 'Prompts para vestir roupas em pessoas de forma realista',
+  //   categories: [
+  //     {
+  //       id: 'tryon-multiplas-pecas',
+  //       title: 'Combinar Múltiplas Peças',
+  //       prompts: [
+  //         {
+  //           id: 'tryon-multiplas',
+  //           type: 'MÚLTIPLAS PEÇAS',
+  //           prompt: 'Dress the woman in Image 1 with all the clothing items sent in the other images, combining them into a single complete and coherent look. Each piece should fit the woman\'s body naturally, respecting her proportions, curves, and posture\u2014with realistic draping, including folds, pleats, fabric texture, and shading consistent with the lighting in the scene. The pieces should work harmoniously together, with natural overlaps and fits (e.g., blouse tucked into pants, jacket over blouse, accessories positioned correctly). Skin tone should remain uniform across all visible areas of the body. The face, features, hair, facial expression, and scenery/background of Image 1 must be preserved with complete fidelity. The final result should look like a real photo of the same woman wearing that complete outfit, without any signs of editing or artificial overlays.',
+  //         },
+  //       ],
+  //     },
+  //     {
+  //       id: 'tryon-look-completo',
+  //       title: 'Transferir Look Completo',
+  //       prompts: [
+  //         {
+  //           id: 'tryon-look-completo',
+  //           type: 'LOOK COMPLETO',
+  //           prompt: 'Dress the person in Image 1 with the complete outfit shown in Image 2. Transfer the entire look exactly as it appears in the reference image, including all clothing items, accessories, and styling details. The outfit should fit the person\'s body naturally, respecting their unique proportions, body shape, curves, and posture. Adapt the clothing to their body type with realistic draping, folds, wrinkles, fabric texture, and shadows that match the lighting conditions of Image 1. The outfit should look like it was tailored for this person, maintaining the original style, colors, patterns, and design details from Image 2, but adjusted to fit this specific body perfectly. Preserve the face, facial features, hair, skin tone, expression, and complete background/scenery from Image 1 with absolute fidelity. The final result must look like an authentic, unedited photograph of this person naturally wearing that exact outfit.',
+  //         },
+  //       ],
+  //     },
+  //     {
+  //       id: 'tryon-promover-produto',
+  //       title: 'Promover Produto',
+  //       prompts: [
+  //         {
+  //           id: 'tryon-promover-produto',
+  //           type: 'FOTO PROMOCIONAL',
+  //           prompt: 'Image 1 is the reference person. Image 2 is the product. Recreate the person in Image 1 holding the product in Image 2 in a natural and promotional way, as if they were doing a professional promotion for social media or advertising. The product must remain completely faithful to Image 2\u2014same packaging, color, label, logo, shape, and actual proportions. The person should hold or interact with the product in a spontaneous and attractive way, with anatomically correct hand and finger positions, without distortions. The facial expression should convey confidence and connection with the product. The face, features, skin tone (uniform throughout the body), hair, and physical characteristics of Image 1 must be preserved with complete fidelity. Lighting, shadows, and reflections must be consistent between the person and the product, as if both were in the same environment. The result should be a photorealistic image with advertising campaign quality, indistinguishable from a real professional photo, without any signs of editing, collage, or artificial montage.',
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // },
 
   // =============================================
   // SECAO 6: PROMOCAO DE PRODUTOS
@@ -363,25 +364,25 @@ const promptSections: Section[] = [
   // =============================================
   // SECAO 8: VIDEO TIKTOK
   // =============================================
-  {
-    id: 'video-tiktok',
-    icon: Clapperboard,
-    title: 'Vídeo TikTok',
-    description: 'Copie o prompt e envie junto com a imagem (mãos + produto) para uma IA de texto gerar o prompt do vídeo',
-    categories: [
-      {
-        id: 'tiktok-pov-shop',
-        title: 'POV — Divulgação TikTok Shop',
-        prompts: [
-          {
-            id: 'tiktok-pov-shop',
-            type: 'TIKTOK POV SHOP',
-            prompt: 'I want a POV first-person video to promote this product on TikTok Shop. The video should show only hands \u2014 no face, no body. The hands hold the product and gesture naturally while presenting it, as if showing it to a friend. Analyze the image I am sending and generate the video prompt based on it. The video, hands, product, and background must be faithful to the image sent. If I don\'t send a speech script, create a natural and engaging script in Portuguese. If I send a script, improve it \u2014 make it more natural, add attention hooks, and keep the casual TikTok tone. Each take is a maximum of 8 seconds. If the script is long, split into multiple numbered takes (Take 1, Take 2...), each with its own prompt. The speech script must be embedded inside the video prompt. The video prompt must be in English and the speech in Portuguese.',
-          },
-        ],
-      },
-    ],
-  },
+  // {
+  //   id: 'video-tiktok',
+  //   icon: Clapperboard,
+  //   title: 'Vídeo TikTok',
+  //   description: 'Copie o prompt e envie junto com a imagem (mãos + produto) para uma IA de texto gerar o prompt do vídeo',
+  //   categories: [
+  //     {
+  //       id: 'tiktok-pov-shop',
+  //       title: 'POV — Divulgação TikTok Shop',
+  //       prompts: [
+  //         {
+  //           id: 'tiktok-pov-shop',
+  //           type: 'TIKTOK POV SHOP',
+  //           prompt: 'I want a POV first-person video to promote this product on TikTok Shop. The video should show only hands \u2014 no face, no body. The hands hold the product and gesture naturally while presenting it, as if showing it to a friend. Analyze the image I am sending and generate the video prompt based on it. The video, hands, product, and background must be faithful to the image sent. If I don\'t send a speech script, create a natural and engaging script in Portuguese. If I send a script, improve it \u2014 make it more natural, add attention hooks, and keep the casual TikTok tone. Each take is a maximum of 8 seconds. If the script is long, split into multiple numbered takes (Take 1, Take 2...), each with its own prompt. The speech script must be embedded inside the video prompt. The video prompt must be in English and the speech in Portuguese.',
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // },
 
   // =============================================
   // SECAO 9: MOLDAGEM CORPORAL
@@ -507,7 +508,7 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
       const t = setTimeout(() => { setMounted(false); setClosing(false); }, 200);
       return () => clearTimeout(t);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   if (!mounted) return null;
@@ -611,46 +612,64 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
                         {category.prompts.map((promptItem) => (
                           <div
                             key={promptItem.id}
-                            className="rounded-lg bg-[#f3f0ed]/[0.03] ring-1 ring-[#f3f0ed]/[0.05] p-3"
+                            className="relative rounded-lg overflow-hidden ring-1 ring-[#f3f0ed]/[0.05] aspect-square flex flex-col justify-end"
                           >
-                            {/* Prompt type badge */}
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-[10px] font-bold text-[#a2dd00]/80 uppercase tracking-wider bg-[#a2dd00]/10 px-2 py-0.5 rounded">
+                            {/* Background image or placeholder */}
+                            {promptItem.image ? (
+                              <div
+                                className="absolute inset-0 bg-cover bg-center"
+                                style={{ backgroundImage: `url(${promptItem.image})` }}
+                              />
+                            ) : (
+                              <div className="absolute inset-0 bg-gradient-to-br from-[#1e2a2d] via-[#243035] to-[#1a2528]">
+                                <div className="absolute inset-0 flex items-center justify-center opacity-[0.06]">
+                                  <ImageIcon className="h-16 w-16" />
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Gradient overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+
+                            {/* Content */}
+                            <div className="relative z-10 p-3 flex flex-col gap-2">
+                              {/* Prompt type badge */}
+                              <span className="self-start text-[10px] font-bold text-[#a2dd00] uppercase tracking-wider bg-[#a2dd00]/15 backdrop-blur-sm px-2 py-0.5 rounded">
                                 {promptItem.type}
                               </span>
-                            </div>
 
-                            {/* Prompt text */}
-                            <p className="text-[11px] text-[#f3f0ed]/50 leading-relaxed mb-3 whitespace-pre-line">
-                              {promptItem.prompt}
-                            </p>
+                              {/* Prompt text */}
+                              <p className="text-[11px] text-[#f3f0ed]/70 leading-relaxed line-clamp-3 whitespace-pre-line">
+                                {promptItem.prompt}
+                              </p>
 
-                            {/* Action buttons */}
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                onClick={() => handleOpenPanel('generate-image', promptItem.prompt)}
-                                className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#a2dd00]/10 px-2 py-1.5 text-[10px] font-bold text-[#a2dd00] ring-1 ring-[#a2dd00]/20 hover:bg-[#a2dd00]/20 transition-colors"
-                              >
-                                <ImageIcon className="h-3 w-3" />
-                                Imagem
-                              </button>
-                              <button
-                                onClick={() => handleOpenPanel('generate-video', promptItem.prompt)}
-                                className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#a2dd00]/10 px-2 py-1.5 text-[10px] font-bold text-[#a2dd00] ring-1 ring-[#a2dd00]/20 hover:bg-[#a2dd00]/20 transition-colors"
-                              >
-                                <Film className="h-3 w-3" />
-                                Vídeo
-                              </button>
-                              <button
-                                onClick={() => handleCopy(promptItem.prompt, promptItem.id)}
-                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[#f3f0ed]/30 ring-1 ring-[#f3f0ed]/[0.06] hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70 transition-colors"
-                              >
-                                {copiedId === promptItem.id ? (
-                                  <Check className="h-3 w-3 text-[#a2dd00]" />
-                                ) : (
-                                  <Copy className="h-3 w-3" />
-                                )}
-                              </button>
+                              {/* Action buttons */}
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={() => handleOpenPanel('generate-image', promptItem.prompt)}
+                                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#a2dd00]/15 backdrop-blur-sm px-2 py-1.5 text-[10px] font-bold text-[#a2dd00] ring-1 ring-[#a2dd00]/25 hover:bg-[#a2dd00]/25 transition-colors"
+                                >
+                                  <ImageIcon className="h-3 w-3" />
+                                  Imagem
+                                </button>
+                                <button
+                                  onClick={() => handleOpenPanel('generate-video', promptItem.prompt)}
+                                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#a2dd00]/15 backdrop-blur-sm px-2 py-1.5 text-[10px] font-bold text-[#a2dd00] ring-1 ring-[#a2dd00]/25 hover:bg-[#a2dd00]/25 transition-colors"
+                                >
+                                  <Film className="h-3 w-3" />
+                                  Vídeo
+                                </button>
+                                <button
+                                  onClick={() => handleCopy(promptItem.prompt, promptItem.id)}
+                                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[#f3f0ed]/50 ring-1 ring-[#f3f0ed]/[0.08] backdrop-blur-sm hover:bg-[#f3f0ed]/10 hover:text-[#f3f0ed]/80 transition-colors"
+                                >
+                                  {copiedId === promptItem.id ? (
+                                    <Check className="h-3 w-3 text-[#a2dd00]" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}

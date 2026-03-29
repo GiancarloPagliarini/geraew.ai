@@ -36,7 +36,8 @@
       "Bash(grep -l \"auth\" /c/Users/gianc/geraew-ai/lib/*.ts*)",
       "Bash(xargs grep -l \"useAuth\\\\|google\\\\|GoogleOAuth\")",
       "Bash(ls /c/Users/gianc/geraew-ai/lib/plan*.ts)",
-      "Bash(python3 -c \":*)"
+      "Bash(python3 -c \":*)",
+      "Bash(grep -r \"landing-bg\\\\|landing-accent\\\\|landing-text\" /Users/gustavogomes/projects/pessoais/geraew/geraew.ai/app/globals.css /Users/gustavogomes/projects/pessoais/geraew/geraew.ai/*.config.* 2>/dev/null | head -20)"
     ]
   }
 }

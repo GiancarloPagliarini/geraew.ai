@@ -773,7 +773,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
       )}
 
       {/* Metadata + download */}
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
         <div className="flex flex-col gap-1 min-w-0">
           {item.prompt && (
             <Tooltip delayDuration={300}>
@@ -786,7 +786,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
                   }}
                   className="group flex items-start gap-1.5 text-left cursor-pointer active:scale-95 transition-transform duration-100"
                 >
-                  <p className="text-sm text-[#f3f0ed]/70 line-clamp-3 group-hover:text-[#f3f0ed]/90 transition-colors">{item.prompt}</p>
+                  <p className="text-sm text-[#f3f0ed]/70 group-hover:text-[#f3f0ed]/90 transition-colors">{item.prompt}</p>
                   <span className="relative shrink-0 mt-0.5">
                     {promptCopied ? (
                       <>
@@ -794,7 +794,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
                         <Check className="relative h-3.5 w-3.5 text-[#a2dd00]" />
                       </>
                     ) : (
-                      <Copy className="h-3.5 w-3.5 text-[#f3f0ed]/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <Copy className="h-3.5 w-3.5 text-[#f3f0ed]/50 sm:text-[#f3f0ed]/30 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" />
                     )}
                   </span>
                 </button>
@@ -838,7 +838,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={(e) => toggleFavorite(item, e)}
             className="flex items-center gap-2 rounded-lg bg-[#f3f0ed]/5 px-3 py-1.5 text-xs font-medium text-[#f3f0ed]/50 hover:bg-[#f3f0ed]/10 transition-colors"
@@ -1117,14 +1117,14 @@ const GalleryItem = memo(function GalleryItem({
         </div>
       )}
 
-      {/* Hover overlay (hidden in picker mode) */}
+      {/* Hover overlay (hidden in picker mode) — always visible on mobile (no hover) */}
       {!pickerMode && (
         <>
-          <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="absolute bottom-0 inset-x-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" />
+          <div className="absolute bottom-0 inset-x-0 p-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             <p className="text-[10px] font-medium text-white truncate">{item.prompt ?? '—'}</p>
           </div>
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-2 right-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             <Expand className="h-3.5 w-3.5 text-white drop-shadow" />
           </div>
         </>
@@ -1159,7 +1159,7 @@ const GalleryItem = memo(function GalleryItem({
           onClick={(e) => onToggleFavorite(item, e)}
           className={`rounded-md p-0.5 backdrop-blur-sm transition-colors ${item.isFavorited
             ? 'bg-black/60'
-            : 'bg-black/40 opacity-0 group-hover:opacity-100'
+            : 'bg-black/40 sm:opacity-0 sm:group-hover:opacity-100'
             }`}
         >
           <Heart className={`h-3.5 w-3.5 drop-shadow transition-colors ${item.isFavorited

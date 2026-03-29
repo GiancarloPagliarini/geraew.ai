@@ -7,6 +7,8 @@ export interface AuthUser {
   avatarUrl: string;
   role: string;
   emailVerified: boolean;
+  phone?: string;
+  phoneVerified: boolean;
   hasCompletedOnboarding: boolean;
   createdAt: string;
 }
@@ -25,8 +27,8 @@ export interface AuthResponse {
   user: AuthUser;
 }
 
-class ApiError extends Error {
-  constructor(public status: number, message: string) {
+export class ApiError extends Error {
+  constructor(public status: number, message: string, public code?: string) {
     super(message);
     this.name = 'ApiError';
   }
@@ -43,7 +45,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, body.message || `Erro ${res.status}`);
+    throw new ApiError(res.status, body.message || `Erro ${res.status}`, body.code);
   }
 
   if (res.status === 204 || res.headers.get('content-length') === '0') {
@@ -95,6 +97,7 @@ export interface CreditsBalance {
   bonusCreditsRemaining: number;
   totalCreditsAvailable: number;
   planCreditsUsed: number;
+  freeVeoGenerationsRemaining: number;
   periodStart: string;
   periodEnd: string;
 }
@@ -242,6 +245,8 @@ export interface CreditsEstimateRequest {
 export interface CreditsEstimateResponse {
   creditsRequired: number;
   hasSufficientBalance: boolean;
+  canUseFreeGeneration: boolean;
+  freeVeoGenerationsRemaining: number;
 }
 
 export interface GenerateImageRequest {
@@ -281,6 +286,27 @@ export interface MotionControlRequest {
   image: string;
   image_mime_type?: string;
   resolution?: '480p' | '580p' | '720p' | '1080p';
+}
+
+export interface VirtualTryOnRequest {
+  influencer_image: string;
+  influencer_image_mime_type?: string;
+  clothing_image: string;
+  clothing_image_mime_type?: string;
+  additional_instructions?: string;
+  model?: string;
+  resolution?: string;
+  aspect_ratio?: string;
+  output_mime_type?: string;
+  model_variant?: string;
+}
+
+export interface FaceSwapRequest {
+  source_image: string;
+  source_image_mime_type?: string;
+  target_image: string;
+  target_image_mime_type?: string;
+  resolution?: string;
 }
 
 // ─── Video Editor ─────────────────────────────────────────────────────────────
@@ -327,6 +353,15 @@ export interface AdminStats {
     processing: number;
     completed: number;
     failed: number;
+  };
+  generationsByProvider: {
+    geraew: number;
+    kie: number;
+    kieBreakdown: {
+      nanoBanana2: number;
+      nanoBananaPro: number;
+      kling: number;
+    };
   };
 }
 
@@ -382,6 +417,7 @@ export interface AdminUserDetail {
     planCreditsRemaining: number;
     bonusCreditsRemaining: number;
     planCreditsUsed: number;
+    freeVeoGenerationsRemaining: number;
     periodStart: string;
     periodEnd: string;
   } | null;
@@ -431,6 +467,74 @@ export interface AdminUserGeneration {
   processingTimeMs: number | null;
   createdAt: string;
   completedAt: string | null;
+}
+
+export interface ProviderStat {
+  provider: string;
+  total: number;
+  completed: number;
+  failed: number;
+  creditsConsumed: number;
+}
+
+export interface AdminProviderStats {
+  providers: ProviderStat[];
+}
+
+// ─── Extended Admin Stats ────────────────────────────────────────────────────
+
+export interface FinancialStats {
+  mrrCents: number;
+  dailyRevenue: { date: string; revenueCents: number }[];
+  revenueByPlan: { planName: string; planSlug: string; revenueCents: number; paymentCount: number }[];
+  boostSales: { name: string; credits: number; priceCents: number; soldCount: number; totalRevenueCents: number }[];
+  arpuCents: number;
+  totalRevenueCents: number;
+  totalApiCostCents: number;
+  marginPercent: number;
+}
+
+export interface UserStats {
+  newUsersToday: number;
+  newUsersWeek: number;
+  newUsersMonth: number;
+  dailyNewUsers: { date: string; count: number }[];
+  planDistribution: { planSlug: string; planName: string; userCount: number }[];
+  conversionRate: number;
+  churnRate: number;
+  topConsumers: { userId: string; email: string; name: string; totalCredits: number }[];
+  inactiveUsers: number;
+  totalUsers: number;
+  paidUsers: number;
+  canceledRecently: number;
+}
+
+export interface UsageStats {
+  dailyGenerations: { date: string; count: number }[];
+  byType: { type: string; count: number }[];
+  avgProcessingByModel: { modelUsed: string; avgMs: number; p95Ms: number; count: number }[];
+  errorRateByModel: { modelUsed: string; failed: number; total: number; errorRate: number }[];
+  peakHours: { hour: number; count: number }[];
+  stuckGenerations: { id: string; userId: string; type: string; modelUsed: string; createdAt: string; processingStartedAt: string | null }[];
+}
+
+export interface CreditStats {
+  consumedToday: number;
+  consumedWeek: number;
+  consumedMonth: number;
+  dailyConsumption: { date: string; consumed: number }[];
+  allocationVsUsage: { totalUsed: number; totalAllocated: number; usagePercent: number };
+  nearLimitUsers: { userId: string; email: string; name: string; planCreditsRemaining: number; creditsPerMonth: number; usagePercent: number }[];
+  refunds: { count: number; totalAmount: number };
+}
+
+export interface HealthStats {
+  queue: { processing: number; pending: number };
+  stuckCount: number;
+  recentFailuresByModel: { modelUsed: string; failedCount: number; errorCodes: string[] }[];
+  failingPayments: number;
+  recentErrors: { id: string; userId: string; type: string; modelUsed: string; errorMessage: string | null; errorCode: string | null; createdAt: string }[];
+  alerts: { level: 'warning' | 'critical'; message: string }[];
 }
 
 export interface AdminGeneration {
@@ -551,6 +655,18 @@ export const api = {
     },
     motionControl(accessToken: string, payload: MotionControlRequest) {
       return authRequest<CreateGenerationResponse>('/api/v1/generations/motion-control', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    virtualTryOn(accessToken: string, payload: VirtualTryOnRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/virtual-try-on', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    faceSwap(accessToken: string, payload: FaceSwapRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/face-swap', accessToken, {
         method: 'POST',
         body: JSON.stringify(payload),
       });
@@ -685,6 +801,17 @@ export const api = {
         method: 'POST',
       });
     },
+    pause(accessToken: string) {
+      return authRequest<Record<string, unknown>>('/api/v1/subscriptions/pause', accessToken, {
+        method: 'POST',
+      });
+    },
+    acceptOffer(accessToken: string, reason: string) {
+      return authRequest<{ offerType: string; detail: string }>('/api/v1/subscriptions/accept-offer', accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      });
+    },
     upgrade(accessToken: string, planSlug: string) {
       return authRequest<{ checkoutUrl: string }>('/api/v1/subscriptions/upgrade', accessToken, {
         method: 'PATCH',
@@ -697,11 +824,24 @@ export const api = {
         body: JSON.stringify({ planSlug }),
       });
     },
+    cancelDowngrade(accessToken: string) {
+      return authRequest<Record<string, unknown>>('/api/v1/subscriptions/cancel-downgrade', accessToken, {
+        method: 'POST',
+      });
+    },
+    billingPortal(accessToken: string) {
+      return authRequest<{ portalUrl: string }>('/api/v1/subscriptions/billing-portal', accessToken, {
+        method: 'POST',
+      });
+    },
   },
 
   plans: {
     list(accessToken: string) {
       return authRequest<Plan[]>('/api/v1/plans', accessToken);
+    },
+    listPublic() {
+      return request<Plan[]>('/api/v1/plans');
     },
   },
 
@@ -725,10 +865,13 @@ export const api = {
         body: JSON.stringify({ prompt, context, images }),
       });
     },
-    enhanceInfluencer(accessToken: string, selections: Record<string, string>) {
+    enhanceInfluencer(accessToken: string, selections: Record<string, string>, referenceImage?: { base64: string; mimeType: string }) {
       return authRequest<{ enhancedPrompt: string }>('/api/v1/prompt-enhancer/enhance-influencer', accessToken, {
         method: 'POST',
-        body: JSON.stringify(selections),
+        body: JSON.stringify({
+          ...selections,
+          ...(referenceImage ? { referenceImageBase64: referenceImage.base64, referenceImageMimeType: referenceImage.mimeType } : {}),
+        }),
       });
     },
   },
@@ -789,10 +932,48 @@ export const api = {
         },
       );
     },
+    adjustFreeGenerations(accessToken: string, userId: string, amount: number) {
+      return authRequest<{ success: boolean; message: string }>(
+        `/api/v1/admin/users/${userId}/free-generations`,
+        accessToken,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ amount }),
+        },
+      );
+    },
     generations(accessToken: string, page = 1, limit = 20) {
       return authRequest<AdminPaginatedResponse<AdminGeneration>>(
         `/api/v1/admin/generations?page=${page}&limit=${limit}`,
         accessToken,
+      );
+    },
+    providerStats(accessToken: string) {
+      return authRequest<AdminProviderStats>('/api/v1/admin/generations/providers', accessToken);
+    },
+    financialStats(accessToken: string, days = 30) {
+      return authRequest<FinancialStats>(`/api/v1/admin/stats/financial?days=${days}`, accessToken);
+    },
+    userStats(accessToken: string, days = 30) {
+      return authRequest<UserStats>(`/api/v1/admin/stats/users?days=${days}`, accessToken);
+    },
+    usageStats(accessToken: string, days = 30) {
+      return authRequest<UsageStats>(`/api/v1/admin/stats/usage?days=${days}`, accessToken);
+    },
+    creditStats(accessToken: string, days = 30) {
+      return authRequest<CreditStats>(`/api/v1/admin/stats/credits?days=${days}`, accessToken);
+    },
+    healthStats(accessToken: string) {
+      return authRequest<HealthStats>('/api/v1/admin/stats/health', accessToken);
+    },
+    upload(accessToken: string, filename: string, contentType: string, folder: string) {
+      return authRequest<{ uploadUrl: string; fileKey: string; publicUrl: string }>(
+        '/api/v1/admin/upload',
+        accessToken,
+        {
+          method: 'POST',
+          body: JSON.stringify({ filename, contentType, folder }),
+        },
       );
     },
   },
@@ -841,7 +1022,7 @@ export const api = {
     },
 
     forgotPassword(email: string) {
-      return request<{ message: string; resetToken?: string }>('/api/v1/auth/forgot-password', {
+      return request<{ message: string }>('/api/v1/auth/forgot-password', {
         method: 'POST',
         body: JSON.stringify({ email }),
       });
@@ -871,6 +1052,20 @@ export const api = {
       return request<{ message: string }>('/api/v1/auth/resend-verification', {
         method: 'POST',
         body: JSON.stringify({ email }),
+      });
+    },
+
+    sendPhoneVerification(phone: string) {
+      return request<{ message: string }>('/api/v1/auth/send-verification', {
+        method: 'POST',
+        body: JSON.stringify({ phone }),
+      });
+    },
+
+    verifyPhone(accessToken: string, phone: string, code: string) {
+      return authRequest<AuthResponse>('/api/v1/auth/verify-phone', accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ phone, code }),
       });
     },
   },

@@ -8,6 +8,7 @@ import {
   Users,
   Image,
   CreditCard,
+  Upload,
   ArrowLeft,
   Loader2,
   Shield,
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
   { href: '/admin/usuarios', label: 'Usuários', icon: Users },
   { href: '/admin/geracoes', label: 'Gerações', icon: Image },
   { href: '/admin/assinaturas', label: 'Assinaturas', icon: CreditCard },
+  { href: '/admin/uploads', label: 'Uploads', icon: Upload },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -28,7 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     if (!loading && (!user || user.role !== 'ADMIN')) {
-      router.push('/');
+      router.push('/workspace');
     }
   }, [loading, user, router]);
 
@@ -83,7 +85,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Back to app */}
         <div className="border-t border-[#f3f0ed]/6 p-2 md:p-3">
           <Link
-            href="/"
+            href="/workspace"
             title="Voltar ao app"
             className="flex items-center justify-center rounded-xl p-2.5 text-[#f3f0ed]/40 transition-colors hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70 md:justify-start md:gap-2 md:px-3 md:py-2.5 md:text-[13px]"
           >

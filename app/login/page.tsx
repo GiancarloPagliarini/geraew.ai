@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 
 const slides = [
   {
@@ -54,6 +54,9 @@ function LoginPageContent() {
   const router = useRouter();
   const { login } = useAuth();
   const searchParams = useSearchParams();
+
+  const planParam = searchParams.get('plan');
+  const redirectAfterLogin = planParam ? `/creditos?plan=${planParam}` : '/workspace';
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [progresses, setProgresses] = useState<number[]>(slides.map(() => 0));
@@ -286,7 +289,7 @@ function LoginPageContent() {
     try {
       await api.auth.verifyEmail(code);
       await login(email, password);
-      router.push('/');
+      router.push(redirectAfterLogin);
     } catch (err) {
       setVerifyStatus('error');
       setVerifyMessage(err instanceof Error ? err.message : 'Código inválido ou expirado.');
@@ -364,7 +367,7 @@ function LoginPageContent() {
     try {
       if (mode === 'login') {
         await login(email, password);
-        router.push('/');
+        router.push(redirectAfterLogin);
       } else {
         await api.auth.register(email, name, password, phone);
         setView('verify');
@@ -372,7 +375,7 @@ function LoginPageContent() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Ocorreu um erro. Tente novamente.';
       setError(message);
-      if (message.toLowerCase().includes('verificado') || message.toLowerCase().includes('verified')) {
+      if (err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED') {
         setShowResend(true);
       }
     } finally {
@@ -428,7 +431,12 @@ function LoginPageContent() {
 
             {/* Google */}
             <button
-              onClick={() => { window.location.href = '/api/v1/auth/google'; }}
+              onClick={() => {
+                if (planParam) {
+                  document.cookie = `geraew-plan-redirect=${planParam};path=/;max-age=600;samesite=lax`;
+                }
+                window.location.href = '/api/v1/auth/google';
+              }}
               disabled={loading}
               className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.05] text-sm font-medium text-white transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50"
             >
