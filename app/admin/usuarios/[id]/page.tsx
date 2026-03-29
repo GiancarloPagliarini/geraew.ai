@@ -160,6 +160,7 @@ export default function AdminUserDetailPage() {
 
   const [creditAmount, setCreditAmount] = useState('');
   const [creditDesc, setCreditDesc] = useState('');
+  const [freeGenAmount, setFreeGenAmount] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [genPage, setGenPage] = useState(1);
   const [selectedPlan, setSelectedPlan] = useState('');
@@ -201,6 +202,19 @@ export default function AdminUserDetailPage() {
     () => (plans ?? []).filter((p) => p.slug !== currentPlanSlug),
     [plans, currentPlanSlug],
   );
+
+  const adjustFreeGenMutation = useMutation({
+    mutationFn: (amount: number) =>
+      api.admin.adjustFreeGenerations(accessToken!, id, amount),
+    onSuccess: () => {
+      toast.success('Gera\u00e7\u00f5es gratuitas ajustadas com sucesso');
+      setFreeGenAmount('');
+      queryClient.invalidateQueries({ queryKey: ['admin', 'user', id] });
+    },
+    onError: () => {
+      toast.error('Erro ao ajustar gera\u00e7\u00f5es gratuitas');
+    },
+  });
 
   const adjustMutation = useMutation({
     mutationFn: ({ amount, description }: { amount: number; description: string }) =>
@@ -470,6 +484,14 @@ export default function AdminUserDetailPage() {
                   {user.credits.planCreditsUsed.toLocaleString('pt-BR')}
                 </span>
               </div>
+              {user.credits.freeVeoGenerationsRemaining != null && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#f3f0ed]/40">Gera\u00e7\u00f5es gr\u00e1tis (v\u00eddeo)</span>
+                  <span className="text-sm font-medium tabular-nums text-emerald-400">
+                    {user.credits.freeVeoGenerationsRemaining}
+                  </span>
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-sm text-[#f3f0ed]/30">Sem balan\u00e7o</p>
@@ -578,6 +600,51 @@ export default function AdminUserDetailPage() {
               Remover
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Free generations adjustment */}
+      <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.03] p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <Video className="h-4 w-4 text-emerald-400" />
+          <h3 className="text-sm font-semibold text-[#f3f0ed]">Gera\u00e7\u00f5es Gratuitas de V\u00eddeo</h3>
+          <Badge variant="outline" className="border-emerald-500/20 bg-emerald-500/5 text-emerald-400 text-[10px]">
+            Atual: {user.credits?.freeVeoGenerationsRemaining ?? 0}
+          </Badge>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
+              Nova quantidade
+            </label>
+            <Input
+              type="number"
+              min={0}
+              placeholder="2"
+              value={freeGenAmount}
+              onChange={(e) => setFreeGenAmount(e.target.value)}
+              className="h-9 w-32 border-[#f3f0ed]/10 bg-[#f3f0ed]/[0.03] text-sm tabular-nums text-[#f3f0ed] placeholder:text-[#f3f0ed]/20 focus-visible:border-emerald-500/30 focus-visible:ring-emerald-500/10"
+            />
+          </div>
+          <button
+            onClick={() => {
+              const amount = parseInt(freeGenAmount, 10);
+              if (isNaN(amount) || amount < 0) {
+                toast.error('Informe uma quantidade v\u00e1lida (>= 0)');
+                return;
+              }
+              adjustFreeGenMutation.mutate(amount);
+            }}
+            disabled={adjustFreeGenMutation.isPending}
+            className="flex h-9 items-center gap-1.5 rounded-xl bg-emerald-500 px-4 text-xs font-bold text-white transition-all hover:bg-emerald-600 active:scale-[0.97] disabled:opacity-50"
+          >
+            {adjustFreeGenMutation.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            Definir
+          </button>
         </div>
       </div>
 

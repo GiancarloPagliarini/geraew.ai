@@ -8,6 +8,7 @@ import {
   Users,
   Image,
   CreditCard,
+  Upload,
   ArrowLeft,
   Loader2,
   Shield,
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
   { href: '/admin/usuarios', label: 'Usuários', icon: Users },
   { href: '/admin/geracoes', label: 'Gerações', icon: Image },
   { href: '/admin/assinaturas', label: 'Assinaturas', icon: CreditCard },
+  { href: '/admin/uploads', label: 'Uploads', icon: Upload },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

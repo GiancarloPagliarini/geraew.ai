@@ -97,6 +97,7 @@ export interface CreditsBalance {
   bonusCreditsRemaining: number;
   totalCreditsAvailable: number;
   planCreditsUsed: number;
+  freeVeoGenerationsRemaining: number;
   periodStart: string;
   periodEnd: string;
 }
@@ -244,6 +245,8 @@ export interface CreditsEstimateRequest {
 export interface CreditsEstimateResponse {
   creditsRequired: number;
   hasSufficientBalance: boolean;
+  canUseFreeGeneration: boolean;
+  freeVeoGenerationsRemaining: number;
 }
 
 export interface GenerateImageRequest {
@@ -414,6 +417,7 @@ export interface AdminUserDetail {
     planCreditsRemaining: number;
     bonusCreditsRemaining: number;
     planCreditsUsed: number;
+    freeVeoGenerationsRemaining: number;
     periodStart: string;
     periodEnd: string;
   } | null;
@@ -923,6 +927,16 @@ export const api = {
         },
       );
     },
+    adjustFreeGenerations(accessToken: string, userId: string, amount: number) {
+      return authRequest<{ success: boolean; message: string }>(
+        `/api/v1/admin/users/${userId}/free-generations`,
+        accessToken,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ amount }),
+        },
+      );
+    },
     generations(accessToken: string, page = 1, limit = 20) {
       return authRequest<AdminPaginatedResponse<AdminGeneration>>(
         `/api/v1/admin/generations?page=${page}&limit=${limit}`,
@@ -946,6 +960,16 @@ export const api = {
     },
     healthStats(accessToken: string) {
       return authRequest<HealthStats>('/api/v1/admin/stats/health', accessToken);
+    },
+    upload(accessToken: string, filename: string, contentType: string, folder: string) {
+      return authRequest<{ uploadUrl: string; fileKey: string; publicUrl: string }>(
+        '/api/v1/admin/upload',
+        accessToken,
+        {
+          method: 'POST',
+          body: JSON.stringify({ filename, contentType, folder }),
+        },
+      );
     },
   },
 

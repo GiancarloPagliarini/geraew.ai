@@ -1093,19 +1093,33 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
               {/* Credit estimate */}
               {genState !== 'generating' && (
-                <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
-                  <div className="flex items-center gap-1.5">
-                    <Coins className="h-3 w-3 text-[#a2dd00]" />
-                    <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Custo</span>
-                  </div>
-                  {estimateLoading ? (
-                    <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
-                  ) : estimate ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
-                      <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
+                <div className="space-y-1.5">
+                  {estimate?.canUseFreeGeneration && (
+                    <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-2">
+                      <Sparkles className="h-3 w-3 text-emerald-400" />
+                      <span className="text-[11px] font-bold text-emerald-400">
+                        Geração gratuita! ({estimate.freeVeoGenerationsRemaining} restante{estimate.freeVeoGenerationsRemaining !== 1 ? 's' : ''})
+                      </span>
                     </div>
-                  ) : null}
+                  )}
+                  <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
+                    <div className="flex items-center gap-1.5">
+                      <Coins className="h-3 w-3 text-[#a2dd00]" />
+                      <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Custo</span>
+                    </div>
+                    {estimateLoading ? (
+                      <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
+                    ) : estimate ? (
+                      <div className="flex items-center gap-2">
+                        {estimate.canUseFreeGeneration ? (
+                          <span className="text-xs font-bold text-emerald-400">Grátis</span>
+                        ) : (
+                          <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
+                        )}
+                        <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               )}
 
