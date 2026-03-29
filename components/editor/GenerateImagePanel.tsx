@@ -27,6 +27,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api, ApiError, Folder } from '@/lib/api';
 import { PlansModal } from './PlansModal';
 import { listenGeneration } from '@/lib/sse';
+import { useGenerationRecovery } from '@/lib/use-generation-recovery';
 import { toast } from 'sonner';
 import { GenerationErrorBanner, showGenerationError } from './GenerationError';
 import { GenerationPreview } from './GenerationPreview';
@@ -202,6 +203,24 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
     return () => { document.title = 'Geraew AI'; };
   }, [genState]);
 
+  // Immediately check generation status when page regains visibility (fixes mobile app-switch)
+  useGenerationRecovery(generationId, accessToken, genState === 'generating', {
+    onCompleted: (gen) => {
+      finishWithImage(gen.outputs[0].url, gen.id);
+      refetchCredits();
+      prependToGallery(gen);
+    },
+    onFailed: (gen) => {
+      clearProgressTimer();
+      clearMsgTimer();
+      clearPollTimer();
+      clearSSE();
+      setGenState('idle');
+      setErrorMsg(showGenerationError({ errorMessage: gen.errorMessage, fallback: 'Erro ao gerar imagem.' }));
+      refetchCredits();
+    },
+  });
+
   const panelRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const draggableImgRef = useRef<HTMLImageElement | null>(null);
@@ -209,6 +228,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   const msgIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sseControllerRef = useRef<AbortController | null>(null);
+  const isFinishedRef = useRef(false);
 
   function clearProgressTimer() {
     if (progressIntervalRef.current) {
@@ -330,8 +350,12 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   }
 
   function finishWithImage(url: string, genId?: string) {
+    if (isFinishedRef.current) return;
+    isFinishedRef.current = true;
     clearProgressTimer();
     clearMsgTimer();
+    clearPollTimer();
+    clearSSE();
     setProgress(100);
     setTimeout(() => {
       setGenState('done');
@@ -388,6 +412,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
     setProgress(0);
     setImageVisible(false);
     setErrorMsg(null);
+    isFinishedRef.current = false;
     clearProgressTimer();
     clearPollTimer();
     clearSSE();
@@ -431,7 +456,9 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
       consumeCredits(creditsConsumed);
       setGenerationId(id);
 
-      // Conecta via SSE e faz fallback automático para polling se falhar
+      // Polling always runs alongside SSE as a safety net (SSE may silently die on mobile)
+      startPollingFallback(id);
+
       sseControllerRef.current = listenGeneration(id, accessToken, {
         onCompleted: ({ generationId: genId, outputUrls }) => {
           finishWithImage(outputUrls[0], genId);
@@ -441,13 +468,14 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
         onFailed: ({ errorMessage, creditsRefunded }) => {
           clearProgressTimer();
           clearMsgTimer();
+          clearPollTimer();
+          clearSSE();
           setGenState('idle');
           setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: 'Erro ao gerar imagem.' }));
           refetchCredits();
         },
         onError: () => {
-          // SSE falhou → fallback para polling
-          startPollingFallback(id);
+          // Polling already running — nothing extra needed
         },
       });
     } catch (err) {

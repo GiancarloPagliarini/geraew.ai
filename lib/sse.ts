@@ -102,6 +102,10 @@ export function listenGeneration(
         await new Promise((resolve) => setTimeout(resolve, delay));
         return connect(attempt + 1);
       }
+      // Reconnects exhausted without completion — notify caller
+      if (!controller.signal.aborted) {
+        callbacks.onError?.(new Error('SSE reconnect attempts exhausted'));
+      }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
       if (!controller.signal.aborted && attempt < MAX_RECONNECT_ATTEMPTS) {

@@ -24,6 +24,7 @@ import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { listenGeneration } from '@/lib/sse';
+import { useGenerationRecovery } from '@/lib/use-generation-recovery';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { GenerationErrorBanner, showGenerationError } from './GenerationError';
@@ -196,6 +197,26 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
   const msgIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sseControllerRef = useRef<AbortController | null>(null);
+  const isFinishedRef = useRef(false);
+
+  // Immediately check generation status when page regains visibility (fixes mobile app-switch)
+  useGenerationRecovery(generationId, accessToken, genState === 'generating', {
+    onCompleted: (gen) => {
+      finishWithImage(gen.outputs[0]?.url);
+      refetchCredits();
+      prependToGallery(gen);
+    },
+    onFailed: (gen) => {
+      clearProgressTimer();
+      clearMsgTimer();
+      clearPollTimer();
+      clearSSE();
+      setGenState('idle');
+      setErrorMsg(showGenerationError({ errorMessage: gen.errorMessage, fallback: 'Erro ao gerar imagem.' }));
+      refetchCredits();
+    },
+  });
+
   const panelRef = useRef<HTMLDivElement | null>(null);
   const influencerInputRef = useRef<HTMLInputElement | null>(null);
   const clothingInputRef = useRef<HTMLInputElement | null>(null);
@@ -325,8 +346,12 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
   }
 
   function finishWithImage(url: string) {
+    if (isFinishedRef.current) return;
+    isFinishedRef.current = true;
     clearProgressTimer();
     clearMsgTimer();
+    clearPollTimer();
+    clearSSE();
     setProgress(100);
     setTimeout(() => {
       setGenState('done');
@@ -369,6 +394,7 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
     setProgress(0);
     setImageVisible(false);
     setErrorMsg(null);
+    isFinishedRef.current = false;
     clearProgressTimer();
     clearPollTimer();
     clearSSE();
@@ -390,6 +416,9 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
       consumeCredits(creditsConsumed);
       setGenerationId(id);
 
+      // Polling always runs alongside SSE as a safety net (SSE may silently die on mobile)
+      startPollingFallback(id);
+
       sseControllerRef.current = listenGeneration(id, accessToken, {
         onCompleted: ({ generationId: gId, outputUrls }) => {
           finishWithImage(outputUrls[0]);
@@ -399,12 +428,14 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
         onFailed: ({ errorMessage, creditsRefunded }) => {
           clearProgressTimer();
           clearMsgTimer();
+          clearPollTimer();
+          clearSSE();
           setGenState('idle');
           setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: 'Erro ao gerar imagem.' }));
           refetchCredits();
         },
         onError: () => {
-          startPollingFallback(id);
+          // Polling already running — nothing extra needed
         },
       });
     } catch (err) {

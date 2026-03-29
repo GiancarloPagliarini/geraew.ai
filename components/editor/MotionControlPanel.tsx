@@ -23,6 +23,7 @@ import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { listenGeneration } from '@/lib/sse';
+import { useGenerationRecovery } from '@/lib/use-generation-recovery';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { GenerationErrorBanner, showGenerationError } from './GenerationError';
@@ -182,6 +183,26 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
   const msgIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sseControllerRef = useRef<AbortController | null>(null);
+  const isFinishedRef = useRef(false);
+
+  // Immediately check generation status when page regains visibility (fixes mobile app-switch)
+  useGenerationRecovery(generationId, accessToken, genState === 'generating', {
+    onCompleted: (gen) => {
+      finishWithVideo(gen.outputs[0]?.url);
+      refetchCredits();
+      prependToGallery(gen);
+    },
+    onFailed: (gen) => {
+      clearProgressTimer();
+      clearMsgTimer();
+      clearPollTimer();
+      clearSSE();
+      setGenState('idle');
+      setErrorMsg(showGenerationError({ errorMessage: gen.errorMessage, fallback: 'Erro ao gerar vídeo.' }));
+      refetchCredits();
+    },
+  });
+
   const panelRef = useRef<HTMLDivElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -352,8 +373,12 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
   }
 
   function finishWithVideo(url: string) {
+    if (isFinishedRef.current) return;
+    isFinishedRef.current = true;
     clearProgressTimer();
     clearMsgTimer();
+    clearPollTimer();
+    clearSSE();
     setProgress(100);
     setTimeout(() => {
       setGenState('done');
@@ -397,6 +422,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
     setProgress(0);
     setVideoVisible(false);
     setErrorMsg(null);
+    isFinishedRef.current = false;
     clearProgressTimer();
     clearPollTimer();
     clearSSE();
@@ -416,6 +442,9 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
       consumeCredits(creditsConsumed);
       setGenerationId(id);
 
+      // Polling always runs alongside SSE as a safety net (SSE may silently die on mobile)
+      startPollingFallback(id);
+
       sseControllerRef.current = listenGeneration(id, accessToken, {
         onCompleted: ({ generationId: gId, outputUrls }) => {
           finishWithVideo(outputUrls[0]);
@@ -425,12 +454,14 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
         onFailed: ({ errorMessage, creditsRefunded }) => {
           clearProgressTimer();
           clearMsgTimer();
+          clearPollTimer();
+          clearSSE();
           setGenState('idle');
           setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: 'Erro ao gerar vídeo.' }));
           refetchCredits();
         },
         onError: () => {
-          startPollingFallback(id);
+          // Polling already running — nothing extra needed
         },
       });
     } catch (err) {
