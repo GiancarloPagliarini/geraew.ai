@@ -26,7 +26,6 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { ManageSubscriptionModal } from '@/components/editor/ManageSubscriptionModal';
 
 export default function PerfilPage() {
@@ -175,12 +174,12 @@ export default function PerfilPage() {
             {/* Avatar */}
             <div className="relative shrink-0">
               {profile.avatarUrl ? (
-                <Image
+                <img
                   src={typeof profile.avatarUrl === 'string' ? profile.avatarUrl : ''}
                   alt={profile.name}
                   width={72}
                   height={72}
-                  className="rounded-full"
+                  className="h-[72px] w-[72px] rounded-full object-cover"
                 />
               ) : (
                 <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-[#a2dd00]/20 text-2xl font-bold text-[#a2dd00]">

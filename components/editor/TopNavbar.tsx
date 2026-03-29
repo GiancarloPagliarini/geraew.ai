@@ -176,7 +176,7 @@ export function TopNavbar() {
               <span className="pointer-events-none absolute inset-0 rounded-full bg-[#a2dd00]/0 transition-colors group-hover:bg-[#a2dd00]/10" />
               <span className="flex h-8 w-8 overflow-hidden rounded-full border border-transparent transition-all">
                 {user?.avatarUrl ? (
-                  <Image src={user.avatarUrl} alt={user.name} width={32} height={32} className="h-full w-full object-cover" />
+                  <img src={user.avatarUrl} alt={user.name} width={32} height={32} className="h-full w-full object-cover" />
                 ) : (
                   <span className="flex h-full w-full items-center justify-center bg-[#1e494b]">
                     <User className="h-4 w-4 text-[#f3f0ed]/40" />
