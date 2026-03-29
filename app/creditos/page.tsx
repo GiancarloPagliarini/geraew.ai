@@ -23,8 +23,8 @@ import {
   Flame,
   Video,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import {
   PLAN_ORDER,
   PLAN_SUBTITLES,
@@ -41,7 +41,9 @@ import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 
 export default function CreditosPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, accessToken, loading: authLoading } = useAuth();
+  const autoSubscribeTriggered = useRef(false);
   const loadingMsg = useLoadingMessage('creditos');
   const queryClient = useQueryClient();
   const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
@@ -134,6 +136,25 @@ export default function CreditosPage() {
   useEffect(() => {
     if (!authLoading && !user) router.push('/login');
   }, [authLoading, user, router]);
+
+  // Auto-trigger checkout when redirected from landing page with ?plan=
+  const planFromUrl = searchParams.get('plan');
+  useEffect(() => {
+    if (
+      planFromUrl &&
+      !autoSubscribeTriggered.current &&
+      accessToken &&
+      !plansLoading &&
+      plans &&
+      plans.length > 0
+    ) {
+      const targetPlan = plans.find((p) => p.slug === planFromUrl);
+      if (targetPlan && targetPlan.priceCents > 0) {
+        autoSubscribeTriggered.current = true;
+        handleSubscribe(targetPlan.slug);
+      }
+    }
+  }, [planFromUrl, accessToken, plansLoading, plans]);
 
   const isLoading = authLoading || balanceLoading || plansLoading || profileLoading || packagesLoading;
 

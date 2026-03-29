@@ -220,7 +220,7 @@ function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) 
 
         {/* CTA */}
         <a
-          href={isFree ? "/workspace" : "/login"}
+          href={isFree ? "/workspace" : `/login?plan=${plan.slug}`}
           className={cn(
             "mt-7 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[13px] font-bold transition-all duration-300",
             isPopular
