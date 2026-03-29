@@ -413,8 +413,14 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
         if (generation.status === 'COMPLETED') {
           clearPollTimer();
-          finishWithVideos(generation.outputs.map((o) => o.url));
+          const outputUrls = generation.outputs.map((o) => o.url);
+          finishWithVideos(outputUrls);
           refetchCredits();
+          if (outputUrls.length < sampleCount) {
+            toast.warning(
+              `${outputUrls.length} de ${sampleCount} vídeos foram gerados. Os créditos excedentes foram estornados.`,
+            );
+          }
           prependToGallery(generation);
         }
 
@@ -525,9 +531,16 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       setGenerationId(id);
 
       sseControllerRef.current = listenGeneration(id, accessToken, {
-        onCompleted: ({ generationId, outputUrls }) => {
+        onCompleted: ({ generationId, outputUrls, creditsRefunded, requestedCount, actualCount }) => {
           finishWithVideos(outputUrls);
           refetchCredits();
+          const requested = requestedCount ?? sampleCount;
+          const actual = actualCount ?? outputUrls.length;
+          if (actual < requested && creditsRefunded != null) {
+            toast.warning(
+              `${actual} de ${requested} vídeos foram gerados. ${creditsRefunded} crédito${creditsRefunded !== 1 ? 's' : ''} estornado${creditsRefunded !== 1 ? 's' : ''}.`,
+            );
+          }
           api.generations.get(accessToken!, generationId).then(prependToGallery).catch(() => { });
         },
         onFailed: ({ errorMessage, creditsRefunded }) => {
