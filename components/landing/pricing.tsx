@@ -10,7 +10,11 @@ import {
   PLAN_ORDER,
   PLAN_SUBTITLES,
   PLAN_GENERATIONS,
+  PLAN_ORIGINAL_PRICES,
+  PLAN_DISCOUNT_LABELS,
+  PLAN_SOCIAL_PROOF,
   formatPrice,
+  formatPriceRaw,
   getPlanFeatures,
 } from "@/lib/plans";
 
@@ -24,6 +28,9 @@ function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) 
   const features = getPlanFeatures(plan);
   const generationExamples = PLAN_GENERATIONS[plan.slug] ?? [];
   const subtitle = PLAN_SUBTITLES[plan.slug];
+  const originalPrice = PLAN_ORIGINAL_PRICES[plan.slug];
+  const discountLabel = PLAN_DISCOUNT_LABELS[plan.slug];
+  const socialProof = PLAN_SOCIAL_PROOF[plan.slug];
 
   return (
     <div
@@ -107,20 +114,41 @@ function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) 
           </p>
         </div>
 
-        {/* Price */}
-        <div className="mt-4 flex items-baseline gap-1">
-          <span
-            className={cn(
-              "text-[20px] font-bold",
-              isFree ? "text-landing-accent" : "text-[#f3f0ed]/80",
-            )}
-          >
-            {main}
-          </span>
-          {sub && (
-            <span className="text-[13px] text-[#f3f0ed]/30">{sub}</span>
+        {/* Price with anchor */}
+        <div className="mt-4">
+          {originalPrice && !isFree && (
+            <div className="mb-1 flex items-center gap-2">
+              <span className="text-[13px] text-[#f3f0ed]/25 line-through">
+                {formatPriceRaw(originalPrice)}
+              </span>
+              {discountLabel && (
+                <span className="rounded-md bg-landing-accent/15 px-1.5 py-0.5 text-[9px] font-bold text-landing-accent">
+                  {discountLabel}
+                </span>
+              )}
+            </div>
           )}
+          <div className="flex items-baseline gap-1">
+            <span
+              className={cn(
+                "text-[20px] font-bold",
+                isFree ? "text-landing-accent" : "text-[#f3f0ed]/80",
+              )}
+            >
+              {main}
+            </span>
+            {sub && (
+              <span className="text-[13px] text-[#f3f0ed]/30">{sub}</span>
+            )}
+          </div>
         </div>
+
+        {/* Social proof */}
+        {socialProof && (
+          <p className="mt-2.5 text-[11px] font-medium text-landing-accent/70">
+            {socialProof}
+          </p>
+        )}
 
         {/* Divider */}
         <div className="my-6 h-px w-full bg-[#f3f0ed]/[0.05]" />
