@@ -6,6 +6,9 @@ export interface SSECompletedResult {
   generationId: string;
   outputUrls: string[];
   processingTimeMs: number;
+  creditsRefunded?: number;
+  requestedCount?: number;
+  actualCount?: number;
 }
 
 export interface SSEFailedResult {
@@ -80,6 +83,9 @@ export function listenGeneration(
               generationId: event.generationId,
               outputUrls: event.data.outputUrls,
               processingTimeMs: event.data.processingTimeMs,
+              creditsRefunded: event.data.creditsRefunded,
+              requestedCount: event.data.requestedCount,
+              actualCount: event.data.actualCount,
             });
             return;
           }
