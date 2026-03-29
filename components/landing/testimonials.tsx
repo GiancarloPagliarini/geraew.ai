@@ -121,7 +121,7 @@ export function Testimonials() {
             href="/workspace"
             className="group inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-7 py-3.5 text-[14px] font-bold text-[#1a2123] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_24px_rgba(162,221,0,0.3)] hover:brightness-110"
           >
-            {isLoggedIn ? "Acessar Workspace" : "Junte-se a eles — Começar Grátis"}
+            {isLoggedIn ? "Acessar Workspace" : "Junte-se a eles"}
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
           </a>
         </div>

@@ -24,7 +24,7 @@ import {
   Video,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import {
   PLAN_ORDER,
   PLAN_SUBTITLES,
@@ -39,7 +39,7 @@ import {
 import { CreditPackagesGrid } from '@/components/editor/CreditPackagesGrid';
 import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 
-export default function CreditosPage() {
+function CreditosPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, accessToken, loading: authLoading } = useAuth();
@@ -686,5 +686,13 @@ export default function CreditosPage() {
         );
       })()}
     </div>
+  );
+}
+
+export default function CreditosPage() {
+  return (
+    <Suspense>
+      <CreditosPageContent />
+    </Suspense>
   );
 }

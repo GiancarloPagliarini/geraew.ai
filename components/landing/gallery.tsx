@@ -8,12 +8,9 @@ import { useAuth } from "@/lib/auth-context";
 
 const ITEMS: { src: string; type: "image" | "video" }[] = [
   { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmnb5y9jy002ili0166936754/155ad5c2-f554-475b-b8b8-c5c64a639a6b/output_3.mp4", type: "video" },
-  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmnb5jfwu001vli01vx5wj5co/115636b7-dfdd-426c-96fa-34251c82e91b/output_0.png", type: "image" },
-  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmn84dfd900o4rv017s3mkxua/a8cd3fd8-ac78-49a3-ad43-2963588ccaab/output_0.png", type: "image" },
   { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmn5h10lz002os7015ezt1rk8/0a0ec4b5-b6e5-481a-89c7-1f36d529febd/output_0.mp4", type: "video" },
   { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmmygp8wl000sml01l4h6vteq/162b05b9-0e95-4799-ba90-6544efa9acd1/output_0.png", type: "image" },
   { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmn75brpl0092s101g088osyw/abbc63ee-8331-4bdf-b416-73e5393c7de3/output_0.png", type: "image" },
-  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmn71sh8q004cs101oyir1v3i/a8484cfa-7c66-4d26-9ca6-e7fb14d4e962/output_0.png", type: "image" },
   { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmmv24p4y00wdq201jad39azh/ed291ab0-d3ef-45d6-9ed8-cf1887a54a76/output_0.mp4", type: "video" },
   { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmmptwwks00j6qu018a0f0gg7/cf0f42c0-d71d-4df6-b6ec-0dd41b727c05/output_0.mp4", type: "video" },
 ];
@@ -116,7 +113,7 @@ export function Gallery() {
             href="/workspace"
             className="group inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-6 py-3 text-[13px] font-bold text-[#1a2123] sm:px-7 sm:py-3.5 sm:text-[14px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_24px_rgba(162,221,0,0.3)] hover:brightness-110"
           >
-            {isLoggedIn ? "Acessar Workspace" : "Crie o seu agora — Testar Grátis"}
+            {isLoggedIn ? "Acessar Workspace" : "Crie o seu agora"}
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
           </a>
         </div>

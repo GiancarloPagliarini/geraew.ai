@@ -85,7 +85,7 @@ export function Features() {
             Uma plataforma completa para criar conteúdo que converte.
           </h2>
           <p className="mt-3.5 text-[15px] leading-relaxed text-landing-text-secondary sm:mt-5 sm:text-[17px]">
-            Fotos, vídeos, movimentos e edição — tudo com inteligência
+            Fotos, vídeos, movimentos e edição, tudo com inteligência
             artificial, tudo em um só lugar.
           </p>
         </div>

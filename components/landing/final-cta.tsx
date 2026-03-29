@@ -73,7 +73,7 @@ export function FinalCta() {
 
           {/* Microcopy */}
           <p className="mt-5 text-[13px] tracking-wide text-landing-text-muted">
-            Sem cartão de crédito · Setup em 2 minutos · Cancele quando quiser
+            Setup em 2 minutos · Cancele quando quiser
           </p>
         </div>
       </div>

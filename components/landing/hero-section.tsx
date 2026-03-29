@@ -148,7 +148,7 @@ export function HeroSection() {
           {/* Badge */}
           <div className="landing-shimmer mb-6 inline-flex items-center gap-2 rounded-full border border-landing-accent/20 bg-landing-accent/[0.07] px-4 py-1.5 sm:mb-8">
             <span className="text-[13px] font-medium text-landing-accent">
-              ✦ Plataforma de criação com Inteligência Artificial
+              Quem dominar IA agora, vai dominar o mercado amanhã.
             </span>
           </div>
 
@@ -177,7 +177,7 @@ export function HeroSection() {
 
           {/* Microcopy */}
           <p className="mt-5 text-[13px] tracking-wide text-landing-text-muted">
-            Sem cartão de crédito · Pronto em menos de 2 minutos
+            Pronto em menos de 2 minutos
           </p>
         </div>
 

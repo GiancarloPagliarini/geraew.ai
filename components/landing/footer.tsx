@@ -13,13 +13,13 @@ const COMPANY = [
 ];
 
 const LEGAL = [
-  { label: "Termos de Uso", href: "/legal/termos-de-uso" },
-  { label: "Política de Privacidade", href: "/legal/politica-de-privacidade" },
+  { label: "Termos de Uso", href: "/termos-de-uso" },
+  { label: "Política de Privacidade", href: "/politica-de-privacidade" },
 ];
 
 const SOCIAL = [
-  { icon: Instagram, href: "#", label: "Instagram" },
-  { icon: Music2, href: "#", label: "TikTok" },
+  { icon: Instagram, href: "https://www.instagram.com/geraew.ai/", label: "Instagram" },
+  { icon: Music2, href: "https://www.tiktok.com/@geraew.ia", label: "TikTok" },
   { icon: MessageCircle, href: "#", label: "Discord" },
 ];
 
@@ -49,6 +49,8 @@ export function Footer() {
                 <a
                   key={s.label}
                   href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label={s.label}
                   className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#f3f0ed]/[0.06] text-landing-text-muted transition-all duration-300 hover:border-landing-accent/20 hover:text-landing-accent"
                 >
