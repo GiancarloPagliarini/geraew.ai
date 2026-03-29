@@ -22,28 +22,19 @@ import {
   ExternalLink,
   User,
   Coins,
-  AlertTriangle,
+  Settings,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { ManageSubscriptionModal } from '@/components/editor/ManageSubscriptionModal';
 
 export default function PerfilPage() {
   const router = useRouter();
   const { user, accessToken, loading: authLoading } = useAuth();
   const loadingMsg = useLoadingMessage('perfil');
   const queryClient = useQueryClient();
-  const [confirmingCancel, setConfirmingCancel] = useState(false);
-
-  const cancelMutation = useMutation({
-    mutationFn: () => api.subscriptions.cancel(accessToken!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
-      setConfirmingCancel(false);
-      toast.success('Assinatura cancelada', { description: 'Você terá acesso até o fim do período atual.' });
-    },
-    onError: () => toast.error('Erro ao cancelar', { description: 'Tente novamente.' }),
-  });
+  const [showManageModal, setShowManageModal] = useState(false);
 
   const reactivateMutation = useMutation({
     mutationFn: () => api.subscriptions.reactivate(accessToken!),
@@ -346,6 +337,16 @@ export default function PerfilPage() {
           </div>
         </div>
 
+        {/* ── Gerenciar Assinatura ── */}
+        <button
+          onClick={() => setShowManageModal(true)}
+          className="flex items-center gap-3 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 px-4 py-3.5 text-left transition-colors hover:border-[#a2dd00]/20 hover:bg-[#a2dd00]/[0.04]"
+        >
+          <Settings className="h-4 w-4 shrink-0 text-[#a2dd00]/60" />
+          <span className="flex-1 text-sm font-medium text-[#f3f0ed]">Gerenciar sua assinatura</span>
+          <ExternalLink className="h-3.5 w-3.5 text-[#f3f0ed]/30" />
+        </button>
+
         {/* ── Conta ── */}
         <div>
           <SectionHeader icon={User} title="Conta" />
@@ -361,76 +362,35 @@ export default function PerfilPage() {
           </div>
         </div>
 
-        {/* ── Cancelamento ── */}
-        {sub && subStatus?.toLowerCase() === 'active' && (
-          <div className="flex flex-col gap-3 rounded-2xl border border-red-500/15 bg-red-500/4 p-5">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-400/70" />
-              <h2 className="text-sm font-bold text-red-400/80">Cancelar assinatura</h2>
-            </div>
-
-            {cancelAtPeriodEnd ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col gap-1">
-                  <p className="text-sm font-medium text-[#f3f0ed]/60">
-                    Sua assinatura está programada para cancelar.
-                  </p>
-                  {subEnd && (
-                    <p className="text-xs text-[#f3f0ed]/35">
-                      Você terá acesso até <span className="font-medium text-[#f3f0ed]/50">{subEnd}</span>.
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={() => reactivateMutation.mutate()}
-                  disabled={reactivateMutation.isPending}
-                  className="flex h-9 w-fit items-center gap-2 rounded-xl border border-[#a2dd00]/20 px-4 text-xs font-medium text-[#a2dd00]/70 transition-colors hover:border-[#a2dd00]/40 hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {reactivateMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                  Reativar assinatura
-                </button>
-              </div>
-            ) : (
-              <>
-                <p className="text-xs leading-relaxed text-[#f3f0ed]/40">
-                  Ao cancelar, sua assinatura permanece ativa até o fim do período atual.
-                  {subEnd && (
-                    <> Você perderá o acesso em <span className="font-medium text-[#f3f0ed]/60">{subEnd}</span>.</>
-                  )}
+        {/* Cancelamento agora é feito dentro de "Gerenciar assinatura" */}
+        {sub && subStatus?.toLowerCase() === 'active' && cancelAtPeriodEnd && (
+          <div className="flex flex-col gap-3 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/[0.02] p-4">
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-medium text-[#f3f0ed]/50">
+                Sua assinatura esta programada para cancelar.
+              </p>
+              {subEnd && (
+                <p className="text-xs text-[#f3f0ed]/35">
+                  Voce tera acesso ate <span className="font-medium text-[#f3f0ed]/50">{subEnd}</span>.
                 </p>
-
-                {confirmingCancel ? (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => cancelMutation.mutate()}
-                      disabled={cancelMutation.isPending}
-                      className="flex h-9 items-center gap-2 rounded-xl bg-red-500/20 px-4 text-xs font-bold text-red-400 transition-colors hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {cancelMutation.isPending ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : null}
-                      Confirmar cancelamento
-                    </button>
-                    <button
-                      onClick={() => setConfirmingCancel(false)}
-                      disabled={cancelMutation.isPending}
-                      className="h-9 rounded-xl px-4 text-xs text-[#f3f0ed]/40 transition-colors hover:text-[#f3f0ed]/70 disabled:opacity-50"
-                    >
-                      Voltar
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setConfirmingCancel(true)}
-                    className="flex h-9 w-fit items-center rounded-xl border border-red-500/20 px-4 text-xs font-medium text-red-400/70 transition-colors hover:border-red-500/40 hover:text-red-400"
-                  >
-                    Cancelar assinatura
-                  </button>
-                )}
-              </>
-            )}
+              )}
+            </div>
+            <button
+              onClick={() => reactivateMutation.mutate()}
+              disabled={reactivateMutation.isPending}
+              className="flex h-9 w-fit items-center gap-2 rounded-xl bg-[#a2dd00] px-4 text-xs font-bold text-[#1a2123] transition-colors hover:bg-[#b5e82d] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {reactivateMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              Reativar assinatura
+            </button>
           </div>
         )}
+
+        {/* Manage subscription modal */}
+        {showManageModal && (
+          <ManageSubscriptionModal onClose={() => setShowManageModal(false)} />
+        )}
+
 
       </div>
     </div>

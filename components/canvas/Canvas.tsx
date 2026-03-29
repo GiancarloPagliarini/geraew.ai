@@ -12,7 +12,7 @@ import {
   useNodesState,
   useReactFlow,
 } from '@xyflow/react';
-import { AudioWaveform, ImageIcon, LayoutGrid, PersonStanding, Video } from 'lucide-react';
+import { AudioWaveform, ImageIcon, LayoutGrid, PersonStanding, Repeat2, Shirt, Video } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEditor } from '@/lib/editor-context';
@@ -103,7 +103,7 @@ function CanvasContent() {
 
   const handleAddPanel = useCallback(
     (type: string) => {
-      if (type !== 'generate-image' && type !== 'create-influencer' && type !== 'generate-video' && type !== 'motion-control' && type !== 'generic') return;
+      if (type !== 'generate-image' && type !== 'create-influencer' && type !== 'generate-video' && type !== 'motion-control' && type !== 'virtual-try-on' && type !== 'face-swap' && type !== 'generic') return;
 
       if (nodes.length >= MAX_NODES) {
         setShowMaxNodesWarning(false);
@@ -290,6 +290,8 @@ function CanvasContent() {
         onAddInfluencer={() => handleAddPanel('create-influencer')}
         onAddVideo={() => handleAddPanel('generate-video')}
         onAddMotionControl={() => handleAddPanel('motion-control')}
+        onAddVirtualTryOn={() => handleAddPanel('virtual-try-on')}
+        onAddFaceSwap={() => handleAddPanel('face-swap')}
         onDelete={handleDelete}
         onFitView={() => fitView({ duration: 300, padding: 0.2 })}
       />
@@ -350,6 +352,26 @@ function CanvasContent() {
                   <AudioWaveform className="h-5 w-5 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00] sm:h-6 sm:w-6" />
                 </div>
                 <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">Copiar movimentos</span>
+              </button>
+
+              <button
+                onClick={() => handleAddPanel('virtual-try-on')}
+                className="group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">
+                  <Shirt className="h-5 w-5 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00] sm:h-6 sm:w-6" />
+                </div>
+                <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">Provador Virtual</span>
+              </button>
+
+              <button
+                onClick={() => handleAddPanel('face-swap')}
+                className="group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">
+                  <Repeat2 className="h-5 w-5 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00] sm:h-6 sm:w-6" />
+                </div>
+                <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">Troca de Rosto</span>
               </button>
             </div>
           </div>

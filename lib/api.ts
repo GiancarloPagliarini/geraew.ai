@@ -285,6 +285,27 @@ export interface MotionControlRequest {
   resolution?: '480p' | '580p' | '720p' | '1080p';
 }
 
+export interface VirtualTryOnRequest {
+  influencer_image: string;
+  influencer_image_mime_type?: string;
+  clothing_image: string;
+  clothing_image_mime_type?: string;
+  additional_instructions?: string;
+  model?: string;
+  resolution?: string;
+  aspect_ratio?: string;
+  output_mime_type?: string;
+  model_variant?: string;
+}
+
+export interface FaceSwapRequest {
+  source_image: string;
+  source_image_mime_type?: string;
+  target_image: string;
+  target_image_mime_type?: string;
+  resolution?: string;
+}
+
 // ─── Video Editor ─────────────────────────────────────────────────────────────
 
 export interface VideoProject {
@@ -634,6 +655,18 @@ export const api = {
         body: JSON.stringify(payload),
       });
     },
+    virtualTryOn(accessToken: string, payload: VirtualTryOnRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/virtual-try-on', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    faceSwap(accessToken: string, payload: FaceSwapRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/face-swap', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
     get(accessToken: string, id: string) {
       return authRequest<Generation>(`/api/v1/generations/${id}`, accessToken);
     },
@@ -764,6 +797,17 @@ export const api = {
         method: 'POST',
       });
     },
+    pause(accessToken: string) {
+      return authRequest<Record<string, unknown>>('/api/v1/subscriptions/pause', accessToken, {
+        method: 'POST',
+      });
+    },
+    acceptOffer(accessToken: string, reason: string) {
+      return authRequest<{ offerType: string; detail: string }>('/api/v1/subscriptions/accept-offer', accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      });
+    },
     upgrade(accessToken: string, planSlug: string) {
       return authRequest<{ checkoutUrl: string }>('/api/v1/subscriptions/upgrade', accessToken, {
         method: 'PATCH',
@@ -774,6 +818,11 @@ export const api = {
       return authRequest<Record<string, unknown>>('/api/v1/subscriptions/downgrade', accessToken, {
         method: 'PATCH',
         body: JSON.stringify({ planSlug }),
+      });
+    },
+    cancelDowngrade(accessToken: string) {
+      return authRequest<Record<string, unknown>>('/api/v1/subscriptions/cancel-downgrade', accessToken, {
+        method: 'POST',
       });
     },
   },
@@ -804,10 +853,13 @@ export const api = {
         body: JSON.stringify({ prompt, context, images }),
       });
     },
-    enhanceInfluencer(accessToken: string, selections: Record<string, string>) {
+    enhanceInfluencer(accessToken: string, selections: Record<string, string>, referenceImage?: { base64: string; mimeType: string }) {
       return authRequest<{ enhancedPrompt: string }>('/api/v1/prompt-enhancer/enhance-influencer', accessToken, {
         method: 'POST',
-        body: JSON.stringify(selections),
+        body: JSON.stringify({
+          ...selections,
+          ...(referenceImage ? { referenceImageBase64: referenceImage.base64, referenceImageMimeType: referenceImage.mimeType } : {}),
+        }),
       });
     },
   },

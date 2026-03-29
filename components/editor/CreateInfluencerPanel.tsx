@@ -42,7 +42,7 @@ interface CreateInfluencerPanelProps {
 export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateInfluencerPanelProps) {
   const { setNodeImage, consumeCredits, refetchCredits, prependToGallery } = useEditor();
   const { accessToken } = useAuth();
-  const { selections } = useInfluencerBuilder();
+  const { selections, referenceImage } = useInfluencerBuilder();
 
   const [genState, setGenState] = useState<GenState>('idle');
   const [progress, setProgress] = useState(0);
@@ -161,15 +161,23 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
       const { enhancedPrompt } = await api.promptEnhancer.enhanceInfluencer(
         accessToken,
         selections as unknown as Record<string, string>,
+        referenceImage ? { base64: referenceImage.base64, mimeType: referenceImage.mimeType } : undefined,
       );
 
-      const { id, creditsConsumed } = await api.generations.generateImage(accessToken, {
+      const generatePayload: Parameters<typeof api.generations.generateImage>[1] = {
         prompt: enhancedPrompt,
         model: 'gemini-3-pro-image-preview',
         resolution: 'RES_2K',
         aspect_ratio: '9:16',
         mime_type: 'image/png',
-      });
+      };
+
+      // When using a reference image, send it as input image for image-to-image generation
+      if (referenceImage) {
+        generatePayload.images = [{ base64: referenceImage.base64, mime_type: referenceImage.mimeType }];
+      }
+
+      const { id, creditsConsumed } = await api.generations.generateImage(accessToken, generatePayload);
 
       consumeCredits(creditsConsumed);
 

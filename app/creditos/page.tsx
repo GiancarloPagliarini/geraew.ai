@@ -25,6 +25,7 @@ import {
   getPlanFeatures,
 } from '@/lib/plans';
 import { CreditPackagesGrid } from '@/components/editor/CreditPackagesGrid';
+import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 
 export default function CreditosPage() {
   const router = useRouter();
@@ -32,21 +33,38 @@ export default function CreditosPage() {
   const loadingMsg = useLoadingMessage('creditos');
   const queryClient = useQueryClient();
   const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
+  const [pendingDowngradeSlug, setPendingDowngradeSlug] = useState<string | null>(null);
+  const [isDowngrading, setIsDowngrading] = useState(false);
+
+  async function executeDowngrade(planSlug: string) {
+    if (!accessToken) return;
+    setIsDowngrading(true);
+    try {
+      await api.subscriptions.downgrade(accessToken, planSlug);
+      toast.success('Downgrade agendado', {
+        description: 'Seu plano será alterado na próxima renovação.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
+      setPendingDowngradeSlug(null);
+    } catch {
+      toast.error('Erro ao fazer downgrade', { description: 'Tente novamente.' });
+    } finally {
+      setIsDowngrading(false);
+    }
+  }
+
   async function handleSubscribe(planSlug: string) {
     if (!accessToken || subscribingSlug) return;
-    setSubscribingSlug(planSlug);
     const action = getPlanAction(planSlug);
 
+    if (action === 'downgrade') {
+      setPendingDowngradeSlug(planSlug);
+      return;
+    }
+
+    setSubscribingSlug(planSlug);
+
     try {
-      if (action === 'downgrade') {
-        await api.subscriptions.downgrade(accessToken, planSlug);
-        toast.success('Downgrade agendado', {
-          description: 'Seu plano será alterado na próxima renovação.',
-        });
-        queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
-        setSubscribingSlug(null);
-        return;
-      }
 
       let checkoutUrl: string;
       if (action === 'create') {
@@ -338,15 +356,18 @@ export default function CreditosPage() {
                 const isSubscribing = subscribingSlug === plan.slug;
                 const subtitle = PLAN_SUBTITLES[plan.slug];
                 const generationExamples = PLAN_GENERATIONS[plan.slug] ?? [];
+                const isDowngrade = !isCurrent && getPlanAction(plan.slug) === 'downgrade';
 
                 return (
                   <div
                     key={plan.id}
-                    className={`relative flex flex-col rounded-2xl border p-5 transition-all ${isCurrent
-                      ? 'border-[#a2dd00]/50 bg-[#1e2b1f] shadow-[0_0_30px_rgba(162,221,0,0.1)]'
-                      : isCreator
-                        ? 'border-[#a2dd00]/30 bg-[#1f2a2d] shadow-[0_0_20px_rgba(162,221,0,0.05)]'
-                        : 'border-[#f3f0ed]/8 bg-[#1c2527]'
+                    className={`relative flex flex-col rounded-2xl border p-5 transition-all ${isDowngrade
+                      ? 'border-[#f3f0ed]/5 bg-[#1c2527]/60 opacity-50 pointer-events-none'
+                      : isCurrent
+                        ? 'border-[#a2dd00]/50 bg-[#1e2b1f] shadow-[0_0_30px_rgba(162,221,0,0.1)]'
+                        : isCreator
+                          ? 'border-[#a2dd00]/30 bg-[#1f2a2d] shadow-[0_0_20px_rgba(162,221,0,0.05)]'
+                          : 'border-[#f3f0ed]/8 bg-[#1c2527]'
                       }`}
                   >
                     {/* "Mais popular" badge */}
@@ -424,7 +445,7 @@ export default function CreditosPage() {
 
                     <div className="flex-1" />
 
-                    {!isFree && (
+                    {!isFree && !isDowngrade && (
                       <button
                         disabled={isCurrent || !!subscribingSlug}
                         onClick={() => handleSubscribe(plan.slug)}
@@ -486,6 +507,35 @@ export default function CreditosPage() {
         )}
 
       </div>
+
+      {/* Retention modal for downgrade */}
+      {pendingDowngradeSlug && (() => {
+        const allPlans = (plans ?? []).slice().sort(
+          (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),
+        );
+        const currentPlan = allPlans.find((p) => p.slug === currentPlanSlug);
+        const targetPlan = allPlans.find((p) => p.slug === pendingDowngradeSlug);
+        const currentFeatures = currentPlan ? getPlanFeatures(currentPlan) : [];
+        const targetFeatures = targetPlan ? getPlanFeatures(targetPlan) : [];
+        const lostBenefits = currentFeatures.filter((f) => !targetFeatures.includes(f));
+        if (currentPlan && targetPlan) {
+          const creditDiff = currentPlan.creditsPerMonth - targetPlan.creditsPerMonth;
+          if (creditDiff > 0) {
+            lostBenefits.unshift(`${creditDiff.toLocaleString('pt-BR')} créditos mensais a menos`);
+          }
+        }
+        return (
+          <CancelRetentionModal
+            action="downgrade"
+            onClose={() => setPendingDowngradeSlug(null)}
+            onConfirm={() => executeDowngrade(pendingDowngradeSlug)}
+            isLoading={isDowngrading}
+            currentPlanName={currentPlan?.name}
+            targetPlanName={targetPlan?.name}
+            lostBenefits={lostBenefits.length > 0 ? lostBenefits : ['Créditos e funcionalidades do plano atual']}
+          />
+        );
+      })()}
     </div>
   );
 }

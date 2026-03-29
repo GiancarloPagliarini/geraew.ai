@@ -14,7 +14,8 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { api, Plan, CreditPackage } from '@/lib/api';
+import { api, Plan } from '@/lib/api';
+import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 import {
   PLAN_ORDER,
   PLAN_GENERATIONS,
@@ -39,6 +40,7 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug }:
   const isSubscribing = subscribingSlug === plan.slug;
   const features = getPlanFeatures(plan);
   const generationExamples = PLAN_GENERATIONS[plan.slug] ?? [];
+  const isDowngrade = planAction === 'downgrade';
 
   const actionLabel = {
     upgrade: 'Fazer upgrade',
@@ -49,11 +51,13 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug }:
 
   return (
     <div
-      className={`relative flex flex-col rounded-2xl border p-4 transition-all sm:p-5 ${isCurrent
-        ? 'border-[#a2dd00]/50 bg-[#1e2b1f] shadow-[0_0_30px_rgba(162,221,0,0.1)]'
-        : isCreator
-          ? 'border-[#a2dd00]/30 bg-[#1f2a2d] shadow-[0_0_20px_rgba(162,221,0,0.06)]'
-          : 'border-[#f3f0ed]/8 bg-[#1c2527]'
+      className={`relative flex flex-col rounded-2xl border p-4 transition-all sm:p-5 ${isDowngrade
+        ? 'border-[#f3f0ed]/5 bg-[#1c2527]/60 opacity-50 pointer-events-none'
+        : isCurrent
+          ? 'border-[#a2dd00]/50 bg-[#1e2b1f] shadow-[0_0_30px_rgba(162,221,0,0.1)]'
+          : isCreator
+            ? 'border-[#a2dd00]/30 bg-[#1f2a2d] shadow-[0_0_20px_rgba(162,221,0,0.06)]'
+            : 'border-[#f3f0ed]/8 bg-[#1c2527]'
         }`}
     >
       {isCreator && !isCurrent && (
@@ -119,7 +123,7 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug }:
 
       <div className="flex-1" />
 
-      {!isFree && (
+      {!isFree && !isDowngrade && (
         <button
           disabled={isCurrent || !!subscribingSlug}
           onClick={() => onSubscribe(plan.slug)}
@@ -146,6 +150,8 @@ export function PlansModal({ onClose }: PlansModalProps) {
   const queryClient = useQueryClient();
   const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
   const [purchasingPackageId, setPurchasingPackageId] = useState<string | null>(null);
+  const [pendingDowngradeSlug, setPendingDowngradeSlug] = useState<string | null>(null);
+  const [isDowngrading, setIsDowngrading] = useState(false);
 
   const { data: plans, isLoading: plansLoading } = useQuery({
     queryKey: ['plans'],
@@ -211,22 +217,36 @@ export function PlansModal({ onClose }: PlansModalProps) {
     return targetIdx > currentIdx ? 'upgrade' : 'downgrade';
   }
 
+  async function executeDowngrade(planSlug: string) {
+    if (!accessToken) return;
+    setIsDowngrading(true);
+    try {
+      await api.subscriptions.downgrade(accessToken, planSlug);
+      toast.success('Downgrade agendado', {
+        description: 'Seu plano será alterado na próxima renovação.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
+      setPendingDowngradeSlug(null);
+      onClose();
+    } catch {
+      toast.error('Erro ao fazer downgrade', { description: 'Tente novamente.' });
+    } finally {
+      setIsDowngrading(false);
+    }
+  }
+
   async function handleSubscribe(planSlug: string) {
     if (!accessToken || subscribingSlug) return;
-    setSubscribingSlug(planSlug);
     const action = getPlanAction(planSlug);
 
+    if (action === 'downgrade') {
+      setPendingDowngradeSlug(planSlug);
+      return;
+    }
+
+    setSubscribingSlug(planSlug);
+
     try {
-      if (action === 'downgrade') {
-        await api.subscriptions.downgrade(accessToken, planSlug);
-        toast.success('Downgrade agendado', {
-          description: 'Seu plano será alterado na próxima renovação.',
-        });
-        queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
-        setSubscribingSlug(null);
-        onClose();
-        return;
-      }
 
       let checkoutUrl: string;
       if (action === 'create') {
@@ -311,6 +331,32 @@ export function PlansModal({ onClose }: PlansModalProps) {
           Créditos extras comprados nunca expiram · Acumulam com os do plano
         </p>
       </div>
+
+      {/* Retention modal for downgrade */}
+      {pendingDowngradeSlug && (() => {
+        const currentPlan = sorted.find((p) => p.slug === currentPlanSlug);
+        const targetPlan = sorted.find((p) => p.slug === pendingDowngradeSlug);
+        const currentFeatures = currentPlan ? getPlanFeatures(currentPlan) : [];
+        const targetFeatures = targetPlan ? getPlanFeatures(targetPlan) : [];
+        const lostBenefits = currentFeatures.filter((f) => !targetFeatures.includes(f));
+        if (currentPlan && targetPlan) {
+          const creditDiff = currentPlan.creditsPerMonth - targetPlan.creditsPerMonth;
+          if (creditDiff > 0) {
+            lostBenefits.unshift(`${creditDiff.toLocaleString('pt-BR')} créditos mensais a menos`);
+          }
+        }
+        return (
+          <CancelRetentionModal
+            action="downgrade"
+            onClose={() => setPendingDowngradeSlug(null)}
+            onConfirm={() => executeDowngrade(pendingDowngradeSlug)}
+            isLoading={isDowngrading}
+            currentPlanName={currentPlan?.name}
+            targetPlanName={targetPlan?.name}
+            lostBenefits={lostBenefits.length > 0 ? lostBenefits : ['Créditos e funcionalidades do plano atual']}
+          />
+        );
+      })()}
     </div>
   );
 }
