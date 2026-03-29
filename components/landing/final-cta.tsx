@@ -2,14 +2,17 @@
 
 import { ArrowRight } from "lucide-react";
 import { useScrollReveal } from "./use-scroll-reveal";
+import { useAuth } from "@/lib/auth-context";
 
 const INITIALS = ["LF", "MC", "RS", "CO", "JP", "AS"];
 
 export function FinalCta() {
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
   const { ref, isVisible } = useScrollReveal();
 
   return (
-    <section className="landing-noise relative overflow-hidden py-28 lg:py-36">
+    <section className="landing-noise relative overflow-hidden py-16 sm:py-28 lg:py-36">
       {/* Background gradient — lime glow from top */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -30,7 +33,7 @@ export function FinalCta() {
           }}
         >
           {/* Stacked avatars */}
-          <div className="mb-10 flex items-center">
+          <div className="mb-7 flex items-center sm:mb-10">
             <div className="flex -space-x-2.5">
               {INITIALS.map((init, i) => (
                 <div
@@ -49,22 +52,22 @@ export function FinalCta() {
           </div>
 
           {/* Headline */}
-          <h2 className="font-sora text-3xl font-bold tracking-tight text-landing-text sm:text-4xl lg:text-[48px] lg:leading-[1.1]">
+          <h2 className="font-sora text-[26px] font-bold tracking-tight text-landing-text sm:text-3xl lg:text-[48px] lg:leading-[1.1]">
             Pronto para criar seu primeiro influencer digital?
           </h2>
 
           {/* Sub */}
-          <p className="mt-6 text-[17px] leading-relaxed text-landing-text-secondary">
+          <p className="mt-5 text-[15px] leading-relaxed text-landing-text-secondary sm:mt-6 sm:text-[17px]">
             Junte-se a milhares de criadores que já estão transformando ideias em
             conteúdo profissional com inteligência artificial.
           </p>
 
           {/* CTA */}
           <a
-            href="https://app.geraew.com"
-            className="landing-glow-pulse group mt-10 inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-9 py-4 text-[15px] font-bold text-[#1a2123] transition-all duration-300 hover:scale-[1.03] hover:brightness-110"
+            href="/workspace"
+            className="landing-glow-pulse group mt-8 inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-7 py-3.5 text-[14px] font-bold text-[#1a2123] sm:mt-10 sm:px-9 sm:py-4 sm:text-[15px] transition-all duration-300 hover:scale-[1.03] hover:brightness-110"
           >
-            Começar Grátis
+            {isLoggedIn ? "Acessar Workspace" : "Começar Grátis"}
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
           </a>
 

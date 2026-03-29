@@ -21,10 +21,10 @@ export default function LandingPage() {
       <HowItWorks />
       <Features />
       <Comparison />
+      <Pricing />
       <Gallery />
       <UseCases />
       <Testimonials />
-      <Pricing />
       <Faq />
       <FinalCta />
       <Footer />

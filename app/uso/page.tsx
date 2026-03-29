@@ -213,7 +213,7 @@ export default function UsoPage() {
       {/* Header */}
       <header className="flex h-12 shrink-0 items-center border-b border-[#f3f0ed]/7 px-4">
         <button
-          onClick={() => router.push('/')}
+          onClick={() => router.push('/workspace')}
           className="flex items-center gap-2 text-sm text-[#f3f0ed]/60 transition-colors hover:text-[#f3f0ed]"
         >
           <ArrowLeft className="h-4 w-4" />

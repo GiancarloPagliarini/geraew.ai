@@ -2,6 +2,7 @@
 
 import { Star, ArrowRight } from "lucide-react";
 import { useScrollReveal } from "./use-scroll-reveal";
+import { useAuth } from "@/lib/auth-context";
 
 /* TODO: SUBSTITUIR POR DEPOIMENTOS REAIS */
 const TESTIMONIALS = [
@@ -23,7 +24,7 @@ const TESTIMONIALS = [
     name: "Rafael Souza",
     handle: "@rafasouza.mkt",
     niche: "Social Media",
-    text: "Consigo entregar conteúdo pra 5 clientes diferentes sem precisar de equipe. A GeraEW mudou meu negócio.",
+    text: "Consigo entregar conteúdo pra 5 clientes diferentes sem precisar de equipe. A Geraew mudou meu negócio.",
     rating: 5,
   },
   {
@@ -42,7 +43,7 @@ function Card({ t, i }: { t: (typeof TESTIMONIALS)[number]; i: number }) {
   return (
     <div
       ref={ref}
-      className="rounded-2xl border border-[#f3f0ed]/[0.06] bg-landing-card p-7 transition-all duration-500 sm:p-8"
+      className="rounded-2xl border border-[#f3f0ed]/[0.06] bg-landing-card p-5 transition-all duration-500 sm:p-8"
       style={{
         opacity: isVisible ? 1 : 0,
         transform: isVisible ? "translateY(0)" : "translateY(28px)",
@@ -60,12 +61,12 @@ function Card({ t, i }: { t: (typeof TESTIMONIALS)[number]; i: number }) {
       </div>
 
       {/* Quote */}
-      <p className="mt-5 text-[15px] leading-relaxed text-landing-text-secondary">
+      <p className="mt-4 text-[14px] leading-relaxed text-landing-text-secondary sm:mt-5 sm:text-[15px]">
         &ldquo;{t.text}&rdquo;
       </p>
 
       {/* Author */}
-      <div className="mt-7 flex items-center gap-3.5 border-t border-[#f3f0ed]/[0.04] pt-6">
+      <div className="mt-5 flex items-center gap-3.5 border-t border-[#f3f0ed]/[0.04] pt-4 sm:mt-7 sm:pt-6">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-landing-accent/10 text-[13px] font-bold text-landing-accent ring-1 ring-landing-accent/20">
           {initials}
         </div>
@@ -83,10 +84,12 @@ function Card({ t, i }: { t: (typeof TESTIMONIALS)[number]; i: number }) {
 }
 
 export function Testimonials() {
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
   const { ref, isVisible } = useScrollReveal();
 
   return (
-    <section className="bg-landing-bg-secondary py-28 lg:py-36">
+    <section className="bg-landing-bg-secondary py-16 sm:py-28 lg:py-36">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         {/* Header */}
         <div
@@ -100,25 +103,25 @@ export function Testimonials() {
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-landing-accent">
             O Que Dizem Sobre Nós
           </span>
-          <h2 className="mt-5 font-sora text-3xl font-bold tracking-tight text-landing-text sm:text-4xl lg:text-[44px]">
+          <h2 className="mt-4 font-sora text-[26px] font-bold tracking-tight text-landing-text sm:mt-5 sm:text-3xl lg:text-[44px]">
             Criadores reais. Resultados reais.
           </h2>
         </div>
 
         {/* Grid */}
-        <div className="mt-16 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:mt-20 lg:gap-6">
+        <div className="mt-10 grid grid-cols-1 gap-3.5 sm:mt-16 sm:grid-cols-2 sm:gap-5 lg:mt-20 lg:gap-6">
           {TESTIMONIALS.map((t, i) => (
             <Card key={t.name} t={t} i={i} />
           ))}
         </div>
 
         {/* CTA */}
-        <div className="mt-14 flex justify-center">
+        <div className="mt-10 flex justify-center sm:mt-14">
           <a
-            href="https://app.geraew.com"
+            href="/workspace"
             className="group inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-7 py-3.5 text-[14px] font-bold text-[#1a2123] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_24px_rgba(162,221,0,0.3)] hover:brightness-110"
           >
-            Junte-se a eles — Começar Grátis
+            {isLoggedIn ? "Acessar Workspace" : "Junte-se a eles — Começar Grátis"}
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
           </a>
         </div>

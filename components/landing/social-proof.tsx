@@ -33,7 +33,7 @@ function Stat({
         {isRating && (
           <Star className="h-5 w-5 fill-landing-accent text-landing-accent" />
         )}
-        <span className="font-sora text-[28px] font-bold tabular-nums text-landing-text sm:text-[32px]">
+        <span className="font-sora text-[24px] font-bold tabular-nums text-landing-text sm:text-[32px]">
           {!isRating && prefix}
           {display}
         </span>
@@ -49,7 +49,7 @@ export function SocialProof() {
   return (
     <section className="relative border-y border-[#f3f0ed]/[0.04] bg-landing-bg-secondary py-10 sm:py-12">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
-        <div className="grid grid-cols-2 gap-8 sm:gap-10 md:flex md:items-center md:justify-center md:gap-16 lg:gap-20">
+        <div className="grid grid-cols-2 gap-5 sm:gap-10 md:flex md:items-center md:justify-center md:gap-16 lg:gap-20">
           {STATS.map((s) => (
             <Stat key={s.label} {...s} />
           ))}

@@ -12,11 +12,11 @@ const FAQS = [
   },
   {
     q: "Preciso instalar alguma coisa?",
-    a: "Não. A GeraEW funciona 100% online, direto pelo navegador. Funciona no computador e no celular.",
+    a: "Não. A Geraew funciona 100% online, direto pelo navegador. Funciona no computador e no celular.",
   },
   {
     q: "Posso usar o conteúdo para vender no TikTok Shop?",
-    a: "Sim. Muitos criadores usam a GeraEW para gerar vídeos de review e demonstração para o TikTok Shop. Use em qualquer plataforma para qualquer finalidade comercial.",
+    a: "Sim. Muitos criadores usam a Geraew para gerar vídeos de review e demonstração para o TikTok Shop. Use em qualquer plataforma para qualquer finalidade comercial.",
   },
   {
     q: "Os vídeos ficam com marca d'água?",
@@ -60,9 +60,9 @@ function Item({
     <div className="border-b border-[#f3f0ed]/[0.05]">
       <button
         onClick={onToggle}
-        className="group flex w-full items-center justify-between py-6 text-left"
+        className="group flex w-full items-center justify-between py-5 text-left sm:py-6"
       >
-        <span className="pr-6 text-[15px] font-medium text-landing-text transition-colors group-hover:text-landing-accent">
+        <span className="pr-6 text-[14px] font-medium text-landing-text sm:text-[15px] transition-colors group-hover:text-landing-accent">
           {faq.q}
         </span>
         <div
@@ -100,7 +100,7 @@ export function Faq() {
   const { ref, isVisible } = useScrollReveal();
 
   return (
-    <section id="faq" className="bg-landing-bg-secondary py-28 lg:py-36">
+    <section id="faq" className="bg-landing-bg-secondary py-16 sm:py-28 lg:py-36">
       <div className="mx-auto max-w-3xl px-5 sm:px-8">
         {/* Header */}
         <div
@@ -114,16 +114,16 @@ export function Faq() {
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-landing-accent">
             Dúvidas
           </span>
-          <h2 className="mt-5 font-sora text-3xl font-bold tracking-tight text-landing-text sm:text-4xl lg:text-[44px]">
+          <h2 className="mt-4 font-sora text-[26px] font-bold tracking-tight text-landing-text sm:mt-5 sm:text-3xl lg:text-[44px]">
             Perguntas Frequentes
           </h2>
-          <p className="mt-5 text-[17px] leading-relaxed text-landing-text-secondary">
+          <p className="mt-3.5 text-[15px] leading-relaxed text-landing-text-secondary sm:mt-5 sm:text-[17px]">
             Tudo que você precisa saber antes de começar.
           </p>
         </div>
 
         {/* Accordion */}
-        <div className="mt-14">
+        <div className="mt-10 sm:mt-14">
           {FAQS.map((faq, i) => (
             <Item
               key={i}

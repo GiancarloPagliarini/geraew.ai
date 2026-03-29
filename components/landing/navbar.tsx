@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Sparkles, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import Image from "next/image";
 
 const LINKS = [
   { label: "Funcionalidades", href: "#funcionalidades" },
@@ -12,6 +14,8 @@ const LINKS = [
 ];
 
 export function Navbar() {
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -48,15 +52,17 @@ export function Navbar() {
           : "border-transparent bg-transparent",
       )}
     >
-      <nav className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8">
+      <nav className="mx-auto flex h-[64px] max-w-7xl items-center justify-between px-5 sm:h-[72px] sm:px-8">
         {/* logo */}
-        <a href="/" className="group flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-landing-accent/15 transition-colors group-hover:bg-landing-accent/25">
-            <Sparkles className="h-4 w-4 text-landing-accent" />
-          </div>
-          <span className="font-sora text-[17px] font-bold tracking-tight text-landing-text">
-            GeraEW
-          </span>
+        <a href="/" className="group flex items-center gap-2">
+          <Image
+            src="/logo_2.svg"
+            alt="Geraew"
+            width={130}
+            height={32}
+            className="h-8 w-auto"
+            priority
+          />
         </a>
 
         {/* desktop links */}
@@ -75,18 +81,29 @@ export function Navbar() {
 
         {/* desktop CTAs */}
         <div className="hidden items-center gap-3 md:flex">
-          <a
-            href="https://app.geraew.com/login"
-            className="rounded-xl border border-[#f3f0ed]/[0.08] px-5 py-2.5 text-[13px] font-medium text-[#f3f0ed]/60 transition-all duration-300 hover:border-[#f3f0ed]/[0.15] hover:text-[#f3f0ed]"
-          >
-            Entrar
-          </a>
-          <a
-            href="https://app.geraew.com"
-            className="rounded-xl bg-landing-accent px-5 py-2.5 text-[13px] font-semibold text-[#1a2123] transition-all duration-300 hover:shadow-[0_0_24px_rgba(162,221,0,0.3)] hover:brightness-110"
-          >
-            Testar Grátis
-          </a>
+          {isLoggedIn ? (
+            <a
+              href="/workspace"
+              className="rounded-xl bg-landing-accent px-5 py-2.5 text-[13px] font-semibold text-[#1a2123] transition-all duration-300 hover:shadow-[0_0_24px_rgba(162,221,0,0.3)] hover:brightness-110"
+            >
+              Acessar Workspace
+            </a>
+          ) : (
+            <>
+              <a
+                href="/login"
+                className="rounded-xl border border-[#f3f0ed]/[0.08] px-5 py-2.5 text-[13px] font-medium text-[#f3f0ed]/60 transition-all duration-300 hover:border-[#f3f0ed]/[0.15] hover:text-[#f3f0ed]"
+              >
+                Entrar
+              </a>
+              <a
+                href="/workspace"
+                className="rounded-xl bg-landing-accent px-5 py-2.5 text-[13px] font-semibold text-[#1a2123] transition-all duration-300 hover:shadow-[0_0_24px_rgba(162,221,0,0.3)] hover:brightness-110"
+              >
+                Testar Grátis
+              </a>
+            </>
+          )}
         </div>
 
         {/* mobile hamburger */}
@@ -102,7 +119,7 @@ export function Navbar() {
       {/* mobile drawer */}
       <div
         className={cn(
-          "fixed inset-0 top-[72px] z-40 bg-[#141a1c]/[0.98] backdrop-blur-2xl transition-all duration-400 md:hidden",
+          "fixed inset-0 top-[64px] z-40 bg-[#141a1c]/[0.98] backdrop-blur-2xl transition-all duration-400 sm:top-[72px] md:hidden",
           open
             ? "pointer-events-auto opacity-100"
             : "pointer-events-none opacity-0",
@@ -120,18 +137,29 @@ export function Navbar() {
             </a>
           ))}
           <div className="mt-8 flex flex-col gap-3 border-t border-[#f3f0ed]/[0.06] pt-8">
-            <a
-              href="https://app.geraew.com/login"
-              className="rounded-xl border border-[#f3f0ed]/[0.08] py-3.5 text-center text-[14px] font-medium text-[#f3f0ed]/60 transition-all hover:border-[#f3f0ed]/[0.15] hover:text-[#f3f0ed]"
-            >
-              Entrar
-            </a>
-            <a
-              href="https://app.geraew.com"
-              className="rounded-xl bg-landing-accent py-3.5 text-center text-[14px] font-semibold text-[#1a2123] transition-all hover:brightness-110"
-            >
-              Testar Grátis
-            </a>
+            {isLoggedIn ? (
+              <a
+                href="/workspace"
+                className="rounded-xl bg-landing-accent py-3.5 text-center text-[14px] font-semibold text-[#1a2123] transition-all hover:brightness-110"
+              >
+                Acessar Workspace
+              </a>
+            ) : (
+              <>
+                <a
+                  href="/login"
+                  className="rounded-xl border border-[#f3f0ed]/[0.08] py-3.5 text-center text-[14px] font-medium text-[#f3f0ed]/60 transition-all hover:border-[#f3f0ed]/[0.15] hover:text-[#f3f0ed]"
+                >
+                  Entrar
+                </a>
+                <a
+                  href="/workspace"
+                  className="rounded-xl bg-landing-accent py-3.5 text-center text-[14px] font-semibold text-[#1a2123] transition-all hover:brightness-110"
+                >
+                  Testar Grátis
+                </a>
+              </>
+            )}
           </div>
         </div>
       </div>

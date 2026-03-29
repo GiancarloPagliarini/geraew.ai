@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     const authData = await authRes.json();
 
     // Set the same cookies the client-side auth context expects
-    const response = NextResponse.redirect(new URL('/', origin));
+    const response = NextResponse.redirect(new URL('/workspace', origin));
 
     response.cookies.set('geraew-access-token', authData.accessToken, {
       path: '/',

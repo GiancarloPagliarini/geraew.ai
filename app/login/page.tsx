@@ -286,7 +286,7 @@ function LoginPageContent() {
     try {
       await api.auth.verifyEmail(code);
       await login(email, password);
-      router.push('/');
+      router.push('/workspace');
     } catch (err) {
       setVerifyStatus('error');
       setVerifyMessage(err instanceof Error ? err.message : 'Código inválido ou expirado.');
@@ -364,7 +364,7 @@ function LoginPageContent() {
     try {
       if (mode === 'login') {
         await login(email, password);
-        router.push('/');
+        router.push('/workspace');
       } else {
         await api.auth.register(email, name, password, phone);
         setView('verify');

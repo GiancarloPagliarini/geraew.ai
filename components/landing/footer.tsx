@@ -25,9 +25,9 @@ const SOCIAL = [
 
 export function Footer() {
   return (
-    <footer className="border-t border-[#f3f0ed]/[0.04] bg-landing-bg py-16 lg:py-20">
+    <footer className="border-t border-[#f3f0ed]/[0.04] bg-landing-bg py-12 sm:py-16 lg:py-20">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-12 md:gap-8">
+        <div className="grid grid-cols-1 gap-8 sm:gap-10 md:grid-cols-12 md:gap-8">
           {/* Brand — wider column */}
           <div className="md:col-span-4">
             <div className="flex items-center gap-2.5">
@@ -35,7 +35,7 @@ export function Footer() {
                 <Sparkles className="h-4 w-4 text-landing-accent" />
               </div>
               <span className="font-sora text-[17px] font-bold tracking-tight text-landing-text">
-                GeraEW
+                Geraew
               </span>
             </div>
             <p className="mt-5 max-w-[260px] text-[14px] leading-relaxed text-landing-text-muted">
@@ -117,8 +117,8 @@ export function Footer() {
         </div>
 
         {/* Bottom */}
-        <div className="mt-14 border-t border-[#f3f0ed]/[0.04] pt-8 text-center text-[13px] text-landing-text-muted">
-          &copy; 2026 GeraEW. Todos os direitos reservados.
+        <div className="mt-10 border-t border-[#f3f0ed]/[0.04] pt-6 sm:mt-14 sm:pt-8 text-center text-[13px] text-landing-text-muted">
+          &copy; 2026 Geraew. Todos os direitos reservados.
         </div>
       </div>
     </footer>

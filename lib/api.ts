@@ -831,6 +831,9 @@ export const api = {
     list(accessToken: string) {
       return authRequest<Plan[]>('/api/v1/plans', accessToken);
     },
+    listPublic() {
+      return request<Plan[]>('/api/v1/plans');
+    },
   },
 
   promptEnhancer: {

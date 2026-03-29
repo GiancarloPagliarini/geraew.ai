@@ -1,40 +1,69 @@
 "use client";
 
-import { useState } from "react";
-import { Eye, ArrowRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+import { ArrowRight } from "lucide-react";
 import { useScrollReveal } from "./use-scroll-reveal";
+import { useAuth } from "@/lib/auth-context";
 
-type Category = "all" | "images" | "videos" | "faceswap";
-
-const TABS: { label: string; value: Category }[] = [
-  { label: "Todos", value: "all" },
-  { label: "Imagens", value: "images" },
-  { label: "Vídeos", value: "videos" },
-  { label: "Face Swap", value: "faceswap" },
+const ITEMS: { src: string; type: "image" | "video" }[] = [
+  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmnb5y9jy002ili0166936754/155ad5c2-f554-475b-b8b8-c5c64a639a6b/output_3.mp4", type: "video" },
+  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmnb5jfwu001vli01vx5wj5co/115636b7-dfdd-426c-96fa-34251c82e91b/output_0.png", type: "image" },
+  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmn84dfd900o4rv017s3mkxua/a8cd3fd8-ac78-49a3-ad43-2963588ccaab/output_0.png", type: "image" },
+  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmn5h10lz002os7015ezt1rk8/0a0ec4b5-b6e5-481a-89c7-1f36d529febd/output_0.mp4", type: "video" },
+  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmmygp8wl000sml01l4h6vteq/162b05b9-0e95-4799-ba90-6544efa9acd1/output_0.png", type: "image" },
+  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmn75brpl0092s101g088osyw/abbc63ee-8331-4bdf-b416-73e5393c7de3/output_0.png", type: "image" },
+  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmn71sh8q004cs101oyir1v3i/a8484cfa-7c66-4d26-9ca6-e7fb14d4e962/output_0.png", type: "image" },
+  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmmv24p4y00wdq201jad39azh/ed291ab0-d3ef-45d6-9ed8-cf1887a54a76/output_0.mp4", type: "video" },
+  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmmptwwks00j6qu018a0f0gg7/cf0f42c0-d71d-4df6-b6ec-0dd41b727c05/output_0.mp4", type: "video" },
 ];
 
-/* TODO: SUBSTITUIR POR IMAGENS REAIS */
-const ITEMS: { id: number; cat: Category; ratio: string }[] = [
-  { id: 1, cat: "images", ratio: "3/4" },
-  { id: 2, cat: "videos", ratio: "1/1" },
-  { id: 3, cat: "faceswap", ratio: "3/4" },
-  { id: 4, cat: "images", ratio: "4/3" },
-  { id: 5, cat: "videos", ratio: "3/4" },
-  { id: 6, cat: "images", ratio: "1/1" },
-  { id: 7, cat: "faceswap", ratio: "3/4" },
-  { id: 8, cat: "videos", ratio: "4/3" },
-  { id: 9, cat: "images", ratio: "3/4" },
-];
+function LazyVideo({ src }: { src: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
 
-export function Gallery() {
-  const [active, setActive] = useState<Category>("all");
-  const { ref, isVisible } = useScrollReveal();
-
-  const filtered = active === "all" ? ITEMS : ITEMS.filter((i) => i.cat === active);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "300px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <section id="resultados" className="bg-landing-bg-secondary py-28 lg:py-36">
+    <div ref={ref} className="h-full w-full">
+      {visible ? (
+        <video
+          src={src}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <div className="h-full w-full animate-pulse bg-[#f3f0ed]/[0.03]" />
+      )}
+    </div>
+  );
+}
+
+export function Gallery() {
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
+  const { ref, isVisible } = useScrollReveal();
+
+  return (
+    <section id="resultados" className="bg-landing-bg-secondary py-16 sm:py-28 lg:py-36">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         {/* Header */}
         <div
@@ -48,67 +77,46 @@ export function Gallery() {
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-landing-accent">
             Galeria
           </span>
-          <h2 className="mt-5 font-sora text-3xl font-bold tracking-tight text-landing-text sm:text-4xl lg:text-[44px]">
-            Veja o que já está sendo criado com a GeraEW.
+          <h2 className="mt-4 font-sora text-[26px] font-bold tracking-tight text-landing-text sm:mt-5 sm:text-3xl lg:text-[44px]">
+            Veja o que já está sendo criado com a Geraew.
           </h2>
-          <p className="mt-5 text-[17px] leading-relaxed text-landing-text-secondary">
+          <p className="mt-3.5 text-[15px] leading-relaxed text-landing-text-secondary sm:mt-5 sm:text-[17px]">
             Cada imagem e vídeo abaixo foi gerado 100% por inteligência
             artificial dentro da nossa plataforma.
           </p>
         </div>
 
-        {/* Tabs */}
-        <div className="mt-12 flex flex-wrap justify-center gap-2">
-          {TABS.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setActive(tab.value)}
-              className={cn(
-                "rounded-lg px-4 py-2 text-[13px] font-medium transition-all duration-300",
-                active === tab.value
-                  ? "bg-landing-accent text-[#1a2123]"
-                  : "text-landing-text-muted hover:bg-[#f3f0ed]/[0.04] hover:text-landing-text",
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
         {/* Masonry grid */}
-        <div className="mt-10 columns-2 gap-4 sm:columns-3 lg:gap-5">
-          {filtered.map((item) => (
+        <div className="mt-8 columns-2 gap-3 sm:mt-12 sm:columns-3 sm:gap-4 lg:gap-5">
+          {ITEMS.map((item, i) => (
             <div
-              key={item.id}
-              className="group mb-4 overflow-hidden rounded-xl border border-[#f3f0ed]/[0.04] bg-landing-card break-inside-avoid transition-all duration-400 hover:border-landing-accent/15 lg:mb-5"
-              style={{ aspectRatio: item.ratio }}
+              key={i}
+              className="group mb-3 overflow-hidden rounded-xl sm:mb-4 border border-[#f3f0ed]/[0.04] bg-landing-card break-inside-avoid transition-all duration-400 hover:border-landing-accent/15 lg:mb-5"
             >
-              {/* TODO: SUBSTITUIR POR IMAGENS REAIS */}
-              <div className="relative flex h-full items-center justify-center bg-gradient-to-br from-landing-card to-landing-bg">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-landing-accent/[0.06]" />
-                  <span className="text-[11px] text-landing-text-muted">
-                    Resultado {item.id}
-                  </span>
-                </div>
-                {/* Hover overlay */}
-                <div className="absolute inset-0 flex items-center justify-center bg-[#141a1c]/60 opacity-0 backdrop-blur-sm transition-opacity duration-400 group-hover:opacity-100">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f3f0ed]/20 bg-[#f3f0ed]/10">
-                    <Eye className="h-4 w-4 text-landing-text" />
-                  </div>
-                </div>
-              </div>
+              {item.type === "video" ? (
+                <LazyVideo src={item.src} />
+              ) : (
+                <Image
+                  src={item.src}
+                  alt={`Resultado ${i + 1}`}
+                  width={400}
+                  height={500}
+                  loading="lazy"
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
+                  className="h-full w-full object-cover"
+                />
+              )}
             </div>
           ))}
         </div>
 
         {/* CTA */}
-        <div className="mt-14 flex justify-center">
+        <div className="mt-10 flex justify-center sm:mt-14">
           <a
-            href="https://app.geraew.com"
-            className="group inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-7 py-3.5 text-[14px] font-bold text-[#1a2123] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_24px_rgba(162,221,0,0.3)] hover:brightness-110"
+            href="/workspace"
+            className="group inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-6 py-3 text-[13px] font-bold text-[#1a2123] sm:px-7 sm:py-3.5 sm:text-[14px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_24px_rgba(162,221,0,0.3)] hover:brightness-110"
           >
-            Crie o seu agora — Testar Grátis
+            {isLoggedIn ? "Acessar Workspace" : "Crie o seu agora — Testar Grátis"}
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
           </a>
         </div>

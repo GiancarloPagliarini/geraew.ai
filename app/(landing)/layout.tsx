@@ -1,3 +1,4 @@
+
 import type { Metadata } from "next";
 import { Sora, DM_Sans } from "next/font/google";
 
@@ -17,11 +18,11 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title:
-    "GeraEW — Crie Influencers Digitais com IA | Imagens e Vídeos Ultra-Realistas",
+    "Geraew — Crie Influencers Digitais com IA | Imagens e Vídeos Ultra-Realistas",
   description:
     "Plataforma de inteligência artificial para criar influencers digitais, imagens e vídeos ultra-realistas. Sem aparecer, sem estúdio, sem equipe. Comece grátis.",
   openGraph: {
-    title: "GeraEW — Crie Influencers Digitais com IA",
+    title: "Geraew — Crie Influencers Digitais com IA",
     description:
       "Gere imagens e vídeos ultra-realistas com IA. Sem aparecer, sem estúdio. Comece grátis.",
     type: "website",
