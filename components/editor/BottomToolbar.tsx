@@ -1,6 +1,6 @@
 'use client';
 
-import { AudioWaveform, Fullscreen, Hand, HelpCircle, ImageIcon, LayoutGrid, Minus, MousePointer2, PersonStanding, Plus, Repeat2, Shirt, Trash2, Video } from 'lucide-react';
+import { AudioWaveform, Fullscreen, Hand, HelpCircle, ImageIcon, LayoutGrid, Minus, MousePointer2, PersonStanding, Plus, Repeat2, Shirt, Trash2, Video, Wrench, X } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useEditor } from '@/lib/editor-context';
+import { useState } from 'react';
 
 interface BottomToolbarProps {
   zoom: number;
@@ -45,11 +46,29 @@ export function BottomToolbar({
   onFitView,
 }: BottomToolbarProps) {
   const { leftPanelOpen } = useEditor();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <TooltipProvider>
-      <div className={`pointer-events-none absolute top-3 left-1/2 z-50 w-[calc(100%-1rem)] -translate-x-1/2 sm:top-auto sm:bottom-5 sm:w-auto ${leftPanelOpen ? 'hidden sm:block' : ''}`}>
-        <div className="pointer-events-auto flex items-center justify-center gap-0.5 rounded-full border border-[#f3f0ed]/[0.08] bg-[#1a2123]/90 px-1.5 py-1.5 shadow-2xl backdrop-blur-md sm:px-2">
+      {/* Mobile toggle button */}
+      <button
+        onClick={() => setMobileOpen((v) => !v)}
+        className={`pointer-events-auto absolute bottom-5 left-1/2 z-50 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full border border-[#a2dd00]/40 bg-[#1a2123]/90 shadow-[0_0_20px_rgba(162,221,0,0.25)] backdrop-blur-md transition-all sm:hidden ${mobileOpen || leftPanelOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+      >
+        <Wrench className="h-4.5 w-4.5 text-[#f3f0ed]/60" />
+      </button>
+
+      <div className={`pointer-events-none absolute top-3 left-1/2 z-50 w-[calc(100%-1rem)] -translate-x-1/2 sm:top-auto sm:bottom-5 sm:w-auto ${leftPanelOpen ? 'hidden sm:block' : ''} ${!mobileOpen ? 'hidden sm:block' : ''}`}>
+        <div className="pointer-events-auto relative flex items-center justify-center gap-0.5 rounded-full border border-[#f3f0ed]/[0.08] bg-[#1a2123]/90 px-1.5 py-1.5 shadow-2xl backdrop-blur-md sm:px-2">
+
+          {/* Mobile close button */}
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="flex h-7 w-7 items-center justify-center rounded-full text-[#f3f0ed]/40 transition-all hover:bg-[#f3f0ed]/10 hover:text-[#f3f0ed] sm:hidden"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <div className="mx-0.5 h-4 w-px bg-[#f3f0ed]/[0.08] sm:hidden" />
 
           {/* Mode toggle — Hand / Pointer */}
           <ModeButton

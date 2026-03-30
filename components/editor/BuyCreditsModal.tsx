@@ -34,7 +34,7 @@ export function BuyCreditsModal({ onClose }: BuyCreditsModalProps) {
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="relative mx-4 flex max-h-[90vh] w-full max-w-6xl flex-col gap-4 overflow-y-auto sidebar-scroll rounded-2xl border border-[#f3f0ed]/8 bg-[#1a2123] p-4 shadow-2xl sm:gap-6 sm:overflow-visible sm:p-6">
+      <div className="relative mx-4 flex max-h-[90vh] w-full max-w-6xl flex-col gap-4 overflow-y-auto sidebar-scroll rounded-2xl border border-[#f3f0ed]/8 bg-[#1a2123] p-4 shadow-2xl sm:gap-6 sm:p-6">
 
         {/* Close button */}
         <button

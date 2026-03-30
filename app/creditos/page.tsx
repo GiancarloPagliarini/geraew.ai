@@ -20,6 +20,7 @@ import {
   Flame,
   Video,
   BadgePercent,
+  CircleOff,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLoginModal } from '@/lib/login-modal-context';
@@ -279,7 +280,7 @@ function CreditosPageContent() {
         </div>
       )}
 
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-12 px-4 py-10">
+      <div className="mx-auto flex w-full max-w-360 flex-col gap-12 px-4 py-10">
 
         {/* -- Free video generations banner -- */}
         {balance && balance.freeVeoGenerationsRemaining > 0 && (
@@ -391,7 +392,7 @@ function CreditosPageContent() {
                   <>
                     <span className="flex items-center gap-1.5"><Shield className="h-3 w-3" />Garantia de 7 dias</span>
                     <span className="flex items-center gap-1.5"><Lock className="h-3 w-3" />Pagamento seguro</span>
-                    <span className="flex items-center gap-1.5"><Zap className="h-3 w-3" />Cancele quando quiser</span>
+                    <span className="flex items-center gap-1.5"><CircleOff className="h-3 w-3" />Cancele quando quiser</span>
                   </>
                 ) : (
                   <>

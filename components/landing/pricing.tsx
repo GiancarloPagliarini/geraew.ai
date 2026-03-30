@@ -72,7 +72,7 @@ function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) 
       {/* Popular badge */}
       {isPopular && (
         <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
-          <div className="flex items-center gap-1.5 rounded-full bg-landing-accent px-4 py-1 shadow-[0_0_20px_rgba(162,221,0,0.3)]">
+          <div className="flex items-center gap-1.5 rounded-full bg-landing-accent px-2.5 py-1 shadow-[0_0_20px_rgba(162,221,0,0.3)]">
             <Sparkles className="h-3 w-3 text-[#141a1c]" />
             <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#141a1c]">
               Mais Popular
@@ -147,8 +147,9 @@ function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) 
 
         {/* Social proof */}
         {socialProof && (
-          <p className="mt-2.5 text-[11px] font-medium text-landing-accent/70">
-            {socialProof}
+          <p className="mt-2.5 flex items-center gap-1.5 text-[11px] font-medium text-landing-accent/70">
+            <socialProof.icon className="h-3.5 w-3.5" />
+            {socialProof.text}
           </p>
         )}
 
@@ -273,7 +274,7 @@ export function Pricing() {
           );
         setPlans(sorted);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 

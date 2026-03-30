@@ -1,4 +1,6 @@
 import type { Plan, CreditPackage } from './api';
+import type { LucideIcon } from 'lucide-react';
+import { Flame, Zap, Trophy, Users, TestTubeDiagonal } from 'lucide-react';
 
 export const PLAN_ORDER = ['free', 'starter', 'creator', 'pro', 'studio'];
 
@@ -114,10 +116,12 @@ export const PLAN_DISCOUNT_LABELS: Record<string, string> = {
   studio: '28% OFF',
 };
 
-export const PLAN_SOCIAL_PROOF: Record<string, string> = {
-  creator: '🔥 Escolha de 68% dos criadores',
-  pro: '⚡ Para quem leva a sério',
-  studio: '🏆 Para equipes e agências',
+export const PLAN_SOCIAL_PROOF: Record<string, { icon: LucideIcon; text: string }> = {
+  free: { icon: TestTubeDiagonal, text: 'Teste nossa capacidade!' },
+  starter: { icon: Users, text: 'Ideal para projetos pessoais' },
+  creator: { icon: Flame, text: 'Escolha de 68% dos criadores' },
+  pro: { icon: Zap, text: 'Para quem leva a sério' },
+  studio: { icon: Trophy, text: 'Para equipes e agências' },
 };
 
 /* ── Price formatting ── */
@@ -142,6 +146,7 @@ export function getPlanFeatures(plan: Plan): string[] {
     features.push('350 créditos');
     features.push('Suporte por e-mail');
     features.push('7 dias de galeria');
+    features.push('Teste sem compromisso');
     return features;
   }
 

@@ -69,7 +69,7 @@ export function TopNavbar() {
               <div className="h-8 w-8 animate-pulse rounded-full bg-[#f3f0ed]/10" />
             </div>
           ) : user ? (
-            <>
+            <div className="navbar-fade-in flex items-center gap-1.5 sm:gap-2">
               {/* Credit badge */}
               <div className="flex items-center gap-1.5 rounded-full border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 px-2 py-1.5 sm:px-3">
                 <Coins className="h-3.5 w-3.5 text-[#a2dd00]" />
@@ -108,7 +108,7 @@ export function TopNavbar() {
                 <Gift className="h-3.5 w-3.5" />
                 Poste e ganhe
               </button>
-            </>
+            </div>
           ) : (
             /* Login dropdown for unauthenticated users */
             <div ref={menuRef} className="relative">

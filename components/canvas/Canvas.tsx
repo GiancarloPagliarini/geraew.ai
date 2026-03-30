@@ -200,6 +200,29 @@ function CanvasContent() {
         .toast-animate {
           animation: toast-in-out 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
+        @keyframes panel-enter {
+          0%   { opacity: 0; transform: scale(0.92) translateY(12px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .panel-enter-animate {
+          animation: panel-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        @keyframes empty-card-in {
+          0%   { opacity: 0; transform: translateY(20px) scale(0.9); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .empty-card-animate {
+          opacity: 0;
+          animation: empty-card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes empty-header-in {
+          0%   { opacity: 0; transform: translateY(12px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .empty-header-animate {
+          opacity: 0;
+          animation: empty-header-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
       `}</style>
 
       <CanvasContextMenu onAddPanel={handleAddPanel}>
@@ -305,74 +328,36 @@ function CanvasContent() {
               alt="Geraew AI"
               width={64}
               height={64}
-              className="rounded-md animate-pulse"
+              className="empty-header-animate rounded-md"
+              style={{ animationDelay: '0.1s' }}
             />
-            <div className="text-center">
+            <div className="empty-header-animate text-center" style={{ animationDelay: '0.25s' }}>
               <h2 className="text-md font-semibold text-[#f3f0ed]">Tudo pronto!</h2>
               <p className="mt-1 text-sm text-[#f3f0ed]/35">
                 Escolha o que você deseja criar
               </p>
             </div>
             <div className="grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto sm:items-center sm:justify-center sm:gap-4">
-              <button
-                onClick={() => handleAddPanel('generate-image')}
-                className="group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">
-                  <ImageIcon className="h-5 w-5 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00] sm:h-6 sm:w-6" />
-                </div>
-                <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">Gerar imagem</span>
-              </button>
-
-              <button
-                onClick={() => handleAddPanel('create-influencer')}
-                className="group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">
-                  <PersonStanding className="h-5 w-5 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00] sm:h-6 sm:w-6" />
-                </div>
-                <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">Criar influencer</span>
-              </button>
-
-              <button
-                onClick={() => handleAddPanel('generate-video')}
-                className="group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">
-                  <Video className="h-5 w-5 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00] sm:h-6 sm:w-6" />
-                </div>
-                <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">Gerar vídeo</span>
-              </button>
-
-              <button
-                onClick={() => handleAddPanel('motion-control')}
-                className="group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">
-                  <AudioWaveform className="h-5 w-5 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00] sm:h-6 sm:w-6" />
-                </div>
-                <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">Copiar movimentos</span>
-              </button>
-
-              <button
-                onClick={() => handleAddPanel('virtual-try-on')}
-                className="group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">
-                  <Shirt className="h-5 w-5 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00] sm:h-6 sm:w-6" />
-                </div>
-                <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">Provador Virtual</span>
-              </button>
-
-              <button
-                onClick={() => handleAddPanel('face-swap')}
-                className="group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">
-                  <Repeat2 className="h-5 w-5 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00] sm:h-6 sm:w-6" />
-                </div>
-                <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">Troca de Rosto</span>
-              </button>
+              {[
+                { type: 'generate-image', icon: ImageIcon, label: 'Gerar imagem' },
+                { type: 'create-influencer', icon: PersonStanding, label: 'Criar influencer' },
+                { type: 'generate-video', icon: Video, label: 'Gerar vídeo' },
+                { type: 'motion-control', icon: AudioWaveform, label: 'Copiar movimentos' },
+                { type: 'virtual-try-on', icon: Shirt, label: 'Provador Virtual' },
+                { type: 'face-swap', icon: Repeat2, label: 'Troca de Rosto' },
+              ].map((item, i) => (
+                <button
+                  key={item.type}
+                  onClick={() => handleAddPanel(item.type)}
+                  className="empty-card-animate group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
+                  style={{ animationDelay: `${0.35 + i * 0.08}s` }}
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">
+                    <item.icon className="h-5 w-5 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00] sm:h-6 sm:w-6" />
+                  </div>
+                  <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">{item.label}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>

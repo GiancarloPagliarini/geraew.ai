@@ -29,7 +29,7 @@ const STORAGE_KEY_PREFIX: Partial<Record<string, string>> = {
   'face-swap': 'geraew-panel-face-swap-',
 };
 
-export function PanelNode({ id, data }: NodeProps) {
+export function PanelNode({ id, data, selected }: NodeProps) {
   const { setNodes, getNodes } = useReactFlow();
   const { selectedNodeId, setSelectedNodeId, setNodePanelType } = useEditor();
 
@@ -87,26 +87,26 @@ export function PanelNode({ id, data }: NodeProps) {
     setNodePanelType(newId, panelType);
   }, [id, data.panelType, getNodes, setNodes, setNodePanelType]);
 
-  if (data.panelType === 'generate-image') {
-    return <GenerateImagePanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />;
-  }
-  if (data.panelType === 'create-influencer') {
-    return <CreateInfluencerPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />;
-  }
-  if (data.panelType === 'generate-video') {
-    return <GenerateVideoPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />;
-  }
-  if (data.panelType === 'motion-control') {
-    return <MotionControlPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />;
-  }
-  if (data.panelType === 'virtual-try-on') {
-    return <VirtualTryOnPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />;
-  }
-  if (data.panelType === 'face-swap') {
-    return <FaceSwapPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />;
-  }
-  // if (data.panelType === 'generic') {
-  //   return <GenericPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />;
-  // }
-  return null;
+  const isSelected = selected || selectedNodeId === id;
+
+  const panelMap: Record<string, React.ReactNode> = {
+    'generate-image': <GenerateImagePanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
+    'create-influencer': <CreateInfluencerPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
+    'generate-video': <GenerateVideoPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
+    'motion-control': <MotionControlPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
+    'virtual-try-on': <VirtualTryOnPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
+    'face-swap': <FaceSwapPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
+  };
+
+  const panel = panelMap[data.panelType as string];
+  if (!panel) return null;
+
+  return (
+    <div
+      className="panel-enter-animate rounded-2xl transition-shadow duration-200"
+      style={isSelected ? { boxShadow: '0 0 0 1.5px rgba(162, 221, 0, 0.45)' } : undefined}
+    >
+      {panel}
+    </div>
+  );
 }

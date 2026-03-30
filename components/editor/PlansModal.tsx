@@ -10,6 +10,7 @@ import {
   Shield,
   Flame,
   BadgePercent,
+  CircleOff,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
@@ -172,7 +173,7 @@ export function PlansModal({ onClose }: PlansModalProps) {
                   Garantia de 7 dias
                 </span>
                 <span className="flex items-center gap-1">
-                  <Zap className="h-2.5 w-2.5" />
+                  <CircleOff className="h-2.5 w-2.5" />
                   Cancele quando quiser
                 </span>
               </>
