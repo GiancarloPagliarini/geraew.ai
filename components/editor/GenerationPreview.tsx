@@ -25,6 +25,8 @@ interface GenerationPreviewProps {
   generatedImageUrl?: string | null;
   /** Called when the <img> onLoad fires — set imageVisible(true) here */
   onImageLoad?: () => void;
+  /** Called when the <img> fails to load */
+  onImageError?: () => void;
   imageRef?: React.Ref<HTMLImageElement>;
   onImageClick?: () => void;
   onImageDragStart?: (e: React.DragEvent<HTMLImageElement>) => void;
@@ -53,6 +55,7 @@ export function GenerationPreview({
   genState,
   imageVisible,
   onImageLoad,
+  onImageError,
   progress,
   generatedImageUrl,
   imageRef,
@@ -145,6 +148,7 @@ export function GenerationPreview({
               onClick={onImageClick}
               onDragStart={onImageDragStart}
               onLoad={onImageLoad}
+              onError={onImageError}
               style={{
                 transition: 'filter 0.8s ease, opacity 1.2s ease',
                 opacity: imageVisible ? 1 : 0,

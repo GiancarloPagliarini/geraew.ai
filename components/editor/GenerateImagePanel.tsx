@@ -176,14 +176,17 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Resume in-progress generation on mount (e.g. after page reload)
+  // Resume in-progress generation on mount or when accessToken becomes available
+  const resumedRef = useRef(false);
   useEffect(() => {
+    if (resumedRef.current) return;
     if (stored?.genState === 'generating' && stored?.generationId && accessToken) {
+      resumedRef.current = true;
       startProgressAnimation(70);
       startPollingFallback(stored.generationId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [accessToken]);
 
   // Save form + result state whenever they change
   useEffect(() => {
@@ -233,6 +236,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sseControllerRef = useRef<AbortController | null>(null);
   const isFinishedRef = useRef(false);
+  const imgRetryCountRef = useRef(0);
 
   function clearProgressTimer() {
     if (progressIntervalRef.current) {
@@ -356,6 +360,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   function finishWithImage(url: string, genId?: string) {
     if (isFinishedRef.current) return;
     isFinishedRef.current = true;
+    imgRetryCountRef.current = 0;
     clearProgressTimer();
     clearMsgTimer();
     clearPollTimer();
@@ -369,6 +374,27 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
       setNodeImage(nodeId, url);
       // imageVisible is set via onLoad on the <img> element
     }, 380);
+  }
+
+  function handleImageError() {
+    if (genState !== 'done' || !generatedImageUrl) return;
+    const attempt = imgRetryCountRef.current;
+    if (attempt < 3) {
+      imgRetryCountRef.current = attempt + 1;
+      const delay = 1000 * (attempt + 1);
+      setTimeout(() => {
+        // Force <img> to retry by appending a cache-buster
+        setGeneratedImageUrl((prev) => {
+          if (!prev) return prev;
+          const url = new URL(prev);
+          url.searchParams.set('_r', String(Date.now()));
+          return url.toString();
+        });
+      }, delay);
+    } else {
+      // After 3 retries, force-show the image area so the aurora disappears
+      setImageVisible(true);
+    }
   }
 
   function startPollingFallback(id: string) {
@@ -445,52 +471,70 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
 
     startProgressAnimation();
 
-    try {
-      const { id, creditsConsumed } = await api.generations.generateImage(accessToken, {
-        prompt: finalPrompt,
-        model,
-        resolution: qualityToResolution(quality),
-        aspect_ratio: proportionToAspectRatio(proportion),
-        mime_type: 'image/png',
-        ...(attachedImages.length > 0 && {
-          images: attachedImages.map(({ base64, mime_type }) => ({ base64, mime_type })),
-        }),
-      });
+    const MAX_QUEUE_RETRIES = 10;
+    const QUEUE_RETRY_DELAY = 4000;
 
-      consumeCredits(creditsConsumed);
-      setGenerationId(id);
+    for (let attempt = 0; attempt <= MAX_QUEUE_RETRIES; attempt++) {
+      try {
+        const { id, creditsConsumed } = await api.generations.generateImage(accessToken, {
+          prompt: finalPrompt,
+          model,
+          resolution: qualityToResolution(quality),
+          aspect_ratio: proportionToAspectRatio(proportion),
+          mime_type: 'image/png',
+          ...(attachedImages.length > 0 && {
+            images: attachedImages.map(({ base64, mime_type }) => ({ base64, mime_type })),
+          }),
+        });
 
-      // Polling always runs alongside SSE as a safety net (SSE may silently die on mobile)
-      startPollingFallback(id);
+        consumeCredits(creditsConsumed);
+        setGenerationId(id);
 
-      sseControllerRef.current = listenGeneration(id, accessToken, {
-        onCompleted: ({ generationId: genId, outputUrls }) => {
-          finishWithImage(outputUrls[0], genId);
-          refetchCredits();
-          api.generations.get(accessToken!, genId).then(prependToGallery).catch(() => { });
-        },
-        onFailed: ({ errorMessage, creditsRefunded }) => {
-          clearProgressTimer();
-          clearMsgTimer();
-          clearPollTimer();
-          clearSSE();
-          setGenState('idle');
-          setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: 'Erro ao gerar imagem.' }));
-          refetchCredits();
-        },
-        onError: () => {
-          // Polling already running — nothing extra needed
-        },
-      });
-    } catch (err) {
-      clearProgressTimer();
-      clearMsgTimer();
-      setGenState('idle');
-      if (err instanceof ApiError && [400, 402, 403].includes(err.status)) {
-        setPlansModalOpen(true);
+        // Polling always runs alongside SSE as a safety net (SSE may silently die on mobile)
+        startPollingFallback(id);
+
+        sseControllerRef.current = listenGeneration(id, accessToken, {
+          onCompleted: ({ generationId: genId, outputUrls }) => {
+            finishWithImage(outputUrls[0], genId);
+            refetchCredits();
+            api.generations.get(accessToken!, genId).then(prependToGallery).catch(() => { });
+          },
+          onFailed: ({ errorMessage, creditsRefunded }) => {
+            clearProgressTimer();
+            clearMsgTimer();
+            clearPollTimer();
+            clearSSE();
+            setGenState('idle');
+            setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: 'Erro ao gerar imagem.' }));
+            refetchCredits();
+          },
+          onError: () => {
+            // Polling already running — nothing extra needed
+          },
+        });
+        return; // Success — exit the retry loop
+      } catch (err) {
+        // 429 MAX_CONCURRENT_REACHED — wait for a slot and retry automatically
+        if (err instanceof ApiError && err.status === 429 && attempt < MAX_QUEUE_RETRIES) {
+          setLoadingMsg('AGUARDANDO VAGA NA FILA...');
+          await new Promise<void>((resolve) => setTimeout(resolve, QUEUE_RETRY_DELAY));
+          continue;
+        }
+
+        clearProgressTimer();
+        clearMsgTimer();
+        setGenState('idle');
+        if (err instanceof ApiError && [400, 402, 403].includes(err.status)) {
+          setPlansModalOpen(true);
+          return;
+        }
+        if (err instanceof ApiError && err.status === 429) {
+          setErrorMsg(showGenerationError({ errorMessage: 'Limite de gerações simultâneas atingido. Tente novamente em instantes.', fallback: 'Erro ao iniciar geração.' }));
+          return;
+        }
+        setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: 'Erro ao iniciar geração.' }));
         return;
       }
-      setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: 'Erro ao iniciar geração.' }));
     }
   }
 
@@ -667,6 +711,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
             genState={genState}
             imageVisible={imageVisible}
             onImageLoad={() => setImageVisible(true)}
+            onImageError={handleImageError}
             progress={progress}
             generatedImageUrl={generatedImageUrl}
             imageRef={draggableImgRef}
