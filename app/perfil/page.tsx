@@ -25,12 +25,14 @@ import {
   Settings,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useLoginModal } from '@/lib/login-modal-context';
 import { useEffect, useState } from 'react';
 import { ManageSubscriptionModal } from '@/components/editor/ManageSubscriptionModal';
 
 export default function PerfilPage() {
   const router = useRouter();
   const { user, accessToken, loading: authLoading } = useAuth();
+  const { openLoginModal } = useLoginModal();
   const loadingMsg = useLoadingMessage('perfil');
   const queryClient = useQueryClient();
   const [showManageModal, setShowManageModal] = useState(false);
@@ -58,7 +60,7 @@ export default function PerfilPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/login');
+      openLoginModal();
     }
   }, [authLoading, user, router]);
 

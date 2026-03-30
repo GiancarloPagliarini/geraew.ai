@@ -21,6 +21,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useLoginModal } from '@/lib/login-modal-context';
 import { useEffect, useState } from 'react';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -177,12 +178,13 @@ function Pagination({
 export default function UsoPage() {
   const router = useRouter();
   const { user, accessToken, loading: authLoading } = useAuth();
+  const { openLoginModal } = useLoginModal();
   const loadingMsg = useLoadingMessage('uso');
   const [page, setPage] = useState(1);
   const LIMIT = 20;
 
   useEffect(() => {
-    if (!authLoading && !user) router.push('/login');
+    if (!authLoading && !user) openLoginModal();
   }, [authLoading, user, router]);
 
   const { data, isLoading, isFetching } = useQuery({

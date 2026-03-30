@@ -1,4 +1,13 @@
-import { Sparkles, Instagram, Music2, MessageCircle } from "lucide-react";
+import { Instagram } from "lucide-react";
+import Image from "next/image";
+
+function TikTokIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z" />
+    </svg>
+  );
+}
 
 const PRODUCT = [
   { label: "Funcionalidades", href: "#funcionalidades" },
@@ -18,9 +27,8 @@ const LEGAL = [
 ];
 
 const SOCIAL = [
-  { icon: Instagram, href: "https://www.instagram.com/geraew.ai/", label: "Instagram" },
-  { icon: Music2, href: "https://www.tiktok.com/@geraew.ia", label: "TikTok" },
-  { icon: MessageCircle, href: "#", label: "Discord" },
+  { Icon: Instagram, href: "https://www.instagram.com/geraew.ai/", label: "Instagram" },
+  { Icon: TikTokIcon, href: "https://www.tiktok.com/@geraew.ia", label: "TikTok" },
 ];
 
 export function Footer() {
@@ -31,9 +39,14 @@ export function Footer() {
           {/* Brand — wider column */}
           <div className="md:col-span-4">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-landing-accent/15">
-                <Sparkles className="h-4 w-4 text-landing-accent" />
-              </div>
+              <Image
+                src="/logo_2.svg"
+                alt="Geraew"
+                width={130}
+                height={32}
+                className="h-8 w-auto"
+                priority
+              />
               <span className="font-sora text-[17px] font-bold tracking-tight text-landing-text">
                 Geraew
               </span>
@@ -54,7 +67,7 @@ export function Footer() {
                   aria-label={s.label}
                   className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#f3f0ed]/[0.06] text-landing-text-muted transition-all duration-300 hover:border-landing-accent/20 hover:text-landing-accent"
                 >
-                  <s.icon className="h-4 w-4" />
+                  <s.Icon className="h-4 w-4" />
                 </a>
               ))}
             </div>

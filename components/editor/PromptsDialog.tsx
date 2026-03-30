@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
+import { useLoginModal } from '@/lib/login-modal-context';
 
 interface Prompt {
   id: string;
@@ -466,6 +467,7 @@ interface PromptsDialogProps {
 export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
   const { requestPanelWithPrompt } = useEditor();
   const { user } = useAuth();
+  const { openLoginModal } = useLoginModal();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -473,7 +475,7 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
   function toggleCategory(categoryId: string) {
     if (!user) {
       toast.error('Faça login para ver os prompts', {
-        action: { label: 'Entrar', onClick: () => { window.location.href = '/login'; } },
+        action: { label: 'Entrar', onClick: () => { openLoginModal(); } },
       });
       return;
     }

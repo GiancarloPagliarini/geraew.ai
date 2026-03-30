@@ -1,25 +1,26 @@
 "use client";
 
+import { Clapperboard, ShoppingCart, Building2, Smartphone, LucideIcon } from "lucide-react";
 import { useScrollReveal } from "./use-scroll-reveal";
 
-const CASES = [
+const CASES: { icon: LucideIcon; title: string; desc: string }[] = [
   {
-    emoji: "🎬",
+    icon: Clapperboard,
     title: "Criadores de Conteúdo",
     desc: "Publique todos os dias sem mostrar o rosto. Crie uma persona que vira a identidade do seu canal e construa audiência real com conteúdo gerado por IA.",
   },
   {
-    emoji: "🛒",
+    icon: ShoppingCart,
     title: "Vendedores e Afiliados",
     desc: "Gere vídeos de review, unboxing e demonstração com influencers virtuais. Escale vendas no TikTok Shop, Instagram e qualquer plataforma sem depender de ninguém.",
   },
   {
-    emoji: "🏢",
+    icon: Building2,
     title: "Marcas e Agências",
     desc: "Produza UGC ilimitado sem contratar modelos ou influencers. Reduza custos de produção e tenha criativos novos todos os dias para campanhas.",
   },
   {
-    emoji: "📱",
+    icon: Smartphone,
     title: "Social Media Managers",
     desc: "Entregue mais resultados com menos tempo e custo. Crie conteúdo para múltiplas marcas usando personas diferentes para cada uma.",
   },
@@ -27,6 +28,7 @@ const CASES = [
 
 function Card({ c, i }: { c: (typeof CASES)[number]; i: number }) {
   const { ref, isVisible } = useScrollReveal();
+  const Icon = c.icon;
 
   return (
     <div
@@ -38,7 +40,9 @@ function Card({ c, i }: { c: (typeof CASES)[number]; i: number }) {
         transitionDelay: `${i * 100}ms`,
       }}
     >
-      <span className="text-[24px] sm:text-[28px]">{c.emoji}</span>
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-landing-accent/10 sm:h-12 sm:w-12">
+        <Icon className="h-5 w-5 text-landing-accent sm:h-6 sm:w-6" />
+      </div>
       <h3 className="mt-3.5 font-sora text-[16px] sm:mt-5 sm:text-[17px] font-semibold text-landing-text">
         {c.title}
       </h3>

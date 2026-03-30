@@ -5,10 +5,10 @@ import { Star } from "lucide-react";
 
 /* TODO: SUBSTITUIR POR NÚMEROS REAIS */
 const STATS = [
-  { value: 2000, label: "Criadores Ativos", prefix: "+" },
-  { value: 50000, label: "Imagens Geradas", prefix: "+" },
+  { value: 1500, label: "Criadores Ativos", prefix: "+" },
+  { value: 25000, label: "Imagens Geradas", prefix: "+" },
   { value: 5000, label: "Vídeos Criados", prefix: "+" },
-  { value: 49, label: "Avaliação Média", isRating: true },
+  // { value: 49, label: "Avaliação Média", isRating: true },
 ] as const;
 
 function Stat({

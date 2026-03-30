@@ -18,7 +18,7 @@ export default function LandingPage() {
       <Navbar />
       <HeroSection />
       <SocialProof />
-      <HowItWorks />
+      {/* <HowItWorks /> */}
       <Features />
       <Comparison />
       <Pricing />

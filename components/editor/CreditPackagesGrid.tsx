@@ -111,7 +111,7 @@ export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProp
               <div className={`absolute left-1/2 z-10 -translate-x-1/2 ${compact ? '-top-2.5' : '-top-3'}`}>
                 <div className={`flex items-center gap-1 rounded-full border border-[#f3f0ed]/15 bg-[#1a2123] shadow-lg ${compact ? 'px-3 py-0.5' : 'px-4 py-1'}`}>
                   <Flame className={`${compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} text-[#f3f0ed]/60`} />
-                  <span className={`font-bold uppercase tracking-[0.08em] text-[#f3f0ed] ${compact ? 'text-[8px]' : 'text-[10px]'}`}>
+                  <span className={`font-bold uppercase tracking-[0.08em] text-[#f3f0ed] ${compact ? 'text-[10px]' : 'text-[10px]'}`}>
                     Mais Popular
                   </span>
                 </div>
@@ -121,7 +121,7 @@ export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProp
               <div className={`absolute left-1/2 z-10 -translate-x-1/2 ${compact ? '-top-2.5' : '-top-3.5'}`}>
                 <div className={`flex items-center gap-1 rounded-full bg-[#a2dd00] shadow-[0_0_30px_rgba(162,221,0,0.4)] ${compact ? 'px-3 py-0.5' : 'px-5 py-1.5'}`}>
                   <Crown className={`${compact ? 'h-2.5 w-2.5' : 'h-3.5 w-3.5'} text-[#141a1c]`} />
-                  <span className={`font-extrabold uppercase tracking-[0.08em] text-[#141a1c] ${compact ? 'text-[8px]' : 'text-[11px]'}`}>
+                  <span className={`font-extrabold uppercase tracking-[0.08em] text-[#141a1c] ${compact ? 'text-[10px]' : 'text-[11px]'}`}>
                     Melhor Valor
                   </span>
                 </div>
@@ -139,9 +139,9 @@ export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProp
                   <PkgIcon className={`${compact ? 'h-3 w-3' : 'h-4 w-4'} ${isBest ? 'text-[#a2dd00]' : 'text-[#f3f0ed]/40'}`} />
                 </div>
                 <div>
-                  <h3 className={`font-bold text-[#f3f0ed] ${compact ? 'text-[12px]' : 'text-[15px]'}`}>{meta.label}</h3>
+                  <h3 className={`font-bold text-[#f3f0ed] ${compact ? 'text-[15px]' : 'text-[15px]'}`}>{meta.label}</h3>
                   {meta.description && (
-                    <span className={`text-[#f3f0ed]/30 ${compact ? 'text-[8px]' : 'text-[10px]'}`}>{meta.description}</span>
+                    <span className={`text-[#f3f0ed]/30 ${compact ? 'text-[11px]' : 'text-[10px]'}`}>{meta.description}</span>
                   )}
                 </div>
               </div>
@@ -150,16 +150,16 @@ export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProp
               <div className={compact ? 'mt-3' : 'mt-5 min-h-[55px]'}>
                 {discountPct > 0 && (
                   <div className={`flex items-center gap-1.5 ${compact ? 'mb-0.5' : 'mb-1'}`}>
-                    <span className={`text-[#f3f0ed]/25 line-through ${compact ? 'text-[10px]' : 'text-[12px]'}`}>
+                    <span className={`text-[#f3f0ed]/25 line-through ${compact ? 'text-[12px]' : 'text-[12px]'}`}>
                       R$ {(originalPrice / 100).toLocaleString('pt-BR')},{String(originalPrice % 100).padStart(2, '0')}
                     </span>
-                    <span className={`rounded-md bg-[#a2dd00]/15 font-bold text-[#a2dd00] ${compact ? 'px-1 py-0.5 text-[7px]' : 'px-1.5 py-0.5 text-[9px]'}`}>
+                    <span className={`rounded-md bg-[#a2dd00]/15 font-bold text-[#a2dd00] ${compact ? 'px-1 py-0.5 text-[10px]' : 'px-1.5 py-0.5 text-[9px]'}`}>
                       {discountPct}% OFF
                     </span>
                   </div>
                 )}
                 <div className="flex items-baseline gap-0.5">
-                  <span className={`font-extrabold leading-none tracking-tight ${compact ? 'text-[16px]' : 'text-[22px]'} ${
+                  <span className={`font-extrabold leading-none tracking-tight ${compact ? 'text-[22px]' : 'text-[22px]'} ${
                     isBest ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'
                   }`}>
                     R$ {priceInt.toLocaleString('pt-BR')},{priceCents}
@@ -173,18 +173,18 @@ export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProp
               }`}>
                 <Coins className={`${compact ? 'h-3 w-3' : 'h-4 w-4'} ${isBest ? 'text-[#a2dd00]' : 'text-[#f3f0ed]/40'}`} />
                 <div>
-                  <span className={`font-extrabold tabular-nums ${compact ? 'text-[12px]' : 'text-[16px]'} ${
+                  <span className={`font-extrabold tabular-nums ${compact ? 'text-[15px]' : 'text-[16px]'} ${
                     isBest ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'
                   }`}>
                     {pkg.credits.toLocaleString('pt-BR')}
                   </span>
-                  <span className={`ml-1 text-[#f3f0ed]/30 ${compact ? 'text-[9px]' : 'text-[11px]'}`}>créditos</span>
+                  <span className={`ml-1 text-[#f3f0ed]/30 ${compact ? 'text-[12px]' : 'text-[11px]'}`}>créditos</span>
                 </div>
               </div>
 
               {/* Savings callout */}
               {savingsPct > 0 && (
-                <p className={`font-medium text-[#a2dd00]/70 ${compact ? 'mt-1.5 text-[9px]' : 'mt-3 text-[11px]'}`}>
+                <p className={`font-medium text-[#a2dd00]/70 ${compact ? 'mt-1.5 text-[12px]' : 'mt-3 text-[11px]'}`}>
                   Economize {savingsPct}% por crédito
                 </p>
               )}
@@ -207,7 +207,7 @@ export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProp
                     >
                       <Check className={`${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'} ${isBest ? 'text-[#a2dd00]' : 'text-[#f3f0ed]/45'}`} />
                     </div>
-                    <span className={`leading-snug text-[#f3f0ed]/55 ${compact ? 'text-[10px]' : 'text-[12px]'}`}>{perk}</span>
+                    <span className={`leading-snug text-[#f3f0ed]/55 ${compact ? 'text-[12px]' : 'text-[12px]'}`}>{perk}</span>
                   </li>
                 ))}
               </ul>
@@ -218,7 +218,7 @@ export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProp
               <button
                 onClick={() => handlePurchase(pkg.id)}
                 disabled={!!purchasingId}
-                className={`flex w-full items-center justify-center gap-2 rounded-xl font-bold transition-all duration-300 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 ${compact ? 'mt-3 h-8 text-[11px]' : 'mt-6 h-11 text-[13px]'} ${
+                className={`flex w-full items-center justify-center gap-2 rounded-xl font-bold transition-all duration-300 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 ${compact ? 'mt-3 h-9 text-[13px]' : 'mt-6 h-11 text-[13px]'} ${
                   isBest
                     ? 'bg-[#a2dd00] text-[#141a1c] shadow-[0_4px_20px_rgba(162,221,0,0.3)] hover:shadow-[0_4px_30px_rgba(162,221,0,0.4)] hover:brightness-110'
                     : isPopular

@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useScrollReveal } from "./use-scroll-reveal";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useLoginModal } from "@/lib/login-modal-context";
 import { api, Plan } from "@/lib/api";
 import {
   PLAN_ORDER,
@@ -20,6 +21,7 @@ import {
 
 function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) {
   const { user } = useAuth();
+  const { openLoginModal } = useLoginModal();
   const isLoggedIn = !!user;
   const { ref, isVisible } = useScrollReveal();
   const isPopular = plan.slug === "creator";
@@ -219,20 +221,35 @@ function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) 
         <div className="flex-1" />
 
         {/* CTA */}
-        <a
-          href={isFree ? "/workspace" : `/login?plan=${plan.slug}`}
-          className={cn(
-            "mt-7 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[13px] font-bold transition-all duration-300",
-            isPopular
-              ? "bg-landing-accent text-[#141a1c] shadow-[0_0_0_1px_rgba(162,221,0,0.3)] hover:shadow-[0_0_28px_rgba(162,221,0,0.25)] hover:brightness-110"
-              : isFree
-                ? "bg-[#f3f0ed]/[0.06] text-[#f3f0ed]/70 hover:bg-[#f3f0ed]/[0.1] hover:text-[#f3f0ed]"
+        {isLoggedIn || isFree ? (
+          <a
+            href="/workspace"
+            className={cn(
+              "mt-7 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[13px] font-bold transition-all duration-300",
+              isPopular
+                ? "bg-landing-accent text-[#141a1c] shadow-[0_0_0_1px_rgba(162,221,0,0.3)] hover:shadow-[0_0_28px_rgba(162,221,0,0.25)] hover:brightness-110"
+                : isFree
+                  ? "bg-[#f3f0ed]/[0.06] text-[#f3f0ed]/70 hover:bg-[#f3f0ed]/[0.1] hover:text-[#f3f0ed]"
+                  : "border border-[#f3f0ed]/[0.08] text-[#f3f0ed]/70 hover:border-[#f3f0ed]/[0.15] hover:bg-[#f3f0ed]/[0.03] hover:text-[#f3f0ed]",
+            )}
+          >
+            {isLoggedIn ? "Acessar Workspace" : "Começar Grátis"}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </a>
+        ) : (
+          <button
+            onClick={() => openLoginModal(plan.slug)}
+            className={cn(
+              "mt-7 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[13px] font-bold transition-all duration-300",
+              isPopular
+                ? "bg-landing-accent text-[#141a1c] shadow-[0_0_0_1px_rgba(162,221,0,0.3)] hover:shadow-[0_0_28px_rgba(162,221,0,0.25)] hover:brightness-110"
                 : "border border-[#f3f0ed]/[0.08] text-[#f3f0ed]/70 hover:border-[#f3f0ed]/[0.15] hover:bg-[#f3f0ed]/[0.03] hover:text-[#f3f0ed]",
-          )}
-        >
-          {isLoggedIn ? "Acessar Workspace" : isFree ? "Começar Grátis" : `Assinar ${plan.name}`}
-          <ArrowRight className="h-3.5 w-3.5" />
-        </a>
+            )}
+          >
+            {`Assinar ${plan.name}`}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
     </div>
   );

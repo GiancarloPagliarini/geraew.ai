@@ -10,12 +10,14 @@ import { BuyCreditsModal } from './BuyCreditsModal';
 import { PlansModal } from './PlansModal';
 import { PostAndEarnModal } from './PostAndEarnModal';
 import { usePhoneVerification } from '@/lib/phone-verification-context';
+import { useLoginModal } from '@/lib/login-modal-context';
 
 export function TopNavbar() {
   const router = useRouter();
   const { credits, creditsLoading, creditsBalance } = useEditor();
   const { user, logout, loading: authLoading } = useAuth();
   const { openModal: openPhoneVerification } = usePhoneVerification();
+  const { openLoginModal } = useLoginModal();
   const [menuOpen, setMenuOpen] = useState(false);
   const [buyModalOpen, setBuyModalOpen] = useState(false);
   const [plansModalOpen, setPlansModalOpen] = useState(false);
@@ -37,7 +39,7 @@ export function TopNavbar() {
 
   function handleLogout() {
     logout();
-    router.push('/login');
+    router.push('/');
   }
 
   return (
@@ -91,10 +93,10 @@ export function TopNavbar() {
               {user.emailVerified && !user.phoneVerified && (
                 <button
                   onClick={openPhoneVerification}
-                  className="flex items-center gap-1.5 rounded-full bg-red-500 p-2 text-xs font-bold text-white transition-all hover:bg-red-600 active:scale-95 sm:px-4 sm:py-1.5"
+                  className="relative flex items-center gap-1.5 overflow-hidden rounded-full bg-linear-to-r from-orange-500 via-red-500 to-pink-500 p-2 text-xs font-bold text-white shadow-lg shadow-red-500/40 transition-all hover:shadow-red-500/60 animate-pulse sm:px-4 sm:py-1.5"
                 >
-                  <Phone className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Verificar telefone</span>
+                  <Gift className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Resgate seus créditos</span>
                 </button>
               )}
 
@@ -139,7 +141,7 @@ export function TopNavbar() {
                       Continuar com Google
                     </button>
                     <button
-                      onClick={() => { setMenuOpen(false); router.push('/login'); }}
+                      onClick={() => { setMenuOpen(false); openLoginModal(); }}
                       className="flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 text-xs font-medium text-[#f3f0ed] transition-all hover:bg-[#f3f0ed]/10 active:scale-[0.98]"
                     >
                       <LogIn className="h-3.5 w-3.5" />
@@ -236,7 +238,7 @@ export function TopNavbar() {
                 Continuar com Google
               </button>
               <button
-                onClick={() => { setMenuOpen(false); router.push('/login'); }}
+                onClick={() => { setMenuOpen(false); openLoginModal(); }}
                 className="flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 text-sm font-medium text-[#f3f0ed] transition-all hover:bg-[#f3f0ed]/10 active:scale-[0.98]"
               >
                 <LogIn className="h-4 w-4" />

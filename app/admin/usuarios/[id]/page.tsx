@@ -47,8 +47,8 @@ function genTypeLabel(type: string) {
   const map: Record<string, string> = {
     TEXT_TO_IMAGE: 'Texto \u2192 Imagem',
     IMAGE_TO_IMAGE: 'Imagem \u2192 Imagem',
-    TEXT_TO_VIDEO: 'Texto \u2192 V\u00eddeo',
-    IMAGE_TO_VIDEO: 'Imagem \u2192 V\u00eddeo',
+    TEXT_TO_VIDEO: 'Texto \u2192 Vídeos',
+    IMAGE_TO_VIDEO: 'Imagem \u2192 Vídeos',
     MOTION_CONTROL: 'Motion Control',
     REFERENCE_VIDEO: 'Refer\u00eancia',
   };
@@ -207,12 +207,12 @@ export default function AdminUserDetailPage() {
     mutationFn: (amount: number) =>
       api.admin.adjustFreeGenerations(accessToken!, id, amount),
     onSuccess: () => {
-      toast.success('Gera\u00e7\u00f5es gratuitas ajustadas com sucesso');
+      toast.success('Gerações gratuitas ajustadas com sucesso');
       setFreeGenAmount('');
       queryClient.invalidateQueries({ queryKey: ['admin', 'user', id] });
     },
     onError: () => {
-      toast.error('Erro ao ajustar gera\u00e7\u00f5es gratuitas');
+      toast.error('Erro ao ajustar Gerações gratuitas');
     },
   });
 
@@ -220,13 +220,13 @@ export default function AdminUserDetailPage() {
     mutationFn: ({ amount, description }: { amount: number; description: string }) =>
       api.admin.adjustCredits(accessToken!, id, amount, description),
     onSuccess: () => {
-      toast.success('Cr\u00e9ditos ajustados com sucesso');
+      toast.success('Créditos ajustados com sucesso');
       setCreditAmount('');
       setCreditDesc('');
       queryClient.invalidateQueries({ queryKey: ['admin', 'user', id] });
     },
     onError: () => {
-      toast.error('Erro ao ajustar cr\u00e9ditos');
+      toast.error('Erro ao ajustar Créditos');
     },
   });
 
@@ -333,11 +333,10 @@ export default function AdminUserDetailPage() {
           <button
             onClick={() => toggleStatusMutation.mutate(!user.isActive)}
             disabled={toggleStatusMutation.isPending}
-            className={`flex h-9 items-center gap-1.5 rounded-xl px-4 text-xs font-bold transition-all active:scale-[0.97] disabled:opacity-50 ${
-              user.isActive
-                ? 'border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20'
-                : 'bg-[#a2dd00] text-[#1a2123] hover:bg-[#b5f000]'
-            }`}
+            className={`flex h-9 items-center gap-1.5 rounded-xl px-4 text-xs font-bold transition-all active:scale-[0.97] disabled:opacity-50 ${user.isActive
+              ? 'border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20'
+              : 'bg-[#a2dd00] text-[#1a2123] hover:bg-[#b5f000]'
+              }`}
           >
             {toggleStatusMutation.isPending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -360,7 +359,7 @@ export default function AdminUserDetailPage() {
           {/* Credits summary */}
           <div className="flex flex-col items-end gap-1 pl-3 border-l border-[#f3f0ed]/8">
             <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
-              Cr\u00e9ditos
+              Créditos
             </span>
             <div className="flex items-center gap-1.5">
               <Coins className="h-4 w-4 text-[#a2dd00]" />
@@ -390,7 +389,7 @@ export default function AdminUserDetailPage() {
             </div>
             <p className="text-sm text-[#f3f0ed]/60">
               Tem certeza que deseja excluir permanentemente <strong className="text-[#f3f0ed]">{user.name || user.email}</strong>?
-              Todos os dados, gera\u00e7\u00f5es e hist\u00f3rico ser\u00e3o removidos.
+              Todos os dados, Gerações e hist\u00f3rico ser\u00e3o removidos.
             </p>
             <div className="flex justify-end gap-2">
               <button
@@ -440,7 +439,7 @@ export default function AdminUserDetailPage() {
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-[#f3f0ed]/40">Per\u00edodo</span>
+                <span className="text-xs text-[#f3f0ed]/40">Período</span>
                 <span className="text-xs tabular-nums text-[#f3f0ed]/60">
                   {new Date(user.subscription.currentPeriodStart).toLocaleDateString('pt-BR')}
                   {' \u2014 '}
@@ -449,7 +448,7 @@ export default function AdminUserDetailPage() {
               </div>
               {user.subscription.cancelAtPeriodEnd && (
                 <Badge variant="outline" className="w-fit border-red-500/30 bg-red-500/10 text-red-400">
-                  Cancela no fim do per\u00edodo
+                  Cancela no fim do Período
                 </Badge>
               )}
             </div>
@@ -462,7 +461,7 @@ export default function AdminUserDetailPage() {
         <div className="rounded-2xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/[0.02] p-5">
           <div className="mb-4 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-[#a2dd00]/60" />
-            <h3 className="text-sm font-semibold text-[#f3f0ed]">Cr\u00e9ditos</h3>
+            <h3 className="text-sm font-semibold text-[#f3f0ed]">Créditos</h3>
           </div>
           {user.credits ? (
             <div className="flex flex-col gap-3">
@@ -473,20 +472,20 @@ export default function AdminUserDetailPage() {
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-[#f3f0ed]/40">B\u00f4nus</span>
+                <span className="text-xs text-[#f3f0ed]/40">Bônus</span>
                 <span className="text-sm font-medium tabular-nums text-[#a2dd00]">
                   {user.credits.bonusCreditsRemaining.toLocaleString('pt-BR')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-[#f3f0ed]/40">Usados no per\u00edodo</span>
+                <span className="text-xs text-[#f3f0ed]/40">Usados no Período</span>
                 <span className="text-sm font-medium tabular-nums text-[#f3f0ed]/60">
                   {user.credits.planCreditsUsed.toLocaleString('pt-BR')}
                 </span>
               </div>
               {user.credits.freeVeoGenerationsRemaining != null && (
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#f3f0ed]/40">Gera\u00e7\u00f5es gr\u00e1tis (v\u00eddeo)</span>
+                  <span className="text-xs text-[#f3f0ed]/40">Gerações Gratuitos (Vídeos)</span>
                   <span className="text-sm font-medium tabular-nums text-emerald-400">
                     {user.credits.freeVeoGenerationsRemaining}
                   </span>
@@ -551,7 +550,7 @@ export default function AdminUserDetailPage() {
       <div className="rounded-2xl border border-[#a2dd00]/15 bg-[#a2dd00]/[0.03] p-5">
         <div className="mb-4 flex items-center gap-2">
           <Coins className="h-4 w-4 text-[#a2dd00]" />
-          <h3 className="text-sm font-semibold text-[#f3f0ed]">Ajustar Cr\u00e9ditos</h3>
+          <h3 className="text-sm font-semibold text-[#f3f0ed]">Ajustar Créditos</h3>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex flex-col gap-1.5">
@@ -607,7 +606,7 @@ export default function AdminUserDetailPage() {
       <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.03] p-5">
         <div className="mb-4 flex items-center gap-2">
           <Video className="h-4 w-4 text-emerald-400" />
-          <h3 className="text-sm font-semibold text-[#f3f0ed]">Gera\u00e7\u00f5es Gratuitas de V\u00eddeo</h3>
+          <h3 className="text-sm font-semibold text-[#f3f0ed]">Gerações Gratuitas de Vídeos</h3>
           <Badge variant="outline" className="border-emerald-500/20 bg-emerald-500/5 text-emerald-400 text-[10px]">
             Atual: {user.credits?.freeVeoGenerationsRemaining ?? 0}
           </Badge>
@@ -654,7 +653,7 @@ export default function AdminUserDetailPage() {
           <div className="flex items-center gap-2">
             <Image className="h-4 w-4 text-[#f3f0ed]/40" />
             <h3 className="text-sm font-semibold text-[#f3f0ed]">
-              Gera\u00e7\u00f5es do Usu\u00e1rio
+              Gerações do Usu\u00e1rio
             </h3>
             {genData?.meta && (
               <span className="text-xs text-[#f3f0ed]/30">
