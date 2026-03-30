@@ -6,8 +6,8 @@ import React from 'react';
 export const PROPORTION_ASPECT: Record<string, string> = {
   '16-9': '16 / 9',
   '9-16': '9 / 16',
-  '1-1':  '1 / 1',
-  '4-3':  '4 / 3',
+  '1-1': '1 / 1',
+  '4-3': '4 / 3',
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -115,10 +115,10 @@ export function GenerationPreview({
             }} />
           </div>
 
-          {/* Progress % */}
+          {/* Progress %
           <span className="absolute top-3 right-3 z-10 text-xs font-bold text-[#f3f0ed]/60">
             {progress}%
-          </span>
+          </span> */}
         </div>
       )}
 

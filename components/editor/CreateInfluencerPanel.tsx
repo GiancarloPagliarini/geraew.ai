@@ -40,11 +40,15 @@ interface CreateInfluencerPanelProps {
 }
 
 export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateInfluencerPanelProps) {
-  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery } = useEditor();
+  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating } = useEditor();
   const { accessToken } = useAuth();
   const { selections, referenceImage } = useInfluencerBuilder();
 
   const [genState, setGenState] = useState<GenState>('idle');
+  useEffect(() => {
+    setNodeGenerating(nodeId, genState === 'generating');
+    return () => setNodeGenerating(nodeId, false);
+  }, [genState, nodeId, setNodeGenerating]);
   const [progress, setProgress] = useState(0);
   const [imageVisible, setImageVisible] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);

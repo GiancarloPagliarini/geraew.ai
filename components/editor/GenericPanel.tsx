@@ -26,7 +26,7 @@ interface GenericPanelProps {
 }
 
 export function GenericPanel({ nodeId, onClose, onDuplicate }: GenericPanelProps) {
-  const { consumeCredits } = useEditor();
+  const { consumeCredits, setNodeGenerating } = useEditor();
 
   const [prompt, setPrompt] = useState('');
   const [model, setModel] = useState('gemini-3.1-flash-image-preview');
@@ -35,6 +35,10 @@ export function GenericPanel({ nodeId, onClose, onDuplicate }: GenericPanelProps
   const [attachedImages, setAttachedImages] = useState<{ preview: string }[]>([]);
 
   const [genState, setGenState] = useState<GenState>('idle');
+  useEffect(() => {
+    setNodeGenerating(nodeId, genState === 'generating');
+    return () => setNodeGenerating(nodeId, false);
+  }, [genState, nodeId, setNodeGenerating]);
   const [result, setResult] = useState('');
   const [imageVisible, setImageVisible] = useState(false);
   const [progress, setProgress] = useState(0);

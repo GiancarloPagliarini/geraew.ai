@@ -93,7 +93,7 @@ interface VirtualTryOnPanelProps {
 }
 
 export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOnPanelProps) {
-  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery } = useEditor();
+  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating } = useEditor();
   const { accessToken } = useAuth();
 
   // ── Persistent state ──────────────────────────────────────────────────────
@@ -133,6 +133,10 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
       ? 'generating'
       : stored?.generatedImageUrl ? 'done' : 'idle'
   );
+  useEffect(() => {
+    setNodeGenerating(nodeId, genState === 'generating');
+    return () => setNodeGenerating(nodeId, false);
+  }, [genState, nodeId, setNodeGenerating]);
 
   const { data: estimate, isLoading: estimateLoading } = useQuery({
     queryKey: ['credits', 'estimate', 'IMAGE_TO_IMAGE', resolution],

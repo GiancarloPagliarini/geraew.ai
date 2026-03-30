@@ -104,7 +104,7 @@ interface GenerateVideoPanelProps {
 }
 
 export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVideoPanelProps) {
-  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker, pendingPromptRef, consumePendingPrompt } = useEditor();
+  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker, pendingPromptRef, consumePendingPrompt, setNodeGenerating } = useEditor();
   const [initialPendingPrompt] = useState(() => {
     if (pendingPromptRef.current?.panelType === 'generate-video') {
       return consumePendingPrompt()!.prompt;
@@ -170,6 +170,10 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       ? 'generating'
       : stored?.generatedVideoUrls?.length > 0 ? 'done' : 'idle'
   );
+  useEffect(() => {
+    setNodeGenerating(nodeId, genState === 'generating');
+    return () => setNodeGenerating(nodeId, false);
+  }, [genState, nodeId, setNodeGenerating]);
 
   const isGenerating = genState === 'generating';
   const videoModelVariant = model === 'veo-3.1-fast-generate-preview' ? 'VEO_FAST' : 'VEO_MAX';

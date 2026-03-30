@@ -81,7 +81,7 @@ interface MotionControlPanelProps {
 }
 
 export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionControlPanelProps) {
-  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery } = useEditor();
+  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating } = useEditor();
   const { accessToken } = useAuth();
 
   // ── Persistent state ──────────────────────────────────────────────────────
@@ -117,6 +117,10 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
       ? 'generating'
       : stored?.generatedVideoUrl ? 'done' : 'idle'
   );
+  useEffect(() => {
+    setNodeGenerating(nodeId, genState === 'generating');
+    return () => setNodeGenerating(nodeId, false);
+  }, [genState, nodeId, setNodeGenerating]);
 
   const dbResolution = resolution === '1080p' ? 'RES_1080P' : 'RES_720P';
   const { data: estimate, isLoading: estimateLoading } = useQuery({

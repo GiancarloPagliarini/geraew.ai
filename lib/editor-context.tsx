@@ -41,6 +41,8 @@ interface EditorContextValue {
   consumePendingPrompt: () => PendingPrompt | null;
   leftPanelOpen: boolean;
   setLeftPanelOpen: (open: boolean) => void;
+  generatingNodeIds: Set<string>;
+  setNodeGenerating: (nodeId: string, generating: boolean) => void;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
@@ -54,6 +56,18 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [nodePanelTypes, setNodePanelTypes] = useState<Record<string, string>>({});
   const [galleryPickerRequest, setGalleryPickerRequest] = useState<GalleryPickerRequest | null>(null);
   const [leftPanelOpen, setLeftPanelOpen] = useState(false);
+  const [generatingNodeIds, setGeneratingNodeIds] = useState<Set<string>>(new Set());
+  const setNodeGenerating = useCallback((nodeId: string, generating: boolean) => {
+    setGeneratingNodeIds((prev) => {
+      const has = prev.has(nodeId);
+      if (generating && has) return prev;
+      if (!generating && !has) return prev;
+      const next = new Set(prev);
+      if (generating) next.add(nodeId);
+      else next.delete(nodeId);
+      return next;
+    });
+  }, []);
   const pendingPromptRef = useRef<PendingPrompt | null>(null);
   const [, forceUpdate] = useState(0);
 
@@ -156,6 +170,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         closeGalleryPicker: () => setGalleryPickerRequest(null),
         leftPanelOpen,
         setLeftPanelOpen,
+        generatingNodeIds,
+        setNodeGenerating,
         pendingPromptRef,
         requestPanelWithPrompt: (req: PendingPrompt) => {
           pendingPromptRef.current = req;

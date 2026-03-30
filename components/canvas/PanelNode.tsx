@@ -2,6 +2,7 @@
 
 import { Node, NodeProps, useReactFlow } from '@xyflow/react';
 import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useEditor } from '@/lib/editor-context';
 import { idbLoad, idbSave } from '@/lib/panel-idb';
 import { GenerateImagePanel } from '../editor/GenerateImagePanel';
@@ -31,12 +32,16 @@ const STORAGE_KEY_PREFIX: Partial<Record<string, string>> = {
 
 export function PanelNode({ id, data, selected }: NodeProps) {
   const { setNodes, getNodes } = useReactFlow();
-  const { selectedNodeId, setSelectedNodeId, setNodePanelType } = useEditor();
+  const { selectedNodeId, setSelectedNodeId, setNodePanelType, generatingNodeIds } = useEditor();
 
   const handleClose = useCallback(() => {
+    if (generatingNodeIds.has(id)) {
+      toast.warning('Aguarde a geração finalizar antes de fechar o painel.');
+      return;
+    }
     setNodes((nds) => nds.filter((n) => n.id !== id));
     if (selectedNodeId === id) setSelectedNodeId(null);
-  }, [id, selectedNodeId, setNodes, setSelectedNodeId]);
+  }, [id, selectedNodeId, setNodes, setSelectedNodeId, generatingNodeIds]);
 
   const handleDuplicate = useCallback(async () => {
     const panelType = data.panelType as string;

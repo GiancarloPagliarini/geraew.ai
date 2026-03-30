@@ -15,6 +15,7 @@ import {
 import { AudioWaveform, ImageIcon, LayoutGrid, PersonStanding, Repeat2, Shirt, Video } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { useEditor } from '@/lib/editor-context';
 import { BottomToolbar } from '../editor/BottomToolbar';
 import { CanvasContextMenu } from './CanvasContextMenu';
@@ -73,7 +74,7 @@ function CanvasContent() {
     setIsMobile(mobile);
     setZoom(mobile ? 0.65 : 1);
   }, []);
-  const { selectedNodeId, setSelectedNodeId, setNodePanelType, pendingPromptRef } = useEditor();
+  const { selectedNodeId, setSelectedNodeId, setNodePanelType, pendingPromptRef, generatingNodeIds } = useEditor();
   const viewportSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Restore nodePanelTypes and viewport on mount
@@ -158,14 +159,24 @@ function CanvasContent() {
   }, [pendingPromptRef.current]);
 
   const handleDelete = useCallback(() => {
+    let blocked = false;
     setNodes((nds) => {
       const selected = nds.filter((n) => n.selected);
-      if (selected.length > 0) return nds.filter((n) => !n.selected);
-      if (selectedNodeId) return nds.filter((n) => n.id !== selectedNodeId);
+      if (selected.length > 0) {
+        if (selected.some((n) => generatingNodeIds.has(n.id))) blocked = true;
+        const deletable = selected.filter((n) => !generatingNodeIds.has(n.id));
+        if (deletable.length > 0) return nds.filter((n) => !n.selected || generatingNodeIds.has(n.id));
+        return nds;
+      }
+      if (selectedNodeId) {
+        if (generatingNodeIds.has(selectedNodeId)) { blocked = true; return nds; }
+        return nds.filter((n) => n.id !== selectedNodeId);
+      }
       return nds;
     });
+    if (blocked) toast.warning('Aguarde a geração finalizar antes de fechar o painel.');
     setSelectedNodeId(null);
-  }, [selectedNodeId, setNodes, setSelectedNodeId]);
+  }, [selectedNodeId, setNodes, setSelectedNodeId, generatingNodeIds]);
 
   // Delete/Backspace deletes selected nodes
   useEffect(() => {

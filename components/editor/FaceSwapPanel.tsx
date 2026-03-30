@@ -84,7 +84,7 @@ interface FaceSwapPanelProps {
 }
 
 export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelProps) {
-  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery } = useEditor();
+  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating } = useEditor();
   const { accessToken } = useAuth();
 
   // ── Persistent state ──────────────────────────────────────────────────────
@@ -122,6 +122,10 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
       ? 'generating'
       : stored?.generatedImageUrl ? 'done' : 'idle'
   );
+  useEffect(() => {
+    setNodeGenerating(nodeId, genState === 'generating');
+    return () => setNodeGenerating(nodeId, false);
+  }, [genState, nodeId, setNodeGenerating]);
 
   const resolutionToDbResolution: Record<string, string> = { '1K': 'RES_1K', '2K': 'RES_2K', '4K': 'RES_4K' };
   const { data: estimate, isLoading: estimateLoading } = useQuery({
