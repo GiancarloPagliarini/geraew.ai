@@ -30,21 +30,21 @@ const slides = [
   },
   {
     id: 2,
-    tag: 'Geração de Imagens',
-    title: 'Imagine. Descreva. Crie.',
-    description: 'Transforme qualquer ideia em imagem com modelos de última geração — rápido e sem limitações.',
-    bg: 'bg-black',
-    accent: '#ffa040',
-    image: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/s3/ai-generations/generations/cmmxldri200gzus01z4fip7qf/04d6bbed-eb33-4e0a-ae27-8df3e14b6b92/output_0.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=2e3c372ae61232c26638c35c24b50688%2F20260319%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260319T145712Z&X-Amz-Expires=604800&X-Amz-Signature=d94da0d7a749dc62dfe50e76804db9b1dc0677deb4a12395eb98b2c63c3ac3b6&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject',
-  },
-  {
-    id: 3,
     tag: 'Personagens com IA',
     title: 'Personagens que parecem reais',
     description: 'Monte personagens únicos com controle total de estilo, etnia, expressão e muito mais.',
     bg: 'bg-gradient-to-br from-teal-950 via-emerald-900 to-cyan-950',
     accent: '#00d4aa',
-    image: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/s3/ai-generations/generations/cmmxwz1zt00zsus01w8hjs14n/2738ecf9-5b07-4fc0-ac89-589eb0b45600/output_0.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=2e3c372ae61232c26638c35c24b50688%2F20260319%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260319T202137Z&X-Amz-Expires=604800&X-Amz-Signature=ef47cb739b190f79059bd5fb95e9f78a579e062d999d89f578c3ecaf0d241e15&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject',
+    video: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmndiy1070058n4018hi1nnr7/848a6510-414d-4796-9da7-4a9a428a11fb/output_0.mp4',
+  },
+  {
+    id: 3,
+    tag: 'Geração de Imagens',
+    title: 'Imagine. Descreva. Crie.',
+    description: 'Transforme qualquer ideia em imagem com modelos de última geração — rápido e sem limitações.',
+    bg: 'bg-black',
+    accent: '#ffa040',
+    image: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmmxldri200gzus01z4fip7qf/04d6bbed-eb33-4e0a-ae27-8df3e14b6b92/output_0.png',
   },
 ];
 
@@ -91,6 +91,16 @@ function LoginModalContent() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const videosRef = useRef<Map<number, HTMLVideoElement>>(new Map());
   const advancedRef = useRef(false);
+  const [loadedMedia, setLoadedMedia] = useState<Set<number>>(new Set());
+
+  const markLoaded = useCallback((id: number) => {
+    setLoadedMedia(prev => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, []);
 
   const setVideoRef = useCallback((id: number) => (el: HTMLVideoElement | null) => {
     if (el) videosRef.current.set(id, el);
@@ -570,10 +580,11 @@ function LoginModalContent() {
                   autoPlay
                   muted
                   playsInline
-                  className="absolute inset-0 h-full w-full object-cover"
+                  onCanPlay={() => markLoaded(s.id)}
+                  className={`absolute inset-0 h-full w-full object-cover transition-[filter] duration-700 ${loadedMedia.has(s.id) ? '' : 'blur-xl scale-105'}`}
                 />
               ) : s.image ? (
-                <Image src={s.image} alt={s.title} fill className="object-cover" priority={i === 0} />
+                <Image src={s.image} alt={s.title} fill className={`object-cover transition-[filter] duration-700 ${loadedMedia.has(s.id) ? '' : 'blur-xl scale-105'}`} priority={i === 0} onLoad={() => markLoaded(s.id)} />
               ) : (
                 <>
                   <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")` }} />

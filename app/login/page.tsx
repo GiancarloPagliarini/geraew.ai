@@ -34,7 +34,7 @@ const slides = [
     description: 'Transforme qualquer ideia em imagem com modelos de última geração — rápido e sem limitações.',
     bg: 'bg-black',
     accent: '#ffa040',
-    image: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/s3/ai-generations/generations/cmmxldri200gzus01z4fip7qf/04d6bbed-eb33-4e0a-ae27-8df3e14b6b92/output_0.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=2e3c372ae61232c26638c35c24b50688%2F20260319%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260319T145712Z&X-Amz-Expires=604800&X-Amz-Signature=d94da0d7a749dc62dfe50e76804db9b1dc0677deb4a12395eb98b2c63c3ac3b6&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject',
+    image: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmmxldri200gzus01z4fip7qf/04d6bbed-eb33-4e0a-ae27-8df3e14b6b92/output_0.png',
   },
   {
     id: 3,
@@ -124,6 +124,16 @@ function LoginPageContent() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const videosRef = useRef<Map<number, HTMLVideoElement>>(new Map());
   const advancedRef = useRef(false);
+  const [loadedMedia, setLoadedMedia] = useState<Set<number>>(new Set());
+
+  const markLoaded = useCallback((id: number) => {
+    setLoadedMedia(prev => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, []);
 
   const setVideoRef = useCallback((id: number) => (el: HTMLVideoElement | null) => {
     if (el) videosRef.current.set(id, el);
@@ -658,11 +668,10 @@ function LoginPageContent() {
                   onKeyDown={(e) => handleDigitKeyDown(i, e)}
                   onPaste={handleDigitPaste}
                   disabled={verifyStatus === 'loading'}
-                  className={`h-14 w-12 rounded-xl border text-center text-xl font-bold outline-none transition-all ${
-                    verifyStatus === 'error'
+                  className={`h-14 w-12 rounded-xl border text-center text-xl font-bold outline-none transition-all ${verifyStatus === 'error'
                       ? 'border-red-400/40 bg-red-400/10 text-red-400'
                       : 'border-white/[0.08] bg-white/[0.04] text-white focus:border-[#a2dd00]/50 focus:bg-white/[0.06]'
-                  } disabled:opacity-50`}
+                    } disabled:opacity-50`}
                 />
               ))}
             </div>
@@ -907,7 +916,8 @@ function LoginPageContent() {
                 autoPlay
                 muted
                 playsInline
-                className="absolute inset-0 h-full w-full object-cover"
+                onCanPlay={() => markLoaded(s.id)}
+                className={`absolute inset-0 h-full w-full object-cover transition-[filter] duration-700 ${loadedMedia.has(s.id) ? '' : 'blur-xl scale-105'}`}
               />
             ) : s.image ? (
               /* Image slide */
@@ -915,8 +925,9 @@ function LoginPageContent() {
                 src={s.image}
                 alt={s.title}
                 fill
-                className="object-cover"
+                className={`object-cover transition-[filter] duration-700 ${loadedMedia.has(s.id) ? '' : 'blur-xl scale-105'}`}
                 priority={i === 0}
+                onLoad={() => markLoaded(s.id)}
               />
             ) : (
               /* Gradient slide */
