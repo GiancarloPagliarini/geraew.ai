@@ -1,12 +1,11 @@
 'use client';
 
-import { BadgePercent, BatteryCharging, Coins, CreditCard, Gift, LogIn, LogOut, Phone, Plus, Settings, User, X } from 'lucide-react';
+import { BadgePercent, BatteryCharging, Coins, CreditCard, Gift, LogIn, LogOut, Plus, Settings, User, X } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
-import { BuyCreditsModal } from './BuyCreditsModal';
 import { PlansModal } from './PlansModal';
 import { PostAndEarnModal } from './PostAndEarnModal';
 import { usePhoneVerification } from '@/lib/phone-verification-context';
@@ -19,7 +18,6 @@ export function TopNavbar() {
   const { openModal: openPhoneVerification } = usePhoneVerification();
   const { openLoginModal } = useLoginModal();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [buyModalOpen, setBuyModalOpen] = useState(false);
   const [plansModalOpen, setPlansModalOpen] = useState(false);
   const [postAndEarnOpen, setPostAndEarnOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -82,7 +80,7 @@ export function TopNavbar() {
 
               {/* Buy button — accent lime (icon-only on mobile) */}
               <button
-                onClick={() => setBuyModalOpen(true)}
+                onClick={() => setPlansModalOpen(true)}
                 className="flex items-center gap-1.5 rounded-full bg-[#a2dd00] p-2 text-xs font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95 sm:px-4 sm:py-1.5"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -276,7 +274,6 @@ export function TopNavbar() {
         </div>
       )}
 
-      {buyModalOpen && <BuyCreditsModal onClose={() => setBuyModalOpen(false)} />}
       {plansModalOpen && <PlansModal onClose={() => setPlansModalOpen(false)} />}
       {postAndEarnOpen && <PostAndEarnModal onClose={() => setPostAndEarnOpen(false)} />}
     </>

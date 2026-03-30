@@ -118,7 +118,7 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
         <div className={`absolute left-1/2 z-10 -translate-x-1/2 ${compact ? '-top-2.5' : '-top-3'}`}>
           <div className={`flex items-center gap-1 rounded-full bg-[#f3f0ed] shadow-[0_0_16px_rgba(243,240,237,0.15)] ${compact ? 'px-3 py-0.5' : 'px-4 py-1'}`}>
             <Check className={`${compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} text-[#1a2123]`} />
-            <span className={`font-bold uppercase tracking-[0.08em] text-[#1a2123] ${compact ? 'text-[8px]' : 'text-[10px]'}`}>Seu Plano</span>
+            <span className={`font-bold uppercase tracking-[0.08em] text-[#1a2123] ${compact ? 'text-[9px]' : 'text-[10px]'}`}>Seu Plano</span>
           </div>
         </div>
       )}

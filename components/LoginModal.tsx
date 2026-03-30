@@ -54,13 +54,23 @@ const TICK_MS = 50;
 function LoginModalContent() {
   const router = useRouter();
   const { login } = useAuth();
-  const { isOpen, planParam, closeLoginModal } = useLoginModal();
+  const { isOpen, planParam, initialMode, closeLoginModal } = useLoginModal();
 
   const redirectAfterLogin = planParam ? `/creditos?plan=${planParam}` : '/workspace';
 
   // ── Form state ──────────────────────────────────────────────────────────────
   const [view, setView] = useState<'options' | 'email' | 'verify' | 'forgot'>('options');
   const [mode, setMode] = useState<'login' | 'register'>('login');
+
+  // Sync mode when the modal opens with a specific initialMode
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+      if (initialMode === 'register') {
+        setView('email');
+      }
+    }
+  }, [isOpen, initialMode]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

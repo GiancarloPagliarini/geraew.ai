@@ -8,6 +8,27 @@ import { RightSidebar } from '@/components/editor/RightSidebar';
 import { TopNavbar } from '@/components/editor/TopNavbar';
 import { EditorProvider } from '@/lib/editor-context';
 import { InfluencerBuilderProvider } from '@/lib/influencer-builder-context';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useRef } from 'react';
+import { useAuth } from '@/lib/auth-context';
+import { useLoginModal } from '@/lib/login-modal-context';
+
+function RegisterModalTrigger() {
+  const searchParams = useSearchParams();
+  const { user, loading } = useAuth();
+  const { openLoginModal } = useLoginModal();
+  const triggered = useRef(false);
+
+  useEffect(() => {
+    if (loading || triggered.current) return;
+    if (!user && searchParams.get('register') === 'true') {
+      triggered.current = true;
+      openLoginModal({ mode: 'register' });
+    }
+  }, [loading, user, searchParams, openLoginModal]);
+
+  return null;
+}
 
 export default function Home() {
   return (
@@ -24,6 +45,7 @@ export default function Home() {
           </div>
         </div>
         <OnboardingTour />
+        <Suspense><RegisterModalTrigger /></Suspense>
       </InfluencerBuilderProvider>
     </EditorProvider>
   );

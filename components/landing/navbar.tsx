@@ -100,7 +100,7 @@ export function Navbar() {
                   Entrar
                 </button>
                 <a
-                  href="/workspace"
+                  href="/workspace?register=true"
                   className="rounded-xl bg-landing-accent px-5 py-2.5 text-[13px] font-semibold text-[#1a2123] transition-all duration-300 hover:shadow-[0_0_24px_rgba(162,221,0,0.3)] hover:brightness-110"
                 >
                   Testar Grátis
@@ -179,8 +179,9 @@ export function Navbar() {
                 Entrar
               </button>
               <a
-                href="/workspace"
-                className="rounded-xl bg-landing-accent py-3.5 text-center text-[14px] font-semibold text-[#1a2123] transition-all hover:brightness-110"
+                href="/workspace?register=true"
+                onClick={() => setOpen(false)}
+                className="block rounded-xl bg-landing-accent py-3.5 text-center text-[14px] font-semibold text-[#1a2123] transition-all hover:brightness-110"
               >
                 Testar Grátis
               </a>
