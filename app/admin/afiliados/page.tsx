@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import type { Affiliate, AffiliateEarning, AffiliateDashboard, AffiliateEarningsResponse } from '@/lib/api';
+import type { Affiliate, AffiliateEarning, AffiliateDashboard, AffiliateEarningsResponse, AffiliateReferredUser } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import {
@@ -296,6 +296,12 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
     enabled: !!accessToken,
   });
 
+  const { data: referredUsers } = useQuery({
+    queryKey: ['admin', 'affiliates', affiliateId, 'referred-users'],
+    queryFn: () => api.admin.affiliateReferredUsers(accessToken!, affiliateId),
+    enabled: !!accessToken,
+  });
+
   const toggleMutation = useMutation({
     mutationFn: () => api.admin.toggleAffiliate(accessToken!, affiliateId),
     onSuccess: () => {
@@ -410,6 +416,71 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
           </div>
         ))}
       </div>
+
+      {/* Referred users */}
+      {referredUsers && referredUsers.length > 0 && (
+        <div className="rounded-2xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/2">
+          <div className="border-b border-[#f3f0ed]/6 px-4 py-3">
+            <span className="text-sm font-medium text-[#f3f0ed]">
+              Usuarios Indicados ({referredUsers.length})
+            </span>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="flex flex-col gap-2 p-3 md:hidden">
+            {referredUsers.map((user) => (
+              <div
+                key={user.id}
+                className="flex items-center gap-3 rounded-xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/2 p-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm text-[#f3f0ed]">{user.name || user.email}</p>
+                  <p className="text-xs text-[#f3f0ed]/40">{user.email}</p>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <Badge variant="outline" className="border-[#f3f0ed]/10 bg-[#f3f0ed]/5 text-[#f3f0ed]/60">
+                    {user.plan}
+                  </Badge>
+                  <span className="text-[10px] tabular-nums text-[#f3f0ed]/30">{formatDate(user.createdAt)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-[#f3f0ed]/6 hover:bg-transparent">
+                  <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Usuario</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Plano</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Cadastro</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {referredUsers.map((user) => (
+                  <TableRow key={user.id} className="border-[#f3f0ed]/4 hover:bg-[#f3f0ed]/3">
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-sm text-[#f3f0ed]">{user.name || '—'}</span>
+                        <span className="text-xs text-[#f3f0ed]/40">{user.email}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="border-[#f3f0ed]/10 bg-[#f3f0ed]/5 text-[#f3f0ed]/60">
+                        {user.plan}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs tabular-nums text-[#f3f0ed]/40">{formatDate(user.createdAt)}</span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
 
       {/* Actions bar */}
       {selectedIds.size > 0 && (

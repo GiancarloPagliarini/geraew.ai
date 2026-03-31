@@ -383,6 +383,14 @@ export interface AffiliateDashboard {
   paidCommissionCents: number;
 }
 
+export interface AffiliateReferredUser {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+  plan: string;
+}
+
 export interface AffiliateEarningsResponse {
   affiliate: Omit<Affiliate, '_count' | 'totalEarningsCents' | 'pendingEarningsCents' | 'referralsCount'>;
   earnings: AffiliateEarning[];
@@ -1030,6 +1038,9 @@ export const api = {
     },
     affiliateEarnings(accessToken: string, id: string) {
       return authRequest<AffiliateEarningsResponse>(`/api/v1/admin/affiliates/${id}/earnings`, accessToken);
+    },
+    affiliateReferredUsers(accessToken: string, id: string) {
+      return authRequest<AffiliateReferredUser[]>(`/api/v1/admin/affiliates/${id}/referred-users`, accessToken);
     },
     createAffiliate(accessToken: string, data: { name: string; code: string; commissionPercent?: number; userId?: string }) {
       return authRequest<Affiliate>('/api/v1/admin/affiliates', accessToken, {

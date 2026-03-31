@@ -8,8 +8,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Loader2,
   Users,
-  DollarSign,
-  Clock,
   CheckCircle2,
   Copy,
   Check,
@@ -277,7 +275,7 @@ export default function PainelAfiliadoPage() {
                           Tipo
                         </TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
-                          Valor Pago
+                          Valor Liquido
                         </TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
                           Comissao
