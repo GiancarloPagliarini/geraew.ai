@@ -15,6 +15,9 @@ import {
   Check,
   Link,
   ArrowLeft,
+  Wallet,
+  Timer,
+  Info,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -35,6 +38,18 @@ function formatCents(cents: number) {
 
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString('pt-BR');
+}
+
+function getAvailableDate(createdAt: string, maturationDays: number) {
+  const d = new Date(createdAt);
+  d.setDate(d.getDate() + maturationDays);
+  return d;
+}
+
+function daysUntil(date: Date) {
+  const now = new Date();
+  const diff = date.getTime() - now.getTime();
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
 function CopyButton({ text, label }: { text: string; label?: string }) {
@@ -124,8 +139,8 @@ export default function PainelAfiliadoPage() {
 
   const statCards = [
     { label: 'Usuarios Indicados', value: summary.referredUsers.toLocaleString('pt-BR'), icon: Users, color: 'text-blue-400' },
-    { label: 'Total Comissoes', value: formatCents(summary.totalCommissionCents), icon: DollarSign, color: 'text-violet-400' },
-    { label: 'Pendente', value: formatCents(summary.pendingCommissionCents), icon: Clock, color: 'text-yellow-400' },
+    { label: 'Disponivel p/ Saque', value: formatCents(summary.availableCommissionCents), icon: Wallet, color: 'text-emerald-400' },
+    { label: 'Em Maturacao', value: formatCents(summary.maturingCommissionCents), icon: Timer, color: 'text-yellow-400' },
     { label: 'Pago', value: formatCents(summary.paidCommissionCents), icon: CheckCircle2, color: 'text-green-400' },
   ];
 
@@ -183,6 +198,15 @@ export default function PainelAfiliadoPage() {
             })}
           </div>
 
+          {/* Maturation info */}
+          <div className="flex items-start gap-3 rounded-xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/2 px-4 py-3">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#f3f0ed]/30" />
+            <p className="text-xs leading-relaxed text-[#f3f0ed]/40">
+              As comissoes ficam em maturacao por <span className="font-medium text-[#f3f0ed]/60">{summary.maturationDays} dias</span> apos
+              o pagamento. Apos esse periodo, ficam disponiveis para saque.
+            </p>
+          </div>
+
           {/* Earnings section */}
           <div className="rounded-2xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/2">
             <div className="border-b border-[#f3f0ed]/6 px-4 py-3">
@@ -219,16 +243,23 @@ export default function PainelAfiliadoPage() {
                         <span className="text-sm font-bold tabular-nums text-[#a2dd00]">
                           {formatCents(earning.commissionCents)}
                         </span>
-                        <Badge
-                          variant="outline"
-                          className={
-                            earning.status === 'PAID'
-                              ? 'border-green-500/30 bg-green-500/10 text-green-400'
-                              : 'border-yellow-500/30 bg-yellow-500/10 text-yellow-400'
-                          }
-                        >
-                          {earning.status === 'PAID' ? 'Pago' : 'Pendente'}
-                        </Badge>
+                        {earning.status === 'PAID' ? (
+                          <Badge variant="outline" className="border-green-500/30 bg-green-500/10 text-green-400">
+                            Pago
+                          </Badge>
+                        ) : (() => {
+                          const availDate = getAvailableDate(earning.createdAt, summary.maturationDays);
+                          const days = daysUntil(availDate);
+                          return days > 0 ? (
+                            <span className="text-[10px] tabular-nums text-yellow-400">
+                              Disponivel em {formatDate(availDate.toISOString())}
+                            </span>
+                          ) : (
+                            <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                              Disponivel
+                            </Badge>
+                          );
+                        })()}
                       </div>
                     </div>
                   ))}
@@ -292,16 +323,28 @@ export default function PainelAfiliadoPage() {
                             </span>
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={
-                                earning.status === 'PAID'
-                                  ? 'border-green-500/30 bg-green-500/10 text-green-400'
-                                  : 'border-yellow-500/30 bg-yellow-500/10 text-yellow-400'
-                              }
-                            >
-                              {earning.status === 'PAID' ? 'Pago' : 'Pendente'}
-                            </Badge>
+                            {earning.status === 'PAID' ? (
+                              <Badge variant="outline" className="border-green-500/30 bg-green-500/10 text-green-400">
+                                Pago
+                              </Badge>
+                            ) : (() => {
+                              const availDate = getAvailableDate(earning.createdAt, summary.maturationDays);
+                              const days = daysUntil(availDate);
+                              return days > 0 ? (
+                                <div className="flex flex-col">
+                                  <Badge variant="outline" className="w-fit border-yellow-500/30 bg-yellow-500/10 text-yellow-400">
+                                    Em maturacao
+                                  </Badge>
+                                  <span className="mt-1 text-[10px] tabular-nums text-[#f3f0ed]/30">
+                                    Disponivel em {formatDate(availDate.toISOString())}
+                                  </span>
+                                </div>
+                              ) : (
+                                <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                                  Disponivel
+                                </Badge>
+                              );
+                            })()}
                           </TableCell>
                           <TableCell>
                             <span className="text-xs tabular-nums text-[#f3f0ed]/40">

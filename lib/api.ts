@@ -1175,7 +1175,10 @@ export const api = {
           totalRevenueCents: number;
           totalCommissionCents: number;
           pendingCommissionCents: number;
+          availableCommissionCents: number;
+          maturingCommissionCents: number;
           paidCommissionCents: number;
+          maturationDays: number;
         };
         earnings: {
           id: string;
