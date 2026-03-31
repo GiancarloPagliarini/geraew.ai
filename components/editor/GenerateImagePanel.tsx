@@ -24,6 +24,7 @@ import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
+import { useLoginModal } from '@/lib/login-modal-context';
 import { api, ApiError, Folder } from '@/lib/api';
 import { PlansModal } from './PlansModal';
 import { listenGeneration } from '@/lib/sse';
@@ -119,6 +120,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
     return null;
   });
   const { accessToken } = useAuth();
+  const { openLoginModal } = useLoginModal();
   const queryClient = useQueryClient();
   const upscaleState = nodeUpscaleStates[nodeId] ?? 'idle';
   const [plansModalOpen, setPlansModalOpen] = useState(false);
@@ -427,7 +429,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   }
 
   async function handleGenerate() {
-    if (!accessToken) return;
+    if (!accessToken) { openLoginModal(); return; }
 
     setOptionsOpen(false);
     await new Promise<void>((resolve) => setTimeout(resolve, 320));
@@ -660,7 +662,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
     <TooltipProvider>
       <div
         ref={panelRef}
-        className={`w-[320px] overflow-hidden rounded-2xl border bg-[#1a2123] shadow-2xl shadow-black/50 transition-colors ${isDraggingOver ? 'border-[#a2dd00]/50 ring-2 ring-[#a2dd00]/30' : 'border-[#f3f0ed]/8'}`}
+        className={`w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border bg-[#1a2123] shadow-2xl shadow-black/50 transition-colors sm:w-[320px] ${isDraggingOver ? 'border-[#a2dd00]/50 ring-2 ring-[#a2dd00]/30' : 'border-[#f3f0ed]/8'}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}

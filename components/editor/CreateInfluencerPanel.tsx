@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
+import { useLoginModal } from '@/lib/login-modal-context';
 import { useInfluencerBuilder } from '@/lib/influencer-builder-context';
 import { api } from '@/lib/api';
 import { listenGeneration } from '@/lib/sse';
@@ -42,6 +43,7 @@ interface CreateInfluencerPanelProps {
 export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateInfluencerPanelProps) {
   const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating } = useEditor();
   const { accessToken } = useAuth();
+  const { openLoginModal } = useLoginModal();
   const { selections, referenceImage } = useInfluencerBuilder();
 
   const [genState, setGenState] = useState<GenState>('idle');
@@ -148,7 +150,7 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
   }
 
   async function handleGenerate() {
-    if (!accessToken) return;
+    if (!accessToken) { openLoginModal(); return; }
 
     setGenState('generating');
     setProgress(0);
@@ -230,7 +232,7 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
   const dashOffset = CIRCUMFERENCE * (1 - progress / 100);
 
   return (
-    <div className="w-[320px] overflow-hidden rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] shadow-2xl shadow-black/50">
+    <div className="w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] shadow-2xl shadow-black/50 sm:w-[320px]">
       {/* Header — drag handle */}
       <div className="panel-drag-handle flex cursor-grab items-center justify-between border-b border-[#f3f0ed]/[0.07] px-4 py-3 active:cursor-grabbing">
         <div className="flex items-center gap-2">

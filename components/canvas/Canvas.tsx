@@ -12,7 +12,7 @@ import {
   useNodesState,
   useReactFlow,
 } from '@xyflow/react';
-import { AudioWaveform, ImageIcon, LayoutGrid, PersonStanding, Repeat2, Shirt, Video } from 'lucide-react';
+import { AudioWaveform, ImageIcon, LayoutGrid, Map, PersonStanding, Repeat2, Shirt, Video } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -67,6 +67,7 @@ function CanvasContent() {
   const [zoom, setZoom] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
   const [isSelectMode, setIsSelectMode] = useState(false);
+  const [minimapOpen, setMinimapOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -112,12 +113,19 @@ function CanvasContent() {
         return;
       }
 
-      const NODE_W = 360;
+      const isMobileDevice = window.innerWidth < 640;
+      const NODE_W = isMobileDevice ? window.innerWidth - 24 : 320;
       const NODE_H = 480;
       const GAP = 24;
 
-      const baseScreen = { x: window.innerWidth / 2 - NODE_W / 2, y: 80 };
-      let candidate = screenToFlowPosition(baseScreen);
+      const flowEl = document.querySelector('.react-flow');
+      const rect = flowEl?.getBoundingClientRect() ?? { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+      const toolbarH = isMobileDevice ? 56 : 0;
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + toolbarH + (rect.height - toolbarH) / 2;
+
+      const centerFlow = screenToFlowPosition({ x: centerX, y: centerY });
+      let candidate = { x: centerFlow.x - NODE_W / 2, y: centerFlow.y - NODE_H / 2 };
 
       // Shift horizontally until the candidate doesn't overlap any existing node
       const MAX_ATTEMPTS = 30;
@@ -266,31 +274,42 @@ function CanvasContent() {
             proOptions={{ hideAttribution: true }}
             style={{ width: '100%', height: '100%', background: '#1a2123' }}
           >
-            {isMobile && nodes.length > 0 && (
-              <MiniMap
-                position="bottom-left"
-                style={{
-                  background: '#1e2a2d',
-                  border: '1px solid rgba(243,240,237,0.08)',
-                  borderRadius: '10px',
-                  width: 120,
-                  height: 80,
-                }}
-                maskColor="rgba(26,33,35,0.7)"
-                nodeColor="#a2dd00"
-                nodeStrokeWidth={3}
-                onNodeClick={(_, node) =>
-                  setCenter(
-                    node.position.x + (node.measured?.width ?? 180) / 2,
-                    node.position.y + (node.measured?.height ?? 240) / 2,
-                    { duration: 300, zoom: 1 },
-                  )
-                }
-              />
+            {isMobile && nodes.length > 0 && minimapOpen && (
+              <div onClick={() => setMinimapOpen(false)}>
+                <MiniMap
+                  position="bottom-left"
+                  style={{
+                    background: '#1e2a2d',
+                    border: '1px solid rgba(243,240,237,0.08)',
+                    borderRadius: '10px',
+                    width: 120,
+                    height: 80,
+                  }}
+                  maskColor="rgba(26,33,35,0.7)"
+                  nodeColor="#a2dd00"
+                  nodeStrokeWidth={3}
+                  onNodeClick={(_, node) =>
+                    setCenter(
+                      node.position.x + (node.measured?.width ?? 180) / 2,
+                      node.position.y + (node.measured?.height ?? 240) / 2,
+                      { duration: 300, zoom: 1 },
+                    )
+                  }
+                />
+              </div>
             )}
           </ReactFlow>
         </div>
       </CanvasContextMenu>
+
+      {isMobile && nodes.length > 0 && !minimapOpen && (
+        <button
+          onClick={() => setMinimapOpen((v) => !v)}
+          className={`pointer-events-auto absolute bottom-5 left-4 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-[#a2dd00]/40 bg-[#1a2123]/90 shadow-[0_0_20px_rgba(162,221,0,0.25)] backdrop-blur-md transition-all sm:hidden ${minimapOpen ? 'border-[#a2dd00]/70 bg-[#a2dd00]/10' : ''}`}
+        >
+          <Map className="h-4 w-4 text-[#f3f0ed]/60" />
+        </button>
+      )}
 
       {showMaxNodesWarning && (
         <div
@@ -333,7 +352,7 @@ function CanvasContent() {
       {/* Empty state */}
       {mounted && nodes.length === 0 && (
         <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
-          <div className="pointer-events-auto flex w-full flex-col items-center gap-6 px-5 sm:w-auto sm:px-0">
+          <div className="pointer-events-auto flex w-full flex-col items-center gap-3 px-5 sm:w-auto sm:gap-6 sm:px-0">
             <Image
               src="/logo_2.svg"
               alt="Geraew AI"
@@ -348,7 +367,7 @@ function CanvasContent() {
                 Escolha o que você deseja criar
               </p>
             </div>
-            <div className="grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto sm:items-center sm:justify-center sm:gap-4">
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:justify-center sm:gap-4">
               {[
                 { type: 'generate-image', icon: ImageIcon, label: 'Gerar imagem' },
                 { type: 'create-influencer', icon: PersonStanding, label: 'Criar influencer' },
@@ -360,7 +379,7 @@ function CanvasContent() {
                 <button
                   key={item.type}
                   onClick={() => handleAddPanel(item.type)}
-                  className="empty-card-animate group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
+                  className="empty-card-animate group flex h-[15dvh] flex-col items-center justify-center gap-2 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
                   style={{ animationDelay: `${0.35 + i * 0.08}s` }}
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">

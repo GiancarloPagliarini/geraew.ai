@@ -1,6 +1,6 @@
 'use client';
 
-import { AudioWaveform, Fullscreen, Hand, HelpCircle, ImageIcon, LayoutGrid, Minus, MousePointer2, PersonStanding, Plus, Repeat2, Shirt, Trash2, Video, Wrench, X } from 'lucide-react';
+import { AudioWaveform, Fullscreen, Hand, ImageIcon, Minus, MousePointer2, PersonStanding, Plus, Repeat2, Shirt, Trash2, Video, Wrench, X } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -35,7 +35,6 @@ export function BottomToolbar({
   onZoomIn,
   onZoomOut,
   onResetZoom,
-  onAdd,
   onAddImage,
   onAddInfluencer,
   onAddVideo,
@@ -150,9 +149,11 @@ export function BottomToolbar({
           </div>
 
           {/* Actions */}
-          <ToolbarButton tooltip="Excluir selecionado" onClick={onDelete}>
-            <Trash2 className="h-4 w-4" />
-          </ToolbarButton>
+          <div className="hidden sm:block">
+            <ToolbarButton tooltip="Excluir selecionado" onClick={onDelete}>
+              <Trash2 className="h-4 w-4" />
+            </ToolbarButton>
+          </div>
 
           <ToolbarButton tooltip="Encaixar na tela" onClick={onFitView}>
             <Fullscreen className="h-4 w-4" />

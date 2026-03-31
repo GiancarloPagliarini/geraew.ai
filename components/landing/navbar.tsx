@@ -15,7 +15,7 @@ const LINKS = [
 ];
 
 export function Navbar() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { openLoginModal } = useLoginModal();
   const isLoggedIn = !!user;
   const [scrolled, setScrolled] = useState(false);
@@ -84,7 +84,12 @@ export function Navbar() {
 
           {/* desktop CTAs */}
           <div className="hidden items-center gap-3 md:flex">
-            {isLoggedIn ? (
+            {loading ? (
+              <>
+                <div className="h-9 w-20 animate-pulse rounded-xl bg-landing-text/8" />
+                <div className="h-9 w-28 animate-pulse rounded-xl bg-landing-text/8" />
+              </>
+            ) : isLoggedIn ? (
               <a
                 href="/workspace"
                 className="rounded-xl bg-landing-accent px-5 py-2.5 text-[13px] font-semibold text-[#1a2123] transition-all duration-300 hover:shadow-[0_0_24px_rgba(162,221,0,0.3)] hover:brightness-110"
@@ -163,7 +168,12 @@ export function Navbar() {
 
         {/* CTAs */}
         <div className="flex flex-col gap-3 border-t border-[#f3f0ed]/[0.06] px-4 py-6">
-          {isLoggedIn ? (
+          {loading ? (
+            <>
+              <div className="h-12 w-full animate-pulse rounded-xl bg-landing-text/8" />
+              <div className="h-12 w-full animate-pulse rounded-xl bg-landing-text/8" />
+            </>
+          ) : isLoggedIn ? (
             <a
               href="/workspace"
               className="rounded-xl bg-landing-accent py-3.5 text-center text-[14px] font-semibold text-[#1a2123] transition-all hover:brightness-110"

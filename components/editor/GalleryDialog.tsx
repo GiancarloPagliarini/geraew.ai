@@ -773,71 +773,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
       )}
 
       {/* Metadata + download */}
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
-        <div className="flex flex-col gap-1 min-w-0">
-          {item.prompt && (
-            <Tooltip delayDuration={300}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(item.prompt!);
-                    setPromptCopied(true);
-                    setTimeout(() => setPromptCopied(false), 2000);
-                  }}
-                  className="group flex items-start gap-1.5 text-left cursor-pointer active:scale-95 transition-transform duration-100"
-                >
-                  <p className="text-sm text-[#f3f0ed]/70 group-hover:text-[#f3f0ed]/90 transition-colors">{item.prompt}</p>
-                  <span className="relative shrink-0 mt-0.5">
-                    {promptCopied ? (
-                      <>
-                        <span className="absolute inset-0 rounded-full bg-[#a2dd00]/40 animate-ping" />
-                        <Check className="relative h-3.5 w-3.5 text-[#a2dd00]" />
-                      </>
-                    ) : (
-                      <Copy className="h-3.5 w-3.5 text-[#f3f0ed]/50 sm:text-[#f3f0ed]/30 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" />
-                    )}
-                  </span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {promptCopied ? 'Copiado!' : 'Copiar prompt'}
-              </TooltipContent>
-            </Tooltip>
-          )}
-          <div className="flex flex-col items-start gap-x-3 gap-y-1 mt-1">
-            {item.resolution && (
-              <span className="flex items-center gap-1 text-xs text-[#f3f0ed]/40">
-                <ImagePlus className="h-3 w-3" />
-                {item.resolution}
-              </span>
-            )}
-            {item.durationSeconds && (
-              <span className="flex items-center gap-1 text-xs text-[#f3f0ed]/40">
-                <Clock className="h-3 w-3" />
-                {item.durationSeconds}s
-              </span>
-            )}
-            {item.modelUsed && (
-              <span className="flex items-center gap-1 text-xs text-[#f3f0ed]/40">
-                <Cpu className="h-3 w-3" />
-                {item.modelUsed}
-              </span>
-            )}
-            {item.creditsConsumed > 0 && (
-              <span className="flex items-center gap-1 text-xs text-[#f3f0ed]/40">
-                <Coins className="h-3 w-3" />
-                {item.creditsConsumed}
-              </span>
-            )}
-            {item.createdAt && (
-              <span className="flex items-center gap-1 text-xs text-[#f3f0ed]/40">
-                <Calendar className="h-3 w-3" />
-                {new Date(item.createdAt).toLocaleDateString('pt-BR')}
-              </span>
-            )}
-          </div>
-        </div>
-
+      <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={(e) => toggleFavorite(item, e)}
@@ -908,6 +844,69 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
               {multipleOutputs ? 'Excluir versão' : 'Excluir'}
             </button>
           )}
+        </div>
+        <div className="flex flex-col gap-1 min-w-0">
+          {item.prompt && (
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(item.prompt!);
+                    setPromptCopied(true);
+                    setTimeout(() => setPromptCopied(false), 2000);
+                  }}
+                  className="group flex items-start gap-1.5 text-left cursor-pointer active:scale-95 transition-transform duration-100"
+                >
+                  <p className="text-sm text-[#f3f0ed]/70 group-hover:text-[#f3f0ed]/90 transition-colors">{item.prompt}</p>
+                  <span className="relative shrink-0 mt-0.5">
+                    {promptCopied ? (
+                      <>
+                        <span className="absolute inset-0 rounded-full bg-[#a2dd00]/40 animate-ping" />
+                        <Check className="relative h-3.5 w-3.5 text-[#a2dd00]" />
+                      </>
+                    ) : (
+                      <Copy className="h-3.5 w-3.5 text-[#f3f0ed]/50 sm:text-[#f3f0ed]/30 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" />
+                    )}
+                  </span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {promptCopied ? 'Copiado!' : 'Copiar prompt'}
+              </TooltipContent>
+            </Tooltip>
+          )}
+          <div className="flex flex-col items-start gap-x-3 gap-y-1 mt-1">
+            {item.resolution && (
+              <span className="flex items-center gap-1 text-xs text-[#f3f0ed]/40">
+                <ImagePlus className="h-3 w-3" />
+                {item.resolution}
+              </span>
+            )}
+            {item.durationSeconds && (
+              <span className="flex items-center gap-1 text-xs text-[#f3f0ed]/40">
+                <Clock className="h-3 w-3" />
+                {item.durationSeconds}s
+              </span>
+            )}
+            {item.modelUsed && (
+              <span className="flex items-center gap-1 text-xs text-[#f3f0ed]/40">
+                <Cpu className="h-3 w-3" />
+                {item.modelUsed}
+              </span>
+            )}
+            {item.creditsConsumed > 0 && (
+              <span className="flex items-center gap-1 text-xs text-[#f3f0ed]/40">
+                <Coins className="h-3 w-3" />
+                {item.creditsConsumed}
+              </span>
+            )}
+            {item.createdAt && (
+              <span className="flex items-center gap-1 text-xs text-[#f3f0ed]/40">
+                <Calendar className="h-3 w-3" />
+                {new Date(item.createdAt).toLocaleDateString('pt-BR')}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

@@ -21,6 +21,7 @@ import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
 import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
+import { useLoginModal } from '@/lib/login-modal-context';
 import { api } from '@/lib/api';
 import { listenGeneration } from '@/lib/sse';
 import { useGenerationRecovery } from '@/lib/use-generation-recovery';
@@ -83,6 +84,7 @@ interface MotionControlPanelProps {
 export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionControlPanelProps) {
   const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating } = useEditor();
   const { accessToken } = useAuth();
+  const { openLoginModal } = useLoginModal();
 
   // ── Persistent state ──────────────────────────────────────────────────────
   const storageKey = `geraew-panel-motion-control-${nodeId}`;
@@ -420,7 +422,8 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
   }
 
   async function handleGenerate() {
-    if (!accessToken || !videoFile || !imageFile) return;
+    if (!accessToken) { openLoginModal(); return; }
+    if (!videoFile || !imageFile) return;
 
     setGenState('generating');
     setProgress(0);
@@ -518,7 +521,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
     <TooltipProvider>
       <div
         ref={panelRef}
-        className={`w-[320px] overflow-hidden rounded-2xl border bg-[#1a2123] shadow-2xl shadow-black/50 transition-colors ${isDraggingOver ? 'border-[#a2dd00]/50 ring-2 ring-[#a2dd00]/30' : 'border-[#f3f0ed]/8'}`}
+        className={`w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border bg-[#1a2123] shadow-2xl shadow-black/50 transition-colors sm:w-[320px] ${isDraggingOver ? 'border-[#a2dd00]/50 ring-2 ring-[#a2dd00]/30' : 'border-[#f3f0ed]/8'}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}

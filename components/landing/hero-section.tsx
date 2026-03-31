@@ -119,7 +119,7 @@ function HeroCarousel() {
 }
 
 export function HeroSection() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const isLoggedIn = !!user;
 
   return (
@@ -166,13 +166,17 @@ export function HeroSection() {
 
           {/* CTA */}
           <div className="mt-8 flex flex-col items-center gap-4 sm:mt-10 sm:flex-row sm:gap-5">
-            <a
-              href="/workspace"
-              className="group inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-7 py-3.5 text-[14px] font-bold text-landing-bg-secondary shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-colors duration-200 hover:bg-[#b5e82d] active:scale-[0.98] sm:px-8 sm:py-4 sm:text-[15px]"
-            >
-              {isLoggedIn ? "Acessar Workspace" : "Começar Grátis"}
-              <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-            </a>
+            {loading ? (
+              <div className="h-12 w-44 animate-pulse rounded-xl bg-landing-text/8 sm:h-[52px] sm:w-48" />
+            ) : (
+              <a
+                href="/workspace"
+                className="group inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-7 py-3.5 text-[14px] font-bold text-landing-bg-secondary shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-colors duration-200 hover:bg-[#b5e82d] active:scale-[0.98] sm:px-8 sm:py-4 sm:text-[15px]"
+              >
+                {isLoggedIn ? "Acessar Workspace" : "Começar Grátis"}
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+              </a>
+            )}
           </div>
 
           {/* Microcopy */}
