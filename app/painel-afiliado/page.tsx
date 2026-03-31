@@ -135,13 +135,14 @@ export default function PainelAfiliadoPage() {
   }
 
   const { affiliate, summary, earnings } = data;
+  const maturationDays = summary.maturationDays ?? 30;
   const referralLink = `${SITE_URL}/?ref=${affiliate.code}`;
 
   const statCards = [
     { label: 'Usuarios Indicados', value: summary.referredUsers.toLocaleString('pt-BR'), icon: Users, color: 'text-blue-400' },
-    { label: 'Disponivel p/ Saque', value: formatCents(summary.availableCommissionCents), icon: Wallet, color: 'text-emerald-400' },
-    { label: 'Em Maturacao', value: formatCents(summary.maturingCommissionCents), icon: Timer, color: 'text-yellow-400' },
-    { label: 'Pago', value: formatCents(summary.paidCommissionCents), icon: CheckCircle2, color: 'text-green-400' },
+    { label: 'Disponivel p/ Saque', value: formatCents(summary.availableCommissionCents ?? 0), icon: Wallet, color: 'text-emerald-400' },
+    { label: 'Em Maturacao', value: formatCents(summary.maturingCommissionCents ?? 0), icon: Timer, color: 'text-yellow-400' },
+    { label: 'Pago', value: formatCents(summary.paidCommissionCents ?? 0), icon: CheckCircle2, color: 'text-green-400' },
   ];
 
   return (
@@ -202,7 +203,7 @@ export default function PainelAfiliadoPage() {
           <div className="flex items-start gap-3 rounded-xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/2 px-4 py-3">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#f3f0ed]/30" />
             <p className="text-xs leading-relaxed text-[#f3f0ed]/40">
-              As comissoes ficam em maturacao por <span className="font-medium text-[#f3f0ed]/60">{summary.maturationDays} dias</span> apos
+              As comissoes ficam em maturacao por <span className="font-medium text-[#f3f0ed]/60">{maturationDays} dias</span> apos
               o pagamento. Apos esse periodo, ficam disponiveis para saque.
             </p>
           </div>
@@ -248,7 +249,7 @@ export default function PainelAfiliadoPage() {
                             Pago
                           </Badge>
                         ) : (() => {
-                          const availDate = getAvailableDate(earning.createdAt, summary.maturationDays);
+                          const availDate = getAvailableDate(earning.createdAt, maturationDays);
                           const days = daysUntil(availDate);
                           return days > 0 ? (
                             <span className="text-[10px] tabular-nums text-yellow-400">
@@ -328,7 +329,7 @@ export default function PainelAfiliadoPage() {
                                 Pago
                               </Badge>
                             ) : (() => {
-                              const availDate = getAvailableDate(earning.createdAt, summary.maturationDays);
+                              const availDate = getAvailableDate(earning.createdAt, maturationDays);
                               const days = daysUntil(availDate);
                               return days > 0 ? (
                                 <div className="flex flex-col">
