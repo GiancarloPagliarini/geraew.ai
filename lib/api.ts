@@ -1037,6 +1037,12 @@ export const api = {
         body: JSON.stringify(data),
       });
     },
+    updateAffiliate(accessToken: string, id: string, data: { name?: string; commissionPercent?: number; userId?: string | null }) {
+      return authRequest<Affiliate>(`/api/v1/admin/affiliates/${id}`, accessToken, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    },
     toggleAffiliate(accessToken: string, id: string) {
       return authRequest<Affiliate>(`/api/v1/admin/affiliates/${id}/toggle-active`, accessToken, {
         method: 'PATCH',
@@ -1149,6 +1155,44 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ phone, code }),
       });
+    },
+  },
+
+  affiliates: {
+    me(accessToken: string) {
+      return authRequest<{
+        affiliate: {
+          id: string;
+          code: string;
+          name: string;
+          commissionPercent: number;
+          isActive: boolean;
+          createdAt: string;
+        };
+        summary: {
+          referredUsers: number;
+          totalPayments: number;
+          totalRevenueCents: number;
+          totalCommissionCents: number;
+          pendingCommissionCents: number;
+          paidCommissionCents: number;
+        };
+        earnings: {
+          id: string;
+          amountCents: number;
+          commissionCents: number;
+          status: 'PENDING' | 'PAID';
+          paidAt: string | null;
+          createdAt: string;
+          user: { name: string; email: string };
+          payment: {
+            type: string;
+            amountCents: number;
+            subscription: { plan: { name: string; slug: string } } | null;
+            creditPackage: { name: string; credits: number } | null;
+          };
+        }[];
+      } | null>('/api/v1/affiliates/me', accessToken);
     },
   },
 };

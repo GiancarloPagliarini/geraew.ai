@@ -20,6 +20,7 @@ import {
   Copy,
   Check,
   Link,
+  Pencil,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -184,12 +185,110 @@ function CreateAffiliateForm({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ─── Edit Affiliate Modal ────────────────────────────────────────────────────
+
+function EditAffiliateForm({
+  affiliate,
+  onClose,
+}: {
+  affiliate: { id: string; name: string; commissionPercent: number; userId: string | null; user: { id: string; email: string; name: string } | null };
+  onClose: () => void;
+}) {
+  const { accessToken } = useAuth();
+  const queryClient = useQueryClient();
+  const [name, setName] = useState(affiliate.name);
+  const [commission, setCommission] = useState(String(affiliate.commissionPercent));
+  const [userId, setUserId] = useState(affiliate.userId ?? '');
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      api.admin.updateAffiliate(accessToken!, affiliate.id, {
+        name,
+        commissionPercent: Number(commission),
+        userId: userId || null,
+      }),
+    onSuccess: () => {
+      toast.success('Afiliado atualizado');
+      queryClient.invalidateQueries({ queryKey: ['admin', 'affiliates'] });
+      onClose();
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Erro ao atualizar');
+    },
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="mx-4 w-full max-w-md rounded-2xl border border-[#f3f0ed]/8 bg-[#1a2123] p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="mb-4 text-lg font-bold text-[#f3f0ed]">Editar Afiliado</h2>
+
+        <div className="flex flex-col gap-3">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-[#f3f0ed]/50">Nome</label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="h-10 border-[#f3f0ed]/8 bg-[#f3f0ed]/3 text-sm text-[#f3f0ed] placeholder:text-[#f3f0ed]/25 focus-visible:border-[#a2dd00]/30 focus-visible:ring-[#a2dd00]/10"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-[#f3f0ed]/50">Comissão (%)</label>
+            <Input
+              type="number"
+              value={commission}
+              onChange={(e) => setCommission(e.target.value)}
+              className="h-10 border-[#f3f0ed]/8 bg-[#f3f0ed]/3 text-sm text-[#f3f0ed] placeholder:text-[#f3f0ed]/25 focus-visible:border-[#a2dd00]/30 focus-visible:ring-[#a2dd00]/10"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-[#f3f0ed]/50">User ID</label>
+            <Input
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              placeholder="UUID do user na plataforma"
+              className="h-10 border-[#f3f0ed]/8 bg-[#f3f0ed]/3 text-sm font-mono text-[#f3f0ed] placeholder:text-[#f3f0ed]/25 focus-visible:border-[#a2dd00]/30 focus-visible:ring-[#a2dd00]/10"
+            />
+            {affiliate.user && (
+              <p className="mt-1 text-xs text-[#f3f0ed]/30">
+                Atual: {affiliate.user.email}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-5 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 rounded-xl border border-[#f3f0ed]/8 px-4 py-2.5 text-sm font-medium text-[#f3f0ed]/50 transition-colors hover:bg-[#f3f0ed]/5"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => mutation.mutate()}
+            disabled={!name || mutation.isPending}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#a2dd00] px-4 py-2.5 text-sm font-semibold text-[#1c1917] transition-colors hover:bg-[#a2dd00]/90 disabled:opacity-40"
+          >
+            {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            Salvar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Affiliate Detail View ──────────────────────────────────────────────────
 
 function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onBack: () => void }) {
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showEdit, setShowEdit] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'affiliates', affiliateId, 'earnings'],
@@ -279,6 +378,13 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
         </div>
         <div className="flex gap-2">
           <CopyLinkButton code={affiliate.code} />
+          <button
+            onClick={() => setShowEdit(true)}
+            className="flex h-9 items-center gap-2 rounded-xl border border-[#f3f0ed]/8 px-3 text-sm text-[#f3f0ed]/50 transition-colors hover:bg-[#f3f0ed]/5"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Editar
+          </button>
           <button
             onClick={() => toggleMutation.mutate()}
             disabled={toggleMutation.isPending}
@@ -465,6 +571,14 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
           </>
         )}
       </div>
+
+      {/* Edit modal */}
+      {showEdit && (
+        <EditAffiliateForm
+          affiliate={affiliate}
+          onClose={() => setShowEdit(false)}
+        />
+      )}
     </div>
   );
 }
