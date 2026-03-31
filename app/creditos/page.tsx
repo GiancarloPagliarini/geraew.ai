@@ -390,7 +390,6 @@ function CreditosPageContent() {
               <div className="mt-1 flex items-center gap-4 text-[11px] text-[#f3f0ed]/30">
                 {activeTab === 'plans' ? (
                   <>
-                    <span className="flex items-center gap-1.5"><Shield className="h-3 w-3" />Garantia de 7 dias</span>
                     <span className="flex items-center gap-1.5"><Lock className="h-3 w-3" />Pagamento seguro</span>
                     <span className="flex items-center gap-1.5"><CircleOff className="h-3 w-3" />Cancele quando quiser</span>
                   </>
@@ -438,7 +437,6 @@ function CreditosPageContent() {
                 <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-[#f3f0ed]/25">
                   <span className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#a2dd00]/50" />Sem taxa de cancelamento</span>
                   <span className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#a2dd00]/50" />Créditos renovam mensalmente</span>
-                  <span className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#a2dd00]/50" />Garantia de reembolso em 7 dias</span>
                 </div>
               </>
             )}

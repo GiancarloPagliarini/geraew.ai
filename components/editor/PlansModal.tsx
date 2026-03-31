@@ -6,11 +6,9 @@ import {
   Check,
   Coins,
   X,
-  Zap,
-  Shield,
-  Flame,
+  Zap, Flame,
   BadgePercent,
-  CircleOff,
+  CircleOff
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
@@ -169,10 +167,6 @@ export function PlansModal({ onClose }: PlansModalProps) {
             {activeTab === 'plans' ? (
               <>
                 <span className="flex items-center gap-1">
-                  <Shield className="h-2.5 w-2.5" />
-                  Garantia de 7 dias
-                </span>
-                <span className="flex items-center gap-1">
                   <CircleOff className="h-2.5 w-2.5" />
                   Cancele quando quiser
                 </span>
@@ -246,10 +240,6 @@ export function PlansModal({ onClose }: PlansModalProps) {
                 <span className="flex items-center gap-1">
                   <Check className="h-2.5 w-2.5 text-[#a2dd00]/50" />
                   Créditos renovam mensalmente
-                </span>
-                <span className="flex items-center gap-1">
-                  <Check className="h-2.5 w-2.5 text-[#a2dd00]/50" />
-                  Garantia de reembolso em 7 dias
                 </span>
               </div>
             )}

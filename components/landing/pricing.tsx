@@ -374,9 +374,6 @@ export function Pricing() {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-landing-accent/15 bg-landing-accent/[0.06]">
               <Shield className="h-5 w-5 text-landing-accent" />
             </div>
-            <h3 className="mt-5 font-sora text-lg font-bold text-[#f3f0ed]">
-              Garantia de 7 Dias
-            </h3>
             <p className="mt-3 text-[14px] leading-relaxed text-[#f3f0ed]/50">
               Experimente sem risco. Se não ficar satisfeito nos primeiros 7
               dias, devolvemos 100% do seu dinheiro. Sem perguntas, sem
