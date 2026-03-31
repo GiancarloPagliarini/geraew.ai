@@ -66,8 +66,8 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
     <button
       onClick={handleCopy}
       className={`flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors ${copied
-          ? 'border-[#a2dd00]/30 bg-[#a2dd00]/10 text-[#a2dd00]'
-          : 'border-[#f3f0ed]/8 text-[#f3f0ed]/50 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70'
+        ? 'border-[#a2dd00]/30 bg-[#a2dd00]/10 text-[#a2dd00]'
+        : 'border-[#f3f0ed]/8 text-[#f3f0ed]/50 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70'
         }`}
     >
       {copied ? <Check className="h-3.5 w-3.5" /> : label ? <Link className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
