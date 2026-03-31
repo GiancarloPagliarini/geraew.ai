@@ -203,7 +203,7 @@ export default function PainelAfiliadoPage() {
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#f3f0ed]/30" />
             <p className="text-xs leading-relaxed text-[#f3f0ed]/40">
               As comissoes ficam em maturacao por <span className="font-medium text-[#f3f0ed]/60">{maturationDays} dias</span> apos
-              o pagamento. Apos esse periodo, ficam disponiveis para saque.
+              o pagamento. Apos esse periodo, ficam disponiveis
             </p>
           </div>
 
