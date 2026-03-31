@@ -56,7 +56,15 @@ function LoginPageContent() {
   const searchParams = useSearchParams();
 
   const planParam = searchParams.get('plan');
+  const refParam = searchParams.get('ref');
   const redirectAfterLogin = planParam ? `/creditos?plan=${planParam}` : '/workspace';
+
+  // Salvar referral code em cookie para persistir durante OAuth redirect
+  useEffect(() => {
+    if (refParam) {
+      document.cookie = `geraew-ref=${refParam};path=/;max-age=2592000;samesite=lax`; // 30 dias
+    }
+  }, [refParam]);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [progresses, setProgresses] = useState<number[]>(slides.map(() => 0));
@@ -379,7 +387,9 @@ function LoginPageContent() {
         await login(email, password);
         router.push(redirectAfterLogin);
       } else {
-        await api.auth.register(email, name, password, phone);
+        // Buscar referral code da URL ou cookie
+        const referralCode = refParam || document.cookie.match(/(?:^|; )geraew-ref=([^;]*)/)?.[1];
+        await api.auth.register(email, name, password, phone, referralCode || undefined);
         setView('verify');
       }
     } catch (err: unknown) {
@@ -444,6 +454,10 @@ function LoginPageContent() {
               onClick={() => {
                 if (planParam) {
                   document.cookie = `geraew-plan-redirect=${planParam};path=/;max-age=600;samesite=lax`;
+                }
+                const ref = refParam || document.cookie.match(/(?:^|; )geraew-ref=([^;]*)/)?.[1];
+                if (ref) {
+                  document.cookie = `geraew-ref=${ref};path=/;max-age=2592000;samesite=lax`;
                 }
                 window.location.href = '/api/v1/auth/google';
               }}

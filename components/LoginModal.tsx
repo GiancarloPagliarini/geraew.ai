@@ -315,7 +315,8 @@ function LoginModalContent() {
         await login(email, password);
         handleLoginSuccess();
       } else {
-        await api.auth.register(email, name, password, phone);
+        const referralCode = document.cookie.match(/(?:^|; )geraew-ref=([^;]*)/)?.[1];
+        await api.auth.register(email, name, password, phone, referralCode || undefined);
         setView('verify');
       }
     } catch (err: unknown) {
@@ -371,6 +372,9 @@ function LoginModalContent() {
               <button
                 onClick={() => {
                   if (planParam) document.cookie = `geraew-plan-redirect=${planParam};path=/;max-age=600;samesite=lax`;
+                  // Preservar referral code no cookie para Google OAuth
+                  const ref = document.cookie.match(/(?:^|; )geraew-ref=([^;]*)/)?.[1];
+                  if (ref) document.cookie = `geraew-ref=${ref};path=/;max-age=2592000;samesite=lax`;
                   window.location.href = '/api/v1/auth/google';
                 }}
                 disabled={loading}

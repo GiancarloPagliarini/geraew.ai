@@ -37,6 +37,8 @@ import { PhoneVerificationProvider } from "@/lib/phone-verification-context";
 import { LoginModalProvider } from "@/lib/login-modal-context";
 import { LoginModal } from "@/components/LoginModal";
 import { Toaster } from "sonner";
+import { Suspense } from "react";
+import { ReferralCapture } from "@/components/ReferralCapture";
 
 export default function RootLayout({
   children,
@@ -54,6 +56,7 @@ export default function RootLayout({
             <LoginModalProvider>
             <PhoneVerificationProvider>
             <TooltipProvider delayDuration={0}>
+              <Suspense fallback={null}><ReferralCapture /></Suspense>
               {children}
               <PhoneVerificationModal />
               <LoginModal />

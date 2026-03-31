@@ -341,6 +341,59 @@ export interface Folder {
   createdAt: string;
 }
 
+// ─── Affiliates (Admin) ─────────────────────────────────────────────────────
+
+export interface Affiliate {
+  id: string;
+  userId: string | null;
+  code: string;
+  name: string;
+  commissionPercent: number;
+  isActive: boolean;
+  createdAt: string;
+  user: { id: string; email: string; name: string } | null;
+  _count: { earnings: number };
+  totalEarningsCents: number;
+  pendingEarningsCents: number;
+  referralsCount: number;
+}
+
+export interface AffiliateEarning {
+  id: string;
+  affiliateId: string;
+  paymentId: string;
+  userId: string;
+  amountCents: number;
+  commissionCents: number;
+  status: 'PENDING' | 'PAID';
+  paidAt: string | null;
+  createdAt: string;
+  user: { id: string; email: string; name: string };
+  payment: { id: string; type: string; amountCents: number; createdAt: string };
+}
+
+export interface AffiliateDashboard {
+  totalAffiliates: number;
+  activeAffiliates: number;
+  referredUsers: number;
+  totalPayments: number;
+  totalRevenueCents: number;
+  totalCommissionCents: number;
+  pendingCommissionCents: number;
+  paidCommissionCents: number;
+}
+
+export interface AffiliateEarningsResponse {
+  affiliate: Omit<Affiliate, '_count' | 'totalEarningsCents' | 'pendingEarningsCents' | 'referralsCount'>;
+  earnings: AffiliateEarning[];
+  summary: {
+    totalRevenueCents: number;
+    totalCommissionCents: number;
+    pendingCommissionCents: number;
+    paidCommissionCents: number;
+  };
+}
+
 // ─── Admin ───────────────────────────────────────────────────────────────────
 
 export interface AdminStats {
@@ -966,6 +1019,35 @@ export const api = {
     healthStats(accessToken: string) {
       return authRequest<HealthStats>('/api/v1/admin/stats/health', accessToken);
     },
+    affiliatesDashboard(accessToken: string) {
+      return authRequest<AffiliateDashboard>('/api/v1/admin/affiliates/dashboard', accessToken);
+    },
+    affiliatesList(accessToken: string) {
+      return authRequest<Affiliate[]>('/api/v1/admin/affiliates', accessToken);
+    },
+    affiliateById(accessToken: string, id: string) {
+      return authRequest<Affiliate>(`/api/v1/admin/affiliates/${id}`, accessToken);
+    },
+    affiliateEarnings(accessToken: string, id: string) {
+      return authRequest<AffiliateEarningsResponse>(`/api/v1/admin/affiliates/${id}/earnings`, accessToken);
+    },
+    createAffiliate(accessToken: string, data: { name: string; code: string; commissionPercent?: number; userId?: string }) {
+      return authRequest<Affiliate>('/api/v1/admin/affiliates', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+    toggleAffiliate(accessToken: string, id: string) {
+      return authRequest<Affiliate>(`/api/v1/admin/affiliates/${id}/toggle-active`, accessToken, {
+        method: 'PATCH',
+      });
+    },
+    markEarningsPaid(accessToken: string, earningIds: string[]) {
+      return authRequest<{ updated: number }>('/api/v1/admin/affiliates/earnings/mark-paid', accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ earningIds }),
+      });
+    },
     upload(accessToken: string, filename: string, contentType: string, folder: string) {
       return authRequest<{ uploadUrl: string; fileKey: string; publicUrl: string }>(
         '/api/v1/admin/upload',
@@ -993,10 +1075,10 @@ export const api = {
       });
     },
 
-    register(email: string, name: string, password: string, phone: string) {
+    register(email: string, name: string, password: string, phone: string, referralCode?: string) {
       return request<AuthResponse>('/api/v1/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email, name, password, phone }),
+        body: JSON.stringify({ email, name, password, phone, ...(referralCode && { referralCode }) }),
       });
     },
 
@@ -1007,10 +1089,10 @@ export const api = {
       });
     },
 
-    google(googleToken: string) {
+    google(googleToken: string, referralCode?: string) {
       return request<AuthResponse>('/api/v1/auth/google', {
         method: 'POST',
-        body: JSON.stringify({ googleToken }),
+        body: JSON.stringify({ googleToken, ...(referralCode && { referralCode }) }),
       });
     },
 
