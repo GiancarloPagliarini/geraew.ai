@@ -659,287 +659,287 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
 
   return (
     <>
-    <TooltipProvider>
-      <div
-        ref={panelRef}
-        className={`w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border bg-[#1a2123] shadow-2xl shadow-black/50 transition-colors sm:w-[320px] ${isDraggingOver ? 'border-[#a2dd00]/50 ring-2 ring-[#a2dd00]/30' : 'border-[#f3f0ed]/8'}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        {/* Header — drag handle */}
-        <div className="panel-drag-handle flex cursor-grab items-center justify-between border-b border-[#f3f0ed]/[0.07] px-4 py-3 active:cursor-grabbing">
-          <div className="flex items-center gap-2">
-            <Image className="h-4 w-4 text-[#a2dd00]" />
-            <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
-              GERAR IMAGEM
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <PanelDuplicateButton onClick={onDuplicate} />
-            <button
-              onClick={() => { localStorage.removeItem(storageKey); idbDelete(`${storageKey}-images`).catch(() => { }); onClose?.(); }}
-              className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-2.5 p-4">
-          {/* Prompt */}
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            rows={3}
-            placeholder="Descreva o que deseja gerar..."
-            className="w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30"
-          />
-
-          {/* Enhance prompt toggle */}
-          <EnhancePromptToggle
-            enabled={enhancePrompt}
-            onToggle={setEnhancePrompt}
-            isEnhancing={isEnhancing}
-            disabled={isGenerating}
-          />
-
-          {/* ── Error message ────────────────────────────────────────────── */}
-          <GenerationErrorBanner msg={errorMsg} />
-
-          {/* ── Generation area + Generated image (crossfade) ───────────── */}
-          <GenerationPreview
-            proportion={proportion}
-            genState={genState}
-            imageVisible={imageVisible}
-            onImageLoad={() => setImageVisible(true)}
-            onImageError={handleImageError}
-            progress={progress}
-            generatedImageUrl={generatedImageUrl}
-            imageRef={draggableImgRef}
-            onImageClick={() => window.open(generatedImageUrl!, '_blank')}
-            onImageDragStart={(e) => {
-              e.stopPropagation();
-              e.dataTransfer.setData('text/geraew-image-url', generatedImageUrl!);
-              e.dataTransfer.effectAllowed = 'copy';
-            }}
-            imageFilter={upscaleState === 'done' ? 'blur(0px) brightness(1.06) contrast(1.04) saturate(1.12)' : undefined}
-          >
-            {/* Upscale done badge */}
-            {upscaleState === 'done' && (
-              <div className="absolute left-2 top-2 flex items-center justify-center rounded-full bg-[#a2dd00] px-2 py-0.5">
-                <span className="text-[8px] font-black tracking-widest text-[#1a2123]">HD+</span>
-              </div>
-            )}
-            <ActionButton title="Expandir" onClick={() => window.open(generatedImageUrl!, '_blank')}>
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </ActionButton>
-            <ActionButton title="Baixar" onClick={() => handleDownload(generatedImageUrl!)}>
-              <Download className="h-3.5 w-3.5" />
-            </ActionButton>
-            {generationId && (
-              <ActionButton title="Adicionar à pasta" onClick={() => setFolderDialogOpen(true)}>
-                <FolderPlus className="h-3.5 w-3.5" />
-              </ActionButton>
-            )}
-            <ActionButton title="Descartar" onClick={handleDiscard}>
-              <X className="h-3.5 w-3.5" />
-            </ActionButton>
-          </GenerationPreview>
-
-          {/* ── Folder dialog ───────────────────────────────────────── */}
-          {generationId && (
-            <FolderAddDialog
-              open={folderDialogOpen}
-              onOpenChange={setFolderDialogOpen}
-              folders={folders}
-              activeFolderIds={generationFolders.map((f) => f.id)}
-              onAddToFolder={(folderId) => addToFolderMutation.mutate({ folderId })}
-              onCreateAndAdd={(name) => createFolderAndAddMutation.mutate(name)}
-            />
-          )}
-
-
-          {/* ── Bottom section (model + proportion + quality + refs) ──── */}
-          <div className="flex justify-end m-0">
-            <Tooltip delayDuration={200}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => setOptionsOpen((o) => !o)}
-                  className="flex h-6 w-6 items-center justify-center rounded-full text-[#a2dd00]/60 transition-all hover:bg-[#a2dd00]/10 hover:text-[#a2dd00]"
-                >
-                  <Settings
-                    className="h-5 w-5 transition-transform duration-500"
-                    style={{ transform: optionsOpen ? 'rotate(0deg)' : 'rotate(-180deg)' }}
-                  />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="left" sideOffset={6}>
-                {optionsOpen ? 'Ocultar opções' : 'Mostrar opções'}
-              </TooltipContent>
-            </Tooltip>
-          </div>
-
-          <div
-            style={{
-              maxHeight: optionsOpen ? '800px' : '0px',
-              overflow: 'hidden',
-              transition: optionsOpen ? 'max-height 400ms ease' : 'max-height 300ms ease',
-            }}
-          >
-            <div className="space-y-4 pt-0.5">
-              <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-                <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                  MODELO
-                </label>
-                <PanelSelect
-                  value={model}
-                  onValueChange={setModel}
-                  options={[
-                    { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2' },
-                    { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
-                  ]}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                    PROPORÇÃO
-                  </label>
-                  <PanelSelect
-                    value={proportion}
-                    onValueChange={setProportion}
-                    options={[
-                      { value: '16-9', label: '16:9 Paisagem' },
-                      { value: '9-16', label: '9:16 Retrato' },
-                      { value: '1-1', label: '1:1 Quadrado' },
-                      { value: '4-3', label: '4:3' },
-                    ]}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                    QUALIDADE
-                  </label>
-                  <PanelSelect
-                    value={quality}
-                    onValueChange={setQuality}
-                    options={[
-                      { value: '4k', label: '4K' },
-                      { value: 'hd', label: '2K' },
-                      { value: 'sd', label: '1K' },
-                    ]}
-                  />
-                </div>
-              </div>
-
-              {/* References */}
-              <div className="space-y-2" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-                <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                    REFERÊNCIAS (OPCIONAL)
-                  </label>
-                  <span className="text-[10px] text-[#f3f0ed]/25">{attachedImages.length}/4</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {attachedImages.map((img, i) => (
-                    <div key={i} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#f3f0ed]/10">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img.preview} alt="" className="h-full w-full object-cover" />
-                      <button
-                        onClick={() => removeAttachedImage(i)}
-                        className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
-                      >
-                        <X className="h-3.5 w-3.5 text-white" />
-                      </button>
-                    </div>
-                  ))}
-                  {attachedImages.length < 4 && (
-                    <>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => fileInputRef.current?.click()}
-                            className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
-                          >
-                            <ImagePlus className="h-5 w-5" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" sideOffset={6}>Enviar do dispositivo</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => openGalleryPicker({ nodeId, remaining: 4 - attachedImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success('Imagem adicionada como referência!'); } })}
-                            className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
-                          >
-                            <FolderOpen className="h-5 w-5" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" sideOffset={6}>Escolher da galeria</TooltipContent>
-                      </Tooltip>
-                    </>
-                  )}
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileSelect}
-                />
-
-              </div>
-
-              {/* Credit estimate */}
-              {genState !== 'generating' && (
-                <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
-                  <div className="flex items-center gap-1.5">
-                    <Coins className="h-3 w-3 text-[#a2dd00]" />
-                    <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Custo</span>
-                  </div>
-                  {estimateLoading ? (
-                    <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
-                  ) : estimate ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
-                      <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
-                    </div>
-                  ) : null}
-                </div>
-              )}
-
-              {/* Generate button */}
+      <TooltipProvider>
+        <div
+          ref={panelRef}
+          className={`w-[calc(100vw-5rem)] overflow-hidden rounded-2xl border bg-[#1a2123] shadow-2xl shadow-black/50 transition-colors sm:w-[320px] ${isDraggingOver ? 'border-[#a2dd00]/50 ring-2 ring-[#a2dd00]/30' : 'border-[#f3f0ed]/8'}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {/* Header — drag handle */}
+          <div className="panel-drag-handle flex cursor-grab items-center justify-between border-b border-[#f3f0ed]/[0.07] px-4 py-3 active:cursor-grabbing">
+            <div className="flex items-center gap-2">
+              <Image className="h-4 w-4 text-[#a2dd00]" />
+              <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
+                GERAR IMAGEM
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <PanelDuplicateButton onClick={onDuplicate} />
               <button
-                onClick={handleGenerate}
-                disabled={genState === 'generating' || !prompt.trim()}
-                className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-                style={{
-                  background: genState === 'generating' ? 'rgba(162,221,0,0.12)' : '#a2dd00',
-                  color: genState === 'generating' ? '#a2dd00' : '#1a2123',
-                  border: genState === 'generating' ? '1px solid rgba(162,221,0,0.2)' : 'none',
-                }}
+                onClick={() => { localStorage.removeItem(storageKey); idbDelete(`${storageKey}-images`).catch(() => { }); onClose?.(); }}
+                className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
               >
-                {genState === 'generating' ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    GERANDO...
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="h-4 w-4" />
-                    {genState === 'done' ? 'GERAR NOVAMENTE' : 'GERAR'}
-                  </>
-                )}
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>
+
+          <div className="space-y-2.5 p-4">
+            {/* Prompt */}
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              rows={3}
+              placeholder="Descreva o que deseja gerar..."
+              className="w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30"
+            />
+
+            {/* Enhance prompt toggle */}
+            <EnhancePromptToggle
+              enabled={enhancePrompt}
+              onToggle={setEnhancePrompt}
+              isEnhancing={isEnhancing}
+              disabled={isGenerating}
+            />
+
+            {/* ── Error message ────────────────────────────────────────────── */}
+            <GenerationErrorBanner msg={errorMsg} />
+
+            {/* ── Generation area + Generated image (crossfade) ───────────── */}
+            <GenerationPreview
+              proportion={proportion}
+              genState={genState}
+              imageVisible={imageVisible}
+              onImageLoad={() => setImageVisible(true)}
+              onImageError={handleImageError}
+              progress={progress}
+              generatedImageUrl={generatedImageUrl}
+              imageRef={draggableImgRef}
+              onImageClick={() => window.open(generatedImageUrl!, '_blank')}
+              onImageDragStart={(e) => {
+                e.stopPropagation();
+                e.dataTransfer.setData('text/geraew-image-url', generatedImageUrl!);
+                e.dataTransfer.effectAllowed = 'copy';
+              }}
+              imageFilter={upscaleState === 'done' ? 'blur(0px) brightness(1.06) contrast(1.04) saturate(1.12)' : undefined}
+            >
+              {/* Upscale done badge */}
+              {upscaleState === 'done' && (
+                <div className="absolute left-2 top-2 flex items-center justify-center rounded-full bg-[#a2dd00] px-2 py-0.5">
+                  <span className="text-[8px] font-black tracking-widest text-[#1a2123]">HD+</span>
+                </div>
+              )}
+              <ActionButton title="Expandir" onClick={() => window.open(generatedImageUrl!, '_blank')}>
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </ActionButton>
+              <ActionButton title="Baixar" onClick={() => handleDownload(generatedImageUrl!)}>
+                <Download className="h-3.5 w-3.5" />
+              </ActionButton>
+              {generationId && (
+                <ActionButton title="Adicionar à pasta" onClick={() => setFolderDialogOpen(true)}>
+                  <FolderPlus className="h-3.5 w-3.5" />
+                </ActionButton>
+              )}
+              <ActionButton title="Descartar" onClick={handleDiscard}>
+                <X className="h-3.5 w-3.5" />
+              </ActionButton>
+            </GenerationPreview>
+
+            {/* ── Folder dialog ───────────────────────────────────────── */}
+            {generationId && (
+              <FolderAddDialog
+                open={folderDialogOpen}
+                onOpenChange={setFolderDialogOpen}
+                folders={folders}
+                activeFolderIds={generationFolders.map((f) => f.id)}
+                onAddToFolder={(folderId) => addToFolderMutation.mutate({ folderId })}
+                onCreateAndAdd={(name) => createFolderAndAddMutation.mutate(name)}
+              />
+            )}
+
+
+            {/* ── Bottom section (model + proportion + quality + refs) ──── */}
+            <div className="flex justify-end m-0">
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setOptionsOpen((o) => !o)}
+                    className="flex h-6 w-6 items-center justify-center rounded-full text-[#a2dd00]/60 transition-all hover:bg-[#a2dd00]/10 hover:text-[#a2dd00]"
+                  >
+                    <Settings
+                      className="h-5 w-5 transition-transform duration-500"
+                      style={{ transform: optionsOpen ? 'rotate(0deg)' : 'rotate(-180deg)' }}
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left" sideOffset={6}>
+                  {optionsOpen ? 'Ocultar opções' : 'Mostrar opções'}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+
+            <div
+              style={{
+                maxHeight: optionsOpen ? '800px' : '0px',
+                overflow: 'hidden',
+                transition: optionsOpen ? 'max-height 400ms ease' : 'max-height 300ms ease',
+              }}
+            >
+              <div className="space-y-4 pt-0.5">
+                <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                  <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                    MODELO
+                  </label>
+                  <PanelSelect
+                    value={model}
+                    onValueChange={setModel}
+                    options={[
+                      { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2' },
+                      { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
+                    ]}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                      PROPORÇÃO
+                    </label>
+                    <PanelSelect
+                      value={proportion}
+                      onValueChange={setProportion}
+                      options={[
+                        { value: '16-9', label: '16:9 Paisagem' },
+                        { value: '9-16', label: '9:16 Retrato' },
+                        { value: '1-1', label: '1:1 Quadrado' },
+                        { value: '4-3', label: '4:3' },
+                      ]}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                      QUALIDADE
+                    </label>
+                    <PanelSelect
+                      value={quality}
+                      onValueChange={setQuality}
+                      options={[
+                        { value: '4k', label: '4K' },
+                        { value: 'hd', label: '2K' },
+                        { value: 'sd', label: '1K' },
+                      ]}
+                    />
+                  </div>
+                </div>
+
+                {/* References */}
+                <div className="space-y-2" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                      REFERÊNCIAS (OPCIONAL)
+                    </label>
+                    <span className="text-[10px] text-[#f3f0ed]/25">{attachedImages.length}/4</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {attachedImages.map((img, i) => (
+                      <div key={i} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#f3f0ed]/10">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={img.preview} alt="" className="h-full w-full object-cover" />
+                        <button
+                          onClick={() => removeAttachedImage(i)}
+                          className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
+                        >
+                          <X className="h-3.5 w-3.5 text-white" />
+                        </button>
+                      </div>
+                    ))}
+                    {attachedImages.length < 4 && (
+                      <>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => fileInputRef.current?.click()}
+                              className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                            >
+                              <ImagePlus className="h-5 w-5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" sideOffset={6}>Enviar do dispositivo</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => openGalleryPicker({ nodeId, remaining: 4 - attachedImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success('Imagem adicionada como referência!'); } })}
+                              className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                            >
+                              <FolderOpen className="h-5 w-5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" sideOffset={6}>Escolher da galeria</TooltipContent>
+                        </Tooltip>
+                      </>
+                    )}
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+
+                </div>
+
+                {/* Credit estimate */}
+                {genState !== 'generating' && (
+                  <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
+                    <div className="flex items-center gap-1.5">
+                      <Coins className="h-3 w-3 text-[#a2dd00]" />
+                      <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Custo</span>
+                    </div>
+                    {estimateLoading ? (
+                      <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
+                    ) : estimate ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
+                        <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+
+                {/* Generate button */}
+                <button
+                  onClick={handleGenerate}
+                  disabled={genState === 'generating' || !prompt.trim()}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    background: genState === 'generating' ? 'rgba(162,221,0,0.12)' : '#a2dd00',
+                    color: genState === 'generating' ? '#a2dd00' : '#1a2123',
+                    border: genState === 'generating' ? '1px solid rgba(162,221,0,0.2)' : 'none',
+                  }}
+                >
+                  {genState === 'generating' ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      GERANDO...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="h-4 w-4" />
+                      {genState === 'done' ? 'GERAR NOVAMENTE' : 'GERAR'}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </TooltipProvider>
-    {plansModalOpen && createPortal(<PlansModal onClose={() => setPlansModalOpen(false)} />, document.body)}
+      </TooltipProvider>
+      {plansModalOpen && createPortal(<PlansModal onClose={() => setPlansModalOpen(false)} />, document.body)}
     </>
   );
 }

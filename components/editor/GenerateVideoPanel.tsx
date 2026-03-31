@@ -655,390 +655,418 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
   return (
     <>
-    <TooltipProvider>
-      <div
-        ref={panelRef}
-        className={`w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border bg-[#1a2123] shadow-2xl shadow-black/50 transition-colors sm:w-[320px] ${isDraggingOver ? 'border-[#a2dd00]/50 ring-2 ring-[#a2dd00]/30' : 'border-[#f3f0ed]/8'}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        {/* Header — drag handle */}
-        <div className="panel-drag-handle flex cursor-grab items-center justify-between border-b border-[#f3f0ed]/[0.07] px-4 py-3 active:cursor-grabbing">
-          <div className="flex items-center gap-2">
-            <Video className="h-4 w-4 text-[#a2dd00]" />
-            <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
-              GERAR VÍDEO
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <PanelDuplicateButton onClick={onDuplicate} />
-            <button
-              onClick={() => { localStorage.removeItem(storageKey); idbDelete(`${storageKey}-images`).catch(() => { }); onClose?.(); }}
-              className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-3.5 p-4">
-          {/* Mode selector */}
-          <div className="flex gap-2">
-            {([
-              ['text', 'Texto → Vídeo', Type],
-              ['image', 'Imagem → Vídeo', Image],
-            ] as const).map(([mode, label, Icon]) => {
-              const active = videoMode === mode;
-              return (
-                <button
-                  key={mode}
-                  onClick={() => setVideoMode(mode)}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 transition-all active:scale-95"
-                  style={{
-                    background: active ? 'rgba(162,221,0,0.08)' : 'rgba(30,73,75,0.15)',
-                    border: `1px solid ${active ? 'rgba(162,221,0,0.3)' : 'rgba(243,240,237,0.06)'}`,
-                    boxShadow: active ? '0 0 14px rgba(162,221,0,0.07)' : 'none',
-                  }}
-                >
-                  <Icon
-                    className="h-4 w-4 shrink-0 transition-colors"
-                    style={{ color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)' }}
-                  />
-                  <span
-                    className="text-[11px] font-bold transition-colors"
-                    style={{ color: active ? '#a2dd00' : 'rgba(243,240,237,0.4)' }}
-                  >
-                    {label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Prompt */}
-          <div className="space-y-1.5">
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              rows={3}
-              placeholder="Descreva a cena que você imagina, com detalhes."
-              className="w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30"
-            />
-
-            {/* Enhance prompt toggle */}
-            <EnhancePromptToggle
-              enabled={enhancePrompt}
-              onToggle={setEnhancePrompt}
-              isEnhancing={isEnhancing}
-              disabled={isGenerating}
-              icon={<Wand2 className="h-3 w-3" />}
-            />
-          </div>
-
-          {/* First / Last frame (image mode) */}
-          {videoMode === 'image' && (
-            <div className="space-y-1" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-              {/* First frame — required */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                  PRIMEIRO FRAME <span className="text-red-400/60">*</span>
-                </label>
-                {firstFrame ? (
-                  <div className="group relative h-20 w-full overflow-hidden rounded-xl border border-[#f3f0ed]/10">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={firstFrame.preview} alt="" className="h-full w-full object-cover" />
-                    <button
-                      onClick={() => setFirstFrame(null)}
-                      className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
-                    >
-                      <X className="h-4 w-4 text-white" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => firstFrameInputRef.current?.click()}
-                      className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
-                    >
-                      <ImagePlus className="h-4 w-4" />
-                      <span className="text-[10px] font-bold tracking-wider">ENVIAR</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        const targetSetter = !firstFrame ? setFirstFrame : setLastFrame;
-                        openGalleryPicker({
-                          nodeId,
-                          remaining: 1,
-                          onSelect: (url) => {
-                            fetch(url).then((r) => r.blob()).then((blob) => {
-                              const reader = new FileReader();
-                              reader.onload = (ev) => {
-                                const dataUrl = ev.target?.result as string;
-                                targetSetter({ base64: dataUrl.split(',')[1], mime_type: blob.type || 'image/jpeg', preview: dataUrl });
-                                toast.success('Imagem adicionada como referência!');
-                              };
-                              reader.readAsDataURL(blob);
-                            }).catch(() => { });
-                          },
-                        });
-                      }}
-                      className="flex h-14 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 px-4 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
-                    >
-                      <FolderOpen className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
-                <input
-                  ref={firstFrameInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) processFrameFile(file, setFirstFrame);
-                    e.target.value = '';
-                  }}
-                />
-              </div>
-
-              {/* Last frame — optional */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                  ÚLTIMO FRAME <span className="text-[#f3f0ed]/20">(opcional)</span>
-                </label>
-                {lastFrame ? (
-                  <div className="group relative h-20 w-full overflow-hidden rounded-xl border border-[#f3f0ed]/10">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={lastFrame.preview} alt="" className="h-full w-full object-cover" />
-                    <button
-                      onClick={() => setLastFrame(null)}
-                      className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
-                    >
-                      <X className="h-4 w-4 text-white" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => lastFrameInputRef.current?.click()}
-                      className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
-                    >
-                      <ImagePlus className="h-4 w-4" />
-                      <span className="text-[10px] font-bold tracking-wider">ENVIAR</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        openGalleryPicker({
-                          nodeId,
-                          remaining: 1,
-                          onSelect: (url) => {
-                            fetch(url).then((r) => r.blob()).then((blob) => {
-                              const reader = new FileReader();
-                              reader.onload = (ev) => {
-                                const dataUrl = ev.target?.result as string;
-                                setLastFrame({ base64: dataUrl.split(',')[1], mime_type: blob.type || 'image/jpeg', preview: dataUrl });
-                                toast.success('Imagem adicionada como referência!');
-                              };
-                              reader.readAsDataURL(blob);
-                            }).catch(() => { });
-                          },
-                        });
-                      }}
-                      className="flex h-14 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 px-4 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
-                    >
-                      <FolderOpen className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
-                <input
-                  ref={lastFrameInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) processFrameFile(file, setLastFrame);
-                    e.target.value = '';
-                  }}
-                />
-              </div>
+      <TooltipProvider>
+        <div
+          ref={panelRef}
+          className={`w-[calc(100vw-5rem)] overflow-hidden rounded-2xl border bg-[#1a2123] shadow-2xl shadow-black/50 transition-colors sm:w-[320px] ${isDraggingOver ? 'border-[#a2dd00]/50 ring-2 ring-[#a2dd00]/30' : 'border-[#f3f0ed]/8'}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {/* Header — drag handle */}
+          <div className="panel-drag-handle flex cursor-grab items-center justify-between border-b border-[#f3f0ed]/[0.07] px-4 py-3 active:cursor-grabbing">
+            <div className="flex items-center gap-2">
+              <Video className="h-4 w-4 text-[#a2dd00]" />
+              <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
+                GERAR VÍDEO
+              </span>
             </div>
-          )}
+            <div className="flex items-center gap-1">
+              <PanelDuplicateButton onClick={onDuplicate} />
+              <button
+                onClick={() => { localStorage.removeItem(storageKey); idbDelete(`${storageKey}-images`).catch(() => { }); onClose?.(); }}
+                className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
 
-          {/* Error message */}
-          <GenerationErrorBanner msg={errorMsg} />
+          <div className="space-y-3.5 p-4">
+            {/* Mode selector */}
+            <div className="flex gap-2">
+              {([
+                ['text', 'Texto → Vídeo', Type],
+                ['image', 'Imagem → Vídeo', Image],
+              ] as const).map(([mode, label, Icon]) => {
+                const active = videoMode === mode;
+                return (
+                  <button
+                    key={mode}
+                    onClick={() => setVideoMode(mode)}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 transition-all active:scale-95"
+                    style={{
+                      background: active ? 'rgba(162,221,0,0.08)' : 'rgba(30,73,75,0.15)',
+                      border: `1px solid ${active ? 'rgba(162,221,0,0.3)' : 'rgba(243,240,237,0.06)'}`,
+                      boxShadow: active ? '0 0 14px rgba(162,221,0,0.07)' : 'none',
+                    }}
+                  >
+                    <Icon
+                      className="h-4 w-4 shrink-0 transition-colors"
+                      style={{ color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)' }}
+                    />
+                    <span
+                      className="text-[11px] font-bold transition-colors"
+                      style={{ color: active ? '#a2dd00' : 'rgba(243,240,237,0.4)' }}
+                    >
+                      {label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
 
-          {/* ── Generation preview (aurora + crossfade) ───────────────── */}
-          <GenerationPreview
-            proportion={proportion}
-            genState={genState}
-            imageVisible={videosVisible}
-            progress={progress}
-            renderMedia={generatedVideoUrls.length > 0 ? () => (
-              <video
-                key={generatedVideoUrls[selectedVideoIdx]}
-                src={generatedVideoUrls[selectedVideoIdx]}
-                controls
-                preload="metadata"
-                className="h-full w-full object-contain bg-black"
-                onLoadedData={() => setVideosVisible(true)}
+            {/* Prompt */}
+            <div className="space-y-1.5">
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                rows={3}
+                placeholder="Descreva a cena que você imagina, com detalhes."
+                className="w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30"
               />
-            ) : undefined}
-          >
-            <ActionButton title="Abrir" onClick={() => window.open(generatedVideoUrls[selectedVideoIdx], '_blank')}>
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </ActionButton>
-            <ActionButton title="Baixar" onClick={() => handleDownload(generatedVideoUrls[selectedVideoIdx])}>
-              <Download className="h-3.5 w-3.5" />
-            </ActionButton>
-            <ActionButton title="Descartar" onClick={handleDiscard}>
-              <X className="h-3.5 w-3.5" />
-            </ActionButton>
-          </GenerationPreview>
 
-          {/* Thumbnail strip — outside preview to avoid clipping */}
-          {genState === 'done' && generatedVideoUrls.length > 1 && (
+              {/* Enhance prompt toggle */}
+              <EnhancePromptToggle
+                enabled={enhancePrompt}
+                onToggle={setEnhancePrompt}
+                isEnhancing={isEnhancing}
+                disabled={isGenerating}
+                icon={<Wand2 className="h-3 w-3" />}
+              />
+            </div>
+
+            {/* First / Last frame (image mode) */}
+            {videoMode === 'image' && (
+              <div className="space-y-1" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                {/* First frame — required */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                    PRIMEIRO FRAME <span className="text-red-400/60">*</span>
+                  </label>
+                  {firstFrame ? (
+                    <div className="group relative h-20 w-full overflow-hidden rounded-xl border border-[#f3f0ed]/10">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={firstFrame.preview} alt="" className="h-full w-full object-cover" />
+                      <button
+                        onClick={() => setFirstFrame(null)}
+                        className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
+                      >
+                        <X className="h-4 w-4 text-white" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => firstFrameInputRef.current?.click()}
+                        className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                      >
+                        <ImagePlus className="h-4 w-4" />
+                        <span className="text-[10px] font-bold tracking-wider">ENVIAR</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const targetSetter = !firstFrame ? setFirstFrame : setLastFrame;
+                          openGalleryPicker({
+                            nodeId,
+                            remaining: 1,
+                            onSelect: (url) => {
+                              fetch(url).then((r) => r.blob()).then((blob) => {
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  const dataUrl = ev.target?.result as string;
+                                  targetSetter({ base64: dataUrl.split(',')[1], mime_type: blob.type || 'image/jpeg', preview: dataUrl });
+                                  toast.success('Imagem adicionada como referência!');
+                                };
+                                reader.readAsDataURL(blob);
+                              }).catch(() => { });
+                            },
+                          });
+                        }}
+                        className="flex h-14 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 px-4 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                  <input
+                    ref={firstFrameInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) processFrameFile(file, setFirstFrame);
+                      e.target.value = '';
+                    }}
+                  />
+                </div>
+
+                {/* Last frame — optional */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                    ÚLTIMO FRAME <span className="text-[#f3f0ed]/20">(opcional)</span>
+                  </label>
+                  {lastFrame ? (
+                    <div className="group relative h-20 w-full overflow-hidden rounded-xl border border-[#f3f0ed]/10">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={lastFrame.preview} alt="" className="h-full w-full object-cover" />
+                      <button
+                        onClick={() => setLastFrame(null)}
+                        className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
+                      >
+                        <X className="h-4 w-4 text-white" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => lastFrameInputRef.current?.click()}
+                        className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                      >
+                        <ImagePlus className="h-4 w-4" />
+                        <span className="text-[10px] font-bold tracking-wider">ENVIAR</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          openGalleryPicker({
+                            nodeId,
+                            remaining: 1,
+                            onSelect: (url) => {
+                              fetch(url).then((r) => r.blob()).then((blob) => {
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  const dataUrl = ev.target?.result as string;
+                                  setLastFrame({ base64: dataUrl.split(',')[1], mime_type: blob.type || 'image/jpeg', preview: dataUrl });
+                                  toast.success('Imagem adicionada como referência!');
+                                };
+                                reader.readAsDataURL(blob);
+                              }).catch(() => { });
+                            },
+                          });
+                        }}
+                        className="flex h-14 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 px-4 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                  <input
+                    ref={lastFrameInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) processFrameFile(file, setLastFrame);
+                      e.target.value = '';
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Error message */}
+            <GenerationErrorBanner msg={errorMsg} />
+
+            {/* ── Generation preview (aurora + crossfade) ───────────────── */}
+            <GenerationPreview
+              proportion={proportion}
+              genState={genState}
+              imageVisible={videosVisible}
+              progress={progress}
+              renderMedia={generatedVideoUrls.length > 0 ? () => (
+                <video
+                  key={generatedVideoUrls[selectedVideoIdx]}
+                  src={generatedVideoUrls[selectedVideoIdx]}
+                  controls
+                  preload="metadata"
+                  className="h-full w-full object-contain bg-black"
+                  onLoadedData={() => setVideosVisible(true)}
+                />
+              ) : undefined}
+            >
+              <ActionButton title="Abrir" onClick={() => window.open(generatedVideoUrls[selectedVideoIdx], '_blank')}>
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </ActionButton>
+              <ActionButton title="Baixar" onClick={() => handleDownload(generatedVideoUrls[selectedVideoIdx])}>
+                <Download className="h-3.5 w-3.5" />
+              </ActionButton>
+              <ActionButton title="Descartar" onClick={handleDiscard}>
+                <X className="h-3.5 w-3.5" />
+              </ActionButton>
+            </GenerationPreview>
+
+            {/* Thumbnail strip — outside preview to avoid clipping */}
+            {genState === 'done' && generatedVideoUrls.length > 1 && (
+              <div
+                className="grid gap-1.5"
+                style={{
+                  gridTemplateColumns: `repeat(${generatedVideoUrls.length}, 1fr)`,
+                  opacity: videosVisible ? 1 : 0,
+                  transition: 'opacity 0.4s ease',
+                }}
+              >
+                {generatedVideoUrls.map((url, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedVideoIdx(i)}
+                    className="group/thumb relative aspect-video overflow-hidden rounded-lg bg-black transition-all"
+                    style={{
+                      outline: i === selectedVideoIdx ? '2px solid #a2dd00' : '2px solid transparent',
+                      outlineOffset: '1px',
+                    }}
+                  >
+                    <video src={url} preload="metadata" muted className="h-full w-full object-cover" />
+                    <div className="absolute bottom-1 right-1 rounded-md bg-black/70 px-1 py-0.5 text-[8px] font-bold text-white">
+                      {i + 1}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* ── Options toggle ─────────────────────────────────────── */}
+            <div className="flex justify-end">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setOptionsOpen((o) => !o)}
+                    className="flex h-6 w-6 items-center justify-center rounded-full text-[#a2dd00]/60 transition-all hover:bg-[#a2dd00]/10 hover:text-[#a2dd00]"
+                  >
+                    <Settings
+                      className="h-5 w-5 transition-transform duration-500"
+                      style={{ transform: optionsOpen ? 'rotate(0deg)' : 'rotate(-180deg)' }}
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left" sideOffset={6}>
+                  {optionsOpen ? 'Ocultar opções' : 'Mostrar opções'}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+
             <div
-              className="grid gap-1.5"
               style={{
-                gridTemplateColumns: `repeat(${generatedVideoUrls.length}, 1fr)`,
-                opacity: videosVisible ? 1 : 0,
-                transition: 'opacity 0.4s ease',
+                maxHeight: optionsOpen ? '900px' : '0px',
+                overflow: 'hidden',
+                transition: optionsOpen ? 'max-height 400ms ease' : 'max-height 300ms ease',
               }}
             >
-              {generatedVideoUrls.map((url, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSelectedVideoIdx(i)}
-                  className="group/thumb relative aspect-video overflow-hidden rounded-lg bg-black transition-all"
-                  style={{
-                    outline: i === selectedVideoIdx ? '2px solid #a2dd00' : '2px solid transparent',
-                    outlineOffset: '1px',
-                  }}
-                >
-                  <video src={url} preload="metadata" muted className="h-full w-full object-cover" />
-                  <div className="absolute bottom-1 right-1 rounded-md bg-black/70 px-1 py-0.5 text-[8px] font-bold text-white">
-                    {i + 1}
+              <div className="space-y-3.5 pt-0.5">
+
+                {/* Audio toggle */}
+                <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/10 px-3 py-2.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-[#f3f0ed]/60">Áudio</span>
+                    <Info className="h-3 w-3 text-[#f3f0ed]/20" />
                   </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* ── Options toggle ─────────────────────────────────────── */}
-          <div className="flex justify-end">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => setOptionsOpen((o) => !o)}
-                  className="flex h-6 w-6 items-center justify-center rounded-full text-[#a2dd00]/60 transition-all hover:bg-[#a2dd00]/10 hover:text-[#a2dd00]"
-                >
-                  <Settings
-                    className="h-5 w-5 transition-transform duration-500"
-                    style={{ transform: optionsOpen ? 'rotate(0deg)' : 'rotate(-180deg)' }}
-                  />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="left" sideOffset={6}>
-                {optionsOpen ? 'Ocultar opções' : 'Mostrar opções'}
-              </TooltipContent>
-            </Tooltip>
-          </div>
-
-          <div
-            style={{
-              maxHeight: optionsOpen ? '900px' : '0px',
-              overflow: 'hidden',
-              transition: optionsOpen ? 'max-height 400ms ease' : 'max-height 300ms ease',
-            }}
-          >
-            <div className="space-y-3.5 pt-0.5">
-
-              {/* Audio toggle */}
-              <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/10 px-3 py-2.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-bold text-[#f3f0ed]/60">Áudio</span>
-                  <Info className="h-3 w-3 text-[#f3f0ed]/20" />
+                  <ToggleSwitch checked={audio} onChange={setAudio} />
                 </div>
-                <ToggleSwitch checked={audio} onChange={setAudio} />
-              </div>
 
-              {/* Model + Resolution */}
-              <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                    MODELO
-                  </label>
-                  <PanelSelect
-                    value={model}
-                    onValueChange={setModel}
-                    options={[
-                      { value: 'veo-3.1-generate-preview', label: 'Veo 3.1' },
-                      { value: 'veo-3.1-fast-generate-preview', label: 'Veo 3.1 Fast' },
-                      // { value: 'kling-2.6', label: 'Kling 2.6' },
-                    ]}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                    RESOLUÇÃO
-                  </label>
-                  <PanelSelect
-                    value={resolution}
-                    onValueChange={setResolution}
-                    options={[
-                      { value: 'RES_720P', label: '720p' },
-                      { value: 'RES_1080P', label: '1080p' },
-                      { value: 'RES_4K', label: '4K' },
-                    ]}
-                  />
-                </div>
-              </div>
-
-              {/* Duration + Proportion */}
-              <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                    DURAÇÃO
-                  </label>
-                  <div className="flex gap-1.5">
-                    {['4s', '6s', '8s'].map((d) => {
-                      const active = effectiveDuration === d;
-                      const disabled = forceEightSeconds && d !== '8s';
-                      return (
-                        <button
-                          key={d}
-                          onClick={() => !disabled && setDuration(d)}
-                          disabled={disabled}
-                          title={disabled ? 'Apenas 8s disponível com referências' : undefined}
-                          className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-30"
-                          style={{
-                            background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
-                            color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
-                            border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
-                            boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
-                          }}
-                        >
-                          {d}
-                        </button>
-                      );
-                    })}
+                {/* Model + Resolution */}
+                <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                      MODELO
+                    </label>
+                    <PanelSelect
+                      value={model}
+                      onValueChange={setModel}
+                      options={[
+                        { value: 'veo-3.1-generate-preview', label: 'Veo 3.1' },
+                        { value: 'veo-3.1-fast-generate-preview', label: 'Veo 3.1 Fast' },
+                        // { value: 'kling-2.6', label: 'Kling 2.6' },
+                      ]}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                      RESOLUÇÃO
+                    </label>
+                    <PanelSelect
+                      value={resolution}
+                      onValueChange={setResolution}
+                      options={[
+                        { value: 'RES_720P', label: '720p' },
+                        { value: 'RES_1080P', label: '1080p' },
+                        { value: 'RES_4K', label: '4K' },
+                      ]}
+                    />
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
+                {/* Duration + Proportion */}
+                <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                      DURAÇÃO
+                    </label>
+                    <div className="flex gap-1.5">
+                      {['4s', '6s', '8s'].map((d) => {
+                        const active = effectiveDuration === d;
+                        const disabled = forceEightSeconds && d !== '8s';
+                        return (
+                          <button
+                            key={d}
+                            onClick={() => !disabled && setDuration(d)}
+                            disabled={disabled}
+                            title={disabled ? 'Apenas 8s disponível com referências' : undefined}
+                            className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-30"
+                            style={{
+                              background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
+                              color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
+                              border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
+                              boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
+                            }}
+                          >
+                            {d}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                      PROPORÇÃO
+                    </label>
+                    <div className="flex gap-1.5">
+                      {['16:9', '9:16', '1:1'].map((p) => {
+                        const val = p.replace(':', '-');
+                        const active = proportion === val;
+                        return (
+                          <button
+                            key={p}
+                            onClick={() => setProportion(val)}
+                            className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95"
+                            style={{
+                              background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
+                              color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
+                              border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
+                              boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
+                            }}
+                          >
+                            {p}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sample count */}
+                <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
                   <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                    PROPORÇÃO
+                    QUANTIDADE
                   </label>
                   <div className="flex gap-1.5">
-                    {['16:9', '9:16', '1:1'].map((p) => {
-                      const val = p.replace(':', '-');
-                      const active = proportion === val;
+                    {[1, 2, 3, 4].map((n) => {
+                      const active = sampleCount === n;
                       return (
                         <button
-                          key={p}
-                          onClick={() => setProportion(val)}
+                          key={n}
+                          onClick={() => setSampleCount(n)}
                           className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95"
                           style={{
                             background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
@@ -1047,162 +1075,134 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                             boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
                           }}
                         >
-                          {p}
+                          {n}
                         </button>
                       );
                     })}
                   </div>
                 </div>
-              </div>
 
-              {/* Sample count */}
-              <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-                <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                  QUANTIDADE
-                </label>
-                <div className="flex gap-1.5">
-                  {[1, 2, 3, 4].map((n) => {
-                    const active = sampleCount === n;
-                    return (
-                      <button
-                        key={n}
-                        onClick={() => setSampleCount(n)}
-                        className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95"
-                        style={{
-                          background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
-                          color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
-                          border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
-                          boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
-                        }}
-                      >
-                        {n}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Reference images (text mode) */}
-              {videoMode === 'text' && (
-                <div className="space-y-2" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                      IMAGENS DE REFERÊNCIA (opcional)
-                    </label>
-                    <span className="text-[10px] text-[#f3f0ed]/25">{refImages.length}/3</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {refImages.map((img, i) => (
-                      <div key={i} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#f3f0ed]/10">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={img.preview} alt="" className="h-full w-full object-cover" />
-                        <button
-                          onClick={() => setRefImages((prev) => prev.filter((_, idx) => idx !== i))}
-                          className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
-                        >
-                          <X className="h-3.5 w-3.5 text-white" />
-                        </button>
-                      </div>
-                    ))}
-                    {refImages.length < 3 && (
-                      <>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={() => fileInputRef.current?.click()}
-                              className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
-                            >
-                              <ImagePlus className="h-5 w-5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" sideOffset={6}>Enviar do dispositivo</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={() => openGalleryPicker({ nodeId, remaining: 3 - refImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success('Imagem adicionada como referência!'); } })}
-                              className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
-                            >
-                              <FolderOpen className="h-5 w-5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" sideOffset={6}>Escolher da galeria</TooltipContent>
-                        </Tooltip>
-                      </>
-                    )}
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={handleFileSelect}
-                  />
-                </div>
-              )}
-
-              {/* Credit estimate */}
-              {genState !== 'generating' && (
-                <div className="space-y-1.5">
-                  {estimate?.canUseFreeGeneration && (
-                    <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-2">
-                      <Sparkles className="h-3 w-3 text-emerald-400" />
-                      <span className="text-[11px] font-bold text-emerald-400">
-                        Geração gratuita! ({estimate.freeVeoGenerationsRemaining} restante{estimate.freeVeoGenerationsRemaining !== 1 ? 's' : ''})
-                      </span>
+                {/* Reference images (text mode) */}
+                {videoMode === 'text' && (
+                  <div className="space-y-2" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                        IMAGENS DE REFERÊNCIA (opcional)
+                      </label>
+                      <span className="text-[10px] text-[#f3f0ed]/25">{refImages.length}/3</span>
                     </div>
-                  )}
-                  <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
-                    <div className="flex items-center gap-1.5">
-                      <Coins className="h-3 w-3 text-[#a2dd00]" />
-                      <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Custo</span>
+                    <div className="flex flex-wrap gap-2">
+                      {refImages.map((img, i) => (
+                        <div key={i} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#f3f0ed]/10">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={img.preview} alt="" className="h-full w-full object-cover" />
+                          <button
+                            onClick={() => setRefImages((prev) => prev.filter((_, idx) => idx !== i))}
+                            className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
+                          >
+                            <X className="h-3.5 w-3.5 text-white" />
+                          </button>
+                        </div>
+                      ))}
+                      {refImages.length < 3 && (
+                        <>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                              >
+                                <ImagePlus className="h-5 w-5" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" sideOffset={6}>Enviar do dispositivo</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => openGalleryPicker({ nodeId, remaining: 3 - refImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success('Imagem adicionada como referência!'); } })}
+                                className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                              >
+                                <FolderOpen className="h-5 w-5" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" sideOffset={6}>Escolher da galeria</TooltipContent>
+                          </Tooltip>
+                        </>
+                      )}
                     </div>
-                    {estimateLoading ? (
-                      <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
-                    ) : estimate ? (
-                      <div className="flex items-center gap-2">
-                        {estimate.canUseFreeGeneration ? (
-                          <span className="text-xs font-bold text-emerald-400">Grátis</span>
-                        ) : (
-                          <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
-                        )}
-                        <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
-                      </div>
-                    ) : null}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={handleFileSelect}
+                    />
                   </div>
-                </div>
-              )}
-
-              {/* Generate button */}
-              <button
-                onClick={handleGenerate}
-                disabled={genState === 'generating' || !prompt.trim() || (videoMode === 'image' && !firstFrame)}
-                className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-                style={{
-                  background: genState === 'generating' ? 'rgba(162,221,0,0.12)' : '#a2dd00',
-                  color: genState === 'generating' ? '#a2dd00' : '#1a2123',
-                  border: genState === 'generating' ? '1px solid rgba(162,221,0,0.2)' : 'none',
-                }}
-              >
-                {genState === 'generating' ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    GERANDO...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4" />
-                    {genState === 'done' ? 'GERAR NOVAMENTE' : 'GERAR'}
-                  </>
                 )}
-              </button>
+
+                {/* Credit estimate */}
+                {genState !== 'generating' && (
+                  <div className="space-y-1.5">
+                    {estimate?.canUseFreeGeneration && (
+                      <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-2">
+                        <Sparkles className="h-3 w-3 text-emerald-400" />
+                        <span className="text-[11px] font-bold text-emerald-400">
+                          Geração gratuita! ({estimate.freeVeoGenerationsRemaining} restante{estimate.freeVeoGenerationsRemaining !== 1 ? 's' : ''})
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <Coins className="h-3 w-3 text-[#a2dd00]" />
+                        <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Custo</span>
+                      </div>
+                      {estimateLoading ? (
+                        <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
+                      ) : estimate ? (
+                        <div className="flex items-center gap-2">
+                          {estimate.canUseFreeGeneration ? (
+                            <span className="text-xs font-bold text-emerald-400">Grátis</span>
+                          ) : (
+                            <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
+                          )}
+                          <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+
+                {/* Generate button */}
+                <button
+                  onClick={handleGenerate}
+                  disabled={genState === 'generating' || !prompt.trim() || (videoMode === 'image' && !firstFrame)}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    background: genState === 'generating' ? 'rgba(162,221,0,0.12)' : '#a2dd00',
+                    color: genState === 'generating' ? '#a2dd00' : '#1a2123',
+                    border: genState === 'generating' ? '1px solid rgba(162,221,0,0.2)' : 'none',
+                  }}
+                >
+                  {genState === 'generating' ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      GERANDO...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      {genState === 'done' ? 'GERAR NOVAMENTE' : 'GERAR'}
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </TooltipProvider>
-    {plansModalOpen && createPortal(<PlansModal onClose={() => setPlansModalOpen(false)} />, document.body)}
+      </TooltipProvider>
+      {plansModalOpen && createPortal(<PlansModal onClose={() => setPlansModalOpen(false)} />, document.body)}
     </>
   );
 }

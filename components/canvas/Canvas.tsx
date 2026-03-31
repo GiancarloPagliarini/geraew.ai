@@ -63,7 +63,7 @@ function CanvasContent() {
   const [mounted, setMounted] = useState(false);
   const [initialStoredNodes] = useState<Node[]>(() => loadStoredNodes());
   const [nodes, setNodes, onNodesChange] = useNodesState(initialStoredNodes);
-  const { zoomIn, zoomOut, setViewport, fitView, screenToFlowPosition, setCenter } = useReactFlow();
+  const { zoomIn, zoomOut, setViewport, fitView, screenToFlowPosition, setCenter, getViewport } = useReactFlow();
   const [zoom, setZoom] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -114,18 +114,20 @@ function CanvasContent() {
       }
 
       const isMobileDevice = window.innerWidth < 640;
-      const NODE_W = isMobileDevice ? window.innerWidth - 24 : 320;
-      const NODE_H = 480;
+      const NODE_W_screen = isMobileDevice ? window.innerWidth - 80 : 320;
+      const NODE_H_screen = 550;
       const GAP = 24;
 
       const flowEl = document.querySelector('.react-flow');
-      const rect = flowEl?.getBoundingClientRect() ?? { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+      const rect = flowEl?.getBoundingClientRect() ?? { width: window.innerWidth, height: window.innerHeight };
+      const vp = getViewport();
       const toolbarH = isMobileDevice ? 56 : 0;
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + toolbarH + (rect.height - toolbarH) / 2;
+      const flowCenterX = (rect.width / 2 - vp.x) / vp.zoom;
+      const flowCenterY = ((rect.height + toolbarH) / 2 - vp.y) / vp.zoom;
+      const NODE_W = NODE_W_screen / vp.zoom;
+      const NODE_H = NODE_H_screen / vp.zoom;
 
-      const centerFlow = screenToFlowPosition({ x: centerX, y: centerY });
-      let candidate = { x: centerFlow.x - NODE_W / 2, y: centerFlow.y - NODE_H / 2 };
+      let candidate = { x: flowCenterX - NODE_W / 2, y: flowCenterY - NODE_H / 2 };
 
       // Shift horizontally until the candidate doesn't overlap any existing node
       const MAX_ATTEMPTS = 30;

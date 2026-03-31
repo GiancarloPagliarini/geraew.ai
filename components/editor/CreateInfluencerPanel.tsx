@@ -191,7 +191,7 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
         onCompleted: ({ generationId: genId, outputUrls }) => {
           finishWithImage(outputUrls[0]);
           refetchCredits();
-          api.generations.get(accessToken!, genId).then(prependToGallery).catch(() => {});
+          api.generations.get(accessToken!, genId).then(prependToGallery).catch(() => { });
         },
         onFailed: ({ errorMessage, creditsRefunded }) => {
           clearProgressTimer();
@@ -232,7 +232,7 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
   const dashOffset = CIRCUMFERENCE * (1 - progress / 100);
 
   return (
-    <div className="w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] shadow-2xl shadow-black/50 sm:w-[320px]">
+    <div className="w-[calc(100vw-5rem)] overflow-hidden rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] shadow-2xl shadow-black/50 sm:w-[320px]">
       {/* Header — drag handle */}
       <div className="panel-drag-handle flex cursor-grab items-center justify-between border-b border-[#f3f0ed]/[0.07] px-4 py-3 active:cursor-grabbing">
         <div className="flex items-center gap-2">
@@ -256,7 +256,7 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
         {/* ── Error message ────────────────────────────────────────────── */}
         <GenerationErrorBanner msg={errorMsg} />
 
-{/* ── Idle state — empty placeholder ────────────────────────── */}
+        {/* ── Idle state — empty placeholder ────────────────────────── */}
         {genState === 'idle' && !generatedImageUrl && (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-[#f3f0ed]/10 bg-[#1e494b]/10 px-4 py-10">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f3f0ed]/[0.05]">

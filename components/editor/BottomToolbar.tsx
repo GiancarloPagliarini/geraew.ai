@@ -45,7 +45,7 @@ export function BottomToolbar({
   onFitView,
 }: BottomToolbarProps) {
   const { leftPanelOpen } = useEditor();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(true);
 
   return (
     <TooltipProvider>
