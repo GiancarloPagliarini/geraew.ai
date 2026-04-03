@@ -127,7 +127,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
   const [prompt, setPrompt] = useState<string>(initialPendingPrompt ?? stored?.prompt ?? '');
   const [audio, setAudio] = useState<boolean>(stored?.audio ?? true);
-  const [model, setModel] = useState<string>(stored?.model ?? 'veo-3.1-generate-preview');
+  const [model, setModel] = useState<string>(stored?.model ?? 'veo-3.1-generate-001');
   const [duration, setDuration] = useState<string>(stored?.duration ?? '8s');
   const [proportion, setProportion] = useState<string>(stored?.proportion ?? '9-16');
   const [resolution, setResolution] = useState<string>(stored?.resolution ?? 'RES_1080P');
@@ -178,7 +178,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   }, [genState, nodeId, setNodeGenerating]);
 
   const isGenerating = genState === 'generating';
-  const videoModelVariant = model === 'veo-3.1-fast-generate-preview' ? 'VEO_FAST' : 'VEO_MAX';
+  const videoModelVariant = model === 'veo-3.1-fast-generate-001' ? 'VEO_FAST' : 'VEO_MAX';
 
   const { data: estimate, isLoading: estimateLoading } = useQuery({
     queryKey: ['credits', 'estimate', videoType, resolution, audio, sampleCount, videoModelVariant],
@@ -974,8 +974,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       value={model}
                       onValueChange={setModel}
                       options={[
-                        { value: 'veo-3.1-generate-preview', label: 'Veo 3.1' },
-                        { value: 'veo-3.1-fast-generate-preview', label: 'Veo 3.1 Fast' },
+                        { value: 'veo-3.1-generate-001', label: 'Veo 3.1' },
+                        { value: 'veo-3.1-fast-generate-001', label: 'Veo 3.1 Fast' },
                         // { value: 'kling-2.6', label: 'Kling 2.6' },
                       ]}
                     />
