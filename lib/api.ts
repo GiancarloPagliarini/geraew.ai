@@ -309,6 +309,28 @@ export interface FaceSwapRequest {
   resolution?: string;
 }
 
+export interface TextToVideoKieRequest {
+  prompt: string;
+  model?: string; // 'veo3_fast' | 'veo3'
+  resolution: string;
+  aspect_ratio?: string;
+  generate_audio?: boolean;
+  seed?: number;
+  model_variant?: string;
+}
+
+export interface ImageToVideoKieRequest extends TextToVideoKieRequest {
+  first_frame: string;
+  first_frame_mime_type?: string;
+  last_frame?: string;
+  last_frame_mime_type?: string;
+}
+
+export interface ReferenceToVideoKieRequest extends TextToVideoKieRequest {
+  reference_images: string[];
+  reference_images_mime_types?: string[];
+}
+
 // ─── Video Editor ─────────────────────────────────────────────────────────────
 
 export interface VideoProject {
@@ -728,6 +750,24 @@ export const api = {
     },
     faceSwap(accessToken: string, payload: FaceSwapRequest) {
       return authRequest<CreateGenerationResponse>('/api/v1/generations/face-swap', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    textToVideoKie(accessToken: string, payload: TextToVideoKieRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/text-to-video-kie', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    imageToVideoKie(accessToken: string, payload: ImageToVideoKieRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/image-to-video-kie', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    referenceToVideoKie(accessToken: string, payload: ReferenceToVideoKieRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/reference-to-video-kie', accessToken, {
         method: 'POST',
         body: JSON.stringify(payload),
       });

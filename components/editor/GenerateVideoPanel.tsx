@@ -127,7 +127,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
   const [prompt, setPrompt] = useState<string>(initialPendingPrompt ?? stored?.prompt ?? '');
   const [audio, setAudio] = useState<boolean>(stored?.audio ?? true);
-  const [model, setModel] = useState<string>(stored?.model ?? 'veo-3.1-generate-001');
+  const [model, setModel] = useState<string>(stored?.model ?? 'geraew-quality');
   const [duration, setDuration] = useState<string>(stored?.duration ?? '8s');
   const [proportion, setProportion] = useState<string>(stored?.proportion ?? '9-16');
   const [resolution, setResolution] = useState<string>(stored?.resolution ?? 'RES_1080P');
@@ -178,15 +178,25 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   }, [genState, nodeId, setNodeGenerating]);
 
   const isGenerating = genState === 'generating';
-  const videoModelVariant = model === 'veo-3.1-fast-generate-001' ? 'VEO_FAST' : 'VEO_MAX';
+  const isKieModel = model === 'veo3_fast' || model === 'veo3';
+  const videoModelVariant = ({
+    'geraew-fast': 'GERAEW_FAST',
+    'geraew-quality': 'GERAEW_QUALITY',
+    'veo3_fast': 'VEO_FAST',
+    'veo3': 'VEO_MAX',
+  } as Record<string, string>)[model] ?? 'GERAEW_QUALITY';
+
+  // KIE always has audio and sampleCount=1
+  const effectiveAudio = isKieModel ? true : audio;
+  const effectiveSampleCount = isKieModel ? 1 : sampleCount;
 
   const { data: estimate, isLoading: estimateLoading } = useQuery({
-    queryKey: ['credits', 'estimate', videoType, resolution, audio, sampleCount, videoModelVariant],
+    queryKey: ['credits', 'estimate', videoType, resolution, effectiveAudio, effectiveSampleCount, videoModelVariant],
     queryFn: () => api.credits.estimate(accessToken!, {
       type: videoType,
       resolution,
-      hasAudio: audio,
-      sampleCount,
+      hasAudio: effectiveAudio,
+      sampleCount: effectiveSampleCount,
       modelVariant: videoModelVariant,
     }),
     enabled: !!accessToken && genState !== 'generating',
@@ -524,41 +534,74 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
     startProgressAnimation();
 
-    const basePayload = {
-      prompt: finalPrompt,
-      model,
-      resolution,
-      duration_seconds: durationToSeconds(effectiveDuration),
-      aspect_ratio: proportionToAspectRatio(proportion),
-      generate_audio: audio,
-      sample_count: sampleCount,
-      negative_prompt: 'blurry, low quality',
-    };
-
     try {
       let result: { id: string; creditsConsumed: number };
 
-      if (videoMode === 'image' && firstFrame) {
-        result = await api.generations.imageToVideo(accessToken, {
-          ...basePayload,
-          first_frame: firstFrame.base64,
-          first_frame_mime_type: firstFrame.mime_type,
-          ...(lastFrame ? {
-            last_frame: lastFrame.base64,
-            last_frame_mime_type: lastFrame.mime_type,
-          } : {}),
-        });
-      } else if (refImages.length > 0) {
-        result = await api.generations.videoWithReferences(accessToken, {
-          ...basePayload,
-          reference_images: refImages.map(({ base64, mime_type }) => ({
-            base64,
-            mime_type,
-            reference_type: 'asset' as const,
-          })),
-        });
+      if (isKieModel) {
+        // KIE API — always audio, sampleCount=1
+        const kiePayload = {
+          prompt: finalPrompt,
+          model,
+          resolution,
+          aspect_ratio: proportionToAspectRatio(proportion),
+          generate_audio: true,
+          model_variant: videoModelVariant,
+        };
+
+        if (videoMode === 'image' && firstFrame) {
+          result = await api.generations.imageToVideoKie(accessToken, {
+            ...kiePayload,
+            first_frame: firstFrame.base64,
+            first_frame_mime_type: firstFrame.mime_type,
+            ...(lastFrame ? {
+              last_frame: lastFrame.base64,
+              last_frame_mime_type: lastFrame.mime_type,
+            } : {}),
+          });
+        } else if (refImages.length > 0) {
+          result = await api.generations.referenceToVideoKie(accessToken, {
+            ...kiePayload,
+            reference_images: refImages.map(({ base64 }) => base64),
+            reference_images_mime_types: refImages.map(({ mime_type }) => mime_type),
+          });
+        } else {
+          result = await api.generations.textToVideoKie(accessToken, kiePayload);
+        }
       } else {
-        result = await api.generations.textToVideo(accessToken, basePayload);
+        // GeraEW provider — original flow
+        const basePayload = {
+          prompt: finalPrompt,
+          model,
+          resolution,
+          duration_seconds: durationToSeconds(effectiveDuration),
+          aspect_ratio: proportionToAspectRatio(proportion),
+          generate_audio: audio,
+          sample_count: sampleCount,
+          negative_prompt: 'blurry, low quality',
+        };
+
+        if (videoMode === 'image' && firstFrame) {
+          result = await api.generations.imageToVideo(accessToken, {
+            ...basePayload,
+            first_frame: firstFrame.base64,
+            first_frame_mime_type: firstFrame.mime_type,
+            ...(lastFrame ? {
+              last_frame: lastFrame.base64,
+              last_frame_mime_type: lastFrame.mime_type,
+            } : {}),
+          });
+        } else if (refImages.length > 0) {
+          result = await api.generations.videoWithReferences(accessToken, {
+            ...basePayload,
+            reference_images: refImages.map(({ base64, mime_type }) => ({
+              base64,
+              mime_type,
+              reference_type: 'asset' as const,
+            })),
+          });
+        } else {
+          result = await api.generations.textToVideo(accessToken, basePayload);
+        }
       }
 
       const { id, creditsConsumed } = result;
@@ -956,12 +999,13 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
               <div className="space-y-3.5 pt-0.5">
 
                 {/* Audio toggle */}
-                <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/10 px-3 py-2.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/10 px-3 py-2.5" style={{ opacity: isGenerating || isKieModel ? 0.4 : 1, pointerEvents: isGenerating || isKieModel ? 'none' : undefined }}>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11px] font-bold text-[#f3f0ed]/60">Áudio</span>
+                    {isKieModel && <span className="text-[9px] text-[#a2dd00]/60">(sempre ativo)</span>}
                     <Info className="h-3 w-3 text-[#f3f0ed]/20" />
                   </div>
-                  <ToggleSwitch checked={audio} onChange={setAudio} />
+                  <ToggleSwitch checked={isKieModel ? true : audio} onChange={isKieModel ? () => {} : setAudio} />
                 </div>
 
                 {/* Model + Resolution */}
@@ -974,9 +1018,10 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       value={model}
                       onValueChange={setModel}
                       options={[
-                        { value: 'veo-3.1-generate-001', label: 'Veo 3.1' },
-                        { value: 'veo-3.1-fast-generate-001', label: 'Veo 3.1 Fast' },
-                        // { value: 'kling-2.6', label: 'Kling 2.6' },
+                        { value: 'geraew-quality', label: 'Geraew Quality' },
+                        { value: 'geraew-fast', label: 'Geraew Fast' },
+                        { value: 'veo3', label: 'Veo 3.1 Quality' },
+                        { value: 'veo3_fast', label: 'Veo 3.1 Fast' },
                       ]}
                     />
                   </div>
@@ -997,7 +1042,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 </div>
 
                 {/* Duration + Proportion */}
-                <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                <div className={`grid ${isKieModel ? 'grid-cols-1' : 'grid-cols-2'} gap-3`} style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                  {!isKieModel && (
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
                       DURAÇÃO
@@ -1026,6 +1072,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       })}
                     </div>
                   </div>
+                  )}
 
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
@@ -1055,7 +1102,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                   </div>
                 </div>
 
-                {/* Sample count */}
+                {/* Sample count — hidden for KIE (always 1) */}
+                {!isKieModel && (
                 <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
                   <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
                     QUANTIDADE
@@ -1081,6 +1129,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                     })}
                   </div>
                 </div>
+                )}
 
                 {/* Reference images (text mode) */}
                 {videoMode === 'text' && (
