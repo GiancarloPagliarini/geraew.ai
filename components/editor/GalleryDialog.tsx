@@ -715,8 +715,8 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
       </button>
 
       {/* Main player */}
-      <div className="relative w-full rounded-xl overflow-hidden bg-[#f3f0ed]/3 max-h-[50vh]">
-        {!loaded && <div className="absolute inset-0 animate-pulse bg-[#f3f0ed]/6" />}
+      <div className="relative w-full rounded-xl overflow-hidden bg-[#f3f0ed]/3 max-h-[50vh] min-h-[40vh]">
+        {!loaded && <div className="absolute inset-0 animate-pulse bg-[#f3f0ed]/6 rounded-xl" />}
 
         {isVideo ? (
           <video
