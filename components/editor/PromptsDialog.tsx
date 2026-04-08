@@ -1,12 +1,12 @@
 'use client';
 
 import {
-  Copy, Check, X, ImageIcon, Film, Search,
+  Copy, Check, X, ImageIcon, Search, Trash2, Plus,
   Camera, Sparkles, Dumbbell, Sun, ZoomIn, Mic, Moon, PersonStanding, Package, Target, Hand, Gem,
   Loader2,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
@@ -58,12 +58,12 @@ function mapApiSectionsToSections(apiSections: ApiPromptSection[]): Section[] {
   }));
 }
 
-function PromptCard({ item, isCopied, onImage, onVideo, onCopy }: {
+function PromptCard({ item, isCopied, isAdmin, onCopy, onDelete }: {
   item: Prompt;
   isCopied: boolean;
-  onImage: () => void;
-  onVideo: () => void;
+  isAdmin: boolean;
   onCopy: () => void;
+  onDelete: () => void;
 }) {
   return (
     <div className="group relative rounded-xl overflow-hidden ring-1 ring-white/[0.06] hover:ring-[#a2dd00]/25 transition-all duration-300">
@@ -91,13 +91,23 @@ function PromptCard({ item, isCopied, onImage, onVideo, onCopy }: {
           </span>
         </div>
 
-        {/* Copy button */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onCopy(); }}
-          className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-lg bg-black/40 backdrop-blur-md text-white/50 ring-1 ring-white/[0.08] hover:bg-black/60 hover:text-white/80 active:scale-[0.95] transition-all"
-        >
-          {isCopied ? <Check className="h-3 w-3 text-[#a2dd00]" /> : <Copy className="h-3 w-3" />}
-        </button>
+        {/* Top-right buttons */}
+        <div className="absolute top-2 right-2 flex gap-1">
+          {isAdmin && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-500/20 backdrop-blur-md text-red-400 ring-1 ring-red-500/20 hover:bg-red-500/40 hover:text-red-300 active:scale-[0.95] transition-all opacity-0 group-hover:opacity-100"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onCopy(); }}
+            className="flex h-6 w-6 items-center justify-center rounded-lg bg-black/40 backdrop-blur-md text-white/50 ring-1 ring-white/[0.08] hover:bg-black/60 hover:text-white/80 active:scale-[0.95] transition-all"
+          >
+            {isCopied ? <Check className="h-3 w-3 text-[#a2dd00]" /> : <Copy className="h-3 w-3" />}
+          </button>
+        </div>
 
         {/* Bottom content */}
         <div className="absolute bottom-0 inset-x-0 p-2.5">
@@ -110,6 +120,106 @@ function PromptCard({ item, isCopied, onImage, onVideo, onCopy }: {
   );
 }
 
+// ── Add Prompt Modal ──
+
+function AddPromptModal({ categoryId, accessToken, onClose, onAdded }: {
+  categoryId: string;
+  accessToken: string;
+  onClose: () => void;
+  onAdded: () => void;
+}) {
+  const [title, setTitle] = useState('');
+  const [type, setType] = useState('json');
+  const [prompt, setPrompt] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim() || !prompt.trim()) {
+      toast.error('Preencha o titulo e o prompt');
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.prompts.createTemplate(accessToken, {
+        categoryId,
+        title: title.trim(),
+        type,
+        prompt: prompt.trim(),
+        imageUrl: imageUrl.trim() || undefined,
+      });
+      toast.success('Prompt adicionado!');
+      onAdded();
+      onClose();
+    } catch {
+      toast.error('Erro ao adicionar prompt');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <form
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={handleSubmit}
+        className="w-full max-w-md mx-4 rounded-2xl bg-[#1a2225] ring-1 ring-white/[0.08] p-5 flex flex-col gap-3"
+      >
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-sm font-semibold text-white/85">Adicionar Prompt</h3>
+          <button type="button" onClick={onClose} className="text-white/30 hover:text-white/60 transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <input
+          type="text"
+          placeholder="Titulo"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-white/80 placeholder:text-white/20 ring-1 ring-white/[0.06] focus:outline-none focus:ring-[#a2dd00]/30"
+        />
+
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          className="w-full rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-white/80 ring-1 ring-white/[0.06] focus:outline-none focus:ring-[#a2dd00]/30"
+        >
+          <option value="json">JSON</option>
+          <option value="text">Text</option>
+        </select>
+
+        <textarea
+          placeholder="Prompt"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          rows={6}
+          className="w-full rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-white/80 placeholder:text-white/20 ring-1 ring-white/[0.06] focus:outline-none focus:ring-[#a2dd00]/30 resize-none"
+        />
+
+        <input
+          type="text"
+          placeholder="URL da imagem (opcional)"
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
+          className="w-full rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-white/80 placeholder:text-white/20 ring-1 ring-white/[0.06] focus:outline-none focus:ring-[#a2dd00]/30"
+        />
+
+        <button
+          type="submit"
+          disabled={saving}
+          className="mt-1 w-full rounded-lg bg-[#a2dd00]/20 py-2.5 text-xs font-bold text-[#a2dd00] ring-1 ring-[#a2dd00]/25 hover:bg-[#a2dd00]/30 disabled:opacity-50 transition-all"
+        >
+          {saving ? 'Salvando...' : 'Adicionar'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ── Main Component ──
+
 interface PromptsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -117,37 +227,39 @@ interface PromptsDialogProps {
 
 export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
   const { requestPanelWithPrompt } = useEditor();
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const [promptSections, setPromptSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const fetchRef = useRef(0);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchPrompts() {
-      try {
-        setLoading(true);
-        setError(false);
-        const data = await api.prompts.getAll();
-        if (!cancelled) {
-          const sections = mapApiSectionsToSections(data.sections);
-          setPromptSections(sections);
-          if (sections.length > 0) setActiveSection(sections[0].id);
-        }
-      } catch {
-        if (!cancelled) setError(true);
-      } finally {
-        if (!cancelled) setLoading(false);
+  const isAdmin = user?.role === 'ADMIN';
+
+  async function fetchPrompts() {
+    const id = ++fetchRef.current;
+    try {
+      setLoading(true);
+      setError(false);
+      const data = await api.prompts.getAll();
+      if (id === fetchRef.current) {
+        const sections = mapApiSectionsToSections(data.sections);
+        setPromptSections(sections);
+        if (!activeSection && sections.length > 0) setActiveSection(sections[0].id);
       }
+    } catch {
+      if (id === fetchRef.current) setError(true);
+    } finally {
+      if (id === fetchRef.current) setLoading(false);
     }
-    fetchPrompts();
-    return () => { cancelled = true; };
-  }, []);
+  }
+
+  useEffect(() => { fetchPrompts(); }, []);
 
   // Flatten all prompts for the active section, with optional search filter
   const visiblePrompts = useMemo(() => {
@@ -164,6 +276,12 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
     );
   }, [promptSections, activeSection, searchQuery]);
 
+  // Get categoryId for the active section (for adding prompts)
+  const activeCategoryId = useMemo(() => {
+    const section = promptSections.find((s) => s.id === activeSection);
+    return section?.categories[0]?.id || null;
+  }, [promptSections, activeSection]);
+
   function requireAuth(): boolean {
     if (user) return true;
     toast.error('Faça login para usar os prompts', {
@@ -178,6 +296,20 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
     setCopiedId(id);
     toast.success('Prompt copiado!');
     setTimeout(() => setCopiedId(null), 2000);
+  }
+
+  async function handleDelete(promptId: string) {
+    if (!accessToken) return;
+    const confirmed = window.confirm('Tem certeza que deseja excluir este prompt?');
+    if (!confirmed) return;
+
+    try {
+      await api.prompts.deleteTemplate(accessToken, promptId);
+      toast.success('Prompt excluido!');
+      fetchPrompts();
+    } catch {
+      toast.error('Erro ao excluir prompt');
+    }
   }
 
   function handleOpenPanel(panelType: 'generate-image' | 'generate-video', prompt: string) {
@@ -201,120 +333,143 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
   if (!mounted) return null;
 
   return (
-    <aside
-      className={`${closing ? 'aside-out-left' : 'aside-in-left'} fixed inset-0 z-50 flex flex-col bg-[#171f21] text-[#f3f0ed] overflow-hidden sm:static sm:h-full sm:w-xl sm:shrink-0 border-r border-white/[0.06]`}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2.5">
-          <span className="text-sm font-semibold tracking-tight text-white/85">Prompts</span>
-          {!loading && (
-            <span className="text-[10px] font-bold text-[#a2dd00]/80 bg-[#a2dd00]/[0.08] px-2 py-0.5 rounded-full tabular-nums">
-              {visiblePrompts.length}
-            </span>
+    <>
+      <aside
+        className={`${closing ? 'aside-out-left' : 'aside-in-left'} fixed inset-0 z-50 flex flex-col bg-[#171f21] text-[#f3f0ed] overflow-hidden sm:static sm:h-full sm:w-xl sm:shrink-0 border-r border-white/[0.06]`}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <span className="text-sm font-semibold tracking-tight text-white/85">Prompts</span>
+            {!loading && (
+              <span className="text-[10px] font-bold text-[#a2dd00]/80 bg-[#a2dd00]/[0.08] px-2 py-0.5 rounded-full tabular-nums">
+                {visiblePrompts.length}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {isAdmin && activeCategoryId && (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex h-7 items-center gap-1 rounded-lg bg-[#a2dd00]/15 px-2 text-[10px] font-bold text-[#a2dd00] ring-1 ring-[#a2dd00]/25 hover:bg-[#a2dd00]/25 transition-colors"
+              >
+                <Plus className="h-3 w-3" />
+                Adicionar
+              </button>
+            )}
+            <button
+              onClick={() => onOpenChange(false)}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.05] transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Search */}
+        <div className="px-3 pb-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/20" />
+            <input
+              type="text"
+              placeholder="Buscar prompts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg bg-white/[0.04] py-2 pl-8 pr-8 text-xs text-white/80 placeholder:text-white/20 ring-1 ring-white/[0.06] focus:outline-none focus:ring-[#a2dd00]/30 transition-shadow"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Section tabs */}
+        <div className="flex gap-1 px-3 pb-2.5 overflow-x-auto sidebar-scroll">
+          {promptSections.map((section) => {
+            const Icon = section.icon;
+            return (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`shrink-0 flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition-all ${
+                  activeSection === section.id
+                    ? 'bg-[#a2dd00]/15 text-[#a2dd00] ring-1 ring-[#a2dd00]/25'
+                    : 'text-white/30 hover:text-white/55 hover:bg-white/[0.04]'
+                }`}
+              >
+                <Icon className="h-3 w-3" />
+                {section.title}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="h-px bg-white/[0.05]" />
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto sidebar-scroll">
+          {loading && (
+            <div className="flex items-center justify-center py-24">
+              <Loader2 className="h-5 w-5 animate-spin text-white/15" />
+            </div>
+          )}
+
+          {error && !loading && (
+            <div className="flex flex-col items-center justify-center py-24 gap-2">
+              <p className="text-xs text-white/30">Erro ao carregar prompts</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="text-[10px] text-[#a2dd00]/70 hover:text-[#a2dd00] transition-colors"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && visiblePrompts.length > 0 && (
+            <div className="grid grid-cols-2 gap-2 p-3">
+              {visiblePrompts.map((promptItem) => (
+                <PromptCard
+                  key={promptItem.id}
+                  item={promptItem}
+                  isCopied={copiedId === promptItem.id}
+                  isAdmin={isAdmin}
+                  onCopy={() => handleCopy(promptItem.prompt, promptItem.id)}
+                  onDelete={() => handleDelete(promptItem.id)}
+                />
+              ))}
+            </div>
+          )}
+
+          {!loading && !error && visiblePrompts.length === 0 && searchQuery && (
+            <div className="flex flex-col items-center justify-center py-16 gap-2">
+              <Search className="h-5 w-5 text-white/10" />
+              <p className="text-xs text-white/25">Nenhum prompt encontrado</p>
+              <button
+                onClick={() => setSearchQuery('')}
+                className="text-[10px] text-[#a2dd00]/60 hover:text-[#a2dd00] transition-colors"
+              >
+                Limpar busca
+              </button>
+            </div>
           )}
         </div>
-        <button
-          onClick={() => onOpenChange(false)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.05] transition-colors"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
+      </aside>
 
-      {/* Search */}
-      <div className="px-3 pb-2">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/20" />
-          <input
-            type="text"
-            placeholder="Buscar prompts..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg bg-white/[0.04] py-2 pl-8 pr-8 text-xs text-white/80 placeholder:text-white/20 ring-1 ring-white/[0.06] focus:outline-none focus:ring-[#a2dd00]/30 transition-shadow"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Section tabs */}
-      <div className="flex gap-1 px-3 pb-2.5 overflow-x-auto sidebar-scroll">
-        {promptSections.map((section) => {
-          const Icon = section.icon;
-          return (
-            <button
-              key={section.id}
-              onClick={() => setActiveSection(section.id)}
-              className={`shrink-0 flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition-all ${
-                activeSection === section.id
-                  ? 'bg-[#a2dd00]/15 text-[#a2dd00] ring-1 ring-[#a2dd00]/25'
-                  : 'text-white/30 hover:text-white/55 hover:bg-white/[0.04]'
-              }`}
-            >
-              <Icon className="h-3 w-3" />
-              {section.title}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="h-px bg-white/[0.05]" />
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto sidebar-scroll">
-        {loading && (
-          <div className="flex items-center justify-center py-24">
-            <Loader2 className="h-5 w-5 animate-spin text-white/15" />
-          </div>
-        )}
-
-        {error && !loading && (
-          <div className="flex flex-col items-center justify-center py-24 gap-2">
-            <p className="text-xs text-white/30">Erro ao carregar prompts</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="text-[10px] text-[#a2dd00]/70 hover:text-[#a2dd00] transition-colors"
-            >
-              Tentar novamente
-            </button>
-          </div>
-        )}
-
-        {!loading && !error && visiblePrompts.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 p-3">
-            {visiblePrompts.map((promptItem) => (
-              <PromptCard
-                key={promptItem.id}
-                item={promptItem}
-                isCopied={copiedId === promptItem.id}
-                onImage={() => handleOpenPanel('generate-image', promptItem.prompt)}
-                onVideo={() => handleOpenPanel('generate-video', promptItem.prompt)}
-                onCopy={() => handleCopy(promptItem.prompt, promptItem.id)}
-              />
-            ))}
-          </div>
-        )}
-
-        {!loading && !error && visiblePrompts.length === 0 && searchQuery && (
-          <div className="flex flex-col items-center justify-center py-16 gap-2">
-            <Search className="h-5 w-5 text-white/10" />
-            <p className="text-xs text-white/25">Nenhum prompt encontrado</p>
-            <button
-              onClick={() => setSearchQuery('')}
-              className="text-[10px] text-[#a2dd00]/60 hover:text-[#a2dd00] transition-colors"
-            >
-              Limpar busca
-            </button>
-          </div>
-        )}
-      </div>
-    </aside>
+      {/* Add prompt modal */}
+      {showAddModal && activeCategoryId && accessToken && (
+        <AddPromptModal
+          categoryId={activeCategoryId}
+          accessToken={accessToken}
+          onClose={() => setShowAddModal(false)}
+          onAdded={() => fetchPrompts()}
+        />
+      )}
+    </>
   );
 }

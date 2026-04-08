@@ -963,6 +963,24 @@ export const api = {
     getAll() {
       return request<{ sections: ApiPromptSection[] }>('/api/v1/prompts');
     },
+    deleteTemplate(accessToken: string, id: string) {
+      return authRequest<void>(`/api/v1/admin/prompts/templates/${id}`, accessToken, {
+        method: 'DELETE',
+      });
+    },
+    createTemplate(accessToken: string, data: {
+      categoryId: string;
+      title: string;
+      type: string;
+      prompt: string;
+      imageUrl?: string;
+      aiModel?: string;
+    }) {
+      return authRequest<{ id: string }>('/api/v1/admin/prompts/templates', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
   },
 
   plans: {
