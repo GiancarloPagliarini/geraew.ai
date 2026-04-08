@@ -1002,10 +1002,9 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/10 px-3 py-2.5" style={{ opacity: isGenerating || isKieModel ? 0.4 : 1, pointerEvents: isGenerating || isKieModel ? 'none' : undefined }}>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11px] font-bold text-[#f3f0ed]/60">Áudio</span>
-                    {isKieModel && <span className="text-[9px] text-[#a2dd00]/60">(sempre ativo)</span>}
-                    <Info className="h-3 w-3 text-[#f3f0ed]/20" />
+                    {isKieModel && <span className="text-[11px] text-[#a2dd00]/60">(sempre ativo)</span>}
                   </div>
-                  <ToggleSwitch checked={isKieModel ? true : audio} onChange={isKieModel ? () => {} : setAudio} />
+                  <ToggleSwitch checked={isKieModel ? true : audio} onChange={isKieModel ? () => { } : setAudio} />
                 </div>
 
                 {/* Model + Resolution */}
@@ -1044,34 +1043,34 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 {/* Duration + Proportion */}
                 <div className={`grid ${isKieModel ? 'grid-cols-1' : 'grid-cols-2'} gap-3`} style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
                   {!isKieModel && (
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                      DURAÇÃO
-                    </label>
-                    <div className="flex gap-1.5">
-                      {['4s', '6s', '8s'].map((d) => {
-                        const active = effectiveDuration === d;
-                        const disabled = forceEightSeconds && d !== '8s';
-                        return (
-                          <button
-                            key={d}
-                            onClick={() => !disabled && setDuration(d)}
-                            disabled={disabled}
-                            title={disabled ? 'Apenas 8s disponível com referências' : undefined}
-                            className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-30"
-                            style={{
-                              background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
-                              color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
-                              border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
-                              boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
-                            }}
-                          >
-                            {d}
-                          </button>
-                        );
-                      })}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                        DURAÇÃO
+                      </label>
+                      <div className="flex gap-1.5">
+                        {['4s', '6s', '8s'].map((d) => {
+                          const active = effectiveDuration === d;
+                          const disabled = forceEightSeconds && d !== '8s';
+                          return (
+                            <button
+                              key={d}
+                              onClick={() => !disabled && setDuration(d)}
+                              disabled={disabled}
+                              title={disabled ? 'Apenas 8s disponível com referências' : undefined}
+                              className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-30"
+                              style={{
+                                background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
+                                color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
+                                border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
+                                boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
+                              }}
+                            >
+                              {d}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
                   )}
 
                   <div className="space-y-1.5">
@@ -1104,31 +1103,31 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
                 {/* Sample count — hidden for KIE (always 1) */}
                 {!isKieModel && (
-                <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-                  <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                    QUANTIDADE
-                  </label>
-                  <div className="flex gap-1.5">
-                    {[1, 2, 3, 4].map((n) => {
-                      const active = sampleCount === n;
-                      return (
-                        <button
-                          key={n}
-                          onClick={() => setSampleCount(n)}
-                          className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95"
-                          style={{
-                            background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
-                            color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
-                            border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
-                            boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
-                          }}
-                        >
-                          {n}
-                        </button>
-                      );
-                    })}
+                  <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                    <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                      QUANTIDADE
+                    </label>
+                    <div className="flex gap-1.5">
+                      {[1, 2, 3, 4].map((n) => {
+                        const active = sampleCount === n;
+                        return (
+                          <button
+                            key={n}
+                            onClick={() => setSampleCount(n)}
+                            className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95"
+                            style={{
+                              background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
+                              color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
+                              border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
+                              boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
+                            }}
+                          >
+                            {n}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
                 )}
 
                 {/* Reference images (text mode) */}

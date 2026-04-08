@@ -693,7 +693,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
 
   const activeOutput = outputs[activeIndex];
   const url = activeOutput?.url;
-  const isVideo = !!item.durationSeconds;
+  const isVideo = !!item.durationSeconds || ['TEXT_TO_VIDEO', 'IMAGE_TO_VIDEO', 'REFERENCE_VIDEO', 'MOTION_CONTROL'].includes(item.type);
   const hasRefs = (item.inputImages?.length ?? 0) > 0;
   const multipleOutputs = outputs.length > 1;
 
@@ -715,8 +715,8 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
       </button>
 
       {/* Main player */}
-      <div className="relative w-full rounded-xl overflow-hidden bg-[#f3f0ed]/3 max-h-[50vh]">
-        {!loaded && <div className="absolute inset-0 animate-pulse bg-[#f3f0ed]/6" />}
+      <div className="relative w-full rounded-xl overflow-hidden bg-[#f3f0ed]/3 max-h-[50vh] min-h-[40vh]">
+        {!loaded && <div className="absolute inset-0 animate-pulse bg-[#f3f0ed]/6 rounded-xl" />}
 
         {isVideo ? (
           <video
@@ -1057,7 +1057,7 @@ const GalleryItem = memo(function GalleryItem({
   const [folderDropdownOpen, setFolderDropdownOpen] = useState(false);
   const displayUrl = item.thumbnailUrl ?? item.outputUrl;
   const fullUrl = item.outputUrl;
-  const isVideo = !!item.durationSeconds;
+  const isVideo = !!item.durationSeconds || ['TEXT_TO_VIDEO', 'IMAGE_TO_VIDEO', 'REFERENCE_VIDEO', 'MOTION_CONTROL'].includes(item.type);
   const outputCount = item.outputCount ?? 0;
   const itemFolderIds = item.folder ? [item.folder.id] : [];
 
