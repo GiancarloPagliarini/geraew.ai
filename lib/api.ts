@@ -125,6 +125,28 @@ export interface Plan {
   hasApiAccess: boolean;
 }
 
+// ─── Prompts ─────────────────────────────────────────────────────────────────
+
+export interface ApiPromptSection {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  icon: string | null;
+  categories: {
+    id: string;
+    title: string;
+    prompts: {
+      id: string;
+      title: string;
+      type: string;
+      prompt: string;
+      imageUrl: string | null;
+      aiModel: string | null;
+    }[];
+  }[];
+}
+
 // ─── Generations ──────────────────────────────────────────────────────────────
 
 export type GenerationStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
@@ -934,6 +956,12 @@ export const api = {
       return authRequest<{ portalUrl: string }>('/api/v1/subscriptions/billing-portal', accessToken, {
         method: 'POST',
       });
+    },
+  },
+
+  prompts: {
+    getAll() {
+      return request<{ sections: ApiPromptSection[] }>('/api/v1/prompts');
     },
   },
 
