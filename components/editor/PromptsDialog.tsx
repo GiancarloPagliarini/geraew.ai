@@ -6,6 +6,13 @@ import {
   Loader2,
   type LucideIcon,
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useEditor } from '@/lib/editor-context';
@@ -96,7 +103,7 @@ function PromptCard({ item, isCopied, isAdmin, onCopy, onDelete }: {
           {isAdmin && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
-              className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-500/20 backdrop-blur-md text-red-400 ring-1 ring-red-500/20 hover:bg-red-500/40 hover:text-red-300 active:scale-[0.95] transition-all opacity-0 group-hover:opacity-100"
+              className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-500 backdrop-blur-md ring-1 ring-red-500 hover:opacity-80 text-red-200 active:scale-[0.95] transition-all opacity-0 group-hover:opacity-100"
             >
               <Trash2 className="h-3 w-3" />
             </button>
@@ -114,6 +121,46 @@ function PromptCard({ item, isCopied, isAdmin, onCopy, onDelete }: {
           <p className="text-[10px] leading-relaxed text-white/65 line-clamp-2">
             {item.prompt}
           </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Delete Confirm Modal ──
+
+function DeleteConfirmModal({ onClose, onConfirm }: {
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm mx-4 rounded-2xl bg-[#1a2225] ring-1 ring-white/[0.08] p-5 flex flex-col gap-4"
+      >
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-white/85">Excluir prompt</h3>
+          <button type="button" onClick={onClose} className="text-white/30 hover:text-white/60 transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <p className="text-xs text-white/50">Tem certeza que deseja excluir este prompt? Essa ação não pode ser desfeita.</p>
+
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 rounded-lg bg-white/[0.04] py-2.5 text-xs font-bold text-white/50 ring-1 ring-white/[0.06] hover:bg-white/[0.08] transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 rounded-lg bg-red-500/20 py-2.5 text-xs font-bold text-red-400 ring-1 ring-red-500/25 hover:bg-red-500/30 transition-all"
+          >
+            Excluir
+          </button>
         </div>
       </div>
     </div>
@@ -181,14 +228,19 @@ function AddPromptModal({ categoryId, accessToken, onClose, onAdded }: {
           className="w-full rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-white/80 placeholder:text-white/20 ring-1 ring-white/[0.06] focus:outline-none focus:ring-[#a2dd00]/30"
         />
 
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          className="w-full rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-white/80 ring-1 ring-white/[0.06] focus:outline-none focus:ring-[#a2dd00]/30"
-        >
-          <option value="json">JSON</option>
-          <option value="text">Text</option>
-        </select>
+        <Select value={type} onValueChange={setType}>
+          <SelectTrigger className="h-9 w-full rounded-xl border border-white/6 bg-white/4 px-3 text-xs text-white/80 outline-none transition-all focus:border-[#a2dd00]/40 focus:ring-0 data-placeholder:text-white/30 [&>svg]:text-white/30">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="z-70 rounded-xl border border-white/8 bg-[#1a2225] p-1 shadow-2xl shadow-black/60 backdrop-blur-md">
+            <SelectItem value="json" className="cursor-pointer rounded-lg px-3 py-2 text-xs text-white/70 transition-all focus:bg-white/6 focus:text-white data-[state=checked]:text-[#a2dd00] [&>span:last-child>svg]:text-[#a2dd00]">
+              JSON
+            </SelectItem>
+            <SelectItem value="text" className="cursor-pointer rounded-lg px-3 py-2 text-xs text-white/70 transition-all focus:bg-white/6 focus:text-white data-[state=checked]:text-[#a2dd00] [&>span:last-child>svg]:text-[#a2dd00]">
+              Text
+            </SelectItem>
+          </SelectContent>
+        </Select>
 
         <textarea
           placeholder="Prompt"
@@ -233,11 +285,14 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [deletePromptId, setDeletePromptId] = useState<string | null>(null);
 
   const [promptSections, setPromptSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const fetchRef = useRef(0);
+
+  console.log(promptSections)
 
   const isAdmin = user?.role === 'ADMIN';
 
@@ -298,13 +353,17 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
     setTimeout(() => setCopiedId(null), 2000);
   }
 
-  async function handleDelete(promptId: string) {
+  function handleDelete(promptId: string) {
     if (!accessToken) return;
-    const confirmed = window.confirm('Tem certeza que deseja excluir este prompt?');
-    if (!confirmed) return;
+    setDeletePromptId(promptId);
+  }
 
+  async function confirmDelete() {
+    if (!accessToken || !deletePromptId) return;
+    const id = deletePromptId;
+    setDeletePromptId(null);
     try {
-      await api.prompts.deleteTemplate(accessToken, promptId);
+      await api.prompts.deleteTemplate(accessToken, id);
       toast.success('Prompt excluido!');
       fetchPrompts();
     } catch {
@@ -396,11 +455,10 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
               <button
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
-                className={`shrink-0 flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition-all ${
-                  activeSection === section.id
-                    ? 'bg-[#a2dd00]/15 text-[#a2dd00] ring-1 ring-[#a2dd00]/25'
-                    : 'text-white/30 hover:text-white/55 hover:bg-white/[0.04]'
-                }`}
+                className={`shrink-0 flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition-all ${activeSection === section.id
+                  ? 'bg-[#a2dd00]/15 text-[#a2dd00] ring-1 ring-[#a2dd00]/25'
+                  : 'text-white/30 hover:text-white/55 hover:bg-white/[0.04]'
+                  }`}
               >
                 <Icon className="h-3 w-3" />
                 {section.title}
@@ -460,6 +518,14 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
           )}
         </div>
       </aside>
+
+      {/* Delete confirm modal */}
+      {deletePromptId && (
+        <DeleteConfirmModal
+          onClose={() => setDeletePromptId(null)}
+          onConfirm={confirmDelete}
+        />
+      )}
 
       {/* Add prompt modal */}
       {showAddModal && activeCategoryId && accessToken && (
