@@ -355,14 +355,16 @@ function CanvasContent() {
       {mounted && nodes.length === 0 && (
         <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
           <div className="pointer-events-auto flex w-full flex-col items-center gap-3 px-5 sm:w-auto sm:gap-6 sm:px-0">
-            <Image
-              src="/logo_2.svg"
-              alt="Geraew AI"
-              width={64}
-              height={64}
-              className="empty-header-animate rounded-md"
-              style={{ animationDelay: '0.1s' }}
-            />
+            <div className="animate-pulse">
+              <Image
+                src="/logo_2.svg"
+                alt="Geraew AI"
+                width={64}
+                height={64}
+                className="empty-header-animate"
+                style={{ animationDelay: '0.1s' }}
+              />
+            </div>
             <div className="empty-header-animate text-center" style={{ animationDelay: '0.25s' }}>
               <h2 className="text-md font-semibold text-[#f3f0ed]">Tudo pronto!</h2>
               <p className="mt-1 text-sm text-[#f3f0ed]/35">

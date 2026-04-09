@@ -292,8 +292,6 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
   const [error, setError] = useState(false);
   const fetchRef = useRef(0);
 
-  console.log(promptSections)
-
   const isAdmin = user?.role === 'ADMIN';
 
   async function fetchPrompts() {
@@ -456,7 +454,7 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
                 className={`shrink-0 flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition-all ${activeSection === section.id
-                  ? 'bg-[#a2dd00]/15 text-[#a2dd00] ring-1 ring-[#a2dd00]/25'
+                  ? 'bg-[#a2dd00]/15 text-[#a2dd00] ring-[#a2dd00]/25'
                   : 'text-white/30 hover:text-white/55 hover:bg-white/[0.04]'
                   }`}
               >

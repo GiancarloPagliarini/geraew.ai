@@ -67,7 +67,7 @@ export function FinalCta() {
             href="/workspace"
             className="group mt-8 inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-7 py-3.5 text-[14px] font-bold text-landing-bg-secondary shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-colors duration-200 hover:bg-[#b5e82d] active:scale-[0.98] sm:mt-10 sm:px-9 sm:py-4 sm:text-[15px]"
           >
-            {isLoggedIn ? "Acessar Workspace" : "Começar Grátis"}
+            {isLoggedIn ? "Acessar Plataforma" : "Começar Grátis"}
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
           </a>
 

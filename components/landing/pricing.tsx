@@ -234,7 +234,7 @@ function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) 
                   : "border border-[#f3f0ed]/[0.08] text-[#f3f0ed]/70 hover:border-[#f3f0ed]/[0.15] hover:bg-[#f3f0ed]/[0.03] hover:text-[#f3f0ed]",
             )}
           >
-            {isLoggedIn ? "Acessar Workspace" : "Começar Grátis"}
+            {isLoggedIn ? "Acessar Plataforma" : "Começar Grátis"}
             <ArrowRight className="h-3.5 w-3.5" />
           </a>
         ) : (

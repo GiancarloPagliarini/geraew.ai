@@ -123,7 +123,7 @@ export function HowItWorks() {
             href="/workspace"
             className="group inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-6 py-3 text-[13px] font-bold text-landing-bg-secondary shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-colors duration-200 hover:bg-[#b5e82d] active:scale-[0.98] sm:px-7 sm:py-3.5 sm:text-[14px]"
           >
-            {isLoggedIn ? "Acessar Workspace" : "Quero criar minha primeira influencer"}
+            {isLoggedIn ? "Acessar Plataforma" : "Quero criar minha primeira influencer"}
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
           </a>
         </div>
