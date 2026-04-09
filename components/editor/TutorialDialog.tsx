@@ -8,7 +8,7 @@ const tutorials = [
     id: 'image',
     icon: ImageIcon,
     showVideo: true,
-    videoUrl: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/utils/Design%20sem%20nome.mp4',
+    videoUrl: 'https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/utils/Design%20sem%20nome.mp4',
     title: 'Gerar sua primeira imagem',
     description:
       'Aprenda a usar o painel de geração de imagens para criar artes incríveis com IA em poucos cliques.',
@@ -23,7 +23,7 @@ const tutorials = [
     id: 'video',
     icon: VideoIcon,
     showVideo: true,
-    videoUrl: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/utils/video_geracao.mp4',
+    videoUrl: 'https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/utils/video_geracao.mp4',
     title: 'Gerar um vídeo',
     description:
       'Transforme imagens ou prompts em vídeos animados de alta qualidade usando modelos de IA de última geração.',

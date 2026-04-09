@@ -17,7 +17,7 @@ const slides = [
     description: 'Transforme texto em vídeo em segundos com modelos de última geração.',
     bg: 'bg-black',
     accent: '#a2dd00',
-    video: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmmwn2wq5007vus01furnxyh4/22c243fd-ce57-4c3e-aa8a-afadc811da46/output_0.mp4',
+    video: 'https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmmwn2wq5007vus01furnxyh4/22c243fd-ce57-4c3e-aa8a-afadc811da46/output_0.mp4',
   },
   {
     id: 1,
@@ -26,7 +26,7 @@ const slides = [
     description: 'Crie conteúdo visual consistente para campanhas, redes sociais e muito mais.',
     bg: 'bg-black',
     accent: '#ff6b9d',
-    video: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmmxjmvws00fyus01sxwu628l/5727b0ea-86d6-4887-8707-57eeb1db17bf/output_2.mp4',
+    video: 'https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmmxjmvws00fyus01sxwu628l/5727b0ea-86d6-4887-8707-57eeb1db17bf/output_2.mp4',
   },
   {
     id: 2,
@@ -35,7 +35,7 @@ const slides = [
     description: 'Monte personagens únicos com controle total de estilo, etnia, expressão e muito mais.',
     bg: 'bg-gradient-to-br from-teal-950 via-emerald-900 to-cyan-950',
     accent: '#00d4aa',
-    video: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmndiy1070058n4018hi1nnr7/848a6510-414d-4796-9da7-4a9a428a11fb/output_0.mp4',
+    video: 'https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmndiy1070058n4018hi1nnr7/848a6510-414d-4796-9da7-4a9a428a11fb/output_0.mp4',
   },
   {
     id: 3,
@@ -44,7 +44,7 @@ const slides = [
     description: 'Transforme qualquer ideia em imagem com modelos de última geração — rápido e sem limitações.',
     bg: 'bg-black',
     accent: '#ffa040',
-    image: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmmxldri200gzus01z4fip7qf/04d6bbed-eb33-4e0a-ae27-8df3e14b6b92/output_0.png',
+    image: 'https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmmxldri200gzus01z4fip7qf/04d6bbed-eb33-4e0a-ae27-8df3e14b6b92/output_0.png',
   },
 ];
 

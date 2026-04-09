@@ -7,12 +7,12 @@ import { useScrollReveal } from "./use-scroll-reveal";
 import { useAuth } from "@/lib/auth-context";
 
 const ITEMS: { src: string; type: "image" | "video" }[] = [
-  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmnb5y9jy002ili0166936754/155ad5c2-f554-475b-b8b8-c5c64a639a6b/output_3.mp4", type: "video" },
-  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmn5h10lz002os7015ezt1rk8/0a0ec4b5-b6e5-481a-89c7-1f36d529febd/output_0.mp4", type: "video" },
-  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmmygp8wl000sml01l4h6vteq/162b05b9-0e95-4799-ba90-6544efa9acd1/output_0.png", type: "image" },
-  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmn75brpl0092s101g088osyw/abbc63ee-8331-4bdf-b416-73e5393c7de3/output_0.png", type: "image" },
-  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmmv24p4y00wdq201jad39azh/ed291ab0-d3ef-45d6-9ed8-cf1887a54a76/output_0.mp4", type: "video" },
-  { src: "https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/object/public/ai-generations/generations/cmmptwwks00j6qu018a0f0gg7/cf0f42c0-d71d-4df6-b6ec-0dd41b727c05/output_0.mp4", type: "video" },
+  { src: "https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmnb5y9jy002ili0166936754/155ad5c2-f554-475b-b8b8-c5c64a639a6b/output_3.mp4", type: "video" },
+  { src: "https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmn5h10lz002os7015ezt1rk8/0a0ec4b5-b6e5-481a-89c7-1f36d529febd/output_0.mp4", type: "video" },
+  { src: "https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmmygp8wl000sml01l4h6vteq/162b05b9-0e95-4799-ba90-6544efa9acd1/output_0.png", type: "image" },
+  { src: "https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmn75brpl0092s101g088osyw/abbc63ee-8331-4bdf-b416-73e5393c7de3/output_0.png", type: "image" },
+  { src: "https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmmv24p4y00wdq201jad39azh/ed291ab0-d3ef-45d6-9ed8-cf1887a54a76/output_0.mp4", type: "video" },
+  { src: "https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmmptwwks00j6qu018a0f0gg7/cf0f42c0-d71d-4df6-b6ec-0dd41b727c05/output_0.mp4", type: "video" },
 ];
 
 function LazyVideo({ src }: { src: string }) {
