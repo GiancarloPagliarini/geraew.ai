@@ -94,6 +94,7 @@ function ProductCard({ item, rank }: { item: RankItem; rank: number }) {
           alt={item.title}
           className="h-full w-full object-cover transition-transform duration-500 will-change-transform group-hover:scale-[1.05]"
           loading="lazy"
+          referrerPolicy="no-referrer"
           onError={(e) => {
             const img = e.target as HTMLImageElement;
             img.style.display = 'none';
@@ -135,7 +136,7 @@ function ProductCard({ item, rank }: { item: RankItem; rank: number }) {
         {/* Shop */}
         <div className="flex items-center gap-1.5">
           {item.shop_info?.avatar && (
-            <img src={item.shop_info.avatar} alt={item.shop_info.name} className="h-4 w-4 rounded-full ring-1 ring-white/10 shrink-0" loading="lazy"
+            <img src={item.shop_info.avatar} alt={item.shop_info.name} className="h-4 w-4 rounded-full ring-1 ring-white/10 shrink-0" loading="lazy" referrerPolicy="no-referrer"
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           )}
           <span className="text-[9px] text-white/35 truncate">{item.shop_info?.name}</span>

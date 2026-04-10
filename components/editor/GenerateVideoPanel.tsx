@@ -1022,8 +1022,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       value={model}
                       onValueChange={setModel}
                       options={[
-                        { value: 'geraew-quality', label: 'Geraew Quality', disabled: true },
-                        { value: 'geraew-fast', label: 'Geraew Fast', disabled: true },
+                        { value: 'geraew-quality', label: 'Geraew Quality' },
+                        { value: 'geraew-fast', label: 'Geraew Fast' },
                         { value: 'veo3', label: 'Veo 3.1 Quality' },
                         { value: 'veo3_fast', label: 'Veo 3.1 Fast' },
                       ]}
