@@ -20,6 +20,7 @@ import {
   Type,
   Video,
   Wand2,
+  TriangleAlert,
   X
 } from 'lucide-react';
 import { EnhancePromptToggle } from './EnhancePromptToggle';
@@ -127,7 +128,11 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
   const [prompt, setPrompt] = useState<string>(initialPendingPrompt ?? stored?.prompt ?? '');
   const [audio, setAudio] = useState<boolean>(stored?.audio ?? true);
-  const [model, setModel] = useState<string>(stored?.model ?? 'geraew-quality');
+  const [model, setModel] = useState<string>(() => {
+    const stored_model = stored?.model;
+    if (stored_model === 'geraew-quality' || stored_model === 'geraew-fast') return 'veo3';
+    return stored_model ?? 'veo3';
+  });
   const [duration, setDuration] = useState<string>(stored?.duration ?? '8s');
   const [proportion, setProportion] = useState<string>(stored?.proportion ?? '9-16');
   const [resolution, setResolution] = useState<string>(stored?.resolution ?? 'RES_1080P');
@@ -1017,8 +1022,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       value={model}
                       onValueChange={setModel}
                       options={[
-                        { value: 'geraew-quality', label: 'Geraew Quality' },
-                        { value: 'geraew-fast', label: 'Geraew Fast' },
+                        { value: 'geraew-quality', label: 'Geraew Quality', disabled: true },
+                        { value: 'geraew-fast', label: 'Geraew Fast', disabled: true },
                         { value: 'veo3', label: 'Veo 3.1 Quality' },
                         { value: 'veo3_fast', label: 'Veo 3.1 Fast' },
                       ]}
@@ -1335,7 +1340,7 @@ function PanelSelect({
 }: {
   value: string;
   onValueChange: (v: string) => void;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; disabled?: boolean }[];
 }) {
   return (
     <Select value={value} onValueChange={onValueChange}>
@@ -1347,9 +1352,17 @@ function PanelSelect({
           <SelectItem
             key={opt.value}
             value={opt.value}
-            className="cursor-pointer rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/70 transition-all focus:bg-[#1e494b]/40 focus:text-[#f3f0ed] data-[state=checked]:text-[#a2dd00] [&>span:last-child>svg]:text-[#a2dd00]"
+            disabled={opt.disabled}
+            className="cursor-pointer rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/70 transition-all focus:bg-[#1e494b]/40 focus:text-[#f3f0ed] data-[state=checked]:text-[#a2dd00] data-disabled:cursor-not-allowed data-disabled:opacity-50 [&>span:last-child>svg]:text-[#a2dd00]"
           >
-            {opt.label}
+            <span className="flex items-center gap-1.5">
+              {opt.label}
+              {opt.disabled && (
+                <span title="Em manutenção">
+                  <TriangleAlert className="h-3 w-3 text-amber-400" />
+                </span>
+              )}
+            </span>
           </SelectItem>
         ))}
       </SelectContent>
