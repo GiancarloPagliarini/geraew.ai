@@ -64,25 +64,31 @@ export default function AdminSubscriptionsPage() {
   const limit = 20;
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'users', page, 'subscriptions'],
+    queryKey: ['admin', 'users', page, limit, 'subscriptions'],
     queryFn: () => api.admin.users(accessToken!, page, limit),
     enabled: !!accessToken,
   });
 
-  const allUsers = data?.data ?? [];
-  const subscribedUsers = allUsers.filter((u: AdminUser) => u.subscription !== null);
-  const total = data?.meta?.total ?? 0;
+  // Fetch aggregated stats (totals across ALL users, not just the current page)
+  const { data: stats } = useQuery({
+    queryKey: ['admin', 'user-stats'],
+    queryFn: () => api.admin.userStats(accessToken!),
+    enabled: !!accessToken,
+    refetchInterval: 60_000,
+  });
+
+  const users = data?.data ?? [];
   const totalPages = data?.meta?.totalPages ?? 1;
 
-  // Summary stats
-  const activeCount = allUsers.filter(
-    (u: AdminUser) => u.subscription?.status?.toUpperCase() === 'ACTIVE',
-  ).length;
-  const planCounts = allUsers.reduce<Record<string, number>>((acc, u: AdminUser) => {
-    const slug = u.subscription?.planSlug ?? 'free';
-    acc[slug] = (acc[slug] || 0) + 1;
-    return acc;
-  }, {});
+  // Summary stats (sourced from aggregated endpoint, NOT from the paginated page)
+  const activeCount = stats?.paidUsers ?? 0;
+  const planCounts = (stats?.planDistribution ?? []).reduce<Record<string, number>>(
+    (acc, p) => {
+      acc[p.planSlug] = p.userCount;
+      return acc;
+    },
+    {},
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -135,7 +141,7 @@ export default function AdminSubscriptionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(subscribedUsers.length > 0 ? subscribedUsers : allUsers).map((user: AdminUser) => (
+              {users.map((user: AdminUser) => (
                 <TableRow
                   key={user.id}
                   onClick={() => router.push(`/admin/usuarios/${user.id}`)}

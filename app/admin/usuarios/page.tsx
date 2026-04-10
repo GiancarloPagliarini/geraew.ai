@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { AdminUser } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Loader2,
@@ -80,25 +80,31 @@ export default function AdminUsersPage() {
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const limit = 15;
 
+  // Debounce search input to avoid firing a request on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Reset to first page whenever the search term changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['admin', 'users', page],
-    queryFn: () => api.admin.users(accessToken!, page, limit),
+    queryKey: ['admin', 'users', page, limit, debouncedSearch],
+    queryFn: () => api.admin.users(accessToken!, page, limit, debouncedSearch || undefined),
     enabled: !!accessToken,
   });
 
   const users = data?.data ?? [];
   const total = data?.meta?.total ?? 0;
   const totalPages = data?.meta?.totalPages ?? 1;
-
-  const filtered = search
-    ? users.filter(
-        (u) =>
-          u.name?.toLowerCase().includes(search.toLowerCase()) ||
-          u.email.toLowerCase().includes(search.toLowerCase()),
-      )
-    : users;
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
@@ -138,10 +144,10 @@ export default function AdminUsersPage() {
         <>
           {/* ── Mobile: lista de cards ── */}
           <div className="flex flex-col gap-2 md:hidden">
-            {filtered.length === 0 ? (
+            {users.length === 0 ? (
               <p className="py-10 text-center text-sm text-[#f3f0ed]/30">Nenhum usuário encontrado</p>
             ) : (
-              filtered.map((user) => (
+              users.map((user) => (
                 <button
                   key={user.id}
                   onClick={() => router.push(`/admin/usuarios/${user.id}`)}
@@ -187,7 +193,7 @@ export default function AdminUsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((user) => (
+                {users.map((user) => (
                   <TableRow
                     key={user.id}
                     onClick={() => router.push(`/admin/usuarios/${user.id}`)}
@@ -224,7 +230,7 @@ export default function AdminUsersPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {filtered.length === 0 && (
+                {users.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="h-32 text-center text-sm text-[#f3f0ed]/30">
                       Nenhum usuário encontrado

@@ -1027,9 +1027,14 @@ export const api = {
     stats(accessToken: string) {
       return authRequest<AdminStats>('/api/v1/admin/stats', accessToken);
     },
-    users(accessToken: string, page = 1, limit = 20) {
+    users(accessToken: string, page = 1, limit = 20, search?: string) {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
+      if (search && search.trim()) params.set('search', search.trim());
       return authRequest<AdminPaginatedResponse<AdminUser>>(
-        `/api/v1/admin/users?page=${page}&limit=${limit}`,
+        `/api/v1/admin/users?${params.toString()}`,
         accessToken,
       );
     },
