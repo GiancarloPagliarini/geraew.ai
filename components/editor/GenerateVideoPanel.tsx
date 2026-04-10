@@ -128,11 +128,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
   const [prompt, setPrompt] = useState<string>(initialPendingPrompt ?? stored?.prompt ?? '');
   const [audio, setAudio] = useState<boolean>(stored?.audio ?? true);
-  const [model, setModel] = useState<string>(() => {
-    const stored_model = stored?.model;
-    if (stored_model === 'geraew-quality' || stored_model === 'geraew-fast') return 'veo3';
-    return stored_model ?? 'veo3';
-  });
+  const [model, setModel] = useState<string>(stored?.model ?? 'geraew-quality');
   const [duration, setDuration] = useState<string>(stored?.duration ?? '8s');
   const [proportion, setProportion] = useState<string>(stored?.proportion ?? '9-16');
   const [resolution, setResolution] = useState<string>(stored?.resolution ?? 'RES_1080P');
