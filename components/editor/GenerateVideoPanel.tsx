@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { EnhancePromptToggle } from './EnhancePromptToggle';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
 import { useQuery } from '@tanstack/react-query';
@@ -156,6 +156,38 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   const [enhancePrompt, setEnhancePrompt] = useState(stored?.enhancePrompt ?? false);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(true);
+
+  // ─── Video models (DB-backed with fallback) ────────────────────────────────
+  const videoModelsQuery = useQuery({
+    queryKey: ['models', 'video'],
+    queryFn: () => api.models.listVideos(),
+    staleTime: 60_000,
+  });
+
+  const videoModelOptions = useMemo(() => {
+    const fallback = [
+      { value: 'geraew-quality', label: 'Geraew Quality' },
+      { value: 'geraew-fast', label: 'Geraew Fast' },
+      { value: 'veo3', label: 'Veo 3.1 Quality' },
+      { value: 'veo3_fast', label: 'Veo 3.1 Fast' },
+    ];
+    if (!videoModelsQuery.data) return fallback;
+    return videoModelsQuery.data.map((m) => ({
+      value: m.slug,
+      label: m.label,
+      disabled: !m.isActive,
+    }));
+  }, [videoModelsQuery.data]);
+
+  // Se o modelo selecionado ficou indisponível, troca automaticamente pro primeiro ativo
+  useEffect(() => {
+    if (!videoModelsQuery.data) return;
+    const current = videoModelsQuery.data.find((m) => m.slug === model);
+    if (current && !current.isActive) {
+      const firstActive = videoModelsQuery.data.find((m) => m.isActive);
+      if (firstActive) setModel(firstActive.slug);
+    }
+  }, [videoModelsQuery.data, model]);
 
   // With references (text mode) OR references + 1080P/4K → only 8s allowed
   const forceEightSeconds =
@@ -1017,12 +1049,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                     <PanelSelect
                       value={model}
                       onValueChange={setModel}
-                      options={[
-                        { value: 'geraew-quality', label: 'Geraew Quality' },
-                        { value: 'geraew-fast', label: 'Geraew Fast' },
-                        { value: 'veo3', label: 'Veo 3.1 Quality' },
-                        { value: 'veo3_fast', label: 'Veo 3.1 Fast' },
-                      ]}
+                      options={videoModelOptions}
                     />
                   </div>
                   <div className="space-y-1.5">

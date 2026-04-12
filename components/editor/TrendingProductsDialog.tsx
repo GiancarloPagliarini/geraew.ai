@@ -4,10 +4,9 @@ import {
   Flame, X, TrendingUp, TrendingDown, ShoppingBag, Users, Radio,
   Loader2, Percent, ChartNoAxesCombined,
   BadgeDollarSign, Star, Crown, Lock,
-  Spotlight
+  Spotlight, Medal
 } from 'lucide-react';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Medal } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth-context';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';

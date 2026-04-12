@@ -125,6 +125,36 @@ export interface Plan {
   hasApiAccess: boolean;
 }
 
+// ─── AI Models ───────────────────────────────────────────────────────────────
+
+export type AiModelProvider = 'GERAEW' | 'KIE';
+export type AiModelType = 'VIDEO' | 'IMAGE';
+
+export interface AiModelPublic {
+  slug: string;
+  label: string;
+  description: string | null;
+  provider: AiModelProvider;
+  isActive: boolean;
+  statusMessage: string | null;
+  sortOrder: number;
+}
+
+export interface AiModelAdmin {
+  id: string;
+  slug: string;
+  label: string;
+  description: string | null;
+  provider: AiModelProvider;
+  type: AiModelType;
+  modelVariant: string;
+  isActive: boolean;
+  sortOrder: number;
+  statusMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ─── Prompts ─────────────────────────────────────────────────────────────────
 
 export interface ApiPromptSection {
@@ -992,6 +1022,12 @@ export const api = {
     },
   },
 
+  models: {
+    listVideos() {
+      return request<AiModelPublic[]>('/api/v1/models/videos');
+    },
+  },
+
   promptEnhancer: {
     enhance(accessToken: string, prompt: string, context?: {
       type: 'image' | 'video';
@@ -1165,6 +1201,21 @@ export const api = {
           body: JSON.stringify({ filename, contentType, folder }),
         },
       );
+    },
+    models: {
+      list(accessToken: string) {
+        return authRequest<AiModelAdmin[]>('/api/v1/admin/models', accessToken);
+      },
+      toggle(accessToken: string, id: string, isActive: boolean, statusMessage?: string) {
+        return authRequest<{ success: boolean; message: string }>(
+          `/api/v1/admin/models/${id}/toggle`,
+          accessToken,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({ isActive, statusMessage }),
+          },
+        );
+      },
     },
   },
 
