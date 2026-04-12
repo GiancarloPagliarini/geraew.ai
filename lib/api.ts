@@ -155,6 +155,39 @@ export interface AiModelAdmin {
   updatedAt: string;
 }
 
+export interface AdminPromptTemplate {
+  id: string;
+  categoryId: string;
+  title: string;
+  type: string;
+  prompt: string;
+  imageUrl: string | null;
+  aiModel: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminPromptCategory {
+  id: string;
+  sectionId: string;
+  title: string;
+  sortOrder: number;
+  prompts?: AdminPromptTemplate[];
+}
+
+export interface AdminPromptSection {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  icon: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  categories: AdminPromptCategory[];
+}
+
 // ─── Prompts ─────────────────────────────────────────────────────────────────
 
 export interface ApiPromptSection {
@@ -1215,6 +1248,91 @@ export const api = {
             body: JSON.stringify({ isActive, statusMessage }),
           },
         );
+      },
+    },
+    prompts: {
+      list(accessToken: string) {
+        return authRequest<AdminPromptSection[]>('/api/v1/admin/prompts', accessToken);
+      },
+      createSection(accessToken: string, data: {
+        slug: string;
+        title: string;
+        description?: string;
+        icon?: string;
+        sortOrder?: number;
+      }) {
+        return authRequest<AdminPromptSection>('/api/v1/admin/prompts/sections', accessToken, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      updateSection(accessToken: string, id: string, data: {
+        slug?: string;
+        title?: string;
+        description?: string;
+        icon?: string;
+        sortOrder?: number;
+        isActive?: boolean;
+      }) {
+        return authRequest<AdminPromptSection>(`/api/v1/admin/prompts/sections/${id}`, accessToken, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        });
+      },
+      deleteSection(accessToken: string, id: string) {
+        return authRequest<{ success: boolean }>(`/api/v1/admin/prompts/sections/${id}`, accessToken, {
+          method: 'DELETE',
+        });
+      },
+      createCategory(accessToken: string, data: { sectionId: string; title: string; sortOrder?: number }) {
+        return authRequest<AdminPromptCategory>('/api/v1/admin/prompts/categories', accessToken, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      updateCategory(accessToken: string, id: string, data: { sectionId?: string; title?: string; sortOrder?: number }) {
+        return authRequest<AdminPromptCategory>(`/api/v1/admin/prompts/categories/${id}`, accessToken, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        });
+      },
+      deleteCategory(accessToken: string, id: string) {
+        return authRequest<{ success: boolean }>(`/api/v1/admin/prompts/categories/${id}`, accessToken, {
+          method: 'DELETE',
+        });
+      },
+      createTemplate(accessToken: string, data: {
+        categoryId: string;
+        title: string;
+        type: string;
+        prompt: string;
+        imageUrl?: string;
+        aiModel?: string;
+        sortOrder?: number;
+      }) {
+        return authRequest<AdminPromptTemplate>('/api/v1/admin/prompts/templates', accessToken, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      updateTemplate(accessToken: string, id: string, data: {
+        categoryId?: string;
+        title?: string;
+        type?: string;
+        prompt?: string;
+        imageUrl?: string;
+        aiModel?: string;
+        sortOrder?: number;
+      }) {
+        return authRequest<AdminPromptTemplate>(`/api/v1/admin/prompts/templates/${id}`, accessToken, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        });
+      },
+      deleteTemplate(accessToken: string, id: string) {
+        return authRequest<{ success: boolean }>(`/api/v1/admin/prompts/templates/${id}`, accessToken, {
+          method: 'DELETE',
+        });
       },
     },
   },
