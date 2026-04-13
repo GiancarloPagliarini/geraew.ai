@@ -1062,7 +1062,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       options={[
                         { value: 'RES_720P', label: '720p' },
                         { value: 'RES_1080P', label: '1080p' },
-                        { value: 'RES_4K', label: '4K' },
+                        { value: 'RES_1080P', label: '4K' },
                       ]}
                     />
                   </div>
