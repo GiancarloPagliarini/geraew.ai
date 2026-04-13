@@ -13,6 +13,8 @@ import {
   Loader2,
   Shield,
   Handshake,
+  Sparkles,
+  FileText,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -20,6 +22,8 @@ const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/usuarios', label: 'Usuários', icon: Users },
   { href: '/admin/geracoes', label: 'Gerações', icon: Image },
+  { href: '/admin/modelos', label: 'Modelos', icon: Sparkles },
+  { href: '/admin/prompts', label: 'Prompts', icon: FileText },
   { href: '/admin/assinaturas', label: 'Assinaturas', icon: CreditCard },
   { href: '/admin/afiliados', label: 'Afiliados', icon: Handshake },
   { href: '/admin/uploads', label: 'Uploads', icon: Upload },

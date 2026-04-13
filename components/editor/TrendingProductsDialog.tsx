@@ -4,10 +4,9 @@ import {
   Flame, X, TrendingUp, TrendingDown, ShoppingBag, Users, Radio,
   Loader2, Percent, ChartNoAxesCombined,
   BadgeDollarSign, Star, Crown, Lock,
-  Spotlight
+  Spotlight, Medal
 } from 'lucide-react';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Medal } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth-context';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -113,7 +112,7 @@ function ProductCard({ item, rank, highlight }: { item: RankItem; rank: number; 
           </div>
         ) : rank === 2 ? (
           <div className="absolute top-2 left-2 flex h-6 w-6 items-center justify-center rounded-full bg-zinc-200 ring-1 ring-zinc-300/60">
-            <Medal className="h-3.5 w-3.5 text-zinc-500" weight="fill" />
+            <Medal className="h-3.5 w-3.5 fill-zinc-500 text-zinc-500" />
           </div>
         ) : (
           <div className={`absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black ring-1 ${rank <= 3 ? rankColors[rank] : 'text-white bg-black/70 ring-white/20'}`}>

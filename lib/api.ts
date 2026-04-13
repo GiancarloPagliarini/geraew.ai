@@ -125,6 +125,69 @@ export interface Plan {
   hasApiAccess: boolean;
 }
 
+// ─── AI Models ───────────────────────────────────────────────────────────────
+
+export type AiModelProvider = 'GERAEW' | 'KIE';
+export type AiModelType = 'VIDEO' | 'IMAGE';
+
+export interface AiModelPublic {
+  slug: string;
+  label: string;
+  description: string | null;
+  provider: AiModelProvider;
+  isActive: boolean;
+  statusMessage: string | null;
+  sortOrder: number;
+}
+
+export interface AiModelAdmin {
+  id: string;
+  slug: string;
+  label: string;
+  description: string | null;
+  provider: AiModelProvider;
+  type: AiModelType;
+  modelVariant: string;
+  isActive: boolean;
+  sortOrder: number;
+  statusMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminPromptTemplate {
+  id: string;
+  categoryId: string;
+  title: string;
+  type: string;
+  prompt: string;
+  imageUrl: string | null;
+  aiModel: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminPromptCategory {
+  id: string;
+  sectionId: string;
+  title: string;
+  sortOrder: number;
+  prompts?: AdminPromptTemplate[];
+}
+
+export interface AdminPromptSection {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  icon: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  categories: AdminPromptCategory[];
+}
+
 // ─── Prompts ─────────────────────────────────────────────────────────────────
 
 export interface ApiPromptSection {
@@ -992,6 +1055,12 @@ export const api = {
     },
   },
 
+  models: {
+    listVideos() {
+      return request<AiModelPublic[]>('/api/v1/models/videos');
+    },
+  },
+
   promptEnhancer: {
     enhance(accessToken: string, prompt: string, context?: {
       type: 'image' | 'video';
@@ -1165,6 +1234,106 @@ export const api = {
           body: JSON.stringify({ filename, contentType, folder }),
         },
       );
+    },
+    models: {
+      list(accessToken: string) {
+        return authRequest<AiModelAdmin[]>('/api/v1/admin/models', accessToken);
+      },
+      toggle(accessToken: string, id: string, isActive: boolean, statusMessage?: string) {
+        return authRequest<{ success: boolean; message: string }>(
+          `/api/v1/admin/models/${id}/toggle`,
+          accessToken,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({ isActive, statusMessage }),
+          },
+        );
+      },
+    },
+    prompts: {
+      list(accessToken: string) {
+        return authRequest<AdminPromptSection[]>('/api/v1/admin/prompts', accessToken);
+      },
+      createSection(accessToken: string, data: {
+        slug: string;
+        title: string;
+        description?: string;
+        icon?: string;
+        sortOrder?: number;
+      }) {
+        return authRequest<AdminPromptSection>('/api/v1/admin/prompts/sections', accessToken, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      updateSection(accessToken: string, id: string, data: {
+        slug?: string;
+        title?: string;
+        description?: string;
+        icon?: string;
+        sortOrder?: number;
+        isActive?: boolean;
+      }) {
+        return authRequest<AdminPromptSection>(`/api/v1/admin/prompts/sections/${id}`, accessToken, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        });
+      },
+      deleteSection(accessToken: string, id: string) {
+        return authRequest<{ success: boolean }>(`/api/v1/admin/prompts/sections/${id}`, accessToken, {
+          method: 'DELETE',
+        });
+      },
+      createCategory(accessToken: string, data: { sectionId: string; title: string; sortOrder?: number }) {
+        return authRequest<AdminPromptCategory>('/api/v1/admin/prompts/categories', accessToken, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      updateCategory(accessToken: string, id: string, data: { sectionId?: string; title?: string; sortOrder?: number }) {
+        return authRequest<AdminPromptCategory>(`/api/v1/admin/prompts/categories/${id}`, accessToken, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        });
+      },
+      deleteCategory(accessToken: string, id: string) {
+        return authRequest<{ success: boolean }>(`/api/v1/admin/prompts/categories/${id}`, accessToken, {
+          method: 'DELETE',
+        });
+      },
+      createTemplate(accessToken: string, data: {
+        categoryId: string;
+        title: string;
+        type: string;
+        prompt: string;
+        imageUrl?: string;
+        aiModel?: string;
+        sortOrder?: number;
+      }) {
+        return authRequest<AdminPromptTemplate>('/api/v1/admin/prompts/templates', accessToken, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      updateTemplate(accessToken: string, id: string, data: {
+        categoryId?: string;
+        title?: string;
+        type?: string;
+        prompt?: string;
+        imageUrl?: string;
+        aiModel?: string;
+        sortOrder?: number;
+      }) {
+        return authRequest<AdminPromptTemplate>(`/api/v1/admin/prompts/templates/${id}`, accessToken, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        });
+      },
+      deleteTemplate(accessToken: string, id: string) {
+        return authRequest<{ success: boolean }>(`/api/v1/admin/prompts/templates/${id}`, accessToken, {
+          method: 'DELETE',
+        });
+      },
     },
   },
 
