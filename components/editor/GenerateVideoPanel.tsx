@@ -602,11 +602,10 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
         }
       } else {
         // GeraEW provider — original flow
-        const apiResolution = resolution === 'RES_4K' ? 'RES_1080P' : resolution;
         const basePayload = {
           prompt: finalPrompt,
           model,
-          resolution: apiResolution,
+          resolution,
           duration_seconds: durationToSeconds(effectiveDuration),
           aspect_ratio: proportionToAspectRatio(proportion),
           generate_audio: audio,
