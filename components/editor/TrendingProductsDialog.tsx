@@ -52,10 +52,10 @@ interface ApiResponse {
 
 // ── Tabs config ────────────────────────────────────────────────────────────────
 
-const TABS: { id: Tab; label: string; icon: React.ElementType; subtitle: string }[] = [
-  { id: 'sales', icon: BadgeDollarSign, label: 'Produtos com mais vendas', subtitle: 'TOP 10 Produtos com mais vendas no TikTok BR' },
-  { id: 'recommended', icon: ChartNoAxesCombined, label: 'Produtos mais populares', subtitle: 'TOP 10 Produtos mais populares do TikTok BR' },
-  { id: 'new', icon: Star, label: 'Novos produtos', subtitle: 'TOP 10 Lançamentos em alta no TikTok BR' },
+const TABS: { id: Tab; label: string; shortLabel: string; icon: React.ElementType; subtitle: string }[] = [
+  { id: 'sales', icon: BadgeDollarSign, label: 'Produtos com mais vendas', shortLabel: 'Mais vendas', subtitle: 'TOP 10 Produtos com mais vendas no TikTok BR' },
+  { id: 'recommended', icon: ChartNoAxesCombined, label: 'Produtos mais populares', shortLabel: 'Populares', subtitle: 'TOP 10 Produtos mais populares do TikTok BR' },
+  { id: 'new', icon: Star, label: 'Novos produtos', shortLabel: 'Novos', subtitle: 'TOP 10 Lançamentos em alta no TikTok BR' },
 ];
 
 // ── Growth badge ───────────────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ function GrowthBadge({ value }: { value?: string }) {
 
 // ── Product Card ───────────────────────────────────────────────────────────────
 
-function ProductCard({ item, rank }: { item: RankItem; rank: number }) {
+function ProductCard({ item, rank, highlight }: { item: RankItem; rank: number; highlight?: 'sales' | 'affiliates' }) {
   const rankColors: Record<number, string> = {
     1: 'text-yellow-400 bg-yellow-400/15 ring-yellow-400/30',
     2: 'text-zinc-300 bg-zinc-300/10 ring-zinc-300/20',
@@ -130,7 +130,7 @@ function ProductCard({ item, rank }: { item: RankItem; rank: number }) {
       </div>
 
       {/* Body */}
-      <div className="flex flex-col gap-2 p-2.5">
+      <div className="flex flex-col gap-2 p-2.5 flex-1">
         <p className="text-[10px] font-medium text-white/70 line-clamp-2 leading-relaxed">{item.title}</p>
 
         {/* Shop */}
@@ -153,9 +153,9 @@ function ProductCard({ item, rank }: { item: RankItem; rank: number }) {
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-1.5">
-          {item.yd_sold_count_show && <StatBadge icon={ShoppingBag} label="Vendas hoje" value={item.yd_sold_count_show} />}
+          {item.yd_sold_count_show && <StatBadge icon={ShoppingBag} label="Vendas hoje" value={item.yd_sold_count_show} highlighted={highlight === 'sales'} />}
           {item.yd_sale_amount_show && <StatBadge icon={TrendingUp} label="Faturamento" value={item.yd_sale_amount_show} />}
-          {item.author_count_show && <StatBadge icon={Users} label="Afiliados" value={item.author_count_show} />}
+          {item.author_count_show && <StatBadge icon={Users} label="Afiliados" value={item.author_count_show} highlighted={highlight === 'affiliates'} />}
           {item.live_count_show && <StatBadge icon={Radio} label="Lives" value={item.live_count_show} />}
           {hasCommission && <StatBadge icon={Percent} label="Comissão" value={item.commission_rate_show!} />}
         </div>
@@ -169,23 +169,28 @@ function ProductCard({ item, rank }: { item: RankItem; rank: number }) {
 
         {/* Total */}
         {item.total_sold_count_show && (
-          <div className="flex items-center justify-between rounded-lg bg-white/2 px-2 py-1.5 ring-1 ring-white/4">
-            <span className="text-[8px] text-white/25">Total acumulado</span>
+          <div className="mt-auto flex items-center justify-between rounded-lg bg-white/2 px-2 py-1.5 ring-1 ring-white/4">
+            <span className="text-[9px] text-white/25">Total acumulado</span>
             <span className="text-[10px] font-bold text-white/55 tabular-nums">{item.total_sold_count_show} vendas</span>
           </div>
         )}
+
+        {/* CTA */}
+        <button className="cursor-pointer mt-1 w-full rounded-lg bg-[#a2dd00]/10 py-1.5 text-[10px] font-black text-[#a2dd00] ring-1 ring-[#a2dd00]/20 transition-all duration-200 hover:bg-[#a2dd00]/20 hover:ring-[#a2dd00]/40 active:scale-[0.98]">
+          Usar produto
+        </button>
       </div>
     </div>
   );
 }
 
-function StatBadge({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+function StatBadge({ icon: Icon, label, value, highlighted }: { icon: React.ElementType; label: string; value: string; highlighted?: boolean }) {
   return (
-    <div className="flex items-center gap-1 rounded-lg bg-white/[0.03] px-1.5 py-1 ring-1 ring-white/[0.04]">
-      <Icon className="h-2.5 w-2.5 text-white/25 shrink-0" />
+    <div className={`flex items-center gap-1 rounded-lg px-1.5 py-1 ring-1 transition-colors ${highlighted ? 'bg-[#a2dd00]/10 ring-[#a2dd00]/25' : 'bg-white/3 ring-white/4'}`}>
+      <Icon className={`h-2.5 w-2.5 shrink-0 ${highlighted ? 'text-[#a2dd00]' : 'text-white/25'}`} />
       <div className="min-w-0">
-        <p className="text-[8px] text-white/25 leading-none truncate">{label}</p>
-        <p className="text-[10px] font-bold text-white/70 leading-tight tabular-nums">{value}</p>
+        <p className={`text-[9px] leading-none truncate ${highlighted ? 'text-[#a2dd00]/60' : 'text-white/25'}`}>{label}</p>
+        <p className={`text-[10px] font-bold leading-tight tabular-nums ${highlighted ? 'text-[#a2dd00]' : 'text-white/70'}`}>{value}</p>
       </div>
     </div>
   );
@@ -274,7 +279,7 @@ export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsD
           </div>
           <div>
             <h2 className="text-sm font-bold text-[#f3f0ed]/80">Ranking TikTok Shop</h2>
-            <p className="text-xs text-[#f3f0ed]/30">{activeTabConfig.subtitle}</p>
+            <p className="hidden sm:block text-xs text-landing-text/30">{activeTabConfig.subtitle}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -293,19 +298,20 @@ export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsD
 
       {/* Tab bar */}
       <div className="flex gap-1 px-3 pt-2.5 pb-2 border-b border-white/5">
-        {TABS.map(({ id, label, icon: Icon }) => {
+        {TABS.map(({ id, label, shortLabel, icon: Icon }) => {
           const isActive = activeTab === id;
           return (
             <button
               key={id}
               onClick={() => { if (!isActive) setActiveTab(id); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-[10px] font-bold transition-all ${isActive
+              className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 sm:py-1.5 text-[10px] font-bold transition-all ${isActive
                 ? 'bg-[#a2dd00]/15 text-[#a2dd00] ring-1 ring-[#a2dd00]/25'
                 : 'text-white/30 hover:text-white/60 hover:bg-white/4'
                 }`}
             >
               <Icon className="h-3.5 w-3.5 shrink-0" />
-              {label}
+              <span className="inline sm:hidden">{shortLabel}</span>
+              <span className="hidden sm:inline">{label}</span>
             </button>
           );
         })}
@@ -344,7 +350,12 @@ export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsD
           {!loading && !error && items.length > 0 && (
             <div className={`grid grid-cols-2 gap-2 p-3 ${isFreePlan ? 'blur-sm pointer-events-none select-none' : ''}`}>
               {items.map((item, i) => (
-                <ProductCard key={item.product_id} item={item} rank={i + 1} />
+                <ProductCard
+                  key={item.product_id}
+                  item={item}
+                  rank={i + 1}
+                  highlight={activeTab === 'sales' ? 'sales' : activeTab === 'recommended' ? 'affiliates' : undefined}
+                />
               ))}
             </div>
           )}
