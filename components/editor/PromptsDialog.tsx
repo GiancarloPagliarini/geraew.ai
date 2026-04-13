@@ -3,7 +3,7 @@
 import {
   Copy, Check, X, ImageIcon, Search, Trash2, Plus,
   Camera, Sparkles, Dumbbell, Sun, ZoomIn, Mic, Moon, PersonStanding, Package, Target, Hand, Gem,
-  Loader2,
+  Loader2, Lock,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -468,6 +468,7 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
         <div className="h-px bg-white/[0.05]" />
 
         {/* Content */}
+        <div className="relative flex-1 min-h-0 flex flex-col">
         <div className="flex-1 overflow-y-auto sidebar-scroll">
           {loading && (
             <div className="flex items-center justify-center py-24">
@@ -488,7 +489,7 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
           )}
 
           {!loading && !error && visiblePrompts.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 p-3">
+            <div className={`grid grid-cols-2 gap-2 p-3 ${!user ? 'blur-sm pointer-events-none select-none' : ''}`}>
               {visiblePrompts.map((promptItem) => (
                 <PromptCard
                   key={promptItem.id}
@@ -514,6 +515,29 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
               </button>
             </div>
           )}
+
+        </div>
+
+        {/* Auth overlay */}
+        {!user && !loading && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 px-6 text-center bg-[#171f21]/70 backdrop-blur-[2px]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#a2dd00]/10 ring-1 ring-[#a2dd00]/20">
+              <Lock className="h-6 w-6 text-[#a2dd00]" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-white/80">Faça login para acessar</p>
+              <p className="text-[11px] text-white/40 leading-relaxed">
+                Entre na sua conta para visualizar e usar os prompts disponíveis.
+              </p>
+            </div>
+            <button
+              onClick={() => openLoginModal()}
+              className="rounded-xl bg-[#a2dd00] px-5 py-2 text-xs font-black text-black hover:bg-[#b8f000] transition-colors"
+            >
+              Entrar
+            </button>
+          </div>
+        )}
         </div>
       </aside>
 

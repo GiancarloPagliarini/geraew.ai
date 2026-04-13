@@ -175,8 +175,8 @@ function ProductCard({ item, rank, highlight }: { item: RankItem; rank: number; 
         )}
 
         {/* CTA */}
-        <button className="cursor-pointer mt-1 w-full rounded-lg bg-[#a2dd00]/10 py-1.5 text-[10px] font-black text-[#a2dd00] ring-1 ring-[#a2dd00]/20 transition-all duration-200 hover:bg-[#a2dd00]/20 hover:ring-[#a2dd00]/40 active:scale-[0.98]">
-          Usar produto
+        <button disabled className="cursor-not-allowed mt-1 w-full rounded-lg bg-[#a2dd00]/5 py-1.5 text-[10px] font-black text-[#a2dd00]/40 ring-1 ring-[#a2dd00]/10 transition-all duration-200 disabled:pointer-events-none">
+          Usar produto (em breve)
         </button>
       </div>
     </div>
