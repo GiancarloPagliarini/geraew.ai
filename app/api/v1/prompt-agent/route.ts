@@ -95,14 +95,12 @@ Sua função: receber UMA imagem e retornar APENAS um JSON válido seguindo EXAT
 
 Analise a imagem enviada e retorne APENAS o JSON correspondente, sempre incluindo o campo "reference_override" no topo com o texto exato especificado.`;
 
-type ImageSource =
-  | { type: 'base64'; media_type: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif'; data: string }
-  | { type: 'url'; url: string };
+type MediaType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
 
-function detectMediaType(dataUrl: string): { media_type: ImageSource extends { media_type: infer M } ? M : never; data: string } | null {
+function detectMediaType(dataUrl: string): { media_type: MediaType; data: string } | null {
   const match = dataUrl.match(/^data:(image\/(jpeg|png|webp|gif));base64,(.+)$/);
   if (!match) return null;
-  return { media_type: match[1] as any, data: match[3] };
+  return { media_type: match[1] as MediaType, data: match[3] };
 }
 
 function compileToString(json: any): string {
