@@ -24,7 +24,7 @@ export function LeftSidebar() {
     { id: 'tutorial', icon: GraduationCap, label: t('tutorial') },
     { id: 'prompts', icon: Type, label: t('prompts'), tooltip: t('promptsTooltip'), isNew: true },
     { id: 'trending', icon: Flame, label: t('trending'), tooltip: t('trendingTooltip'), isNew: true },
-    { id: 'imageToPrompt', icon: ImageIcon, label: 'Print', tooltip: 'Prompt do print', isNew: true },
+    { id: 'imageToPrompt', icon: ImageIcon, label: 'Clone', tooltip: 'Clone de prompt', isNew: true },
   ];
   const { galleryPickerRequest, setLeftPanelOpen } = useEditor();
   const [galleryOpen, setGalleryOpen] = useState(false);

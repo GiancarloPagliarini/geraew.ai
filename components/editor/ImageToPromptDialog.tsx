@@ -87,7 +87,7 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5">
           <ImageIcon className="h-4 w-4 text-[#a2dd00]" />
-          <span className="text-sm font-semibold tracking-tight text-white/85">PROMPT DO PRINT</span>
+          <span className="text-sm font-semibold tracking-tight text-white/85">CLONE DE PROMPT</span>
         </div>
         <button
           onClick={() => onOpenChange(false)}
