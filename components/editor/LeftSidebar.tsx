@@ -10,7 +10,8 @@ import { PromptsDialog } from './PromptsDialog';
 import { TrendingProductsDialog } from './TrendingProductsDialog';
 import { TutorialDialog } from './TutorialDialog';
 import { VideoEditorDialog } from './VideoEditorDialog';
-import { Flame, FolderOpen, GraduationCap, Star, Type } from 'lucide-react';
+import { ImageToPromptDialog } from './ImageToPromptDialog';
+import { Flame, FolderOpen, GraduationCap, Image as ImageIcon, Star, Type } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useEditor } from '@/lib/editor-context';
@@ -23,6 +24,7 @@ export function LeftSidebar() {
     { id: 'tutorial', icon: GraduationCap, label: t('tutorial') },
     { id: 'prompts', icon: Type, label: t('prompts'), tooltip: t('promptsTooltip'), isNew: true },
     { id: 'trending', icon: Flame, label: t('trending'), tooltip: t('trendingTooltip'), isNew: true },
+    { id: 'imageToPrompt', icon: ImageIcon, label: 'Print', tooltip: 'Prompt do print', isNew: true },
   ];
   const { galleryPickerRequest, setLeftPanelOpen } = useEditor();
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -30,6 +32,7 @@ export function LeftSidebar() {
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [promptsOpen, setPromptsOpen] = useState(false);
   const [trendingOpen, setTrendingOpen] = useState(false);
+  const [imageToPromptOpen, setImageToPromptOpen] = useState(false);
 
   const CLOSE_DURATION = 250; // slightly above the 250ms aside-out-left animation to avoid overlap
   const switchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -40,9 +43,10 @@ export function LeftSidebar() {
     setTutorialOpen(id === 'tutorial');
     setPromptsOpen(id === 'prompts');
     setTrendingOpen(id === 'trending');
+    setImageToPromptOpen(id === 'imageToPrompt');
   }, []);
 
-  const anyOpen = galleryOpen || videoEditorOpen || tutorialOpen || promptsOpen || trendingOpen;
+  const anyOpen = galleryOpen || videoEditorOpen || tutorialOpen || promptsOpen || trendingOpen || imageToPromptOpen;
   useEffect(() => {
     setLeftPanelOpen(anyOpen);
   }, [anyOpen, setLeftPanelOpen]);
@@ -61,14 +65,16 @@ export function LeftSidebar() {
       (id !== 'videoEditor' && videoEditorOpen) ||
       (id !== 'tutorial' && tutorialOpen) ||
       (id !== 'prompts' && promptsOpen) ||
-      (id !== 'trending' && trendingOpen);
+      (id !== 'trending' && trendingOpen) ||
+      (id !== 'imageToPrompt' && imageToPromptOpen);
 
     const isToggleOff =
       (id === 'gallery' && galleryOpen) ||
       (id === 'videoEditor' && videoEditorOpen) ||
       (id === 'tutorial' && tutorialOpen) ||
       (id === 'prompts' && promptsOpen) ||
-      (id === 'trending' && trendingOpen);
+      (id === 'trending' && trendingOpen) ||
+      (id === 'imageToPrompt' && imageToPromptOpen);
 
     if (isToggleOff) {
       // Just close the current one
@@ -89,7 +95,7 @@ export function LeftSidebar() {
     <>
       <aside className="flex shrink-0 items-center justify-center gap-1.5 bg-[#1a2123] z-50 flex-row w-full h-10 border-b border-[#f3f0ed]/[0.07] px-3 md:justify-start md:flex-col md:h-full md:w-[72px] md:border-b-0 md:border-r md:py-3 md:px-1.5 md:items-stretch">
         {navItems.map(({ id, icon: Icon, label, tooltip, isNew }) => {
-          const isActive = (id === 'gallery' && galleryOpen) || (id === 'videoEditor' && videoEditorOpen) || (id === 'tutorial' && tutorialOpen) || (id === 'prompts' && promptsOpen) || (id === 'trending' && trendingOpen);
+          const isActive = (id === 'gallery' && galleryOpen) || (id === 'videoEditor' && videoEditorOpen) || (id === 'tutorial' && tutorialOpen) || (id === 'prompts' && promptsOpen) || (id === 'trending' && trendingOpen) || (id === 'imageToPrompt' && imageToPromptOpen);
           return (
             <Tooltip key={id}>
               <TooltipTrigger asChild>
@@ -134,6 +140,7 @@ export function LeftSidebar() {
       <TutorialDialog open={tutorialOpen} onOpenChange={setTutorialOpen} />
       <PromptsDialog open={promptsOpen} onOpenChange={setPromptsOpen} />
       <TrendingProductsDialog open={trendingOpen} onOpenChange={setTrendingOpen} />
+      <ImageToPromptDialog open={imageToPromptOpen} onOpenChange={setImageToPromptOpen} />
     </>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { AudioWaveform, Fullscreen, Hand, ImageIcon, Minus, MousePointer2, PersonStanding, Plus, Repeat2, Shirt, Trash2, Video, Wrench, X } from 'lucide-react';
+import { AudioWaveform, Fullscreen, Hand, ImageIcon, Minus, MousePointer2, PersonStanding, Plus, Repeat2, Shirt, Sparkles, Trash2, Video, Wrench, X } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -25,6 +25,7 @@ interface BottomToolbarProps {
   onAddMotionControl: () => void;
   onAddVirtualTryOn: () => void;
   onAddFaceSwap: () => void;
+  onAddUpscale: () => void;
   onDelete: () => void;
   onFitView: () => void;
 }
@@ -42,6 +43,7 @@ export function BottomToolbar({
   onAddMotionControl,
   onAddVirtualTryOn,
   onAddFaceSwap,
+  onAddUpscale,
   onDelete,
   onFitView,
 }: BottomToolbarProps) {
@@ -115,6 +117,10 @@ export function BottomToolbar({
 
           <ToolbarButton tooltip={t('faceSwap')} onClick={onAddFaceSwap}>
             <Repeat2 className="h-4 w-4" />
+          </ToolbarButton>
+
+          <ToolbarButton tooltip="Upscale" onClick={onAddUpscale}>
+            <Sparkles className="h-4 w-4" />
           </ToolbarButton>
           {/*
           <ToolbarButton tooltip="Painel customizável" onClick={onAdd}>

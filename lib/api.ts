@@ -351,6 +351,13 @@ export interface GenerateImageRequest {
   images?: { base64: string; mime_type: string }[];
 }
 
+export interface UpscaleRequest {
+  image: string;
+  mime_type?: 'image/jpeg' | 'image/png';
+  model: string;
+  model_variant?: string;
+}
+
 export interface TextToVideoRequest {
   prompt: string;
   model: string;
@@ -807,6 +814,12 @@ export const api = {
   generations: {
     generateImage(accessToken: string, payload: GenerateImageRequest) {
       return authRequest<CreateGenerationResponse>('/api/v1/generations/generate-image-auto', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    upscale(accessToken: string, payload: UpscaleRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/upscale', accessToken, {
         method: 'POST',
         body: JSON.stringify(payload),
       });

@@ -12,6 +12,7 @@ import { GenerateVideoPanel } from '../editor/GenerateVideoPanel';
 import { MotionControlPanel } from '../editor/MotionControlPanel';
 import { VirtualTryOnPanel } from '../editor/VirtualTryOnPanel';
 import { FaceSwapPanel } from '../editor/FaceSwapPanel';
+import { UpscalePanel } from '../editor/UpscalePanel';
 
 const PANEL_NODE_STYLE = {
   background: 'transparent',
@@ -29,6 +30,7 @@ const STORAGE_KEY_PREFIX: Partial<Record<string, string>> = {
   'motion-control': 'geraew-panel-motion-control-',
   'virtual-try-on': 'geraew-panel-virtual-try-on-',
   'face-swap': 'geraew-panel-face-swap-',
+  'upscale': 'geraew-panel-upscale-',
 };
 
 export function PanelNode({ id, data, selected }: NodeProps) {
@@ -103,6 +105,7 @@ export function PanelNode({ id, data, selected }: NodeProps) {
     'motion-control': <MotionControlPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
     'virtual-try-on': <VirtualTryOnPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
     'face-swap': <FaceSwapPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
+    'upscale': <UpscalePanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
   };
 
   const panel = panelMap[data.panelType as string];

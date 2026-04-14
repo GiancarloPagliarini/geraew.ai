@@ -12,7 +12,7 @@ import {
   useNodesState,
   useReactFlow,
 } from '@xyflow/react';
-import { AudioWaveform, ImageIcon, LayoutGrid, Map, PersonStanding, Repeat2, Shirt, Video } from 'lucide-react';
+import { AudioWaveform, ImageIcon, LayoutGrid, Map, PersonStanding, Repeat2, Shirt, Sparkles, Video } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -107,7 +107,7 @@ function CanvasContent() {
 
   const handleAddPanel = useCallback(
     (type: string) => {
-      if (type !== 'generate-image' && type !== 'create-influencer' && type !== 'generate-video' && type !== 'motion-control' && type !== 'virtual-try-on' && type !== 'face-swap' && type !== 'generic') return;
+      if (type !== 'generate-image' && type !== 'create-influencer' && type !== 'generate-video' && type !== 'motion-control' && type !== 'virtual-try-on' && type !== 'face-swap' && type !== 'upscale' && type !== 'generic') return;
 
       if (nodes.length >= MAX_NODES) {
         setShowMaxNodesWarning(false);
@@ -349,6 +349,7 @@ function CanvasContent() {
         onAddMotionControl={() => handleAddPanel('motion-control')}
         onAddVirtualTryOn={() => handleAddPanel('virtual-try-on')}
         onAddFaceSwap={() => handleAddPanel('face-swap')}
+        onAddUpscale={() => handleAddPanel('upscale')}
         onDelete={handleDelete}
         onFitView={() => fitView({ duration: 300, padding: 0.2 })}
       />
@@ -381,6 +382,7 @@ function CanvasContent() {
                 { type: 'motion-control', icon: AudioWaveform, label: t('actions.copyMotion') },
                 { type: 'virtual-try-on', icon: Shirt, label: t('actions.virtualTryOn') },
                 { type: 'face-swap', icon: Repeat2, label: t('actions.faceSwap') },
+                { type: 'upscale', icon: Sparkles, label: 'Upscale' },
               ].map((item, i) => (
                 <button
                   key={item.type}
