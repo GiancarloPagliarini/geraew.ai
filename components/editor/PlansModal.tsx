@@ -11,7 +11,7 @@ import {
   CircleOff
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
@@ -25,6 +25,8 @@ interface PlansModalProps {
 
 export function PlansModal({ onClose }: PlansModalProps) {
   const t = useTranslations('editorPlans');
+  const locale = useLocale();
+  const uiCurrency = locale === 'en' ? 'USD' : 'BRL';
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'plans' | 'credits'>('plans');
@@ -33,15 +35,15 @@ export function PlansModal({ onClose }: PlansModalProps) {
   const [isDowngrading, setIsDowngrading] = useState(false);
 
   const { data: plans, isLoading: plansLoading } = useQuery({
-    queryKey: ['plans'],
-    queryFn: () => api.plans.list(accessToken!),
+    queryKey: ['plans', uiCurrency],
+    queryFn: () => api.plans.list(accessToken!, uiCurrency),
     enabled: !!accessToken,
     staleTime: 5 * 60_000,
   });
 
   const { data: packages } = useQuery({
-    queryKey: ['credits', 'packages'],
-    queryFn: () => api.credits.packages(accessToken!),
+    queryKey: ['credits', 'packages', uiCurrency],
+    queryFn: () => api.credits.packages(accessToken!, uiCurrency),
     enabled: !!accessToken,
     staleTime: 5 * 60_000,
   });
@@ -74,7 +76,7 @@ export function PlansModal({ onClose }: PlansModalProps) {
   );
 
   // Currency for packages — use the first plan's currency as a sensible default
-  const packagesCurrency = sorted[0]?.currency || 'BRL';
+  const packagesCurrency = uiCurrency;
 
   function getPlanAction(targetSlug: string): 'upgrade' | 'downgrade' | 'create' {
     if (!hasActiveSub || !currentPlanSlug || currentPlanSlug === 'free') return 'create';
@@ -115,10 +117,10 @@ export function PlansModal({ onClose }: PlansModalProps) {
     try {
       let checkoutUrl: string;
       if (action === 'create') {
-        const res = await api.subscriptions.create(accessToken, planSlug);
+        const res = await api.subscriptions.create(accessToken, planSlug, uiCurrency);
         checkoutUrl = res.checkoutUrl;
       } else {
-        const res = await api.subscriptions.upgrade(accessToken, planSlug);
+        const res = await api.subscriptions.upgrade(accessToken, planSlug, uiCurrency);
         checkoutUrl = res.checkoutUrl;
       }
       window.location.href = checkoutUrl;
@@ -126,7 +128,7 @@ export function PlansModal({ onClose }: PlansModalProps) {
       const status = (err as { status?: number })?.status;
       if (status === 409) {
         try {
-          const res = await api.subscriptions.upgrade(accessToken, planSlug);
+          const res = await api.subscriptions.upgrade(accessToken, planSlug, uiCurrency);
           window.location.href = res.checkoutUrl;
         } catch {
           toast.error(t('manage.toasts.changePlanError'), { description: t('manage.toasts.tryAgain') });

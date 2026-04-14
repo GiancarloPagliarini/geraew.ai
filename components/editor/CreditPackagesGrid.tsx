@@ -46,7 +46,7 @@ export function CreditPackagesGrid({ packages, currency = 'BRL', compact }: Cred
     if (!accessToken || purchasingId) return;
     setPurchasingId(packageId);
     try {
-      const { checkoutUrl } = await api.credits.purchase(accessToken, packageId);
+      const { checkoutUrl } = await api.credits.purchase(accessToken, packageId, currency);
       window.location.href = checkoutUrl;
     } catch {
       setPurchasingId(null);

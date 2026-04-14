@@ -883,8 +883,9 @@ export const api = {
     balance(accessToken: string) {
       return authRequest<CreditsBalance>('/api/v1/credits/balance', accessToken);
     },
-    packages(accessToken: string) {
-      return authRequest<CreditPackage[]>('/api/v1/credits/packages', accessToken);
+    packages(accessToken: string, currency?: string) {
+      const qs = currency ? `?currency=${encodeURIComponent(currency)}` : '';
+      return authRequest<CreditPackage[]>(`/api/v1/credits/packages${qs}`, accessToken);
     },
     estimate(accessToken: string, payload: CreditsEstimateRequest) {
       return authRequest<CreditsEstimateResponse>('/api/v1/credits/estimate', accessToken, {
@@ -892,10 +893,10 @@ export const api = {
         body: JSON.stringify(payload),
       });
     },
-    purchase(accessToken: string, packageId: string) {
+    purchase(accessToken: string, packageId: string, currency?: string) {
       return authRequest<{ checkoutUrl: string }>('/api/v1/credits/purchase', accessToken, {
         method: 'POST',
-        body: JSON.stringify({ packageId }),
+        body: JSON.stringify({ packageId, ...(currency ? { currency } : {}) }),
       });
     },
     transactions(accessToken: string, page = 1, limit = 20) {
@@ -985,10 +986,10 @@ export const api = {
   },
 
   subscriptions: {
-    create(accessToken: string, planSlug: string) {
+    create(accessToken: string, planSlug: string, currency?: string) {
       return authRequest<{ checkoutUrl: string }>('/api/v1/subscriptions', accessToken, {
         method: 'POST',
-        body: JSON.stringify({ planSlug }),
+        body: JSON.stringify({ planSlug, ...(currency ? { currency } : {}) }),
       });
     },
     current(accessToken: string) {
@@ -1015,10 +1016,10 @@ export const api = {
         body: JSON.stringify({ reason }),
       });
     },
-    upgrade(accessToken: string, planSlug: string) {
+    upgrade(accessToken: string, planSlug: string, currency?: string) {
       return authRequest<{ checkoutUrl: string }>('/api/v1/subscriptions/upgrade', accessToken, {
         method: 'PATCH',
-        body: JSON.stringify({ planSlug }),
+        body: JSON.stringify({ planSlug, ...(currency ? { currency } : {}) }),
       });
     },
     downgrade(accessToken: string, planSlug: string) {
@@ -1064,8 +1065,9 @@ export const api = {
   },
 
   plans: {
-    list(accessToken: string) {
-      return authRequest<Plan[]>('/api/v1/plans', accessToken);
+    list(accessToken: string, currency?: string) {
+      const qs = currency ? `?currency=${encodeURIComponent(currency)}` : '';
+      return authRequest<Plan[]>(`/api/v1/plans${qs}`, accessToken);
     },
     listPublic(currency?: string) {
       const qs = currency ? `?currency=${encodeURIComponent(currency)}` : '';

@@ -111,16 +111,18 @@ function CreditosPageContent() {
     enabled: !!accessToken,
   });
 
+  const uiCurrency = locale === 'en' ? 'USD' : 'BRL';
+
   const { data: plans, isLoading: plansLoading } = useQuery({
-    queryKey: ['plans'],
-    queryFn: () => api.plans.list(accessToken!),
+    queryKey: ['plans', uiCurrency],
+    queryFn: () => api.plans.list(accessToken!, uiCurrency),
     enabled: !!accessToken,
     staleTime: 5 * 60_000,
   });
 
   const { data: packages, isLoading: packagesLoading } = useQuery({
-    queryKey: ['credits', 'packages'],
-    queryFn: () => api.credits.packages(accessToken!),
+    queryKey: ['credits', 'packages', uiCurrency],
+    queryFn: () => api.credits.packages(accessToken!, uiCurrency),
     enabled: !!accessToken,
     staleTime: 5 * 60_000,
   });
@@ -450,7 +452,7 @@ function CreditosPageContent() {
             {/* Credits tab */}
             {activeTab === 'credits' && packages && packages.length > 0 && (
               <div id="boost-section" className="flex flex-col gap-6">
-                <CreditPackagesGrid packages={packages} />
+                <CreditPackagesGrid packages={packages} currency={uiCurrency} />
                 <p className="text-center text-xs text-[#f3f0ed]/20">
                   {t('onePaymentFootnote')}
                 </p>
