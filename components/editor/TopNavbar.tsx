@@ -11,6 +11,7 @@ import { PlansModal } from './PlansModal';
 import { PostAndEarnModal } from './PostAndEarnModal';
 import { usePhoneVerification } from '@/lib/phone-verification-context';
 import { useLoginModal } from '@/lib/login-modal-context';
+import { LocaleSwitcher } from '@/components/locale-switcher';
 
 export function TopNavbar() {
   const t = useTranslations('editorChrome.navbar');
@@ -73,6 +74,9 @@ export function TopNavbar() {
             </div>
           ) : user ? (
             <div className="navbar-fade-in flex items-center gap-1.5 sm:gap-2">
+              {/* Locale switcher — hidden on mobile */}
+              <LocaleSwitcher className="hidden sm:flex" />
+
               {/* Credit badge */}
               <div className="flex items-center gap-1.5 rounded-full border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 px-2 py-1.5 sm:px-3">
                 <Coins className="h-3.5 w-3.5 text-[#a2dd00]" />
@@ -208,6 +212,9 @@ export function TopNavbar() {
                   <DropdownItem icon={BadgePercent} label={tMenu('plans')} onClick={() => { setMenuOpen(false); setPlansModalOpen(true); }} />
                   <DropdownItem icon={BatteryCharging} label={tMenu('usage')} onClick={() => { setMenuOpen(false); router.push('/uso'); }} />
                 </div>
+                <div className="flex items-center justify-center border-t border-[#f3f0ed]/6 px-4 py-2">
+                  <LocaleSwitcher />
+                </div>
                 <div className="border-t border-[#f3f0ed]/6 py-1.5">
                   <DropdownItem icon={LogOut} label={tMenu('logout')} danger onClick={() => { setMenuOpen(false); handleLogout(); }} />
                 </div>
@@ -281,6 +288,9 @@ export function TopNavbar() {
               <DropdownItem icon={CreditCard} label={tMenu('credits')} onClick={() => { setMenuOpen(false); router.push('/creditos'); }} />
               <DropdownItem icon={BadgePercent} label={tMenu('plans')} onClick={() => { setMenuOpen(false); setPlansModalOpen(true); }} />
               <DropdownItem icon={BatteryCharging} label={tMenu('usage')} onClick={() => { setMenuOpen(false); router.push('/uso'); }} />
+            </div>
+            <div className="flex items-center justify-center border-t border-[#f3f0ed]/6 px-4 py-3">
+              <LocaleSwitcher />
             </div>
             <div className="border-t border-[#f3f0ed]/6 py-2">
               <DropdownItem icon={LogOut} label={tMenu('logout')} danger onClick={() => { setMenuOpen(false); handleLogout(); }} />
