@@ -4,10 +4,13 @@ import { ArrowLeft, Mail, Loader2, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
+  const t = useTranslations('auth.forgotPassword');
+  const tCommon = useTranslations('auth.common');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -22,7 +25,7 @@ export default function ForgotPasswordPage() {
       await api.auth.forgotPassword(email);
       setSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao enviar email. Tente novamente.');
+      setError(err instanceof Error ? err.message : t('error'));
     } finally {
       setLoading(false);
     }
@@ -49,18 +52,18 @@ export default function ForgotPasswordPage() {
               className="mb-5 flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              Voltar ao login
+              {tCommon('backToLogin')}
             </button>
 
-            <h1 className="mb-2 text-lg font-bold text-white">Esqueceu sua senha?</h1>
+            <h1 className="mb-2 text-lg font-bold text-white">{t('title')}</h1>
             <p className="mb-6 text-xs text-white/40">
-              Digite seu email e enviaremos um link para redefinir sua senha.
+              {t('description')}
             </p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">
-                  EMAIL
+                  {tCommon('labels.email')}
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/25" />
@@ -69,7 +72,7 @@ export default function ForgotPasswordPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seu@email.com"
+                    placeholder={tCommon('placeholders.email')}
                     className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-10 pr-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]"
                   />
                 </div>
@@ -89,7 +92,7 @@ export default function ForgotPasswordPage() {
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  'Enviar link de reset'
+                  t('submit')
                 )}
               </button>
             </form>
@@ -99,18 +102,20 @@ export default function ForgotPasswordPage() {
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#a2dd00]/15">
               <CheckCircle className="h-8 w-8 text-[#a2dd00]" />
             </div>
-            <h1 className="text-xl font-bold text-white">Email enviado!</h1>
+            <h1 className="text-xl font-bold text-white">{t('sentTitle')}</h1>
             <p className="text-sm text-white/50">
-              Se o email <span className="text-white/70">{email}</span> estiver cadastrado, você
-              receberá um link para redefinir sua senha.
+              {t.rich('sentBody', {
+                email,
+                strong: (chunks) => <span className="text-white/70">{chunks}</span>,
+              })}
             </p>
-            <p className="text-xs text-white/30">Verifique também sua pasta de spam.</p>
+            <p className="text-xs text-white/30">{t('checkSpam')}</p>
             <button
               onClick={() => router.push('/login')}
               className="mt-2 flex items-center gap-1.5 text-xs text-[#a2dd00]/60 hover:text-[#a2dd00]/90 transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              Voltar ao login
+              {tCommon('backToLogin')}
             </button>
           </div>
         )}

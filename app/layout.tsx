@@ -39,17 +39,22 @@ import { LoginModal } from "@/components/LoginModal";
 import { Toaster } from "sonner";
 import { Suspense } from "react";
 import { ReferralCapture } from "@/components/ReferralCapture";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
   return (
-    <html lang="pt-BR">
+    <html lang={locale}>
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
+        <NextIntlClientProvider locale={locale} messages={messages}>
         <QueryProvider>
           <GoogleAuthWrapper>
           <AuthProvider>
@@ -92,6 +97,7 @@ export default function RootLayout({
           </AuthProvider>
           </GoogleAuthWrapper>
         </QueryProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

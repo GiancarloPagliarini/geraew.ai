@@ -1,0 +1,232 @@
+{
+  "editorPanels": {
+    "common": {
+      "download": "Download",
+      "downloadImage": "Download image",
+      "downloadVideo": "Download video",
+      "generateAnother": "Generate another",
+      "generate": "GENERATE",
+      "generating": "GENERATING...",
+      "generateAgain": "GENERATE AGAIN",
+      "expand": "Expand",
+      "discard": "Discard",
+      "open": "Open",
+      "uploadFromDevice": "Upload from device",
+      "pickFromGallery": "Pick from gallery",
+      "imageAddedAsReference": "Image added as reference!",
+      "hideOptions": "Hide options",
+      "showOptions": "Show options",
+      "estimatedCost": "Estimated cost",
+      "cost": "Cost",
+      "credits": "credits",
+      "optional": "optional",
+      "errors": {
+        "generateImage": "Failed to generate image.",
+        "generateVideo": "Failed to generate video.",
+        "startGeneration": "Failed to start generation.",
+        "checkStatus": "Failed to check generation status.",
+        "imageMax10MB": "Image must be at most 10MB.",
+        "invalidImageFormat": "Invalid image format.",
+        "videoMax10MB": "Video must be at most 10MB.",
+        "invalidVideoFormat": "Invalid video format."
+      }
+    },
+    "image": {
+      "header": "GENERATE IMAGE",
+      "docTitleGenerating": "Geraew AI - Generating image",
+      "promptPlaceholder": "Describe what you want to generate...",
+      "labels": {
+        "model": "MODEL",
+        "proportion": "RATIO",
+        "quality": "QUALITY",
+        "references": "REFERENCES (OPTIONAL)"
+      },
+      "proportionOptions": {
+        "landscape": "16:9 Landscape",
+        "portrait": "9:16 Portrait",
+        "square": "1:1 Square",
+        "43": "4:3"
+      },
+      "actions": {
+        "addToFolder": "Add to folder",
+        "addedToFolder": "Added to folder",
+        "errorAddToFolder": "Failed to add to folder",
+        "tryAgain": "Please try again.",
+        "folderCreatedAndAdded": "Folder created and image added",
+        "errorCreateFolder": "Failed to create folder"
+      },
+      "folderDialog": {
+        "title": "Add to folder",
+        "description": "Pick an existing folder or create a new one.",
+        "newFolderPlaceholder": "New folder..."
+      },
+      "loadingMessages": [
+        "CONSULTING THE PIXELS...",
+        "TEACHING THE AI TO PAINT...",
+        "MIXING DIGITAL COLORS...",
+        "ASKING THE UNIVERSE FOR INSPIRATION...",
+        "WARMING UP THE NEURONS...",
+        "SUMMONING THE INNER ARTIST...",
+        "CALCULATING CREATIVITY...",
+        "DREAMING IN HIGH RESOLUTION...",
+        "TRAINING THE ARTISTIC EYE...",
+        "LAYERING GENIUS...",
+        "BROWSING THE MUSEUM FOR REFERENCES...",
+        "CHATTING WITH THE PIXELS...",
+        "CONVINCING THE AI TO GO THE EXTRA MILE...",
+        "PROCESSING GOOD VIBES...",
+        "ADDING A DASH OF MAGIC..."
+      ],
+      "queueWaiting": "WAITING FOR A SPOT IN THE QUEUE...",
+      "concurrentLimit": "Concurrent generation limit reached. Please try again in a moment."
+    },
+    "video": {
+      "header": "GENERATE VIDEO",
+      "docTitleGenerating": "Geraew AI - Generating Video",
+      "promptPlaceholder": "Describe the scene you have in mind, in detail.",
+      "modes": {
+        "text": "Text → Video",
+        "image": "Image → Video"
+      },
+      "labels": {
+        "firstFrame": "FIRST FRAME",
+        "lastFrame": "LAST FRAME",
+        "lastFrameOptional": "(optional)",
+        "model": "MODEL",
+        "resolution": "RESOLUTION",
+        "duration": "DURATION",
+        "proportion": "RATIO",
+        "quantity": "QUANTITY",
+        "referenceImages": "REFERENCE IMAGES (optional)",
+        "audio": "Audio",
+        "audioAlwaysOn": "(always on)"
+      },
+      "buttons": {
+        "upload": "UPLOAD"
+      },
+      "only8s": "Only 8s available when using references",
+      "freeGeneration": "Free generation!",
+      "freeGenerationRemaining": "({count} remaining)",
+      "free": "Free",
+      "modelMaintenance": "Under maintenance",
+      "partialResultWarning": "{actual} of {requested} videos were generated. Unused credits were refunded.",
+      "partialResultRefund": "{actual} of {requested} videos were generated. {credits} credit{plural} refunded.",
+      "loadingMessages": [
+        "RENDERING FRAMES...",
+        "PROCESSING SCENES...",
+        "CALCULATING MOTION...",
+        "SYNCING AUDIO...",
+        "APPLYING PHYSICS TO PIXELS...",
+        "DREAMING IN 60FPS...",
+        "ASKING THE UNIVERSE FOR INSPIRATION...",
+        "ANIMATING EVERY DETAIL...",
+        "CONVERTING TEXT INTO MOTION...",
+        "WARMING UP THE VISUAL NEURONS..."
+      ]
+    },
+    "motionControl": {
+      "header": "COPY MOTION",
+      "docTitleGenerating": "Geraew AI - Copying motion",
+      "labels": {
+        "referenceVideo": "REFERENCE VIDEO",
+        "replacementImage": "REPLACEMENT IMAGE",
+        "resolution": "RESOLUTION"
+      },
+      "uploads": {
+        "video": "Click or drag a video (max 10MB)",
+        "image": "Click or drag an image (max 10MB)"
+      },
+      "toasts": {
+        "videoAdded": "Video added!",
+        "imageAdded": "Image added!"
+      },
+      "creditsPerSecond": "{duration}s × {rate} credits/s",
+      "footnote": "Copies the motion from the video onto the image you provide",
+      "loadingMessages": [
+        "ANALYZING MOTION...",
+        "REPLACING SUBJECT...",
+        "RENDERING FRAMES...",
+        "APPLYING MOTION CONTROL...",
+        "SYNCING ANIMATION...",
+        "PROCESSING VIDEO...",
+        "WARMING UP THE NEURONS...",
+        "ALMOST THERE..."
+      ]
+    },
+    "virtualTryOn": {
+      "header": "VIRTUAL TRY-ON",
+      "docTitleGenerating": "Geraew AI - Virtual Try-On",
+      "labels": {
+        "influencerPhoto": "INFLUENCER PHOTO",
+        "clothingPhoto": "CLOTHING PHOTO",
+        "additionalInstructions": "ADDITIONAL INSTRUCTIONS",
+        "optional": "(optional)",
+        "resolution": "RESOLUTION",
+        "proportion": "RATIO"
+      },
+      "uploads": {
+        "influencer": "Click or drag the influencer photo",
+        "clothing": "Click or drag the clothing photo"
+      },
+      "instructionsPlaceholder": "e.g. white background, natural lighting, full-body shot...",
+      "toasts": {
+        "influencerAdded": "Influencer photo added!",
+        "clothingAdded": "Clothing photo added!",
+        "influencerLabel": "Influencer photo",
+        "clothingLabel": "Clothing photo"
+      },
+      "button": "TRY ON OUTFIT",
+      "footnote": "Dresses your AI influencer in the outfit automatically",
+      "loadingMessages": [
+        "ANALYZING INFLUENCER...",
+        "IDENTIFYING CLOTHING...",
+        "ADJUSTING FIT...",
+        "APPLYING TEXTURE...",
+        "MATCHING LIGHTING...",
+        "RENDERING RESULT...",
+        "WARMING UP THE NEURONS...",
+        "ALMOST THERE..."
+      ]
+    },
+    "faceSwap": {
+      "header": "FACE SWAP",
+      "docTitleGenerating": "Geraew AI - Face Swap",
+      "labels": {
+        "facePhoto": "FACE PHOTO (IMAGE 1)",
+        "scenePhoto": "SCENE PHOTO (IMAGE 2)",
+        "resolution": "RESOLUTION"
+      },
+      "uploads": {
+        "face": "Click or drag the face photo",
+        "scene": "Click or drag the scene photo"
+      },
+      "toasts": {
+        "faceAdded": "Face photo added!",
+        "sceneAdded": "Scene photo added!",
+        "faceLabel": "Face photo",
+        "sceneLabel": "Scene photo"
+      },
+      "button": "SWAP FACE",
+      "footnote": "Replaces the face and body in the scene with the person from the first image",
+      "loadingMessages": [
+        "ANALYZING FACE...",
+        "MAPPING EXPRESSIONS...",
+        "MATCHING SKIN TONE...",
+        "MATCHING LIGHTING...",
+        "BLENDING INTO SCENE...",
+        "REFINING DETAILS...",
+        "RENDERING RESULT...",
+        "ALMOST THERE..."
+      ]
+    },
+    "generic": {
+      "header": "Image",
+      "emptyState": "Your generation will appear here",
+      "promptPlaceholder": "Type your prompt here...",
+      "resultLabel": "RESULT",
+      "clear": "CLEAR",
+      "addReference": "Add reference image",
+      "simulatedResult": "This is a simulated result for the provided prompt. In production, this panel will send the prompt to the configured API and return the actual result."
+    }
+  }
+}

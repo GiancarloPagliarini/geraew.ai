@@ -1,42 +1,29 @@
 "use client";
 
 import { User, Video, Move3d, ScanFace, BookOpen, Zap } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useScrollReveal } from "./use-scroll-reveal";
 
-const FEATURES = [
-  {
-    icon: User,
-    title: "Criação de Influencers",
-    desc: "Gere personas únicas com qualidade de estúdio profissional. Cada detalhe — pele, expressão, iluminação — é pensado para parecer real.",
-  },
-  {
-    icon: Video,
-    title: "Vídeos Ultra-Realistas",
-    desc: "Transforme qualquer imagem em vídeo com movimentos naturais. Pronto para Reels, TikTok e Stories em poucos segundos.",
-  },
-  {
-    icon: Move3d,
-    title: "Controle de Movimento",
-    desc: "Copie o movimento de qualquer vídeo de referência e aplique na sua persona. Danças, gestos, expressões — com um clique.",
-  },
-  {
-    icon: ScanFace,
-    title: "Face Swap",
-    desc: "Troque rostos em qualquer imagem ou vídeo. Perfeito para reviews de produto, UGC e criativos para anúncios.",
-  },
-  {
-    icon: BookOpen,
-    title: "Biblioteca de Prompts",
-    desc: "Acesse centenas de prompts prontos por nicho. Moda, fitness, beleza, finanças, tech — é só escolher e gerar.",
-  },
-  {
-    icon: Zap,
-    title: "Velocidade Absurda",
-    desc: "Da ideia ao conteúdo pronto em segundos. Sem fila de espera, sem processamento lento. Pensou, criou.",
-  },
-];
+const FEATURE_META = [
+  { icon: User, key: "influencers" },
+  { icon: Video, key: "videos" },
+  { icon: Move3d, key: "motion" },
+  { icon: ScanFace, key: "faceSwap" },
+  { icon: BookOpen, key: "prompts" },
+  { icon: Zap, key: "speed" },
+] as const;
 
-function Card({ f, i }: { f: (typeof FEATURES)[number]; i: number }) {
+function Card({
+  f,
+  i,
+  title,
+  desc,
+}: {
+  f: (typeof FEATURE_META)[number];
+  i: number;
+  title: string;
+  desc: string;
+}) {
   const { ref, isVisible } = useScrollReveal();
   const Icon = f.icon;
 
@@ -54,10 +41,10 @@ function Card({ f, i }: { f: (typeof FEATURES)[number]; i: number }) {
         <Icon className="h-5 w-5 text-landing-accent" />
       </div>
       <h3 className="font-sora text-[17px] font-semibold text-landing-text">
-        {f.title}
+        {title}
       </h3>
       <p className="mt-2.5 text-[14px] leading-relaxed text-landing-text-secondary">
-        {f.desc}
+        {desc}
       </p>
     </div>
   );
@@ -65,6 +52,7 @@ function Card({ f, i }: { f: (typeof FEATURES)[number]; i: number }) {
 
 export function Features() {
   const { ref, isVisible } = useScrollReveal();
+  const t = useTranslations("features");
 
   return (
     <section id="funcionalidades" className="bg-landing-bg-secondary py-16 sm:py-28 lg:py-36">
@@ -79,21 +67,26 @@ export function Features() {
           }}
         >
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-landing-accent">
-            Tudo Que Você Precisa
+            {t("tag")}
           </span>
           <h2 className="mt-4 font-sora text-[26px] font-bold tracking-tight text-landing-text sm:mt-5 sm:text-3xl lg:text-[44px]">
-            Uma plataforma completa para criar conteúdo que converte.
+            {t("title")}
           </h2>
           <p className="mt-3.5 text-[15px] leading-relaxed text-landing-text-secondary sm:mt-5 sm:text-[17px]">
-            Fotos, vídeos, movimentos e edição, tudo com inteligência
-            artificial, tudo em um só lugar.
+            {t("subtitle")}
           </p>
         </div>
 
         {/* Grid */}
         <div className="mt-10 grid grid-cols-1 gap-3.5 sm:mt-16 sm:gap-5 sm:grid-cols-2 lg:mt-20 lg:grid-cols-3 lg:gap-6">
-          {FEATURES.map((f, i) => (
-            <Card key={f.title} f={f} i={i} />
+          {FEATURE_META.map((f, i) => (
+            <Card
+              key={f.key}
+              f={f}
+              i={i}
+              title={t(`items.${f.key}.title`)}
+              desc={t(`items.${f.key}.description`)}
+            />
           ))}
         </div>
       </div>

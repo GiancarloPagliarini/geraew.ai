@@ -1,0 +1,217 @@
+{
+  "editorDialogs": {
+    "gallery": {
+      "title": "Gallery",
+      "subtitle": "Your AI-generated images and videos",
+      "pickerBanner": "Select images or drag them onto the node",
+      "cancel": "CANCEL",
+      "add": "ADD",
+      "selectedSingular": "{count} selected",
+      "selectedPlural": "{count} selected",
+      "itemsCountSingular": "{shown} of {total} item",
+      "itemsCountPlural": "{shown} of {total} items",
+      "tabs": {
+        "all": "All",
+        "photos": "Photos",
+        "videos": "Videos",
+        "favorites": "Favorites"
+      },
+      "stats": {
+        "generations": "Generations",
+        "credits": "Credits",
+        "favorites": "Favorites",
+        "images": "Images",
+        "videos": "Videos",
+        "folders": "Folders"
+      },
+      "refresh": "Refresh gallery",
+      "refreshed": "Gallery refreshed",
+      "refreshedDescription": "Your images have been reloaded.",
+      "folders": {
+        "myFolders": "My Folders",
+        "newFolderPlaceholder": "New folder...",
+        "noFolders": "No folders",
+        "noFoldersHint": "Create a folder to organize your generations",
+        "itemSingular": "item",
+        "itemPlural": "items",
+        "rename": "Rename",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "deleteTitle": "Delete folder",
+        "deleteDescription": "Are you sure you want to delete \"{name}\"? The generations inside it won't be deleted.",
+        "addToFolder": "Add to folder",
+        "addToFolderDescription": "Select a folder or create a new one.",
+        "folderButton": "Folder",
+        "created": "Folder created",
+        "createdDescription": "\"{name}\" was created successfully.",
+        "createError": "Failed to create folder",
+        "tryAgain": "Please try again.",
+        "renamed": "Folder renamed",
+        "renamedDescription": "The name was updated successfully.",
+        "renameError": "Failed to rename folder",
+        "deleted": "Folder deleted",
+        "deletedDescription": "The folder was removed successfully.",
+        "deleteError": "Failed to delete folder",
+        "addedToFolder": "Added to folder",
+        "addedToFolderDescription": "The image was moved successfully.",
+        "addToFolderError": "Failed to add to folder",
+        "removedFromFolder": "Removed from folder",
+        "removedFromFolderDescription": "The image was removed successfully.",
+        "removeFromFolderError": "Failed to remove from folder"
+      },
+      "detail": {
+        "back": "Back to gallery",
+        "favorited": "Favorited",
+        "favorite": "Favorite",
+        "download": "Download",
+        "deleteVersion": "Delete version",
+        "delete": "Delete",
+        "confirm": "Confirm",
+        "cancel": "Cancel",
+        "copyPrompt": "Copy prompt",
+        "copied": "Copied!",
+        "versionsGenerated": "{count} versions generated",
+        "referencesUsed": "References used",
+        "referenceAlt": "Reference {n}",
+        "versionAlt": "Version {n}",
+        "imageAlt": "Generated image"
+      },
+      "empty": "No images generated yet.",
+      "loadDetailsError": "Failed to load details",
+      "favorited": "Added to favorites",
+      "unfavorited": "Removed from favorites",
+      "favoriteError": "Failed to update favorite",
+      "versionDeleted": "Version deleted",
+      "versionDeletedDescription": "The version was removed successfully.",
+      "deleteVersionError": "Failed to delete version",
+      "generationDeleted": "Generation deleted",
+      "generationDeletedDescription": "The generation was removed successfully.",
+      "deleteError": "Failed to delete"
+    },
+    "prompts": {
+      "title": "Prompts",
+      "searchPlaceholder": "Search prompts...",
+      "add": "Add",
+      "noneFound": "No prompts found",
+      "clearSearch": "Clear search",
+      "loadError": "Failed to load prompts",
+      "tryAgain": "Try again",
+      "loginTitle": "Sign in to access",
+      "loginDescription": "Log in to your account to browse and use the available prompts.",
+      "signIn": "Sign in",
+      "loginRequired": "Sign in to use prompts",
+      "copied": "Prompt copied!",
+      "delete": {
+        "title": "Delete prompt",
+        "description": "Are you sure you want to delete this prompt? This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete",
+        "success": "Prompt deleted!",
+        "error": "Failed to delete prompt"
+      },
+      "addModal": {
+        "title": "Add Prompt",
+        "titlePlaceholder": "Title",
+        "promptPlaceholder": "Prompt",
+        "imageUrlPlaceholder": "Image URL (optional)",
+        "submit": "Add",
+        "saving": "Saving...",
+        "validationError": "Please fill in the title and the prompt",
+        "success": "Prompt added!",
+        "error": "Failed to add prompt"
+      }
+    },
+    "trendingProducts": {
+      "title": "TikTok Shop Ranking",
+      "top10": "TOP 10",
+      "tabs": {
+        "salesLabel": "Best selling products",
+        "salesShort": "Best sellers",
+        "salesSubtitle": "TOP 10 best selling products on TikTok BR",
+        "recommendedLabel": "Most popular products",
+        "recommendedShort": "Popular",
+        "recommendedSubtitle": "TOP 10 most popular products on TikTok BR",
+        "newLabel": "New products",
+        "newShort": "New",
+        "newSubtitle": "TOP 10 trending launches on TikTok BR"
+      },
+      "loading": "Ranking products...",
+      "loadErrorTitle": "Couldn't load",
+      "loadErrorHint": "Check your connection and try again",
+      "retry": "Try again",
+      "noProducts": "No products found",
+      "paywallTitle": "Subscribers-only feature",
+      "paywallDescription": "Subscribe to the Starter plan or higher to see trending products on TikTok Shop.",
+      "viewPlans": "View plans",
+      "card": {
+        "salesToday": "Sales today",
+        "revenue": "Revenue",
+        "affiliates": "Affiliates",
+        "lives": "Lives",
+        "commission": "Commission",
+        "totalAccumulated": "Total accumulated",
+        "salesSuffix": "sales",
+        "useProductSoon": "Use product (coming soon)"
+      }
+    },
+    "tutorial": {
+      "title": "Tutorials",
+      "subtitle": "Learn how to use every feature",
+      "back": "← Back to tutorials",
+      "comingSoon": "Video coming soon",
+      "stepByStep": "Step by step",
+      "availableCount": "{count} tutorials available",
+      "items": {
+        "image": {
+          "title": "Generate your first image",
+          "description": "Learn to use the image generation panel to create stunning AI artwork in just a few clicks.",
+          "steps": [
+            "Open the \"Generate Image\" panel.",
+            "Describe the image you want to create in the prompt field.",
+            "Pick the style and settings you want.",
+            "Click \"Generate\" and wait for the result."
+          ]
+        },
+        "video": {
+          "title": "Generate a video",
+          "description": "Turn images or prompts into high-quality animated videos using cutting-edge AI models.",
+          "steps": [
+            "Open the \"Generate Video\" panel.",
+            "Pick a base image or write a video prompt.",
+            "Adjust the duration and style of the video.",
+            "Click \"Generate Video\" and wait for processing."
+          ]
+        },
+        "influencer": {
+          "title": "Create your AI Influencer",
+          "description": "Build a complete digital influencer with a visual identity, personality, and consistent looks across generations.",
+          "steps": [
+            "Open the \"Create Influencer\" panel.",
+            "Set the name, personality, and visual style of your influencer.",
+            "Generate the base model of your influencer with AI.",
+            "Use the influencer you created to generate consistent images and videos."
+          ]
+        }
+      }
+    },
+    "postAndEarn": {
+      "title": "Post and Earn",
+      "subtitle": "Share your creations in <green>collab</green> with <green>@geraew.ai</green> and double your generations!",
+      "postImage": "Post an image",
+      "postVideo": "Post a video",
+      "inCollab": "In collab with @geraew.ai",
+      "generations": "generations",
+      "imageType": "image",
+      "videoType": "video",
+      "howItWorks": "How it works",
+      "steps": {
+        "s1": "Create your image or video on geraew.ai",
+        "s2": "Post it in collab with @geraew.ai on Instagram",
+        "s3": "DM us your signup email on our Instagram"
+      },
+      "confirmation": "Your credits will be added after we verify the post.",
+      "follow": "Follow @geraew.ai",
+      "gotIt": "Got it"
+    }
+  }
+}

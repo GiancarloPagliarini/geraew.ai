@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Shield, ArrowRight, Lock, Loader2, Sparkles } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import { cn } from "@/lib/utils";
 import { useScrollReveal } from "./use-scroll-reveal";
 import { useEffect, useState } from "react";
@@ -9,30 +10,69 @@ import { useLoginModal } from "@/lib/login-modal-context";
 import { api, Plan } from "@/lib/api";
 import {
   PLAN_ORDER,
-  PLAN_SUBTITLES,
   PLAN_GENERATIONS,
   PLAN_ORIGINAL_PRICES,
   PLAN_DISCOUNT_LABELS,
   PLAN_SOCIAL_PROOF,
   formatPrice,
   formatPriceRaw,
-  getPlanFeatures,
 } from "@/lib/plans";
 
-function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) {
+function useTranslatedPlanFeatures(plan: Plan): string[] {
+  const t = useTranslations("pricing.features");
+  const features: string[] = [];
+
+  if (plan.slug === "free") {
+    features.push(t("credits", { count: 350 }));
+    features.push(t("emailSupport"));
+    features.push(t("gallery7"));
+    features.push(t("tryNoCommit"));
+    return features;
+  }
+
+  features.push(
+    t("credits", {
+      count: plan.creditsPerMonth.toLocaleString("pt-BR"),
+    }),
+  );
+
+  if (plan.slug === "pro" || plan.slug === "studio") {
+    features.push(t("queuePriority"));
+    features.push(t("fasterGen"));
+    features.push(t("prioritySupport"));
+    features.push(t("gallery365"));
+  } else if (plan.slug === "creator") {
+    features.push(t("fasterGen"));
+    features.push(t("emailSupport"));
+    features.push(t("gallery180"));
+  } else {
+    features.push(t("emailSupport"));
+    features.push(t("gallery90"));
+  }
+
+  return features;
+}
+
+function PlanCard({ plan, i }: { plan: Plan; i: number; total: number }) {
+  const t = useTranslations("pricing");
+  const tPlans = useTranslations("plans");
   const { user } = useAuth();
   const { openLoginModal } = useLoginModal();
   const isLoggedIn = !!user;
   const { ref, isVisible } = useScrollReveal();
+  const locale = useLocale();
   const isPopular = plan.slug === "creator";
   const isFree = plan.priceCents === 0;
-  const { main, sub } = formatPrice(plan.priceCents);
-  const features = getPlanFeatures(plan);
+  const { main, sub } = formatPrice(plan.priceCents, plan.currency, locale);
+  const features = useTranslatedPlanFeatures(plan);
   const generationExamples = PLAN_GENERATIONS[plan.slug] ?? [];
-  const subtitle = PLAN_SUBTITLES[plan.slug];
+  const hasSubtitle = ["starter", "creator", "pro", "studio"].includes(plan.slug);
+  const subtitle = hasSubtitle ? tPlans(`subtitles.${plan.slug}`) : undefined;
   const originalPrice = PLAN_ORIGINAL_PRICES[plan.slug];
   const discountLabel = PLAN_DISCOUNT_LABELS[plan.slug];
   const socialProof = PLAN_SOCIAL_PROOF[plan.slug];
+  const hasSocialProof = ["free", "starter", "creator", "pro", "studio"].includes(plan.slug);
+  const socialProofText = hasSocialProof ? tPlans(`socialProof.${plan.slug}`) : undefined;
 
   return (
     <div
@@ -75,7 +115,7 @@ function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) 
           <div className="flex items-center gap-1.5 rounded-full bg-landing-accent px-2.5 py-1 shadow-[0_0_20px_rgba(162,221,0,0.3)]">
             <Sparkles className="h-3 w-3 text-[#141a1c]" />
             <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#141a1c]">
-              Mais Popular
+              {t("mostPopular")}
             </span>
           </div>
         </div>
@@ -112,16 +152,16 @@ function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) 
             </span>
           </div>
           <p className="mt-1 text-[13px] text-[#f3f0ed]/35">
-            créditos{isFree ? " para testar" : " por mês"}
+            {isFree ? t("creditsForTesting") : t("creditsMonthly")}
           </p>
         </div>
 
         {/* Price with anchor */}
         <div className="mt-4">
-          {originalPrice && !isFree && (
+          {originalPrice && !isFree && plan.currency === 'BRL' && (
             <div className="mb-1 flex items-center gap-2">
               <span className="text-[13px] text-[#f3f0ed]/25 line-through">
-                {formatPriceRaw(originalPrice)}
+                {formatPriceRaw(originalPrice, plan.currency, locale)}
               </span>
               {discountLabel && (
                 <span className="rounded-md bg-landing-accent/15 px-1.5 py-0.5 text-[9px] font-bold text-landing-accent">
@@ -146,10 +186,10 @@ function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) 
         </div>
 
         {/* Social proof */}
-        {socialProof && (
+        {socialProof && socialProofText && (
           <p className="mt-2.5 flex items-center gap-1.5 text-[11px] font-medium text-landing-accent/70">
             <socialProof.icon className="h-3.5 w-3.5" />
-            {socialProof.text}
+            {socialProofText}
           </p>
         )}
 
@@ -187,7 +227,7 @@ function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) 
           <div className="mt-6">
             <div className="rounded-xl bg-[#f3f0ed]/[0.02] p-4">
               <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#f3f0ed]/25">
-                Estimativa de gerações
+                {t("generationEstimate")}
               </p>
               <div className="mt-3 flex flex-col gap-2">
                 {generationExamples.map((ex) => (
@@ -201,7 +241,7 @@ function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) 
                     {ex.blocked ? (
                       <span className="flex items-center gap-1 text-[11px] text-red-400/40">
                         <Lock className="h-2.5 w-2.5" />
-                        bloqueado
+                        {t("blocked")}
                       </span>
                     ) : (
                       <span className="text-[11px] font-semibold text-[#f3f0ed]/60">
@@ -212,7 +252,7 @@ function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) 
                 ))}
               </div>
               <p className="mt-2.5 text-[9px] text-[#f3f0ed]/15">
-                Usando todos os créditos em um único modelo
+                {t("generationFootnote")}
               </p>
             </div>
           </div>
@@ -234,7 +274,7 @@ function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) 
                   : "border border-[#f3f0ed]/[0.08] text-[#f3f0ed]/70 hover:border-[#f3f0ed]/[0.15] hover:bg-[#f3f0ed]/[0.03] hover:text-[#f3f0ed]",
             )}
           >
-            {isLoggedIn ? "Acessar Plataforma" : "Começar Grátis"}
+            {isLoggedIn ? t("accessPlatform") : t("startFree")}
             <ArrowRight className="h-3.5 w-3.5" />
           </a>
         ) : (
@@ -247,7 +287,7 @@ function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) 
                 : "border border-[#f3f0ed]/[0.08] text-[#f3f0ed]/70 hover:border-[#f3f0ed]/[0.15] hover:bg-[#f3f0ed]/[0.03] hover:text-[#f3f0ed]",
             )}
           >
-            {`Assinar ${plan.name}`}
+            {t("subscribe", { plan: plan.name })}
             <ArrowRight className="h-3.5 w-3.5" />
           </button>
         )}
@@ -257,15 +297,16 @@ function PlanCard({ plan, i, total }: { plan: Plan; i: number; total: number }) 
 }
 
 export function Pricing() {
-  const { user } = useAuth();
-  const isLoggedIn = !!user;
+  const t = useTranslations("pricing");
+  const locale = useLocale();
+  const currency = locale === 'en' ? 'USD' : 'BRL';
   const { ref, isVisible } = useScrollReveal();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api.plans
-      .listPublic()
+      .listPublic(currency)
       .then((data) => {
         const sorted = data
           .slice()
@@ -276,7 +317,13 @@ export function Pricing() {
       })
       .catch(() => { })
       .finally(() => setLoading(false));
-  }, []);
+  }, [currency]);
+
+  const badges = [
+    t("badges.noCancelFee"),
+    t("badges.securePayment"),
+    t("badges.creditsRenew"),
+  ];
 
   return (
     <section id="precos" className="relative py-16 sm:py-28 lg:py-36">
@@ -301,13 +348,13 @@ export function Pricing() {
           }}
         >
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-landing-accent">
-            Preços
+            {t("tag")}
           </span>
           <h2 className="mt-4 font-sora text-[26px] font-bold tracking-tight text-landing-text sm:mt-5 sm:text-3xl lg:text-[44px]">
-            Planos simples. Sem surpresas.
+            {t("title")}
           </h2>
           <p className="mt-3.5 text-[15px] leading-relaxed text-landing-text-secondary sm:mt-5 sm:text-[17px]">
-            Comece grátis e escale quando quiser. Cancele a qualquer momento.
+            {t("subtitle")}
           </p>
         </div>
 
@@ -375,16 +422,10 @@ export function Pricing() {
               <Shield className="h-5 w-5 text-landing-accent" />
             </div>
             <p className="mt-3 text-[14px] leading-relaxed text-[#f3f0ed]/50">
-              Experimente sem risco. Se não ficar satisfeito nos primeiros 7
-              dias, devolvemos 100% do seu dinheiro. Sem perguntas, sem
-              burocracia.
+              {t("guaranteeText")}
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 sm:mt-7 sm:gap-x-6 sm:gap-y-2.5">
-              {[
-                "Sem taxa de cancelamento",
-                "Pagamento seguro",
-                "Créditos renovam mensalmente",
-              ].map((s) => (
+              {badges.map((s) => (
                 <span
                   key={s}
                   className="flex items-center gap-2 text-[12px] text-[#f3f0ed]/35"

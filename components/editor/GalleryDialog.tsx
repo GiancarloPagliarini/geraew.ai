@@ -34,6 +34,7 @@ import {
   ScanFace, Settings, Trash2, X
 } from 'lucide-react';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, InfiniteData } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-context';
@@ -42,11 +43,11 @@ import { api, Folder, Generation, GenerationInputImage, GalleryItem as GalleryIt
 
 type GalleryTab = 'all' | 'photos' | 'videos' | 'favorites';
 
-const TABS: { key: GalleryTab; label: string }[] = [
-  { key: 'all', label: 'Tudo' },
-  { key: 'photos', label: 'Fotos' },
-  { key: 'videos', label: 'Vídeos' },
-  { key: 'favorites', label: 'Favoritos' },
+const TABS: { key: GalleryTab }[] = [
+  { key: 'all' },
+  { key: 'photos' },
+  { key: 'videos' },
+  { key: 'favorites' },
 ];
 
 function tabToFilters(tab: GalleryTab): { type?: string; favorited?: boolean } | undefined {
@@ -66,6 +67,7 @@ interface GalleryDialogProps {
 }
 
 export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
+  const t = useTranslations('editorDialogs.gallery');
   const { accessToken } = useAuth();
   const { galleryPickerRequest, closeGalleryPicker } = useEditor();
   const [selected, setSelected] = useState<Generation | null>(null);
@@ -103,9 +105,9 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
     mutationFn: (name: string) => api.folders.create(accessToken!, name),
     onSuccess: (_, name) => {
       queryClient.invalidateQueries({ queryKey: ['folders'] });
-      toast.success('Pasta criada', { description: `"${name}" foi criada com sucesso.` });
+      toast.success(t('folders.created'), { description: t('folders.createdDescription', { name }) });
     },
-    onError: () => toast.error('Erro ao criar pasta', { description: 'Tente novamente.' }),
+    onError: () => toast.error(t('folders.createError'), { description: t('folders.tryAgain') }),
   });
 
   const updateFolderMutation = useMutation({
@@ -113,9 +115,9 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
       api.folders.update(accessToken!, folderId, name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['folders'] });
-      toast.success('Pasta renomeada', { description: 'O nome foi atualizado com sucesso.' });
+      toast.success(t('folders.renamed'), { description: t('folders.renamedDescription') });
     },
-    onError: () => toast.error('Erro ao renomear pasta', { description: 'Tente novamente.' }),
+    onError: () => toast.error(t('folders.renameError'), { description: t('folders.tryAgain') }),
   });
 
   const deleteFolderMutation = useMutation({
@@ -124,9 +126,9 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
       if (activeFolderId === folderId) { setActiveFolderId(null); setShowFoldersList(true); }
       queryClient.invalidateQueries({ queryKey: ['folders'] });
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
-      toast.success('Pasta excluída', { description: 'A pasta foi removida com sucesso.' });
+      toast.success(t('folders.deleted'), { description: t('folders.deletedDescription') });
     },
-    onError: () => toast.error('Erro ao excluir pasta', { description: 'Tente novamente.' }),
+    onError: () => toast.error(t('folders.deleteError'), { description: t('folders.tryAgain') }),
   });
 
   const addToFolderMutation = useMutation({
@@ -135,9 +137,9 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
     onSuccess: (_data, { generationId: _generationId }) => {
       queryClient.invalidateQueries({ queryKey: ['folders'] });
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
-      toast.success('Adicionada à pasta', { description: 'A imagem foi movida com sucesso.' });
+      toast.success(t('folders.addedToFolder'), { description: t('folders.addedToFolderDescription') });
     },
-    onError: () => toast.error('Erro ao adicionar à pasta', { description: 'Tente novamente.' }),
+    onError: () => toast.error(t('folders.addToFolderError'), { description: t('folders.tryAgain') }),
   });
 
   const removeFromFolderMutation = useMutation({
@@ -146,9 +148,9 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
     onSuccess: (_data, { generationId: _generationId }) => {
       queryClient.invalidateQueries({ queryKey: ['folders'] });
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
-      toast.success('Removida da pasta', { description: 'A imagem foi removida com sucesso.' });
+      toast.success(t('folders.removedFromFolder'), { description: t('folders.removedFromFolderDescription') });
     },
-    onError: () => toast.error('Erro ao remover da pasta', { description: 'Tente novamente.' }),
+    onError: () => toast.error(t('folders.removeFromFolderError'), { description: t('folders.tryAgain') }),
   });
 
   // ── Infinite list ──────────────────────────────────────────────────────────
@@ -228,7 +230,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
     },
     onSuccess: (_data, item) => {
       const wasFavorited = item.isFavorited;
-      toast.success(wasFavorited ? 'Removida dos favoritos' : 'Adicionada aos favoritos');
+      toast.success(wasFavorited ? t('unfavorited') : t('favorited'));
     },
     onError: (_err, _item, context) => {
       // Rollback all caches
@@ -237,7 +239,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
           if (prev) queryClient.setQueryData(qk, prev);
         }
       }
-      toast.error('Erro ao atualizar favorito', { description: 'Tente novamente.' });
+      toast.error(t('favoriteError'), { description: t('folders.tryAgain') });
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
@@ -264,10 +266,10 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
         if (newOutputs.length === 0) return null;
         return { ...prev, outputs: newOutputs };
       });
-      toast.success('Versão excluída', { description: 'A versão foi removida com sucesso.' });
+      toast.success(t('versionDeleted'), { description: t('versionDeletedDescription') });
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
     },
-    onError: () => toast.error('Erro ao excluir versão', { description: 'Tente novamente.' }),
+    onError: () => toast.error(t('deleteVersionError'), { description: t('folders.tryAgain') }),
   });
 
   // ── Delete generation ──────────────────────────────────────────────────────
@@ -301,7 +303,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
     },
     onSuccess: () => {
       setSelected(null);
-      toast.success('Geração excluída', { description: 'A geração foi removida com sucesso.' });
+      toast.success(t('generationDeleted'), { description: t('generationDeletedDescription') });
     },
     onError: (_err, _id, context) => {
       if (context?.snapshots) {
@@ -309,7 +311,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
           if (prev) queryClient.setQueryData(qk, prev);
         }
       }
-      toast.error('Erro ao excluir', { description: 'Tente novamente.' });
+      toast.error(t('deleteError'), { description: t('folders.tryAgain') });
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
@@ -388,8 +390,8 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
             <ImageIcon className="h-3.5 w-3.5 text-[#a2dd00]" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-[#f3f0ed]/60">Galeria</h2>
-            <p className="hidden text-xs text-[#f3f0ed]/30 sm:block">Suas imagens e vídeos gerados com IA</p>
+            <h2 className="text-sm font-bold text-[#f3f0ed]/60">{t('title')}</h2>
+            <p className="hidden text-xs text-[#f3f0ed]/30 sm:block">{t('subtitle')}</p>
           </div>
         </div>
         <button
@@ -406,14 +408,14 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
           <div className="flex items-center gap-2">
             <ImagePlus className="h-4 w-4 text-[#a2dd00]" />
             <span className="text-xs font-medium text-[#a2dd00]">
-              Selecione imagens ou arraste para o node
+              {t('pickerBanner')}
             </span>
           </div>
           <button
             onClick={closeGalleryPicker}
             className="rounded-md px-2.5 py-1 text-[10px] font-bold text-[#f3f0ed]/40 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70 transition-colors"
           >
-            CANCELAR
+            {t('cancel')}
           </button>
         </div>
       )}
@@ -423,14 +425,14 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
         {/* Stats bar */}
         {!selected && (
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 shrink-0">
-            <StatCard icon={Settings} label="Gerações" value={stats?.totalGenerations} loading={statsLoading} />
-            <StatCard icon={Coins} label="Créditos" value={stats?.totalCreditsUsed} loading={statsLoading} />
-            <StatCard icon={Heart} label="Favoritos" value={stats?.favoriteCount} loading={statsLoading} />
-            <StatCard icon={ImagePlus} label="Imagens" value={stats ? (stats.generationsByType?.TEXT_TO_IMAGE ?? 0) + (stats.generationsByType?.IMAGE_TO_IMAGE ?? 0) : undefined} loading={statsLoading} />
-            <StatCard icon={Play} label="Vídeos" value={stats ? (stats.generationsByType?.TEXT_TO_VIDEO ?? 0) + (stats.generationsByType?.IMAGE_TO_VIDEO ?? 0) : undefined} loading={statsLoading} />
+            <StatCard icon={Settings} label={t('stats.generations')} value={stats?.totalGenerations} loading={statsLoading} />
+            <StatCard icon={Coins} label={t('stats.credits')} value={stats?.totalCreditsUsed} loading={statsLoading} />
+            <StatCard icon={Heart} label={t('stats.favorites')} value={stats?.favoriteCount} loading={statsLoading} />
+            <StatCard icon={ImagePlus} label={t('stats.images')} value={stats ? (stats.generationsByType?.TEXT_TO_IMAGE ?? 0) + (stats.generationsByType?.IMAGE_TO_IMAGE ?? 0) : undefined} loading={statsLoading} />
+            <StatCard icon={Play} label={t('stats.videos')} value={stats ? (stats.generationsByType?.TEXT_TO_VIDEO ?? 0) + (stats.generationsByType?.IMAGE_TO_VIDEO ?? 0) : undefined} loading={statsLoading} />
             <StatCard
               icon={FolderIcon}
-              label="Pastas"
+              label={t('stats.folders')}
               value={folders.length}
               loading={false}
               onClick={() => { setShowFoldersList(!showFoldersList); setActiveFolderId(null); }}
@@ -451,7 +453,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
                   : 'text-[#f3f0ed]/40 hover:text-[#f3f0ed]/70 hover:bg-[#f3f0ed]/5'
                   }`}
               >
-                {tab.label}
+                {t(`tabs.${tab.key}`)}
               </button>
             ))}
             <button
@@ -459,12 +461,12 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
                 setIsRefreshing(true);
                 queryClient.invalidateQueries({ queryKey: ['gallery'] }).then(() => {
                   setIsRefreshing(false);
-                  toast.success('Galeria atualizada', { description: 'As imagens foram recarregadas.' });
+                  toast.success(t('refreshed'), { description: t('refreshedDescription') });
                 });
               }}
               disabled={isRefreshing}
               className="ml-auto flex h-6 w-6 items-center justify-center rounded-md text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70 transition-colors disabled:opacity-50"
-              title="Atualizar galeria"
+              title={t('refresh')}
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
@@ -492,7 +494,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
               className="flex items-center gap-1 text-xs font-medium text-[#a2dd00] hover:text-[#a2dd00]/80 transition-colors"
             >
               <ArrowLeft className="h-3 w-3" />
-              Minhas Pastas
+              {t('folders.myFolders')}
             </button>
           </div>
         )}
@@ -513,7 +515,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
                       setNewFolderName('');
                     }
                   }}
-                  placeholder="Nova pasta..."
+                  placeholder={t('folders.newFolderPlaceholder')}
                   className="flex-1 rounded-lg bg-[#f3f0ed]/5 border border-[#f3f0ed]/10 px-3 py-2 text-xs text-[#f3f0ed] placeholder:text-[#f3f0ed]/30 focus:outline-none focus:border-[#a2dd00]/30"
                 />
                 <button
@@ -533,8 +535,8 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
               {folders.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-[#f3f0ed]/30">
                   <FolderIcon className="h-10 w-10 mb-3 opacity-40" />
-                  <p className="text-sm font-medium">Nenhuma pasta</p>
-                  <p className="text-xs mt-1">Crie uma pasta para organizar suas gerações</p>
+                  <p className="text-sm font-medium">{t('folders.noFolders')}</p>
+                  <p className="text-xs mt-1">{t('folders.noFoldersHint')}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -597,7 +599,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
                           });
                         } else if (!galleryPickerRequest && accessToken) {
                           api.generations.get(accessToken, item.id).then(setSelected).catch(() => {
-                            toast.error('Erro ao carregar detalhes');
+                            toast.error(t('loadDetailsError'));
                           });
                         }
                       }}
@@ -631,7 +633,9 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
         {!selected && !galleryLoading && items.length > 0 && !galleryPickerRequest && (
           <div className="flex items-center justify-between border-t border-[#f3f0ed]/7 pt-3">
             <span className="text-[10px] font-medium tracking-wider text-[#f3f0ed]/30 uppercase">
-              {items.length} de {total} {total === 1 ? 'item' : 'itens'}
+              {total === 1
+                ? t('itemsCountSingular', { shown: items.length, total })
+                : t('itemsCountPlural', { shown: items.length, total })}
             </span>
           </div>
         )}
@@ -640,7 +644,9 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
         {galleryPickerRequest && pickerSelectedUrls.size > 0 && (
           <div className="flex items-center justify-between border-t border-[#a2dd00]/20 bg-[#a2dd00]/5 rounded-xl px-4 py-2.5 shrink-0">
             <span className="text-xs text-[#f3f0ed]/50">
-              {pickerSelectedUrls.size} selecionada{pickerSelectedUrls.size > 1 ? 's' : ''}
+              {pickerSelectedUrls.size === 1
+                ? t('selectedSingular', { count: pickerSelectedUrls.size })
+                : t('selectedPlural', { count: pickerSelectedUrls.size })}
             </span>
             <button
               onClick={() => {
@@ -650,7 +656,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
               }}
               className="rounded-lg bg-[#a2dd00] px-4 py-1.5 text-xs font-bold text-[#1a2123] transition-all hover:bg-[#a2dd00]/90 active:scale-95"
             >
-              ADICIONAR
+              {t('add')}
             </button>
           </div>
         )}
@@ -672,6 +678,8 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
   onDelete: (outputId?: string) => void;
   deleteIsPending: boolean;
 }) {
+  const t = useTranslations('editorDialogs.gallery');
+  const locale = useLocale();
   const [activeIndex, setActiveIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [lightbox, setLightbox] = useState<GenerationInputImage | null>(null);
@@ -711,7 +719,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
         className="self-start flex items-center gap-1 text-xs font-medium text-[#a2dd00] hover:text-[#a2dd00]/80 transition-colors"
       >
         <ArrowLeft className="h-3 w-3" />
-        Voltar para galeria
+        {t('detail.back')}
       </button>
 
       {/* Main player */}
@@ -732,7 +740,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
           <img
             key={url}
             src={url}
-            alt={item.prompt ?? 'Imagem gerada'}
+            alt={item.prompt ?? t('detail.imageAlt')}
             loading="lazy"
             decoding="async"
             className={`w-full rounded-xl object-contain max-h-[50vh] transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
@@ -754,7 +762,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
           <div className="flex items-center gap-1.5">
             <Layers className="h-4 w-4 text-[#a2dd00]" />
             <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/30 uppercase">
-              {outputs.length} versões geradas
+              {t('detail.versionsGenerated', { count: outputs.length })}
             </span>
           </div>
           <div className="flex gap-2 pt-1 pb-2">
@@ -780,7 +788,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
             className="flex items-center gap-2 rounded-lg bg-[#f3f0ed]/5 px-3 py-1.5 text-xs font-medium text-[#f3f0ed]/50 hover:bg-[#f3f0ed]/10 transition-colors"
           >
             <Heart className={`h-4 w-4 ${item.isFavorited ? 'fill-[#a2dd00] text-[#a2dd00]' : ''}`} />
-            {item.isFavorited ? 'Favoritado' : 'Favoritar'}
+            {item.isFavorited ? t('detail.favorited') : t('detail.favorite')}
           </button>
           <FolderDropdown
             folders={folders}
@@ -814,7 +822,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
             className="flex items-center gap-2 rounded-lg bg-[#a2dd00]/10 px-3 py-1.5 text-xs font-medium text-[#a2dd00] hover:bg-[#a2dd00]/20 transition-colors"
           >
             <Download className="h-4 w-4" />
-            Download
+            {t('detail.download')}
           </button>
 
           {confirmDelete ? (
@@ -825,14 +833,14 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
                 className="flex items-center gap-1.5 rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-50"
               >
                 {deleteIsPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                Confirmar
+                {t('detail.confirm')}
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
                 disabled={deleteIsPending}
                 className="rounded-lg px-2 py-1.5 text-xs text-[#f3f0ed]/40 hover:text-[#f3f0ed]/70 transition-colors"
               >
-                Cancelar
+                {t('detail.cancel')}
               </button>
             </div>
           ) : (
@@ -841,7 +849,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
               className="flex items-center gap-2 rounded-lg bg-red-500/8 px-3 py-1.5 text-xs font-medium text-red-400/70 hover:bg-red-500/15 hover:text-red-400 transition-colors"
             >
               <Trash2 className="h-4 w-4" />
-              {multipleOutputs ? 'Excluir versão' : 'Excluir'}
+              {multipleOutputs ? t('detail.deleteVersion') : t('detail.delete')}
             </button>
           )}
         </div>
@@ -871,7 +879,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                {promptCopied ? 'Copiado!' : 'Copiar prompt'}
+                {promptCopied ? t('detail.copied') : t('detail.copyPrompt')}
               </TooltipContent>
             </Tooltip>
           )}
@@ -903,7 +911,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
             {item.createdAt && (
               <span className="flex items-center gap-1 text-xs text-[#f3f0ed]/40">
                 <Calendar className="h-3 w-3" />
-                {new Date(item.createdAt).toLocaleDateString('pt-BR')}
+                {new Date(item.createdAt).toLocaleDateString(locale)}
               </span>
             )}
           </div>
@@ -916,7 +924,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
           <div className="flex items-center gap-1.5">
             <ScanFace className="h-4 w-4 text-[#a2dd00]" />
             <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/30 uppercase">
-              Referências usadas
+              {t('detail.referencesUsed')}
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -929,7 +937,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={img.url}
-                  alt={`Referência ${img.order + 1}`}
+                  alt={t('detail.referenceAlt', { n: img.order + 1 })}
                   className="h-full w-full object-cover"
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
@@ -956,7 +964,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={lightbox.url}
-            alt={`Referência ${lightbox.order + 1}`}
+            alt={t('detail.referenceAlt', { n: lightbox.order + 1 })}
             className="max-h-[85vh] max-w-[85vw] rounded-xl object-contain shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           />
@@ -981,6 +989,7 @@ function OutputThumb({
   isActive: boolean;
   onClick: () => void;
 }) {
+  const t = useTranslations('editorDialogs.gallery');
   const [loaded, setLoaded] = useState(false);
 
   return (
@@ -1006,7 +1015,7 @@ function OutputThumb({
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={url}
-          alt={`Versão ${index + 1}`}
+          alt={t('detail.versionAlt', { n: index + 1 })}
           className={`h-full w-full object-cover transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
           onLoad={() => setLoaded(true)}
         />
@@ -1053,6 +1062,7 @@ const GalleryItem = memo(function GalleryItem({
   pickerDisabled?: boolean;
   priority?: boolean;
 }) {
+  const t = useTranslations('editorDialogs.gallery');
   const [loaded, setLoaded] = useState(false);
   const [folderDropdownOpen, setFolderDropdownOpen] = useState(false);
   const displayUrl = item.thumbnailUrl ?? item.outputUrl;
@@ -1089,7 +1099,7 @@ const GalleryItem = memo(function GalleryItem({
       {displayUrl ? (
         <Image
           src={displayUrl}
-          alt={item.prompt ?? 'Geração'}
+          alt={item.prompt ?? t('detail.imageAlt')}
           fill
           sizes="(max-width: 640px) 50vw, 33vw"
           unoptimized
@@ -1196,6 +1206,7 @@ function FolderCard({
   deleteIsPending: boolean;
   renameIsPending: boolean;
 }) {
+  const t = useTranslations('editorDialogs.gallery');
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(folder.name);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1275,7 +1286,7 @@ function FolderCard({
       ) : (
         <span className="text-sm font-medium text-[#f3f0ed]/80 truncate">{folder.name}</span>
       )}
-      <span className="text-[10px] text-[#f3f0ed]/30">{folder.generationCount} {folder.generationCount === 1 ? 'item' : 'itens'}</span>
+      <span className="text-[10px] text-[#f3f0ed]/30">{folder.generationCount} {folder.generationCount === 1 ? t('folders.itemSingular') : t('folders.itemPlural')}</span>
 
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent
@@ -1284,15 +1295,15 @@ function FolderCard({
           onClick={(e) => e.stopPropagation()}
         >
           <DialogHeader>
-            <DialogTitle className="text-[#f3f0ed] text-base">Excluir pasta</DialogTitle>
+            <DialogTitle className="text-[#f3f0ed] text-base">{t('folders.deleteTitle')}</DialogTitle>
             <DialogDescription className="text-[#f3f0ed]/45 text-sm">
-              Tem certeza que deseja excluir <span className="font-medium text-[#f3f0ed]/70">&quot;{folder.name}&quot;</span>? As gerações dentro dela não serão apagadas.
+              {t('folders.deleteDescription', { name: folder.name })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-2 flex-row gap-2">
             <DialogClose asChild>
               <button className="flex-1 rounded-lg bg-[#f3f0ed]/5 px-4 py-2 text-xs font-medium text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/10 transition-colors">
-                Cancelar
+                {t('folders.cancel')}
               </button>
             </DialogClose>
             <button
@@ -1302,7 +1313,7 @@ function FolderCard({
               }}
               className="flex-1 rounded-lg bg-red-500/10 px-4 py-2 text-xs font-medium text-red-400 hover:bg-red-500/20 transition-colors"
             >
-              Excluir
+              {t('folders.delete')}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -1324,6 +1335,7 @@ function FolderChip({
   onRename: (name: string) => void;
   onDelete: () => void;
 }) {
+  const t = useTranslations('editorDialogs.gallery');
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(folder.name);
@@ -1404,7 +1416,7 @@ function FolderChip({
             className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]"
           >
             <Pencil className="h-3 w-3" />
-            Renomear
+            {t('folders.rename')}
           </button>
           <button
             onClick={() => {
@@ -1414,7 +1426,7 @@ function FolderChip({
             className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-red-400/70 hover:bg-red-400/5 hover:text-red-400"
           >
             <Trash2 className="h-3 w-3" />
-            Excluir
+            {t('folders.delete')}
           </button>
         </div>
       )}
@@ -1435,6 +1447,7 @@ function FolderDropdown({
   onSelect: (folderId: string) => void;
   onCreateAndAdd: (name: string) => void;
 }) {
+  const t = useTranslations('editorDialogs.gallery');
   const [open, setOpen] = useState(false);
   const [newName, setNewName] = useState('');
   const ref = useRef<HTMLDivElement>(null);
@@ -1458,7 +1471,7 @@ function FolderDropdown({
         className="flex items-center gap-2 rounded-lg bg-[#f3f0ed]/5 px-3 py-1.5 text-xs font-medium text-[#f3f0ed]/50 hover:bg-[#f3f0ed]/10 transition-colors"
       >
         <FolderPlus className="h-4 w-4" />
-        Pasta
+        {t('folders.folderButton')}
       </button>
 
       {open && (
@@ -1504,7 +1517,7 @@ function FolderDropdown({
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="Nova pasta..."
+                placeholder={t('folders.newFolderPlaceholder')}
                 className="flex-1 bg-transparent text-xs text-[#f3f0ed] placeholder-[#f3f0ed]/20 outline-none px-1 py-0.5"
                 autoFocus
               />
@@ -1540,6 +1553,7 @@ function GalleryItemFolderButton({
   onCreateFolderAndAdd: (name: string) => void;
   onOpenChange?: (open: boolean) => void;
 }) {
+  const t = useTranslations('editorDialogs.gallery');
   const [open, _setOpen] = useState(false);
   const setOpen = (v: boolean) => { _setOpen(v); onOpenChange?.(v); };
   const [newName, setNewName] = useState('');
@@ -1564,9 +1578,9 @@ function GalleryItemFolderButton({
           onClick={(e) => e.stopPropagation()}
         >
           <DialogHeader>
-            <DialogTitle className="text-[#f3f0ed] text-base">Adicionar à pasta</DialogTitle>
+            <DialogTitle className="text-[#f3f0ed] text-base">{t('folders.addToFolder')}</DialogTitle>
             <DialogDescription className="text-[#f3f0ed]/45 text-sm">
-              Selecione uma pasta ou crie uma nova.
+              {t('folders.addToFolderDescription')}
             </DialogDescription>
           </DialogHeader>
 
@@ -1612,7 +1626,7 @@ function GalleryItemFolderButton({
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="Nova pasta..."
+                placeholder={t('folders.newFolderPlaceholder')}
                 className="flex-1 rounded-lg bg-[#f3f0ed]/5 px-3 py-2 text-xs text-[#f3f0ed] placeholder-[#f3f0ed]/20 outline-none border border-transparent focus:border-[#a2dd00]/30 transition-colors"
               />
               <button
@@ -1645,12 +1659,13 @@ function SkeletonGrid() {
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyState() {
+  const t = useTranslations('editorDialogs.gallery');
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f3f0ed]/5">
         <ImageIcon className="h-5 w-5 text-[#f3f0ed]/20" />
       </div>
-      <p className="text-sm text-[#f3f0ed]/40">Nenhuma imagem gerada ainda.</p>
+      <p className="text-sm text-[#f3f0ed]/40">{t('empty')}</p>
     </div>
   );
 }

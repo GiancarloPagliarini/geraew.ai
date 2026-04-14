@@ -11,17 +11,16 @@ import {
   Users,
   Zap,
 } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
 import type { Plan } from '@/lib/api';
 import {
   PLAN_DISCOUNT_LABELS,
-  PLAN_GENERATIONS,
+  PLAN_GENERATION_ENTRIES,
   PLAN_ORDER,
   PLAN_ORIGINAL_PRICES,
-  PLAN_SOCIAL_PROOF,
-  PLAN_SUBTITLES,
-  formatPrice,
-  formatPriceRaw,
-  getPlanFeatures,
+  PLAN_SOCIAL_PROOF_ICONS,
+  formatCurrency,
+  getPlanFeatureKeys,
 } from '@/lib/plans';
 
 export interface PlansGridProps {
@@ -57,27 +56,38 @@ interface PlanCardProps {
 }
 
 function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, compact }: PlanCardProps) {
+  const t = useTranslations('editorPlans');
+  const locale = useLocale();
   const isFree = plan.priceCents === 0;
   const isCreator = plan.slug === 'creator';
   const isPro = plan.slug === 'pro';
   const isStudio = plan.slug === 'studio';
-  const { main, sub } = formatPrice(plan.priceCents);
+
+  const mainPrice = isFree
+    ? t('free')
+    : formatCurrency(plan.priceCents, plan.currency || 'BRL', locale);
+  const subPrice = isFree ? null : t('perMonth');
+
   const isSubscribing = subscribingSlug === plan.slug;
-  const features = getPlanFeatures(plan);
+  const featureEntries = getPlanFeatureKeys(plan);
   const isDowngrade = planAction === 'downgrade';
-  const generationExamples = PLAN_GENERATIONS[plan.slug] ?? [];
+  const generationExamples = PLAN_GENERATION_ENTRIES[plan.slug] ?? [];
   const originalPrice = PLAN_ORIGINAL_PRICES[plan.slug];
   const discountLabel = PLAN_DISCOUNT_LABELS[plan.slug];
-  const socialProof = PLAN_SOCIAL_PROOF[plan.slug];
+  const socialProofIcon = PLAN_SOCIAL_PROOF_ICONS[plan.slug];
 
-  const actionLabel = {
-    upgrade: 'Fazer upgrade',
-    downgrade: 'Fazer downgrade',
-    create: 'Começar agora',
-    current: 'Plano ativo',
-  }[planAction];
+  const subtitle = ['starter', 'creator', 'pro', 'studio'].includes(plan.slug)
+    ? t(`subtitles.${plan.slug}` as 'subtitles.starter')
+    : '';
+  const hasSocialProof = ['free', 'starter', 'creator', 'pro', 'studio'].includes(plan.slug);
+  const socialProofText = hasSocialProof
+    ? t(`socialProof.${plan.slug}` as 'socialProof.free')
+    : '';
+
+  const actionLabel = t(`actions.${planAction}` as 'actions.upgrade');
 
   const PlanIcon = isStudio ? Crown : isPro ? Zap : isCreator ? Pickaxe : isFree ? Users : Coins;
+  const SocialProofIcon = socialProofIcon;
   const radius = compact ? 'rounded-[16px]' : 'rounded-[22px]';
 
   return (
@@ -118,7 +128,7 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
         <div className={`absolute left-1/2 z-10 -translate-x-1/2 ${compact ? '-top-2.5' : '-top-3'}`}>
           <div className={`flex items-center gap-1 rounded-full bg-[#f3f0ed] shadow-[0_0_16px_rgba(243,240,237,0.15)] ${compact ? 'px-3 py-0.5' : 'px-4 py-1'}`}>
             <Check className={`${compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} text-[#1a2123]`} />
-            <span className={`font-bold uppercase tracking-[0.08em] text-[#1a2123] ${compact ? 'text-[9px]' : 'text-[10px]'}`}>Seu Plano</span>
+            <span className={`font-bold uppercase tracking-[0.08em] text-[#1a2123] ${compact ? 'text-[9px]' : 'text-[10px]'}`}>{t('badges.yourPlan')}</span>
           </div>
         </div>
       )}
@@ -128,7 +138,7 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
         <div className={`absolute left-1/2 z-10 -translate-x-1/2 ${compact ? '-top-2.5' : '-top-3.5'}`}>
           <div className={`flex items-center gap-1 rounded-full bg-[#a2dd00] shadow-[0_0_30px_rgba(162,221,0,0.4)] ${compact ? 'px-3 py-1' : 'px-3.5 py-1.5'}`}>
             <Flame className={`${compact ? 'h-2.5 w-2.5' : 'h-3.5 w-3.5'} text-[#141a1c]`} />
-            <span className={`font-extrabold uppercase tracking-[0.08em] text-[#141a1c] ${compact ? 'text-[8px]' : 'text-[9px]'}`}>Mais Popular</span>
+            <span className={`font-extrabold uppercase tracking-[0.08em] text-[#141a1c] ${compact ? 'text-[8px]' : 'text-[9px]'}`}>{t('badges.mostPopular')}</span>
           </div>
         </div>
       )}
@@ -143,8 +153,8 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
           </div>
           <div>
             <h3 className="text-[15px] font-bold text-[#f3f0ed]">{plan.name}</h3>
-            <span className={`text-[#f3f0ed]/30 ${compact ? 'text-[11px]' : 'text-[10px]'} ${PLAN_SUBTITLES[plan.slug] ? '' : 'invisible'}`}>
-              {PLAN_SUBTITLES[plan.slug] || '\u00A0'}
+            <span className={`text-[#f3f0ed]/30 ${compact ? 'text-[11px]' : 'text-[10px]'} ${subtitle ? '' : 'invisible'}`}>
+              {subtitle || '\u00A0'}
             </span>
           </div>
         </div>
@@ -154,7 +164,7 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
           {originalPrice && !isFree ? (
             <div className={`flex items-center gap-1 ${compact ? 'mb-0.5' : 'mb-1'}`}>
               <span className="text-[12px] text-[#f3f0ed]/25 line-through">
-                {formatPriceRaw(originalPrice)}
+                {formatCurrency(originalPrice, plan.currency || 'BRL', locale)}
               </span>
               {discountLabel && (
                 <span className={`rounded bg-[#a2dd00]/15 font-bold text-[#a2dd00] ${compact ? 'px-1 py-0.5 text-[10px]' : 'px-1.5 py-0.5 text-[9px]'}`}>
@@ -170,9 +180,9 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
           <div className="flex items-baseline gap-0.5">
             <span className={`text-[22px] font-extrabold leading-none tracking-tight ${isFree ? 'text-[#a2dd00]' : isCreator ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'
               }`}>
-              {main}
+              {mainPrice}
             </span>
-            {sub && <span className={`text-[#f3f0ed]/30 ${compact ? 'text-[12px]' : 'text-[11px]'}`}>{sub}</span>}
+            {subPrice && <span className={`text-[#f3f0ed]/30 ${compact ? 'text-[12px]' : 'text-[11px]'}`}>{subPrice}</span>}
           </div>
         </div>
 
@@ -183,19 +193,19 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
           <div>
             <span className={`font-extrabold tabular-nums ${compact ? 'text-[15px]' : 'text-[16px]'} ${isCreator ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'
               }`}>
-              {isFree ? plan.creditsPerMonth : plan.creditsPerMonth.toLocaleString('pt-BR')}
+              {plan.creditsPerMonth.toLocaleString(locale)}
             </span>
             <span className={`ml-1 text-[#f3f0ed]/30 ${compact ? 'text-[12px]' : 'text-[11px]'}`}>
-              créditos{isFree ? '' : '/mês'}
+              {isFree ? t('credits') : t('creditsPerMonth')}
             </span>
           </div>
         </div>
 
         {/* Social proof */}
-        {socialProof && !isDowngrade && (
+        {SocialProofIcon && !isDowngrade && (
           <p className={`flex items-center gap-1.5 font-medium text-[#a2dd00]/70 ${compact ? 'mt-1.5 text-[12px]' : 'mt-3 text-[11px]'}`}>
-            <socialProof.icon className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
-            {socialProof.text}
+            <SocialProofIcon className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
+            {socialProofText}
           </p>
         )}
 
@@ -204,17 +214,23 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
 
         {/* Features */}
         <ul className={`flex flex-col ${compact ? 'min-h-[70px] gap-1.5' : 'min-h-[110px] gap-2.5'}`}>
-          {features.map((f) => (
-            <li key={f} className={`flex items-start ${compact ? 'gap-1.5' : 'gap-2.5'}`}>
-              <div className={`shrink-0 flex items-center justify-center rounded-full ${compact ? 'mt-[1px] h-[12px] w-[12px]' : 'mt-[2px] h-[16px] w-[16px]'
-                } ${isCreator ? 'bg-[#a2dd00]/20' : isCurrent ? 'bg-[#f3f0ed]/10' : 'bg-[#f3f0ed]/[0.06]'
-                }`}>
-                <Check className={`${compact ? 'h-1.5 w-1.5' : 'h-2.5 w-2.5'} ${isCreator ? 'text-[#a2dd00]' : isCurrent ? 'text-[#f3f0ed]/60' : 'text-[#f3f0ed]/45'
-                  }`} />
-              </div>
-              <span className="text-[12px] leading-snug text-[#f3f0ed]/55">{f}</span>
-            </li>
-          ))}
+          {featureEntries.map((entry) => {
+            const label = t(
+              entry.key as 'features.emailSupport',
+              entry.values as Record<string, number | string> | undefined,
+            );
+            return (
+              <li key={entry.key} className={`flex items-start ${compact ? 'gap-1.5' : 'gap-2.5'}`}>
+                <div className={`shrink-0 flex items-center justify-center rounded-full ${compact ? 'mt-[1px] h-[12px] w-[12px]' : 'mt-[2px] h-[16px] w-[16px]'
+                  } ${isCreator ? 'bg-[#a2dd00]/20' : isCurrent ? 'bg-[#f3f0ed]/10' : 'bg-[#f3f0ed]/[0.06]'
+                  }`}>
+                  <Check className={`${compact ? 'h-1.5 w-1.5' : 'h-2.5 w-2.5'} ${isCreator ? 'text-[#a2dd00]' : isCurrent ? 'text-[#f3f0ed]/60' : 'text-[#f3f0ed]/45'
+                    }`} />
+                </div>
+                <span className="text-[12px] leading-snug text-[#f3f0ed]/55">{label}</span>
+              </li>
+            );
+          })}
         </ul>
 
         {/* Generation examples */}
@@ -222,17 +238,30 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
           {generationExamples.length > 0 && (
             <>
               <p className={`font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/20 ${compact ? 'text-[10px]' : 'text-[9px]'}`}>
-                O que dá pra criar
+                {t('whatYouCanCreate')}
               </p>
-              {generationExamples.map((ex) => (
-                <div key={ex.label} className="flex items-center justify-between">
-                  <span className={`text-[#f3f0ed]/35 ${compact ? 'text-[11px]' : 'text-[10px]'}`}>{ex.label}</span>
-                  <span className={`font-semibold ${compact ? 'text-[11px]' : 'text-[10px]'} ${isCreator ? 'text-[#a2dd00]/60' : isCurrent ? 'text-[#f3f0ed]/55' : 'text-[#f3f0ed]/45'
-                    }`}>
-                    {ex.count}
-                  </span>
-                </div>
-              ))}
+              {generationExamples.map((ex) => {
+                let countLabel: string;
+                if (ex.blocked) {
+                  countLabel = t('units.blocked');
+                } else if (plan.slug === 'free' && ex.unit === 'video') {
+                  countLabel = t('units.videoFree', { count: ex.countNumber });
+                } else {
+                  countLabel = t(
+                    `units.${ex.unit}` as 'units.image',
+                    { count: ex.countNumber },
+                  );
+                }
+                return (
+                  <div key={ex.label} className="flex items-center justify-between">
+                    <span className={`text-[#f3f0ed]/35 ${compact ? 'text-[11px]' : 'text-[10px]'}`}>{ex.label}</span>
+                    <span className={`font-semibold ${compact ? 'text-[11px]' : 'text-[10px]'} ${isCreator ? 'text-[#a2dd00]/60' : isCurrent ? 'text-[#f3f0ed]/55' : 'text-[#f3f0ed]/45'
+                      }`}>
+                      {countLabel}
+                    </span>
+                  </div>
+                );
+              })}
             </>
           )}
         </div>

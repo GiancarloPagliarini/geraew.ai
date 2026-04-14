@@ -11,17 +11,25 @@ import {
   Shield,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { CreditPackage } from '@/lib/api';
-import { getPackageBadge, getBoostMeta } from '@/lib/plans';
+import { formatCurrency, getBoostMetaKey, getPackageBadge } from '@/lib/plans';
 
 interface CreditPackagesGridProps {
   packages: CreditPackage[];
+  /**
+   * Currency code to format package prices (e.g. "BRL", "USD").
+   * Defaults to "BRL" for backward compatibility.
+   */
+  currency?: string;
   compact?: boolean;
 }
 
-export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProps) {
+export function CreditPackagesGrid({ packages, currency = 'BRL', compact }: CreditPackagesGridProps) {
+  const t = useTranslations('editorPlans');
+  const locale = useLocale();
   const { accessToken } = useAuth();
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
 
@@ -63,14 +71,18 @@ export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProp
         const badge = getPackageBadge(i, activePackages.length);
         const isPopular = badge === 'popular';
         const isBest = badge === 'best';
-        const meta = getBoostMeta(pkg);
+        const boostKey = getBoostMetaKey(pkg);
+        const boostLabel = boostKey
+          ? t(`boost.${boostKey}.label` as 'boost.boost-p.label')
+          : pkg.name;
+        const boostDescription = boostKey
+          ? t(`boost.${boostKey}.description` as 'boost.boost-p.description')
+          : '';
         const pricePerCredit = pkg.priceCents / pkg.credits;
         const savingsPct =
           basePricePerCredit > 0
             ? Math.round((1 - pricePerCredit / basePricePerCredit) * 100)
             : 0;
-        const priceInt = Math.floor(pkg.priceCents / 100);
-        const priceCents = String(pkg.priceCents % 100).padStart(2, '0');
         const isPurchasing = purchasingId === pkg.id;
         const originalPrice = getOriginalPrice(pkg.priceCents);
         const discountPct = getDiscountPct(pkg.priceCents);
@@ -111,7 +123,7 @@ export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProp
                 <div className={`flex items-center gap-1 rounded-full border border-[#f3f0ed]/15 bg-[#1a2123] shadow-lg ${compact ? 'px-3 py-0.5' : 'px-4 py-1'}`}>
                   <Flame className={`${compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} text-[#f3f0ed]/60`} />
                   <span className={`font-bold uppercase tracking-[0.08em] text-[#f3f0ed] ${compact ? 'text-[10px]' : 'text-[10px]'}`}>
-                    Mais Popular
+                    {t('badges.mostPopular')}
                   </span>
                 </div>
               </div>
@@ -121,7 +133,7 @@ export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProp
                 <div className={`flex items-center gap-1 rounded-full bg-[#a2dd00] shadow-[0_0_30px_rgba(162,221,0,0.4)] ${compact ? 'px-3 py-0.5' : 'px-5 py-1.5'}`}>
                   <Crown className={`${compact ? 'h-2.5 w-2.5' : 'h-3.5 w-3.5'} text-[#141a1c]`} />
                   <span className={`font-extrabold uppercase tracking-[0.08em] text-[#141a1c] ${compact ? 'text-[10px]' : 'text-[11px]'}`}>
-                    Melhor Valor
+                    {t('badges.bestValue')}
                   </span>
                 </div>
               </div>
@@ -137,9 +149,9 @@ export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProp
                   <PkgIcon className={`${compact ? 'h-3 w-3' : 'h-4 w-4'} ${isBest ? 'text-[#a2dd00]' : 'text-[#f3f0ed]/40'}`} />
                 </div>
                 <div>
-                  <h3 className={`font-bold text-[#f3f0ed] ${compact ? 'text-[15px]' : 'text-[15px]'}`}>{meta.label}</h3>
-                  {meta.description && (
-                    <span className={`text-[#f3f0ed]/30 ${compact ? 'text-[11px]' : 'text-[10px]'}`}>{meta.description}</span>
+                  <h3 className={`font-bold text-[#f3f0ed] ${compact ? 'text-[15px]' : 'text-[15px]'}`}>{boostLabel}</h3>
+                  {boostDescription && (
+                    <span className={`text-[#f3f0ed]/30 ${compact ? 'text-[11px]' : 'text-[10px]'}`}>{boostDescription}</span>
                   )}
                 </div>
               </div>
@@ -149,17 +161,17 @@ export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProp
                 {discountPct > 0 && (
                   <div className={`flex items-center gap-1.5 ${compact ? 'mb-0.5' : 'mb-1'}`}>
                     <span className={`text-[#f3f0ed]/25 line-through ${compact ? 'text-[12px]' : 'text-[12px]'}`}>
-                      R$ {(originalPrice / 100).toLocaleString('pt-BR')},{String(originalPrice % 100).padStart(2, '0')}
+                      {formatCurrency(originalPrice, currency, locale)}
                     </span>
                     <span className={`rounded-md bg-[#a2dd00]/15 font-bold text-[#a2dd00] ${compact ? 'px-1 py-0.5 text-[10px]' : 'px-1.5 py-0.5 text-[9px]'}`}>
-                      {discountPct}% OFF
+                      {t('badges.discountOff', { pct: discountPct })}
                     </span>
                   </div>
                 )}
                 <div className="flex items-baseline gap-0.5">
                   <span className={`font-extrabold leading-none tracking-tight ${compact ? 'text-[22px]' : 'text-[22px]'} ${isBest ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'
                     }`}>
-                    R$ {priceInt.toLocaleString('pt-BR')},{priceCents}
+                    {formatCurrency(pkg.priceCents, currency, locale)}
                   </span>
                 </div>
               </div>
@@ -171,16 +183,16 @@ export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProp
                 <div>
                   <span className={`font-extrabold tabular-nums ${compact ? 'text-[15px]' : 'text-[16px]'} ${isBest ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'
                     }`}>
-                    {pkg.credits.toLocaleString('pt-BR')}
+                    {pkg.credits.toLocaleString(locale)}
                   </span>
-                  <span className={`ml-1 text-[#f3f0ed]/30 ${compact ? 'text-[12px]' : 'text-[11px]'}`}>créditos</span>
+                  <span className={`ml-1 text-[#f3f0ed]/30 ${compact ? 'text-[12px]' : 'text-[11px]'}`}>{t('credits')}</span>
                 </div>
               </div>
 
               {/* Savings callout */}
               {savingsPct > 0 && (
                 <p className={`font-medium text-[#a2dd00]/70 ${compact ? 'mt-1.5 text-[12px]' : 'mt-3 text-[11px]'}`}>
-                  Economize {savingsPct}% por crédito
+                  {t('packages.saveByCredit', { pct: savingsPct })}
                 </p>
               )}
 
@@ -189,19 +201,17 @@ export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProp
 
               {/* Perks */}
               <ul className={`flex flex-col ${compact ? 'min-h-[55px] gap-1.5' : 'min-h-[80px] gap-2.5'}`}>
-                {[
-                  'Créditos entram na hora',
-                  'Nunca expiram',
-                  'Acumulam com os do plano',
-                ].map((perk) => (
-                  <li key={perk} className="flex items-start gap-2">
+                {(['instant', 'neverExpire', 'stackWithPlan'] as const).map((perkKey) => (
+                  <li key={perkKey} className="flex items-start gap-2">
                     <div
                       className={`mt-[1px] flex shrink-0 items-center justify-center rounded-full ${compact ? 'h-[13px] w-[13px]' : 'h-[16px] w-[16px] mt-[2px]'} ${isBest ? 'bg-[#a2dd00]/20' : 'bg-[#f3f0ed]/[0.06]'
                         }`}
                     >
                       <Check className={`${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'} ${isBest ? 'text-[#a2dd00]' : 'text-[#f3f0ed]/45'}`} />
                     </div>
-                    <span className={`leading-snug text-[#f3f0ed]/55 ${compact ? 'text-[12px]' : 'text-[12px]'}`}>{perk}</span>
+                    <span className={`leading-snug text-[#f3f0ed]/55 ${compact ? 'text-[12px]' : 'text-[12px]'}`}>
+                      {t(`packages.perks.${perkKey}` as 'packages.perks.instant')}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -223,7 +233,7 @@ export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProp
                   <Loader2 className={`animate-spin ${compact ? 'h-3 w-3' : 'h-4 w-4'}`} />
                 ) : (
                   <>
-                    Comprar agora
+                    {t('actions.buyNow')}
                     <ArrowRight className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
                   </>
                 )}
@@ -233,7 +243,7 @@ export function CreditPackagesGrid({ packages, compact }: CreditPackagesGridProp
               {!compact && (
                 <p className="mt-2.5 flex items-center justify-center gap-1.5 text-[10px] text-[#f3f0ed]/20">
                   <Shield className="h-3 w-3" />
-                  Pagamento único · Sem assinatura
+                  {t('packages.trust')}
                 </p>
               )}
             </div>

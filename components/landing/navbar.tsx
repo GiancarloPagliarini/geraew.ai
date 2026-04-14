@@ -6,17 +6,20 @@ import { Menu, X } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useLoginModal } from "@/lib/login-modal-context";
 import Image from "next/image";
-
-const LINKS = [
-  { label: "Funcionalidades", href: "#funcionalidades" },
-  { label: "Resultados", href: "#resultados" },
-  { label: "Preços", href: "#precos" },
-  { label: "FAQ", href: "#faq" },
-];
+import { useTranslations } from "next-intl";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 
 export function Navbar() {
   const { user, loading } = useAuth();
   const { openLoginModal } = useLoginModal();
+  const tNav = useTranslations("nav");
+
+  const LINKS = [
+    { label: tNav("features"), href: "#funcionalidades" },
+    { label: tNav("results"), href: "#resultados" },
+    { label: tNav("pricing"), href: "#precos" },
+    { label: tNav("faq"), href: "#faq" },
+  ];
   const isLoggedIn = !!user;
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -84,6 +87,7 @@ export function Navbar() {
 
           {/* desktop CTAs */}
           <div className="hidden items-center gap-3 md:flex">
+            <LocaleSwitcher />
             {loading ? (
               <>
                 <div className="h-9 w-20 animate-pulse rounded-xl bg-landing-text/8" />
@@ -102,13 +106,13 @@ export function Navbar() {
                   onClick={() => openLoginModal()}
                   className="rounded-xl border border-[#f3f0ed]/[0.08] px-5 py-2.5 text-[13px] font-medium text-[#f3f0ed]/60 transition-all duration-300 hover:border-[#f3f0ed]/[0.15] hover:text-[#f3f0ed]"
                 >
-                  Entrar
+                  {tNav("login")}
                 </button>
                 <a
                   href="/workspace?register=true"
                   className="rounded-xl bg-landing-accent px-5 py-2.5 text-[13px] font-semibold text-[#1a2123] transition-all duration-300 hover:shadow-[0_0_24px_rgba(162,221,0,0.3)] hover:brightness-110"
                 >
-                  Testar Grátis
+                  {tNav("tryFree")}
                 </a>
               </>
             )}
@@ -168,6 +172,7 @@ export function Navbar() {
 
         {/* CTAs */}
         <div className="flex flex-col gap-3 border-t border-[#f3f0ed]/[0.06] px-4 py-6">
+          <LocaleSwitcher className="self-start" />
           {loading ? (
             <>
               <div className="h-12 w-full animate-pulse rounded-xl bg-landing-text/8" />
@@ -186,14 +191,14 @@ export function Navbar() {
                 onClick={() => { setOpen(false); openLoginModal(); }}
                 className="w-full rounded-xl border border-[#f3f0ed]/[0.08] py-3.5 text-center text-[14px] font-medium text-[#f3f0ed]/60 transition-all hover:border-[#f3f0ed]/[0.15] hover:text-[#f3f0ed]"
               >
-                Entrar
+                {tNav("login")}
               </button>
               <a
                 href="/workspace?register=true"
                 onClick={() => setOpen(false)}
                 className="block rounded-xl bg-landing-accent py-3.5 text-center text-[14px] font-semibold text-[#1a2123] transition-all hover:brightness-110"
               >
-                Testar Grátis
+                {tNav("tryFree")}
               </a>
             </>
           )}

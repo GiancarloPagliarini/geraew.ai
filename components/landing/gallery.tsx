@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ArrowRight } from "lucide-react";
 import { useScrollReveal } from "./use-scroll-reveal";
 import { useAuth } from "@/lib/auth-context";
@@ -55,6 +56,7 @@ function LazyVideo({ src }: { src: string }) {
 }
 
 export function Gallery() {
+  const t = useTranslations("gallery");
   const { user } = useAuth();
   const isLoggedIn = !!user;
   const { ref, isVisible } = useScrollReveal();
@@ -72,14 +74,13 @@ export function Gallery() {
           }}
         >
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-landing-accent">
-            Galeria
+            {t("tag")}
           </span>
           <h2 className="mt-4 font-sora text-[26px] font-bold tracking-tight text-landing-text sm:mt-5 sm:text-3xl lg:text-[44px]">
-            Veja o que já está sendo criado com a Geraew.
+            {t("title")}
           </h2>
           <p className="mt-3.5 text-[15px] leading-relaxed text-landing-text-secondary sm:mt-5 sm:text-[17px]">
-            Cada imagem e vídeo abaixo foi gerado 100% por inteligência
-            artificial dentro da nossa plataforma.
+            {t("subtitle")}
           </p>
         </div>
 
@@ -95,7 +96,7 @@ export function Gallery() {
               ) : (
                 <Image
                   src={item.src}
-                  alt={`Resultado ${i + 1}`}
+                  alt={t("alt", { index: i + 1 })}
                   width={400}
                   height={500}
                   loading="lazy"
@@ -113,7 +114,7 @@ export function Gallery() {
             href="/workspace"
             className="group inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-6 py-3 text-[13px] font-bold text-landing-bg-secondary shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-colors duration-200 hover:bg-[#b5e82d] active:scale-[0.98] sm:px-7 sm:py-3.5 sm:text-[14px]"
           >
-            {isLoggedIn ? "Acessar Plataforma" : "Crie o seu agora"}
+            {isLoggedIn ? t("ctaLoggedIn") : t("cta")}
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
           </a>
         </div>

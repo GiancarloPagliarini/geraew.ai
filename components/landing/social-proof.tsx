@@ -1,14 +1,15 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCountUp } from "./use-count-up";
 import { Star } from "lucide-react";
 
 /* TODO: SUBSTITUIR POR NÚMEROS REAIS */
 const STATS = [
-  { value: 1500, label: "Criadores Ativos", prefix: "+" },
-  { value: 25000, label: "Imagens Geradas", prefix: "+" },
-  { value: 5000, label: "Vídeos Criados", prefix: "+" },
-  // { value: 49, label: "Avaliação Média", isRating: true },
+  { value: 1500, labelKey: "creators", prefix: "+" },
+  { value: 25000, labelKey: "images", prefix: "+" },
+  { value: 5000, labelKey: "videos", prefix: "+" },
+  // { value: 49, labelKey: "rating", isRating: true },
 ] as const;
 
 function Stat({
@@ -46,12 +47,18 @@ function Stat({
 }
 
 export function SocialProof() {
+  const t = useTranslations("socialProof");
   return (
     <section className="relative border-y border-[#f3f0ed]/[0.04] bg-landing-bg-secondary py-10 sm:py-12">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="grid grid-cols-2 gap-5 sm:gap-10 md:flex md:items-center md:justify-center md:gap-16 lg:gap-20">
           {STATS.map((s) => (
-            <Stat key={s.label} {...s} />
+            <Stat
+              key={s.labelKey}
+              value={s.value}
+              prefix={s.prefix}
+              label={t(s.labelKey)}
+            />
           ))}
         </div>
       </div>

@@ -34,11 +34,18 @@ export class ApiError extends Error {
   }
 }
 
+function getCurrentLocale(): string {
+  if (typeof document === 'undefined') return 'pt-BR';
+  const match = document.cookie.match(/(?:^|; )geraew-locale=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : 'pt-BR';
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      'Accept-Language': getCurrentLocale(),
       ...options.headers,
     },
   });
@@ -118,6 +125,7 @@ export interface Plan {
   name: string;
   description: string | null;
   priceCents: number;
+  currency: string;
   creditsPerMonth: number;
   maxConcurrentGenerations: number;
   hasWatermark: boolean;
@@ -907,6 +915,15 @@ export const api = {
         method: 'PATCH',
       });
     },
+    updateProfile(
+      accessToken: string,
+      body: { name?: string; avatarUrl?: string; country?: string; locale?: string; currency?: string; timezone?: string },
+    ) {
+      return authRequest<UserProfile>('/api/v1/users/me', accessToken, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+    },
   },
 
   videoEditor: {
@@ -1050,8 +1067,9 @@ export const api = {
     list(accessToken: string) {
       return authRequest<Plan[]>('/api/v1/plans', accessToken);
     },
-    listPublic() {
-      return request<Plan[]>('/api/v1/plans');
+    listPublic(currency?: string) {
+      const qs = currency ? `?currency=${encodeURIComponent(currency)}` : '';
+      return request<Plan[]>(`/api/v1/plans${qs}`);
     },
   },
 

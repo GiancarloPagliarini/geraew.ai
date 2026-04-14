@@ -1,0 +1,154 @@
+{
+  "editorPlans": {
+    "free": "Free",
+    "perMonth": "/mo",
+    "credits": "credits",
+    "creditsPerMonth": "credits/mo",
+    "creditsCount": "{count, number} credits",
+    "units": {
+      "image": "{count, plural, one {# Image} other {# Images}}",
+      "generation": "{count, plural, one {# Generation} other {# Generations}}",
+      "video": "{count, plural, one {# Video} other {# Videos}}",
+      "videoFree": "{count, plural, one {# Free Video} other {# Free Videos}}",
+      "blocked": "Locked"
+    },
+    "badges": {
+      "yourPlan": "Your Plan",
+      "mostPopular": "Most Popular",
+      "bestValue": "Best Value",
+      "discountOff": "{pct}% OFF",
+      "upgrade": "UPGRADE"
+    },
+    "actions": {
+      "upgrade": "Upgrade",
+      "downgrade": "Downgrade",
+      "create": "Get started",
+      "current": "Current plan",
+      "buyNow": "Buy now"
+    },
+    "whatYouCanCreate": "What you can create",
+    "features": {
+      "credits": "{count, number} credits",
+      "emailSupport": "Email support",
+      "prioritySupport": "Priority support",
+      "queuePriority": "Priority in generation queue",
+      "fasterGenerations": "Faster generations",
+      "gallery7": "7 days gallery",
+      "gallery90": "90 days gallery",
+      "gallery180": "180 days gallery",
+      "gallery365": "365 days gallery",
+      "tryNoCommit": "Try with no commitment"
+    },
+    "subtitles": {
+      "starter": "Explorer",
+      "creator": "Creator",
+      "pro": "Producer",
+      "studio": "Professional"
+    },
+    "socialProof": {
+      "free": "Test our capabilities!",
+      "starter": "Ideal for personal projects",
+      "creator": "Chosen by 68% of creators",
+      "pro": "For serious creators",
+      "studio": "For teams and agencies"
+    },
+    "boost": {
+      "boost-p": {
+        "label": "Emergency",
+        "description": "Quick top-up to keep generating"
+      },
+      "boost-m": {
+        "label": "Breather",
+        "description": "Extra credits for bigger projects"
+      },
+      "boost-g": {
+        "label": "Pre-upgrade",
+        "description": "Almost a plan — great to test"
+      }
+    },
+    "packages": {
+      "saveByCredit": "Save {pct}% per credit",
+      "perks": {
+        "instant": "Credits available instantly",
+        "neverExpire": "Never expire",
+        "stackWithPlan": "Stack with your plan credits"
+      },
+      "trust": "One-time payment · No subscription"
+    },
+    "plansModal": {
+      "limitedOffer": "Limited-time offer",
+      "titlePlans": "Choose your plan and start creating",
+      "titleCredits": "One-time credit packages",
+      "plansSubtitle": "Over {count} creators are already producing content.",
+      "creatorsCount": "2,400 creators",
+      "creditsSubtitle": "One-time purchase · No subscription · Credits never expire",
+      "cancelAnytime": "Cancel anytime",
+      "stackWithPlan": "Stack with your plan credits",
+      "instant": "Available instantly",
+      "tabPlans": "Plans",
+      "tabCredits": "Credit Packages",
+      "noCancelFee": "No cancellation fee",
+      "creditsRenew": "Credits renew monthly"
+    },
+    "manage": {
+      "title": "Manage subscription",
+      "subtitle": "Your plan and payment details",
+      "plan": "Plan",
+      "noPlan": "No plan",
+      "active": "Active",
+      "canceling": "Canceling",
+      "scheduledChange": "Switches to <name>{planName}</name> ({price}/mo) on next renewal",
+      "undo": "Undo",
+      "undoing": "Canceling...",
+      "remainingCredits": "Remaining credits",
+      "planCost": "Plan cost",
+      "nextPayment": "Next payment",
+      "canceled": "Canceled",
+      "onDate": "on {date}",
+      "accessUntil": "access until {date}",
+      "amountOff": "- {amount}",
+      "discountMonths": " ({m}m)",
+      "manageBillingPortal": "Manage cards and invoices",
+      "changePlan": "Change plan",
+      "willCancelOn": "Subscription will be canceled on {date}.",
+      "reactivate": "Reactivate subscription",
+      "reactivating": "Reactivating...",
+      "needToCancel": "Need to cancel? Click here",
+      "freeUserMessage": "You're on the free plan. Upgrade to unlock more credits and features.",
+      "perMonthShort": "/mo",
+      "toasts": {
+        "downgradeScheduled": "Downgrade scheduled",
+        "downgradeScheduledDesc": "Your plan will change on the next renewal.",
+        "downgradeError": "Downgrade failed",
+        "tryAgain": "Please try again.",
+        "upgradeError": "Upgrade failed",
+        "portalError": "Could not open portal",
+        "subscriptionCanceled": "Subscription canceled",
+        "subscriptionCanceledDesc": "You'll have access until the end of the current period.",
+        "cancelError": "Cancel failed",
+        "offerDiscountTitle": "Discount applied!",
+        "offerBonusTitle": "Bonus credits added!",
+        "offerPauseTitle": "Subscription paused!",
+        "offerPauseDesc": "No charges for 30 days.",
+        "offerAcceptedTitle": "Offer accepted!",
+        "offerApplyError": "Could not apply offer",
+        "downgradeUndone": "Downgrade canceled",
+        "downgradeUndoneDesc": "Your current plan will be kept.",
+        "downgradeUndoError": "Could not cancel downgrade",
+        "reactivated": "Subscription reactivated",
+        "reactivatedDesc": "Your subscription will continue normally.",
+        "reactivateError": "Reactivation failed",
+        "changePlanError": "Could not change plan"
+      },
+      "retentionLostBenefits": {
+        "allCredits": "All credits from the {plan} plan",
+        "speedPriority": "Speed and priority on generations",
+        "extendedGallery": "Extended gallery access",
+        "prioritySupport": "Priority support",
+        "noWatermark": "Watermark-free generations",
+        "currentPlanBenefits": "Credits and features from your current plan",
+        "creditsLess": "{count, number} fewer monthly credits"
+      }
+    }
+  }
+}

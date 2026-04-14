@@ -8,6 +8,7 @@ import Joyride, {
 } from 'react-joyride';
 import { useEffect, useState } from 'react';
 import { GraduationCap, Smile, SquareMousePointer, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 
@@ -38,25 +39,10 @@ const steps: Step[] = [
   },
 ];
 
-const stepContent: Record<
-  string,
-  { icon: React.ReactNode; heading: string; body: string; extra?: React.ReactNode }
-> = {
-  welcome: {
-    icon: <Smile className="h-5 w-5 text-[#a2dd00]" />,
-    heading: 'Bem-vindo ao Geraew AI',
-    body: 'Crie imagens incríveis, vídeos cinematográficos e influencers digitais com IA — tudo em um só lugar. Deixa a gente te guiar rapidinho.',
-  },
-  tutorials: {
-    icon: <GraduationCap className="h-5 w-5 text-[#a2dd00]" />,
-    heading: 'Tutoriais da plataforma',
-    body: 'Este botão abre os tutoriais da plataforma. Aprenda a gerar imagens, vídeos e criar sua IA Influencer.',
-  },
-  finish: {
-    icon: <SquareMousePointer className="h-5 w-5 text-[#a2dd00]" />,
-    heading: 'Tudo pronto. Vamos criar!',
-    body: 'Use no painel "Gerar imagem" para adicionar um painel, escreva seu prompt e gere sua primeira imagem com IA :D',
-  },
+const stepIcons: Record<string, React.ReactNode> = {
+  welcome: <Smile className="h-5 w-5 text-[#a2dd00]" />,
+  tutorials: <GraduationCap className="h-5 w-5 text-[#a2dd00]" />,
+  finish: <SquareMousePointer className="h-5 w-5 text-[#a2dd00]" />,
 };
 
 function TourTooltip({
@@ -70,7 +56,10 @@ function TourTooltip({
   size,
 }: TooltipRenderProps) {
   const key = step.title as string;
-  const content = stepContent[key];
+  const icon = stepIcons[key];
+  const t = useTranslations('editorMisc.onboarding');
+  const heading = t(`steps.${key}.heading`);
+  const body = t(`steps.${key}.body`);
 
   return (
     <div
@@ -89,16 +78,13 @@ function TourTooltip({
       {/* Icon + heading */}
       <div className="flex items-center gap-2.5 pr-8">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#a2dd00]/10 ring-1 ring-[#a2dd00]/20">
-          {content.icon}
+          {icon}
         </div>
-        <h3 className="text-sm font-semibold text-[#f3f0ed] leading-tight">{content.heading}</h3>
+        <h3 className="text-sm font-semibold text-[#f3f0ed] leading-tight">{heading}</h3>
       </div>
 
       {/* Body */}
-      <p className="mt-3 text-xs leading-relaxed text-[#f3f0ed]/50">{content.body}</p>
-
-      {/* Extra */}
-      {content.extra && <div className="mt-3">{content.extra}</div>}
+      <p className="mt-3 text-xs leading-relaxed text-[#f3f0ed]/50">{body}</p>
 
       {/* Footer */}
       <div className="mt-4 flex items-center justify-between">
@@ -124,14 +110,14 @@ function TourTooltip({
               {...skipProps}
               className="text-[11px] text-[#f3f0ed]/30 transition-colors hover:text-[#f3f0ed]/60"
             >
-              Pular
+              {t('actions.skip')}
             </button>
           )}
           <button
             {...primaryProps}
             className="rounded-lg bg-[#a2dd00] px-3.5 py-1.5 text-[11px] font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95"
           >
-            {isLastStep ? 'Começar a criar' : 'Próximo →'}
+            {isLastStep ? t('actions.finish') : t('actions.next')}
           </button>
         </div>
       </div>

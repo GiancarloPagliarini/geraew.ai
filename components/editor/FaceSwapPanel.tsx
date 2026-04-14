@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
 import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
@@ -34,17 +35,6 @@ import { GenerationPreview } from './GenerationPreview';
 // ─── types ────────────────────────────────────────────────────────────────────
 
 type GenState = 'idle' | 'generating' | 'done';
-
-const LOADING_MESSAGES = [
-  'ANALISANDO ROSTO...',
-  'MAPEANDO EXPRESSÕES...',
-  'AJUSTANDO TOM DE PELE...',
-  'COMBINANDO ILUMINAÇÃO...',
-  'INTEGRANDO NA CENA...',
-  'REFINANDO DETALHES...',
-  'RENDERIZANDO RESULTADO...',
-  'QUASE PRONTO...',
-];
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_IMAGE_DIMENSION = 1920;
@@ -85,6 +75,9 @@ interface FaceSwapPanelProps {
 }
 
 export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelProps) {
+  const t = useTranslations('editorPanels.faceSwap');
+  const tCommon = useTranslations('editorPanels.common');
+  const LOADING_MESSAGES = t.raw('loadingMessages') as string[];
   const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating } = useEditor();
   const { accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
@@ -182,7 +175,7 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
   // Document title
   useEffect(() => {
     if (genState === 'generating') {
-      document.title = 'Geraew AI - Face Swap';
+      document.title = t('docTitleGenerating');
     } else {
       document.title = 'Geraew AI';
     }
@@ -208,7 +201,7 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
       clearPollTimer();
       clearSSE();
       setGenState('idle');
-      setErrorMsg(showGenerationError({ errorMessage: gen.errorMessage, fallback: 'Erro ao gerar imagem.' }));
+      setErrorMsg(showGenerationError({ errorMessage: gen.errorMessage, fallback: tCommon('errors.generateImage') }));
       refetchCredits();
     },
   });
@@ -220,19 +213,19 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
   function handleImageSelect(
     e: React.ChangeEvent<HTMLInputElement>,
     setter: typeof setSourceImage,
-    label: string,
+    successMsg: string,
   ) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
 
     if (file.size > MAX_IMAGE_SIZE) {
-      toast.error('Imagem deve ter no maximo 10MB.');
+      toast.error(tCommon('errors.imageMax10MB'));
       return;
     }
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Formato de imagem invalido.');
+      toast.error(tCommon('errors.invalidImageFormat'));
       return;
     }
 
@@ -241,7 +234,7 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
       const rawDataUrl = ev.target?.result as string;
       const { dataUrl, mimeType } = await compressImage(rawDataUrl, file.type);
       setter({ base64: dataUrl.split(',')[1], mime_type: mimeType, preview: dataUrl });
-      toast.success(`${label} adicionada!`);
+      toast.success(successMsg);
     };
     reader.readAsDataURL(file);
   }
@@ -267,7 +260,7 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
 
     for (const file of files) {
       if (file.size > MAX_IMAGE_SIZE) {
-        toast.error('Imagem deve ter no maximo 10MB.');
+        toast.error(tCommon('errors.imageMax10MB'));
         continue;
       }
       const reader = new FileReader();
@@ -277,10 +270,10 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
         const imgData = { base64: dataUrl.split(',')[1], mime_type: mimeType, preview: dataUrl };
         if (!sourceImage) {
           setSourceImage(imgData);
-          toast.success('Foto do rosto adicionada!');
+          toast.success(t('toasts.faceAdded'));
         } else if (!targetImage) {
           setTargetImage(imgData);
-          toast.success('Foto da cena adicionada!');
+          toast.success(t('toasts.sceneAdded'));
         }
       };
       reader.readAsDataURL(file);
@@ -297,10 +290,10 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
           const imgData = { base64: dataUrl.split(',')[1], mime_type: mimeType, preview: dataUrl };
           if (!sourceImage) {
             setSourceImage(imgData);
-            toast.success('Foto do rosto adicionada!');
+            toast.success(t('toasts.faceAdded'));
           } else if (!targetImage) {
             setTargetImage(imgData);
-            toast.success('Foto da cena adicionada!');
+            toast.success(t('toasts.sceneAdded'));
           }
         };
         reader.readAsDataURL(blob);
@@ -369,14 +362,14 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
           clearProgressTimer();
           clearMsgTimer();
           setGenState('idle');
-          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: 'Erro ao gerar imagem.' }));
+          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: tCommon('errors.generateImage') }));
           refetchCredits();
         }
       } catch {
         clearPollTimer();
         clearProgressTimer();
         setGenState('idle');
-        setErrorMsg(showGenerationError({ fallback: 'Erro ao verificar status da geracao.' }));
+        setErrorMsg(showGenerationError({ fallback: tCommon('errors.checkStatus') }));
       }
     }, 3000);
   }
@@ -424,7 +417,7 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
           clearPollTimer();
           clearSSE();
           setGenState('idle');
-          setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: 'Erro ao gerar imagem.' }));
+          setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: tCommon('errors.generateImage') }));
           refetchCredits();
         },
         onError: () => {
@@ -435,7 +428,7 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
       clearProgressTimer();
       clearMsgTimer();
       setGenState('idle');
-      setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: 'Erro ao iniciar geracao.' }));
+      setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: tCommon('errors.startGeneration') }));
     }
   }
 
@@ -489,7 +482,7 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
           <div className="flex items-center gap-2">
             <Repeat2 className="h-4 w-4 text-[#a2dd00]" />
             <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
-              FACE SWAP
+              {t('header')}
             </span>
           </div>
           <div className="flex items-center gap-1">
@@ -528,17 +521,17 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
                       className="flex h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/8 bg-[#1e494b]/20 text-xs font-semibold text-[#f3f0ed]/60 transition-all hover:border-[#a2dd00]/30 hover:text-[#a2dd00]"
                     >
                       <Download className="h-3.5 w-3.5" />
-                      Download
+                      {tCommon('download')}
                     </a>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={4}>Baixar imagem</TooltipContent>
+                  <TooltipContent side="bottom" sideOffset={4}>{tCommon('downloadImage')}</TooltipContent>
                 </Tooltip>
               </div>
               <button
                 onClick={handleDiscard}
                 className="flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/6 text-xs font-semibold text-[#f3f0ed]/40 transition-all hover:border-[#f3f0ed]/15 hover:text-[#f3f0ed]/70"
               >
-                Gerar outro
+                {tCommon('generateAnother')}
               </button>
             </div>
           )}
@@ -549,7 +542,7 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
               {/* Source image upload (face) */}
               <div>
                 <label className="mb-1.5 block text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
-                  FOTO DO ROSTO (IMAGEM 1)
+                  {t('labels.facePhoto')}
                 </label>
                 {sourceImage ? (
                   <div className="relative overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08]">
@@ -568,7 +561,7 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/[0.12] bg-[#1e494b]/10 px-3 py-4 text-xs text-[#f3f0ed]/40 transition-all hover:border-[#a2dd00]/30 hover:text-[#a2dd00]/70"
                   >
                     <User className="h-4 w-4" />
-                    Clique ou arraste a foto do rosto
+                    {t('uploads.face')}
                   </button>
                 )}
                 <input
@@ -576,14 +569,14 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   className="hidden"
-                  onChange={(e) => handleImageSelect(e, setSourceImage, 'Foto do rosto')}
+                  onChange={(e) => handleImageSelect(e, setSourceImage, t('toasts.faceAdded'))}
                 />
               </div>
 
               {/* Target image upload (scene/body) */}
               <div>
                 <label className="mb-1.5 block text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
-                  FOTO DA CENA (IMAGEM 2)
+                  {t('labels.scenePhoto')}
                 </label>
                 {targetImage ? (
                   <div className="relative overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08]">
@@ -602,7 +595,7 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/[0.12] bg-[#1e494b]/10 px-3 py-4 text-xs text-[#f3f0ed]/40 transition-all hover:border-[#a2dd00]/30 hover:text-[#a2dd00]/70"
                   >
                     <Image className="h-4 w-4" />
-                    Clique ou arraste a foto da cena
+                    {t('uploads.scene')}
                   </button>
                 )}
                 <input
@@ -610,14 +603,14 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   className="hidden"
-                  onChange={(e) => handleImageSelect(e, setTargetImage, 'Foto da cena')}
+                  onChange={(e) => handleImageSelect(e, setTargetImage, t('toasts.sceneAdded'))}
                 />
               </div>
 
               {/* Resolution */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                  RESOLUCAO
+                  {t('labels.resolution')}
                 </label>
                 <Select value={resolution} onValueChange={setResolution}>
                   <SelectTrigger className="h-9 w-full rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 text-xs text-[#f3f0ed]/80 outline-none transition-all focus:border-[#a2dd00]/40 focus:ring-0 data-placeholder:text-[#f3f0ed]/35 [&>svg]:text-[#f3f0ed]/30">
@@ -642,14 +635,14 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
                   <div className="flex items-center gap-1.5">
                     <Coins className="h-3 w-3 text-[#a2dd00]" />
                     <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">
-                      Custo estimado
+                      {tCommon('estimatedCost')}
                     </span>
                   </div>
                   {estimateLoading ? (
                     <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
                   ) : estimate ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} creditos</span>
+                      <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} {tCommon('credits')}</span>
                       <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
                     </div>
                   ) : null}
@@ -667,11 +660,11 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
                 }}
               >
                 <Wand2 className="h-4 w-4" />
-                TROCAR ROSTO
+                {t('button')}
               </button>
 
               <p className="text-center text-[10px] text-[#f3f0ed]/25">
-                Substitui o rosto e corpo na cena com a pessoa da primeira imagem
+                {t('footnote')}
               </p>
             </>
           )}

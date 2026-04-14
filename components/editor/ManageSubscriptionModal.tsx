@@ -12,9 +12,10 @@ import {
   Settings,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
-import { api, Plan } from '@/lib/api';
-import { formatPrice, PLAN_ORDER, getPlanFeatures } from '@/lib/plans';
+import { api } from '@/lib/api';
+import { formatCurrency, PLAN_ORDER, getPlanFeatureKeys } from '@/lib/plans';
 import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -24,6 +25,8 @@ interface ManageSubscriptionModalProps {
 }
 
 export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProps) {
+  const t = useTranslations('editorPlans');
+  const locale = useLocale();
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -63,10 +66,13 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
       setShowCancelModal(false);
-      toast.success('Assinatura cancelada', { description: 'Voce tera acesso ate o fim do periodo atual.' });
+      toast.success(t('manage.toasts.subscriptionCanceled'), {
+        description: t('manage.toasts.subscriptionCanceledDesc'),
+      });
       onClose();
     },
-    onError: () => toast.error('Erro ao cancelar', { description: 'Tente novamente.' }),
+    onError: () =>
+      toast.error(t('manage.toasts.cancelError'), { description: t('manage.toasts.tryAgain') }),
   });
 
   const acceptOfferMutation = useMutation({
@@ -78,14 +84,23 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
       setShowCancelModal(false);
       setPendingDowngradeSlug(null);
       const messages: Record<string, { title: string; desc: string }> = {
-        discount: { title: 'Desconto aplicado!', desc: data.detail },
-        bonus_credits: { title: 'Creditos bonus adicionados!', desc: data.detail },
-        pause: { title: 'Assinatura pausada!', desc: 'Sem cobranca por 30 dias.' },
+        discount: { title: t('manage.toasts.offerDiscountTitle'), desc: data.detail },
+        bonus_credits: { title: t('manage.toasts.offerBonusTitle'), desc: data.detail },
+        pause: {
+          title: t('manage.toasts.offerPauseTitle'),
+          desc: t('manage.toasts.offerPauseDesc'),
+        },
       };
-      const msg = messages[data.offerType] || { title: 'Oferta aceita!', desc: data.detail };
+      const msg = messages[data.offerType] || {
+        title: t('manage.toasts.offerAcceptedTitle'),
+        desc: data.detail,
+      };
       toast.success(msg.title, { description: msg.desc });
     },
-    onError: () => toast.error('Erro ao aplicar oferta', { description: 'Tente novamente.' }),
+    onError: () =>
+      toast.error(t('manage.toasts.offerApplyError'), {
+        description: t('manage.toasts.tryAgain'),
+      }),
   });
 
   const cancelDowngradeMutation = useMutation({
@@ -93,9 +108,14 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
       queryClient.invalidateQueries({ queryKey: ['subscription', 'current'] });
-      toast.success('Downgrade cancelado', { description: 'Seu plano atual será mantido.' });
+      toast.success(t('manage.toasts.downgradeUndone'), {
+        description: t('manage.toasts.downgradeUndoneDesc'),
+      });
     },
-    onError: () => toast.error('Erro ao cancelar downgrade', { description: 'Tente novamente.' }),
+    onError: () =>
+      toast.error(t('manage.toasts.downgradeUndoError'), {
+        description: t('manage.toasts.tryAgain'),
+      }),
   });
 
   const reactivateMutation = useMutation({
@@ -103,9 +123,14 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
       queryClient.invalidateQueries({ queryKey: ['subscription', 'current'] });
-      toast.success('Assinatura reativada', { description: 'Sua assinatura continuará normalmente.' });
+      toast.success(t('manage.toasts.reactivated'), {
+        description: t('manage.toasts.reactivatedDesc'),
+      });
     },
-    onError: () => toast.error('Erro ao reativar', { description: 'Tente novamente.' }),
+    onError: () =>
+      toast.error(t('manage.toasts.reactivateError'), {
+        description: t('manage.toasts.tryAgain'),
+      }),
   });
 
   useEffect(() => {
@@ -138,9 +163,10 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
 
   // Plan info
   const plan = profile.plan as Record<string, unknown> | null;
-  const planName = (plan?.name as string) || (plan?.planName as string) || 'Sem plano';
+  const planName = (plan?.name as string) || (plan?.planName as string) || t('manage.noPlan');
   const planSlug = (plan?.slug as string) || 'free';
   const planPriceCents = (plan?.priceCents as number) || 0;
+  const planCurrency = (plan?.currency as string) || 'BRL';
   const isFreeUser = planSlug === 'free' || !planSlug;
 
   // Subscription info
@@ -149,7 +175,7 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
   const cancelAtPeriodEnd = (sub?.cancelAtPeriodEnd as boolean) || false;
   const isActive = subStatus?.toLowerCase() === 'active';
   const subEnd = sub?.currentPeriodEnd
-    ? new Date(sub.currentPeriodEnd as string).toLocaleDateString('pt-BR', {
+    ? new Date(sub.currentPeriodEnd as string).toLocaleDateString(locale, {
         day: '2-digit',
         month: 'long',
         year: 'numeric',
@@ -178,16 +204,24 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
   const retentionOfferUsed = !!(subscription as Record<string, unknown> | null)?.retentionOfferAcceptedAt;
 
   // Price formatting
-  const { main: priceMain } = formatPrice(planPriceCents);
+  const priceMain =
+    planPriceCents === 0 ? t('free') : formatCurrency(planPriceCents, planCurrency, locale);
   const discountedPriceCents = discount?.percentOff
     ? Math.round(planPriceCents * (1 - discount.percentOff / 100))
     : discount?.amountOffCents
       ? Math.max(0, planPriceCents - discount.amountOffCents)
       : planPriceCents;
-  const { main: discountedPriceMain } = formatPrice(discountedPriceCents);
+  const discountedPriceMain =
+    discountedPriceCents === 0
+      ? t('free')
+      : formatCurrency(discountedPriceCents, planCurrency, locale);
 
   // Next payment = same as plan cost (unless canceled)
-  const nextPayment = cancelAtPeriodEnd ? 'Cancelado' : (hasDiscount ? discountedPriceMain : priceMain);
+  const nextPayment = cancelAtPeriodEnd
+    ? t('manage.canceled')
+    : hasDiscount
+      ? discountedPriceMain
+      : priceMain;
 
   // Plan change options
   const currentPlanIdx = PLAN_ORDER.indexOf(planSlug);
@@ -206,14 +240,16 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
     setIsDowngrading(true);
     try {
       await api.subscriptions.downgrade(accessToken, targetSlug);
-      toast.success('Downgrade agendado', {
-        description: 'Seu plano será alterado na próxima renovação.',
+      toast.success(t('manage.toasts.downgradeScheduled'), {
+        description: t('manage.toasts.downgradeScheduledDesc'),
       });
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
       setPendingDowngradeSlug(null);
       onClose();
     } catch {
-      toast.error('Erro ao fazer downgrade', { description: 'Tente novamente.' });
+      toast.error(t('manage.toasts.downgradeError'), {
+        description: t('manage.toasts.tryAgain'),
+      });
     } finally {
       setIsDowngrading(false);
     }
@@ -226,7 +262,9 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
       const { checkoutUrl } = await api.subscriptions.upgrade(accessToken, targetSlug);
       window.location.href = checkoutUrl;
     } catch {
-      toast.error('Erro ao fazer upgrade', { description: 'Tente novamente.' });
+      toast.error(t('manage.toasts.upgradeError'), {
+        description: t('manage.toasts.tryAgain'),
+      });
       setIsUpgrading(false);
     }
   }
@@ -238,7 +276,9 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
       const { portalUrl } = await api.subscriptions.billingPortal(accessToken);
       window.open(portalUrl, '_blank');
     } catch {
-      toast.error('Erro ao abrir portal', { description: 'Tente novamente.' });
+      toast.error(t('manage.toasts.portalError'), {
+        description: t('manage.toasts.tryAgain'),
+      });
     } finally {
       setIsOpeningPortal(false);
     }
@@ -247,6 +287,8 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
   const sorted = (plans ?? []).slice().sort(
     (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),
   );
+
+  const perMonthShort = t('manage.perMonthShort');
 
   return (
     <>
@@ -270,8 +312,8 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
               <Settings className="h-5 w-5 text-[#a2dd00]" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-[#f3f0ed]">Gerenciar assinatura</h2>
-              <p className="text-[11px] text-[#f3f0ed]/40">Detalhes do seu plano e pagamento</p>
+              <h2 className="text-base font-bold text-[#f3f0ed]">{t('manage.title')}</h2>
+              <p className="text-[11px] text-[#f3f0ed]/40">{t('manage.subtitle')}</p>
             </div>
           </div>
 
@@ -280,14 +322,14 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
             {/* Plano */}
             <div className="flex items-center gap-3 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/[0.03] px-4 py-3">
               <Crown className="h-4 w-4 shrink-0 text-[#a2dd00]/60" />
-              <span className="flex-1 text-xs text-[#f3f0ed]/40">Plano</span>
+              <span className="flex-1 text-xs text-[#f3f0ed]/40">{t('manage.plan')}</span>
               <span className="flex items-center gap-1.5 text-xs font-medium text-[#f3f0ed]">
                 {planName}
                 {isActive && !cancelAtPeriodEnd && (
-                  <span className="rounded-full bg-green-400/10 px-1.5 py-0.5 text-[10px] font-bold text-green-400">Ativo</span>
+                  <span className="rounded-full bg-green-400/10 px-1.5 py-0.5 text-[10px] font-bold text-green-400">{t('manage.active')}</span>
                 )}
                 {cancelAtPeriodEnd && (
-                  <span className="rounded-full bg-red-400/10 px-1.5 py-0.5 text-[10px] font-bold text-red-400">Cancelando</span>
+                  <span className="rounded-full bg-red-400/10 px-1.5 py-0.5 text-[10px] font-bold text-red-400">{t('manage.canceling')}</span>
                 )}
               </span>
             </div>
@@ -298,7 +340,11 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
                 <div className="flex items-center gap-3">
                   <CalendarDays className="h-4 w-4 shrink-0 text-amber-400/60" />
                   <span className="text-[11px] text-amber-400/80">
-                    Muda para <span className="font-semibold">{scheduledPlan.name}</span> ({formatPrice(scheduledPlan.priceCents).main}/mês) na próxima renovação
+                    {t.rich('manage.scheduledChange', {
+                      name: (chunks) => <span className="font-semibold">{chunks}</span>,
+                      planName: scheduledPlan.name,
+                      price: formatCurrency(scheduledPlan.priceCents, planCurrency, locale),
+                    })}
                   </span>
                 </div>
                 <button
@@ -306,7 +352,7 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
                   disabled={cancelDowngradeMutation.isPending}
                   className="shrink-0 rounded-md bg-amber-400/15 px-2 py-1 text-[10px] font-medium text-amber-400 transition-colors hover:bg-amber-400/25 disabled:opacity-50"
                 >
-                  {cancelDowngradeMutation.isPending ? 'Cancelando...' : 'Desfazer'}
+                  {cancelDowngradeMutation.isPending ? t('manage.undoing') : t('manage.undo')}
                 </button>
               </div>
             )}
@@ -314,16 +360,16 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
             {/* Créditos restantes */}
             <div className="flex items-center gap-3 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/[0.03] px-4 py-3">
               <Coins className="h-4 w-4 shrink-0 text-[#a2dd00]/60" />
-              <span className="flex-1 text-xs text-[#f3f0ed]/40">Créditos restantes</span>
+              <span className="flex-1 text-xs text-[#f3f0ed]/40">{t('manage.remainingCredits')}</span>
               <span className="text-xs font-medium text-[#f3f0ed]">
-                {creditsRemaining.toLocaleString('pt-BR')}
+                {creditsRemaining.toLocaleString(locale)}
               </span>
             </div>
 
             {/* Custo do plano */}
             <div className="flex items-center gap-3 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/[0.03] px-4 py-3">
               <CreditCard className="h-4 w-4 shrink-0 text-[#a2dd00]/60" />
-              <span className="flex-1 text-xs text-[#f3f0ed]/40">Custo do plano</span>
+              <span className="flex-1 text-xs text-[#f3f0ed]/40">{t('manage.planCost')}</span>
               <div className="flex items-center gap-2">
                 {hasDiscount ? (
                   <>
@@ -331,9 +377,12 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
                     <span className="text-xs font-medium text-[#a2dd00]">{discountedPriceMain}</span>
                     <span className="rounded-full bg-[#a2dd00]/10 px-1.5 py-0.5 text-[9px] font-bold text-[#a2dd00]">
                       {discount!.percentOff
-                        ? `${discount!.percentOff}% OFF`
-                        : `- ${formatPrice(discount!.amountOffCents!).main}`}
-                      {discount!.remainingMonths != null && ` (${discount!.remainingMonths}m)`}
+                        ? t('badges.discountOff', { pct: discount!.percentOff })
+                        : t('manage.amountOff', {
+                            amount: formatCurrency(discount!.amountOffCents!, planCurrency, locale),
+                          })}
+                      {discount!.remainingMonths != null &&
+                        t('manage.discountMonths', { m: discount!.remainingMonths })}
                     </span>
                   </>
                 ) : (
@@ -345,16 +394,16 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
             {/* Próximo pagamento */}
             <div className="flex items-center gap-3 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/[0.03] px-4 py-3">
               <CalendarDays className="h-4 w-4 shrink-0 text-[#a2dd00]/60" />
-              <span className="flex-1 text-xs text-[#f3f0ed]/40">Próximo pagamento</span>
+              <span className="flex-1 text-xs text-[#f3f0ed]/40">{t('manage.nextPayment')}</span>
               <div className="flex flex-col items-end">
                 <span className={`text-xs font-medium ${cancelAtPeriodEnd ? 'text-red-400' : hasDiscount ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'}`}>
                   {nextPayment}
                 </span>
                 {subEnd && !cancelAtPeriodEnd && (
-                  <span className="text-[10px] text-[#f3f0ed]/30">em {subEnd}</span>
+                  <span className="text-[10px] text-[#f3f0ed]/30">{t('manage.onDate', { date: subEnd })}</span>
                 )}
                 {subEnd && cancelAtPeriodEnd && (
-                  <span className="text-[10px] text-[#f3f0ed]/30">acesso até {subEnd}</span>
+                  <span className="text-[10px] text-[#f3f0ed]/30">{t('manage.accessUntil', { date: subEnd })}</span>
                 )}
               </div>
             </div>
@@ -372,7 +421,7 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
               ) : (
                 <CreditCard className="h-3.5 w-3.5" />
               )}
-              Gerenciar cartões e faturas
+              {t('manage.manageBillingPortal')}
             </button>
           )}
 
@@ -388,14 +437,14 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
                   >
                     <span className="flex items-center gap-2">
                       <ChevronDown className={`h-3 w-3 transition-transform ${showPlanOptions ? 'rotate-180' : ''}`} />
-                      Alterar plano
+                      {t('manage.changePlan')}
                     </span>
                   </button>
 
                   {showPlanOptions && (
                     <div className="mt-2 flex flex-col gap-1.5 pl-2">
                       {upgradePlans.map((p) => {
-                        const { main } = formatPrice(p.priceCents);
+                        const main = formatCurrency(p.priceCents, p.currency || planCurrency, locale);
                         return (
                           <button
                             key={p.id}
@@ -405,14 +454,14 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
                           >
                             <span className="flex items-center gap-1.5">
                               {p.name}
-                              <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold text-[#a2dd00]">UPGRADE</span>
+                              <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold text-[#a2dd00]">{t('badges.upgrade')}</span>
                             </span>
-                            <span className="text-[#a2dd00]/60">{main}/mes</span>
+                            <span className="text-[#a2dd00]/60">{main}{perMonthShort}</span>
                           </button>
                         );
                       })}
                       {!scheduledPlan && downgradePlans.map((p) => {
-                        const { main } = formatPrice(p.priceCents);
+                        const main = formatCurrency(p.priceCents, p.currency || planCurrency, locale);
                         return (
                           <button
                             key={p.id}
@@ -420,7 +469,7 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
                             className="flex items-center justify-between rounded-lg border border-[#f3f0ed]/6 bg-[#f3f0ed]/[0.02] px-3 py-2 text-xs text-[#f3f0ed]/40 transition-colors hover:border-[#f3f0ed]/12 hover:text-[#f3f0ed]/60"
                           >
                             <span>{p.name}</span>
-                            <span className="text-[#f3f0ed]/25">{main}/mes</span>
+                            <span className="text-[#f3f0ed]/25">{main}{perMonthShort}</span>
                           </button>
                         );
                       })}
@@ -436,20 +485,20 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
                     onClick={() => setShowCancelModal(true)}
                     className="text-[11px] text-[#f3f0ed]/15 transition-colors hover:text-[#f3f0ed]/30"
                   >
-                    Precisa cancelar? Clique aqui
+                    {t('manage.needToCancel')}
                   </button>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2 pt-1">
                   <p className="text-[11px] text-[#f3f0ed]/25">
-                    Assinatura sera cancelada em {subEnd}.
+                    {t('manage.willCancelOn', { date: subEnd ?? '' })}
                   </p>
                   <button
                     onClick={() => reactivateMutation.mutate()}
                     disabled={reactivateMutation.isPending}
                     className="rounded-lg border border-[#a2dd00]/20 bg-[#a2dd00]/10 px-4 py-1.5 text-[11px] font-medium text-[#a2dd00] transition-colors hover:bg-[#a2dd00]/20 disabled:opacity-50"
                   >
-                    {reactivateMutation.isPending ? 'Reativando...' : 'Reativar assinatura'}
+                    {reactivateMutation.isPending ? t('manage.reactivating') : t('manage.reactivate')}
                   </button>
                 </div>
               )}
@@ -459,7 +508,7 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
           {/* Free user message */}
           {isFreeUser && (
             <p className="text-center text-xs text-[#f3f0ed]/30">
-              Você está no plano gratuito. Faça upgrade para ter mais créditos e funcionalidades.
+              {t('manage.freeUserMessage')}
             </p>
           )}
         </div>
@@ -480,11 +529,11 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
           accessEndDate={subEnd ?? undefined}
           hideOffers={retentionOfferUsed}
           lostBenefits={[
-            `Todos os creditos do plano ${planName}`,
-            'Velocidade e prioridade nas geracoes',
-            'Acesso a galeria estendida',
-            'Suporte prioritario',
-            'Geracoes sem marca d\'agua',
+            t('manage.retentionLostBenefits.allCredits', { plan: planName }),
+            t('manage.retentionLostBenefits.speedPriority'),
+            t('manage.retentionLostBenefits.extendedGallery'),
+            t('manage.retentionLostBenefits.prioritySupport'),
+            t('manage.retentionLostBenefits.noWatermark'),
           ]}
         />
       )}
@@ -493,13 +542,23 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
       {pendingDowngradeSlug && (() => {
         const currentPlan = sorted.find((p) => p.slug === planSlug);
         const targetPlan = sorted.find((p) => p.slug === pendingDowngradeSlug);
-        const currentFeatures = currentPlan ? getPlanFeatures(currentPlan) : [];
-        const targetFeatures = targetPlan ? getPlanFeatures(targetPlan) : [];
-        const lostBenefits = currentFeatures.filter((f) => !targetFeatures.includes(f));
+        const currentFeatureKeys = currentPlan ? getPlanFeatureKeys(currentPlan) : [];
+        const targetFeatureKeys = targetPlan ? getPlanFeatureKeys(targetPlan) : [];
+        const targetKeySet = new Set(targetFeatureKeys.map((e) => e.key));
+        const lostBenefits = currentFeatureKeys
+          .filter((e) => !targetKeySet.has(e.key))
+          .map((e) =>
+            t(
+              e.key as 'features.emailSupport',
+              e.values as Record<string, number | string> | undefined,
+            ),
+          );
         if (currentPlan && targetPlan) {
           const creditDiff = currentPlan.creditsPerMonth - targetPlan.creditsPerMonth;
           if (creditDiff > 0) {
-            lostBenefits.unshift(`${creditDiff.toLocaleString('pt-BR')} créditos mensais a menos`);
+            lostBenefits.unshift(
+              t('manage.retentionLostBenefits.creditsLess', { count: creditDiff }),
+            );
           }
         }
         return (
@@ -515,7 +574,11 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
             currentPlanName={currentPlan?.name}
             targetPlanName={targetPlan?.name}
             hideOffers={retentionOfferUsed}
-            lostBenefits={lostBenefits.length > 0 ? lostBenefits : ['Creditos e funcionalidades do plano atual']}
+            lostBenefits={
+              lostBenefits.length > 0
+                ? lostBenefits
+                : [t('manage.retentionLostBenefits.currentPlanBenefits')]
+            }
           />
         );
       })()}

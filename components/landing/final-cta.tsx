@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useScrollReveal } from "./use-scroll-reveal";
 import { useAuth } from "@/lib/auth-context";
 
@@ -10,6 +11,7 @@ export function FinalCta() {
   const { user } = useAuth();
   const isLoggedIn = !!user;
   const { ref, isVisible } = useScrollReveal();
+  const t = useTranslations("ctaFinal");
 
   return (
     <section className="landing-noise relative overflow-hidden py-16 sm:py-28 lg:py-36">
@@ -47,19 +49,18 @@ export function FinalCta() {
             </div>
             {/* TODO: SUBSTITUIR POR NÚMERO REAL */}
             <span className="ml-4 text-[13px] font-medium text-landing-text-muted">
-              +2.000 criadores já estão usando
+              {t("creatorsUsing")}
             </span>
           </div>
 
           {/* Headline */}
           <h2 className="font-sora text-[26px] font-bold tracking-tight text-landing-text sm:text-3xl lg:text-[48px] lg:leading-[1.1]">
-            Pronto para criar seu primeiro influencer digital?
+            {t("title")}
           </h2>
 
           {/* Sub */}
           <p className="mt-5 text-[15px] leading-relaxed text-landing-text-secondary sm:mt-6 sm:text-[17px]">
-            Junte-se a milhares de criadores que já estão transformando ideias em
-            conteúdo profissional com inteligência artificial.
+            {t("subtitle")}
           </p>
 
           {/* CTA */}
@@ -67,13 +68,13 @@ export function FinalCta() {
             href="/workspace"
             className="group mt-8 inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-7 py-3.5 text-[14px] font-bold text-landing-bg-secondary shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-colors duration-200 hover:bg-[#b5e82d] active:scale-[0.98] sm:mt-10 sm:px-9 sm:py-4 sm:text-[15px]"
           >
-            {isLoggedIn ? "Acessar Plataforma" : "Começar Grátis"}
+            {isLoggedIn ? t("ctaLoggedIn") : t("cta")}
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
           </a>
 
           {/* Microcopy */}
           <p className="mt-5 text-[13px] tracking-wide text-landing-text-muted">
-            Setup em 2 minutos · Cancele quando quiser
+            {t("microcopyShort")}
           </p>
         </div>
       </div>

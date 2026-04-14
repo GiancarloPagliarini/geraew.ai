@@ -1,0 +1,327 @@
+{
+  "editorChrome": {
+    "navbar": {
+      "logoAlt": "Geraew AI",
+      "brand": "Geraew.AI",
+      "buyCredits": "Buy Credits",
+      "redeemCredits": "Redeem your credits",
+      "postAndEarn": "Post and earn",
+      "signIn": "Sign in",
+      "loginTitle": "Sign in to generate",
+      "loginSubtitle": "Free access with starter credits",
+      "redirecting": "Redirecting...",
+      "continueWithGoogle": "Continue with Google",
+      "signInWithEmail": "Sign in with email",
+      "defaultUser": "User",
+      "menu": {
+        "profile": "Profile",
+        "credits": "Credits",
+        "plans": "Plans",
+        "usage": "Usage",
+        "logout": "Log out"
+      }
+    },
+    "leftSidebar": {
+      "gallery": "Gallery",
+      "tutorial": "Tutorial",
+      "prompts": "Prompts",
+      "promptsTooltip": "Prompt Factory",
+      "trending": "Trending",
+      "trendingTooltip": "Best-Selling Products",
+      "logoAlt": "Geraew"
+    },
+    "rightSidebar": {
+      "wipBadge": "Work in progress",
+      "wipSubtitle": "Available soon",
+      "header": "INFLUENCER BUILDER",
+      "upscale": {
+        "applied": "UPSCALE APPLIED",
+        "model": "MODEL",
+        "scaleFactor": "SCALE FACTOR",
+        "previewAlt": "Preview",
+        "processing": "PROCESSING...",
+        "applyAgain": "APPLY AGAIN",
+        "apply": "APPLY UPSCALE",
+        "models": {
+          "realEsrganX4Name": "Real-ESRGAN",
+          "realEsrganX4Desc": "Best quality",
+          "realEsrganX2Name": "Real-ESRGAN",
+          "realEsrganX2Desc": "Faster",
+          "esrganProName": "ESRGAN",
+          "esrganProDesc": "Sharp details",
+          "swinirUltraName": "SwinIR",
+          "swinirUltraDesc": "Preserves textures"
+        }
+      },
+      "faceSwap": {
+        "targetLabel": "TARGET IMAGE",
+        "targetAlt": "Target image",
+        "targetHint": "Face to be replaced",
+        "yourFaceLabel": "YOUR FACE",
+        "yourFaceAlt": "Your face",
+        "uploadHint": "Click to upload",
+        "sourceHint": "Face to be inserted",
+        "apply": "APPLY FACE SWAP"
+      }
+    },
+    "influencer": {
+      "tabBuilder": "Builder",
+      "tabPrompt": "Prompt",
+      "reset": "Reset",
+      "promptTitle": "GENERATED PROMPT (ENGLISH)",
+      "promptHint": "This prompt is generated automatically from your selections in the Builder.",
+      "referenceTitle": "REFERENCE IMAGE",
+      "referenceAlt": "Reference",
+      "referenceActive": "Reference active",
+      "referenceDisabledHint": "Builder options are disabled",
+      "uploadTitle": "Upload a reference photo",
+      "uploadSubtitle": "The AI will create a person inspired by it",
+      "referenceDescription": "The AI will generate an original person inspired by the uploaded image, keeping the overall essence and aesthetic while creating a unique individual.",
+      "sections": {
+        "characterType": "CHARACTER TYPE",
+        "gender": "GENDER",
+        "ethnicity": "ETHNICITY",
+        "skinColor": "SKIN COLOR",
+        "eyeColor": "EYE COLOR",
+        "skinCondition": "SKIN CONDITIONS",
+        "age": "AGE",
+        "advancedConfig": "ADVANCED SETTINGS",
+        "eyeType": "EYES - TYPE",
+        "eyeDetails": "EYES - DETAILS",
+        "mouthTeeth": "MOUTH & TEETH",
+        "ears": "EARS",
+        "horns": "HORNS",
+        "skinMaterial": "SKIN MATERIAL",
+        "surfacePattern": "SURFACE PATTERN",
+        "bodyType": "BODY TYPE",
+        "leftArm": "LEFT ARM",
+        "rightArm": "RIGHT ARM",
+        "leftLeg": "LEFT LEG",
+        "rightLeg": "RIGHT LEG",
+        "hair": "HAIR / HEAD",
+        "hairColor": "HAIR COLOR",
+        "accessories": "ACCESSORIES & MARKS",
+        "renderingStyle": "RENDERING STYLE"
+      },
+      "tabs": {
+        "face": "Face",
+        "body": "Body",
+        "style": "Style"
+      },
+      "ageOptions": {
+        "teen": "Teen",
+        "youngAdult": "Young adult",
+        "adult": "Adult",
+        "middleAge": "Middle-aged",
+        "senior": "Senior"
+      },
+      "renderingOptions": {
+        "hyperrealistic": "Hyper-realistic",
+        "anime": "Anime",
+        "cartoon": "Cartoon",
+        "illustration2d": "2D Illustration"
+      },
+      "character": {
+        "human": "Human",
+        "ant": "Ant",
+        "bee": "Bee",
+        "octopus": "Octopus",
+        "crocodile": "Crocodile",
+        "iguana": "Iguana",
+        "lizard": "Lizard",
+        "alien": "Alien",
+        "beetle": "Beetle",
+        "reptile": "Reptile",
+        "amphibian": "Amphibian",
+        "elf": "Elf",
+        "mantis": "Mantis"
+      },
+      "gender": {
+        "female": "Female",
+        "male": "Male",
+        "transMan": "Trans man",
+        "transWoman": "Trans woman",
+        "nonBinary": "Non-binary"
+      },
+      "ethnicity": {
+        "african": "African",
+        "asian": "Asian",
+        "european": "European",
+        "indian": "Indian",
+        "middleEastern": "Middle Eastern",
+        "mixed": "Mixed"
+      },
+      "skin": {
+        "tan": "Tan",
+        "black": "Black",
+        "white": "White"
+      },
+      "eyes": {
+        "black": "Black",
+        "purple": "Purple",
+        "green": "Green",
+        "white": "White",
+        "brown": "Brown",
+        "solid": "Solid/Empty",
+        "blind": "Blind/Empty",
+        "deepBrown": "Deep Brown",
+        "blue": "Blue",
+        "amber": "Amber",
+        "red": "Red",
+        "grey": "Grey"
+      },
+      "skinCondition": {
+        "vitiligo": "Vitiligo",
+        "pigmentation": "Pigmentation",
+        "freckles": "Freckles",
+        "birthmarks": "Birthmarks",
+        "scars": "Scars",
+        "burns": "Burns",
+        "albinism": "Albinism",
+        "cracked": "Cracked skin",
+        "wrinkled": "Wrinkled skin"
+      },
+      "eyesType": {
+        "human": "Human",
+        "reptile": "Reptile",
+        "mechanical": "Mechanical"
+      },
+      "eyesDetails": {
+        "different": "Different colors",
+        "blind": "Blind eye",
+        "scarred": "Scarred eye",
+        "glowing": "Glowing eye"
+      },
+      "mouth": {
+        "small": "Small mouth",
+        "large": "Large mouth",
+        "noTeeth": "No teeth",
+        "different": "Different teeth",
+        "sharp": "Sharp teeth",
+        "forked": "Forked tongue",
+        "two": "Two tongues"
+      },
+      "ears": {
+        "human": "Human",
+        "elf": "Elf",
+        "none": "No ears",
+        "wing": "Wing ears"
+      },
+      "horns": {
+        "small": "Small horns",
+        "big": "Big horns",
+        "antlers": "Antlers"
+      },
+      "faceSkin": {
+        "human": "Human skin",
+        "scales": "Scales",
+        "fur": "Fur",
+        "amphibian": "Amphibian skin",
+        "fish": "Fish skin",
+        "metallic": "Metallic"
+      },
+      "surface": {
+        "solid": "Solid",
+        "stripes": "Stripes",
+        "spots": "Spots",
+        "chess": "Checkered",
+        "veins": "Veins",
+        "giraffe": "Giraffe",
+        "cowhide": "Cowhide"
+      },
+      "body": {
+        "slim": "Slim",
+        "lean": "Lean",
+        "athletic": "Athletic",
+        "muscular": "Muscular",
+        "curvy": "Curvy",
+        "heavy": "Heavy",
+        "skinny": "Skinny"
+      },
+      "limbs": {
+        "normal": "Normal",
+        "cute": "Cute",
+        "robotic": "Robotic",
+        "prosthetic": "Prosthetic",
+        "mechanical": "Mechanical",
+        "none": "None"
+      },
+      "hair": {
+        "bald": "Bald",
+        "short": "Short",
+        "long": "Long",
+        "afro": "Afro",
+        "punk": "Punk",
+        "fur": "Fur",
+        "tentacles": "Tentacles",
+        "spines": "Spines"
+      },
+      "hairColor": {
+        "black": "Black",
+        "darkBrown": "Dark Brown",
+        "brown": "Brown",
+        "lightBrown": "Light Brown",
+        "blonde": "Blonde",
+        "platinumBlonde": "Platinum Blonde",
+        "red": "Red",
+        "ginger": "Ginger",
+        "auburn": "Auburn",
+        "grey": "Grey",
+        "white": "White",
+        "blue": "Blue",
+        "pink": "Pink",
+        "purple": "Purple",
+        "green": "Green",
+        "ombre": "Ombré",
+        "highlights": "Highlights"
+      },
+      "accessories": {
+        "tattoos": "Tattoos",
+        "piercing": "Piercing",
+        "scarification": "Scarification",
+        "symbols": "Symbols",
+        "cyber": "Cyber markings"
+      }
+    },
+    "createPanel": {
+      "title": "AI INFLUENCER",
+      "emptyTitle": "Your AI influencer lives here.",
+      "emptySubtitle": "Configure in the sidebar and click generate",
+      "cost": "Cost",
+      "creditsLabel": "{credits} credits",
+      "generating": "GENERATING...",
+      "generateAgain": "GENERATE AGAIN",
+      "generate": "GENERATE INFLUENCER",
+      "loading": {
+        "creating": "CREATING YOUR INFLUENCER...",
+        "adjustingFeatures": "ADJUSTING FACIAL FEATURES...",
+        "applyingStyle": "APPLYING UNIQUE STYLE...",
+        "refining": "REFINING DETAILS...",
+        "almostThere": "ALMOST THERE...",
+        "magic": "ADDING A TOUCH OF MAGIC...",
+        "consulting": "CONSULTING THE PIXELS...",
+        "dreaming": "DREAMING IN HIGH RESOLUTION..."
+      },
+      "errors": {
+        "generateInfluencer": "Failed to generate influencer.",
+        "checkStatus": "Failed to check generation status.",
+        "startGeneration": "Failed to start generation."
+      }
+    },
+    "preview": {
+      "alt": "Generated image"
+    },
+    "buttons": {
+      "duplicatePanel": "Duplicate panel",
+      "enhanceOn": "ENHANCING...",
+      "enhanceOff": "ENHANCE PROMPT",
+      "checking": "CHECKING...",
+      "checkGeneration": "CHECK GENERATION",
+      "stillProcessing": "Still processing...",
+      "stillProcessingDesc": "The generation is still running.",
+      "errorCheck": "Failed to check status.",
+      "tryAgain": "Try again.",
+      "fallbackError": "Generation failed."
+    }
+  }
+}

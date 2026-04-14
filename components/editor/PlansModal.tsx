@@ -11,18 +11,20 @@ import {
   CircleOff
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 import { CreditPackagesGrid } from '@/components/editor/CreditPackagesGrid';
 import { PlansGrid } from '@/components/editor/PlansGrid';
-import { PLAN_ORDER, getPlanFeatures } from '@/lib/plans';
+import { PLAN_ORDER, getPlanFeatureKeys } from '@/lib/plans';
 
 interface PlansModalProps {
   onClose: () => void;
 }
 
 export function PlansModal({ onClose }: PlansModalProps) {
+  const t = useTranslations('editorPlans');
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'plans' | 'credits'>('plans');
@@ -71,6 +73,9 @@ export function PlansModal({ onClose }: PlansModalProps) {
     (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),
   );
 
+  // Currency for packages — use the first plan's currency as a sensible default
+  const packagesCurrency = sorted[0]?.currency || 'BRL';
+
   function getPlanAction(targetSlug: string): 'upgrade' | 'downgrade' | 'create' {
     if (!hasActiveSub || !currentPlanSlug || currentPlanSlug === 'free') return 'create';
     const currentIdx = PLAN_ORDER.indexOf(currentPlanSlug);
@@ -83,14 +88,14 @@ export function PlansModal({ onClose }: PlansModalProps) {
     setIsDowngrading(true);
     try {
       await api.subscriptions.downgrade(accessToken, planSlug);
-      toast.success('Downgrade agendado', {
-        description: 'Seu plano será alterado na próxima renovação.',
+      toast.success(t('manage.toasts.downgradeScheduled'), {
+        description: t('manage.toasts.downgradeScheduledDesc'),
       });
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
       setPendingDowngradeSlug(null);
       onClose();
     } catch {
-      toast.error('Erro ao fazer downgrade', { description: 'Tente novamente.' });
+      toast.error(t('manage.toasts.downgradeError'), { description: t('manage.toasts.tryAgain') });
     } finally {
       setIsDowngrading(false);
     }
@@ -124,11 +129,11 @@ export function PlansModal({ onClose }: PlansModalProps) {
           const res = await api.subscriptions.upgrade(accessToken, planSlug);
           window.location.href = res.checkoutUrl;
         } catch {
-          toast.error('Erro ao mudar de plano', { description: 'Tente novamente.' });
+          toast.error(t('manage.toasts.changePlanError'), { description: t('manage.toasts.tryAgain') });
           setSubscribingSlug(null);
         }
       } else {
-        toast.error('Erro ao mudar de plano', { description: 'Tente novamente.' });
+        toast.error(t('manage.toasts.changePlanError'), { description: t('manage.toasts.tryAgain') });
         setSubscribingSlug(null);
       }
     }
@@ -153,33 +158,33 @@ export function PlansModal({ onClose }: PlansModalProps) {
         <div className="flex flex-col items-center gap-2 text-center">
           <div className="flex items-center gap-1.5 rounded-full border border-[#a2dd00]/20 bg-[#a2dd00]/8 px-3 py-1">
             <Flame className="h-3 w-3 text-[#a2dd00]" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a2dd00]">Oferta por tempo limitado</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a2dd00]">{t('plansModal.limitedOffer')}</span>
           </div>
           <h2 className="text-lg font-bold text-[#f3f0ed] sm:text-xl">
-            {activeTab === 'plans' ? 'Escolha seu plano e comece a criar' : 'Pacotes de créditos avulsos'}
+            {activeTab === 'plans' ? t('plansModal.titlePlans') : t('plansModal.titleCredits')}
           </h2>
           <p className="max-w-md text-[12px] text-[#f3f0ed]/45">
             {activeTab === 'plans'
-              ? <>Mais de <span className="font-semibold text-[#f3f0ed]/70">2.400 criadores</span> já estão gerando conteúdo.</>
-              : 'Compra única · Sem assinatura · Créditos nunca expiram'}
+              ? t('plansModal.plansSubtitle', { count: t('plansModal.creatorsCount') })
+              : t('plansModal.creditsSubtitle')}
           </p>
           <div className="flex items-center gap-3 text-[10px] text-[#f3f0ed]/30">
             {activeTab === 'plans' ? (
               <>
                 <span className="flex items-center gap-1">
                   <CircleOff className="h-2.5 w-2.5" />
-                  Cancele quando quiser
+                  {t('plansModal.cancelAnytime')}
                 </span>
               </>
             ) : (
               <>
                 <span className="flex items-center gap-1">
                   <Coins className="h-2.5 w-2.5" />
-                  Acumulam com os créditos do plano
+                  {t('plansModal.stackWithPlan')}
                 </span>
                 <span className="flex items-center gap-1">
                   <Zap className="h-2.5 w-2.5" />
-                  Entram na hora
+                  {t('plansModal.instant')}
                 </span>
               </>
             )}
@@ -203,7 +208,7 @@ export function PlansModal({ onClose }: PlansModalProps) {
                   }`}
               >
                 <BadgePercent className="h-3.5 w-3.5" />
-                Planos
+                {t('plansModal.tabPlans')}
               </button>
               <button
                 onClick={() => setActiveTab('credits')}
@@ -213,7 +218,7 @@ export function PlansModal({ onClose }: PlansModalProps) {
                   }`}
               >
                 <Coins className="h-3.5 w-3.5" />
-                Pacotes de Créditos
+                {t('plansModal.tabCredits')}
               </button>
             </div>
           ) : null}
@@ -235,11 +240,11 @@ export function PlansModal({ onClose }: PlansModalProps) {
               <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10px] text-[#f3f0ed]/25">
                 <span className="flex items-center gap-1">
                   <Check className="h-2.5 w-2.5 text-[#a2dd00]/50" />
-                  Sem taxa de cancelamento
+                  {t('plansModal.noCancelFee')}
                 </span>
                 <span className="flex items-center gap-1">
                   <Check className="h-2.5 w-2.5 text-[#a2dd00]/50" />
-                  Créditos renovam mensalmente
+                  {t('plansModal.creditsRenew')}
                 </span>
               </div>
             )}
@@ -248,7 +253,7 @@ export function PlansModal({ onClose }: PlansModalProps) {
 
         {/* Credits tab */}
         {!isLoading && activeTab === 'credits' && packages && packages.length > 0 && (
-          <CreditPackagesGrid packages={packages} compact />
+          <CreditPackagesGrid packages={packages} currency={packagesCurrency} compact />
         )}
       </div>
 
@@ -256,13 +261,16 @@ export function PlansModal({ onClose }: PlansModalProps) {
       {pendingDowngradeSlug && (() => {
         const currentPlan = sorted.find((p) => p.slug === currentPlanSlug);
         const targetPlan = sorted.find((p) => p.slug === pendingDowngradeSlug);
-        const currentFeatures = currentPlan ? getPlanFeatures(currentPlan) : [];
-        const targetFeatures = targetPlan ? getPlanFeatures(targetPlan) : [];
-        const lostBenefits = currentFeatures.filter((f) => !targetFeatures.includes(f));
+        const currentFeatureKeys = currentPlan ? getPlanFeatureKeys(currentPlan) : [];
+        const targetFeatureKeys = targetPlan ? getPlanFeatureKeys(targetPlan) : [];
+        const targetKeySet = new Set(targetFeatureKeys.map((e) => e.key));
+        const lostBenefits = currentFeatureKeys
+          .filter((e) => !targetKeySet.has(e.key))
+          .map((e) => t(e.key as 'features.emailSupport', e.values as Record<string, number | string> | undefined));
         if (currentPlan && targetPlan) {
           const creditDiff = currentPlan.creditsPerMonth - targetPlan.creditsPerMonth;
           if (creditDiff > 0) {
-            lostBenefits.unshift(`${creditDiff.toLocaleString('pt-BR')} créditos mensais a menos`);
+            lostBenefits.unshift(t('manage.retentionLostBenefits.creditsLess', { count: creditDiff }));
           }
         }
         return (
@@ -273,7 +281,7 @@ export function PlansModal({ onClose }: PlansModalProps) {
             isLoading={isDowngrading}
             currentPlanName={currentPlan?.name}
             targetPlanName={targetPlan?.name}
-            lostBenefits={lostBenefits.length > 0 ? lostBenefits : ['Créditos e funcionalidades do plano atual']}
+            lostBenefits={lostBenefits.length > 0 ? lostBenefits : [t('manage.retentionLostBenefits.currentPlanBenefits')]}
           />
         );
       })()}

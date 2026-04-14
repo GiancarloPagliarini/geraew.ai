@@ -1,34 +1,28 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Clapperboard, ShoppingCart, Building2, Smartphone, LucideIcon } from "lucide-react";
 import { useScrollReveal } from "./use-scroll-reveal";
 
-const CASES: { icon: LucideIcon; title: string; desc: string }[] = [
-  {
-    icon: Clapperboard,
-    title: "Criadores de Conteúdo",
-    desc: "Publique todos os dias sem mostrar o rosto. Crie uma persona que vira a identidade do seu canal e construa audiência real com conteúdo gerado por IA.",
-  },
-  {
-    icon: ShoppingCart,
-    title: "Vendedores e Afiliados",
-    desc: "Gere vídeos de review, unboxing e demonstração com influencers virtuais. Escale vendas no TikTok Shop, Instagram e qualquer plataforma sem depender de ninguém.",
-  },
-  {
-    icon: Building2,
-    title: "Marcas e Agências",
-    desc: "Produza UGC ilimitado sem contratar modelos ou influencers. Reduza custos de produção e tenha criativos novos todos os dias para campanhas.",
-  },
-  {
-    icon: Smartphone,
-    title: "Social Media Managers",
-    desc: "Entregue mais resultados com menos tempo e custo. Crie conteúdo para múltiplas marcas usando personas diferentes para cada uma.",
-  },
+const CASES: { icon: LucideIcon; key: "creators" | "sellers" | "brands" | "social" }[] = [
+  { icon: Clapperboard, key: "creators" },
+  { icon: ShoppingCart, key: "sellers" },
+  { icon: Building2, key: "brands" },
+  { icon: Smartphone, key: "social" },
 ];
 
-function Card({ c, i }: { c: (typeof CASES)[number]; i: number }) {
+function Card({
+  icon: Icon,
+  title,
+  desc,
+  i,
+}: {
+  icon: LucideIcon;
+  title: string;
+  desc: string;
+  i: number;
+}) {
   const { ref, isVisible } = useScrollReveal();
-  const Icon = c.icon;
 
   return (
     <div
@@ -44,16 +38,17 @@ function Card({ c, i }: { c: (typeof CASES)[number]; i: number }) {
         <Icon className="h-5 w-5 text-landing-accent sm:h-6 sm:w-6" />
       </div>
       <h3 className="mt-3.5 font-sora text-[16px] sm:mt-5 sm:text-[17px] font-semibold text-landing-text">
-        {c.title}
+        {title}
       </h3>
       <p className="mt-2.5 text-[14px] leading-relaxed text-landing-text-secondary">
-        {c.desc}
+        {desc}
       </p>
     </div>
   );
 }
 
 export function UseCases() {
+  const t = useTranslations("useCases");
   const { ref, isVisible } = useScrollReveal();
 
   return (
@@ -69,17 +64,23 @@ export function UseCases() {
           }}
         >
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-landing-accent">
-            Para Quem É
+            {t("tag")}
           </span>
           <h2 className="mt-4 font-sora text-[26px] font-bold tracking-tight text-landing-text sm:mt-5 sm:text-3xl lg:text-[44px]">
-            Não importa seu nicho. A Geraew se adapta ao seu objetivo.
+            {t("title")}
           </h2>
         </div>
 
         {/* Cards */}
         <div className="mt-10 grid grid-cols-1 gap-3.5 sm:mt-16 sm:grid-cols-2 sm:gap-5 lg:mt-20 lg:gap-6">
           {CASES.map((c, i) => (
-            <Card key={c.title} c={c} i={i} />
+            <Card
+              key={c.key}
+              icon={c.icon}
+              title={t(`items.${c.key}.title`)}
+              desc={t(`items.${c.key}.desc`)}
+              i={i}
+            />
           ))}
         </div>
       </div>

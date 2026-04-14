@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
@@ -133,6 +134,7 @@ function DeleteConfirmModal({ onClose, onConfirm }: {
   onClose: () => void;
   onConfirm: () => void;
 }) {
+  const t = useTranslations('editorDialogs.prompts.delete');
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
@@ -140,26 +142,26 @@ function DeleteConfirmModal({ onClose, onConfirm }: {
         className="w-full max-w-sm mx-4 rounded-2xl bg-[#1a2225] ring-1 ring-white/[0.08] p-5 flex flex-col gap-4"
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-white/85">Excluir prompt</h3>
+          <h3 className="text-sm font-semibold text-white/85">{t('title')}</h3>
           <button type="button" onClick={onClose} className="text-white/30 hover:text-white/60 transition-colors">
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <p className="text-xs text-white/50">Tem certeza que deseja excluir este prompt? Essa ação não pode ser desfeita.</p>
+        <p className="text-xs text-white/50">{t('description')}</p>
 
         <div className="flex gap-2">
           <button
             onClick={onClose}
             className="flex-1 rounded-lg bg-white/[0.04] py-2.5 text-xs font-bold text-white/50 ring-1 ring-white/[0.06] hover:bg-white/[0.08] transition-all"
           >
-            Cancelar
+            {t('cancel')}
           </button>
           <button
             onClick={onConfirm}
             className="flex-1 rounded-lg bg-red-500/20 py-2.5 text-xs font-bold text-red-400 ring-1 ring-red-500/25 hover:bg-red-500/30 transition-all"
           >
-            Excluir
+            {t('confirm')}
           </button>
         </div>
       </div>
@@ -180,11 +182,12 @@ function AddPromptModal({ categoryId, accessToken, onClose, onAdded }: {
   const [prompt, setPrompt] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [saving, setSaving] = useState(false);
+  const t = useTranslations('editorDialogs.prompts.addModal');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !prompt.trim()) {
-      toast.error('Preencha o titulo e o prompt');
+      toast.error(t('validationError'));
       return;
     }
     setSaving(true);
@@ -196,11 +199,11 @@ function AddPromptModal({ categoryId, accessToken, onClose, onAdded }: {
         prompt: prompt.trim(),
         imageUrl: imageUrl.trim() || undefined,
       });
-      toast.success('Prompt adicionado!');
+      toast.success(t('success'));
       onAdded();
       onClose();
     } catch {
-      toast.error('Erro ao adicionar prompt');
+      toast.error(t('error'));
     } finally {
       setSaving(false);
     }
@@ -214,7 +217,7 @@ function AddPromptModal({ categoryId, accessToken, onClose, onAdded }: {
         className="w-full max-w-md mx-4 rounded-2xl bg-[#1a2225] ring-1 ring-white/[0.08] p-5 flex flex-col gap-3"
       >
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-sm font-semibold text-white/85">Adicionar Prompt</h3>
+          <h3 className="text-sm font-semibold text-white/85">{t('title')}</h3>
           <button type="button" onClick={onClose} className="text-white/30 hover:text-white/60 transition-colors">
             <X className="h-4 w-4" />
           </button>
@@ -222,7 +225,7 @@ function AddPromptModal({ categoryId, accessToken, onClose, onAdded }: {
 
         <input
           type="text"
-          placeholder="Titulo"
+          placeholder={t('titlePlaceholder')}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="w-full rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-white/80 placeholder:text-white/20 ring-1 ring-white/[0.06] focus:outline-none focus:ring-[#a2dd00]/30"
@@ -243,7 +246,7 @@ function AddPromptModal({ categoryId, accessToken, onClose, onAdded }: {
         </Select>
 
         <textarea
-          placeholder="Prompt"
+          placeholder={t('promptPlaceholder')}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           rows={6}
@@ -252,7 +255,7 @@ function AddPromptModal({ categoryId, accessToken, onClose, onAdded }: {
 
         <input
           type="text"
-          placeholder="URL da imagem (opcional)"
+          placeholder={t('imageUrlPlaceholder')}
           value={imageUrl}
           onChange={(e) => setImageUrl(e.target.value)}
           className="w-full rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-white/80 placeholder:text-white/20 ring-1 ring-white/[0.06] focus:outline-none focus:ring-[#a2dd00]/30"
@@ -263,7 +266,7 @@ function AddPromptModal({ categoryId, accessToken, onClose, onAdded }: {
           disabled={saving}
           className="mt-1 w-full rounded-lg bg-[#a2dd00]/20 py-2.5 text-xs font-bold text-[#a2dd00] ring-1 ring-[#a2dd00]/25 hover:bg-[#a2dd00]/30 disabled:opacity-50 transition-all"
         >
-          {saving ? 'Salvando...' : 'Adicionar'}
+          {saving ? t('saving') : t('submit')}
         </button>
       </form>
     </div>
@@ -278,6 +281,7 @@ interface PromptsDialogProps {
 }
 
 export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
+  const t = useTranslations('editorDialogs.prompts');
   const { requestPanelWithPrompt } = useEditor();
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
@@ -337,8 +341,8 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
 
   function requireAuth(): boolean {
     if (user) return true;
-    toast.error('Faça login para usar os prompts', {
-      action: { label: 'Entrar', onClick: () => openLoginModal() },
+    toast.error(t('loginRequired'), {
+      action: { label: t('signIn'), onClick: () => openLoginModal() },
     });
     return false;
   }
@@ -347,7 +351,7 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
     if (!requireAuth()) return;
     await navigator.clipboard.writeText(prompt);
     setCopiedId(id);
-    toast.success('Prompt copiado!');
+    toast.success(t('copied'));
     setTimeout(() => setCopiedId(null), 2000);
   }
 
@@ -362,10 +366,10 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
     setDeletePromptId(null);
     try {
       await api.prompts.deleteTemplate(accessToken, id);
-      toast.success('Prompt excluido!');
+      toast.success(t('delete.success'));
       fetchPrompts();
     } catch {
-      toast.error('Erro ao excluir prompt');
+      toast.error(t('delete.error'));
     }
   }
 
@@ -397,7 +401,7 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <span className="text-sm font-semibold tracking-tight text-white/85">Prompts</span>
+            <span className="text-sm font-semibold tracking-tight text-white/85">{t('title')}</span>
             {!loading && (
               <span className="text-[10px] font-bold text-[#a2dd00]/80 bg-[#a2dd00]/[0.08] px-2 py-0.5 rounded-full tabular-nums">
                 {visiblePrompts.length}
@@ -411,7 +415,7 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
                 className="flex h-7 items-center gap-1 rounded-lg bg-[#a2dd00]/15 px-2 text-[10px] font-bold text-[#a2dd00] ring-1 ring-[#a2dd00]/25 hover:bg-[#a2dd00]/25 transition-colors"
               >
                 <Plus className="h-3 w-3" />
-                Adicionar
+                {t('add')}
               </button>
             )}
             <button
@@ -429,7 +433,7 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
             <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/20" />
             <input
               type="text"
-              placeholder="Buscar prompts..."
+              placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-lg bg-white/[0.04] py-2 pl-8 pr-8 text-xs text-white/80 placeholder:text-white/20 ring-1 ring-white/[0.06] focus:outline-none focus:ring-[#a2dd00]/30 transition-shadow"
@@ -478,12 +482,12 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
 
           {error && !loading && (
             <div className="flex flex-col items-center justify-center py-24 gap-2">
-              <p className="text-xs text-white/30">Erro ao carregar prompts</p>
+              <p className="text-xs text-white/30">{t('loadError')}</p>
               <button
                 onClick={() => window.location.reload()}
                 className="text-[10px] text-[#a2dd00]/70 hover:text-[#a2dd00] transition-colors"
               >
-                Tentar novamente
+                {t('tryAgain')}
               </button>
             </div>
           )}
@@ -506,12 +510,12 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
           {!loading && !error && visiblePrompts.length === 0 && searchQuery && (
             <div className="flex flex-col items-center justify-center py-16 gap-2">
               <Search className="h-5 w-5 text-white/10" />
-              <p className="text-xs text-white/25">Nenhum prompt encontrado</p>
+              <p className="text-xs text-white/25">{t('noneFound')}</p>
               <button
                 onClick={() => setSearchQuery('')}
                 className="text-[10px] text-[#a2dd00]/60 hover:text-[#a2dd00] transition-colors"
               >
-                Limpar busca
+                {t('clearSearch')}
               </button>
             </div>
           )}
@@ -525,16 +529,16 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
               <Lock className="h-6 w-6 text-[#a2dd00]" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-bold text-white/80">Faça login para acessar</p>
+              <p className="text-sm font-bold text-white/80">{t('loginTitle')}</p>
               <p className="text-[11px] text-white/40 leading-relaxed">
-                Entre na sua conta para visualizar e usar os prompts disponíveis.
+                {t('loginDescription')}
               </p>
             </div>
             <button
               onClick={() => openLoginModal()}
               className="rounded-xl bg-[#a2dd00] px-5 py-2 text-xs font-black text-black hover:bg-[#b8f000] transition-colors"
             >
-              Entrar
+              {t('signIn')}
             </button>
           </div>
         )}

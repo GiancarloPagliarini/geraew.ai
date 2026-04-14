@@ -26,6 +26,7 @@ import {
 import { EnhancePromptToggle } from './EnhancePromptToggle';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { createPortal } from 'react-dom';
 import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
 import { useQuery } from '@tanstack/react-query';
@@ -47,19 +48,6 @@ type GenState = 'idle' | 'generating' | 'done';
 
 const RADIUS = 36;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-
-const VIDEO_LOADING_MESSAGES = [
-  'RENDERIZANDO FRAMES...',
-  'PROCESSANDO CENAS...',
-  'CALCULANDO MOVIMENTOS...',
-  'SINCRONIZANDO ÁUDIO...',
-  'APLICANDO FÍSICA AOS PIXELS...',
-  'SONHANDO EM 60FPS...',
-  'PEDINDO INSPIRAÇÃO AO UNIVERSO...',
-  'ANIMANDO CADA DETALHE...',
-  'CONVERTENDO TEXTO EM MOVIMENTO...',
-  'AQUECENDO OS NEURÔNIOS VISUAIS...',
-];
 
 const MAX_REFERENCE_SIZE = 1920;
 const REFERENCE_QUALITY = 0.85;
@@ -106,6 +94,9 @@ interface GenerateVideoPanelProps {
 }
 
 export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVideoPanelProps) {
+  const t = useTranslations('editorPanels.video');
+  const tCommon = useTranslations('editorPanels.common');
+  const VIDEO_LOADING_MESSAGES = t.raw('loadingMessages') as string[];
   const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker, pendingPromptRef, consumePendingPrompt, setNodeGenerating } = useEditor();
   const [initialPendingPrompt] = useState(() => {
     if (pendingPromptRef.current?.panelType === 'generate-video') {
@@ -276,12 +267,12 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   // Update document title while generating
   useEffect(() => {
     if (genState === 'generating') {
-      document.title = 'Geraew AI - Gerando Vídeo';
+      document.title = t('docTitleGenerating');
     } else {
       document.title = 'Geraew AI';
     }
     return () => { document.title = 'Geraew AI'; };
-  }, [genState]);
+  }, [genState, t]);
 
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const msgIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -302,7 +293,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       clearPollTimer();
       clearSSE();
       setGenState('idle');
-      setErrorMsg(showGenerationError({ errorMessage: gen.errorMessage, fallback: 'Erro ao gerar vídeo.' }));
+      setErrorMsg(showGenerationError({ errorMessage: gen.errorMessage, fallback: tCommon('errors.generateVideo') }));
       refetchCredits();
     },
   });
@@ -320,7 +311,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
         const rawDataUrl = ev.target?.result as string;
         const { dataUrl, mimeType } = await compressImage(rawDataUrl, file.type);
         setRefImages((prev) => [...prev, { base64: dataUrl.split(',')[1], mime_type: mimeType, preview: dataUrl }]);
-        toast.success('Imagem adicionada como referência!');
+        toast.success(tCommon('imageAddedAsReference'));
       };
       reader.readAsDataURL(file);
     });
@@ -333,7 +324,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       const rawDataUrl = ev.target?.result as string;
       const { dataUrl, mimeType } = await compressImage(rawDataUrl, file.type);
       setter({ base64: dataUrl.split(',')[1], mime_type: mimeType, preview: dataUrl });
-      toast.success('Imagem adicionada como referência!');
+      toast.success(tCommon('imageAddedAsReference'));
     };
     reader.readAsDataURL(file);
   }
@@ -495,7 +486,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           refetchCredits();
           if (outputUrls.length < sampleCount) {
             toast.warning(
-              `${outputUrls.length} de ${sampleCount} vídeos foram gerados. Os créditos excedentes foram estornados.`,
+              t('partialResultWarning', { actual: outputUrls.length, requested: sampleCount }),
             );
           }
           prependToGallery(generation);
@@ -506,14 +497,14 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           clearProgressTimer();
           clearMsgTimer();
           setGenState('idle');
-          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: 'Erro ao gerar vídeo.' }));
+          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: tCommon('errors.generateVideo') }));
           refetchCredits();
         }
       } catch {
         clearPollTimer();
         clearProgressTimer();
         setGenState('idle');
-        setErrorMsg(showGenerationError({ fallback: 'Erro ao verificar status da geração.' }));
+        setErrorMsg(showGenerationError({ fallback: tCommon('errors.checkStatus') }));
       }
     }, 3000);
   }
@@ -653,7 +644,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           const actual = actualCount ?? outputUrls.length;
           if (actual < requested && creditsRefunded != null) {
             toast.warning(
-              `${actual} de ${requested} vídeos foram gerados. ${creditsRefunded} crédito${creditsRefunded !== 1 ? 's' : ''} estornado${creditsRefunded !== 1 ? 's' : ''}.`,
+              t('partialResultRefund', { actual, requested, credits: creditsRefunded, plural: creditsRefunded !== 1 ? 's' : '' }),
             );
           }
           api.generations.get(accessToken!, generationId).then(prependToGallery).catch(() => { });
@@ -664,7 +655,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           clearPollTimer();
           clearSSE();
           setGenState('idle');
-          setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: 'Erro ao gerar vídeo.' }));
+          setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: tCommon('errors.generateVideo') }));
           refetchCredits();
         },
         onError: () => {
@@ -679,7 +670,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
         setPlansModalOpen(true);
         return;
       }
-      setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: 'Erro ao iniciar geração.' }));
+      setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: tCommon('errors.startGeneration') }));
     }
   }
 
@@ -744,7 +735,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
             <div className="flex items-center gap-2">
               <Video className="h-4 w-4 text-[#a2dd00]" />
               <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
-                GERAR VÍDEO
+                {t('header')}
               </span>
             </div>
             <div className="flex items-center gap-1">
@@ -762,8 +753,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
             {/* Mode selector */}
             <div className="flex gap-2">
               {([
-                ['text', 'Texto → Vídeo', Type],
-                ['image', 'Imagem → Vídeo', Image],
+                ['text', t('modes.text'), Type],
+                ['image', t('modes.image'), Image],
               ] as const).map(([mode, label, Icon]) => {
                 const active = videoMode === mode;
                 return (
@@ -798,7 +789,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 rows={3}
-                placeholder="Descreva a cena que você imagina, com detalhes."
+                placeholder={t('promptPlaceholder')}
                 className="w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30"
               />
 
@@ -818,7 +809,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 {/* First frame — required */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                    PRIMEIRO FRAME <span className="text-red-400/60">*</span>
+                    {t('labels.firstFrame')} <span className="text-red-400/60">*</span>
                   </label>
                   {firstFrame ? (
                     <div className="group relative h-20 w-full overflow-hidden rounded-xl border border-[#f3f0ed]/10">
@@ -838,7 +829,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                         className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
                       >
                         <ImagePlus className="h-4 w-4" />
-                        <span className="text-[10px] font-bold tracking-wider">ENVIAR</span>
+                        <span className="text-[10px] font-bold tracking-wider">{t('buttons.upload')}</span>
                       </button>
                       <button
                         onClick={() => {
@@ -852,7 +843,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                                 reader.onload = (ev) => {
                                   const dataUrl = ev.target?.result as string;
                                   targetSetter({ base64: dataUrl.split(',')[1], mime_type: blob.type || 'image/jpeg', preview: dataUrl });
-                                  toast.success('Imagem adicionada como referência!');
+                                  toast.success(tCommon('imageAddedAsReference'));
                                 };
                                 reader.readAsDataURL(blob);
                               }).catch(() => { });
@@ -881,7 +872,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 {/* Last frame — optional */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                    ÚLTIMO FRAME <span className="text-[#f3f0ed]/20">(opcional)</span>
+                    {t('labels.lastFrame')} <span className="text-[#f3f0ed]/20">{t('labels.lastFrameOptional')}</span>
                   </label>
                   {lastFrame ? (
                     <div className="group relative h-20 w-full overflow-hidden rounded-xl border border-[#f3f0ed]/10">
@@ -901,7 +892,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                         className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
                       >
                         <ImagePlus className="h-4 w-4" />
-                        <span className="text-[10px] font-bold tracking-wider">ENVIAR</span>
+                        <span className="text-[10px] font-bold tracking-wider">{t('buttons.upload')}</span>
                       </button>
                       <button
                         onClick={() => {
@@ -914,7 +905,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                                 reader.onload = (ev) => {
                                   const dataUrl = ev.target?.result as string;
                                   setLastFrame({ base64: dataUrl.split(',')[1], mime_type: blob.type || 'image/jpeg', preview: dataUrl });
-                                  toast.success('Imagem adicionada como referência!');
+                                  toast.success(tCommon('imageAddedAsReference'));
                                 };
                                 reader.readAsDataURL(blob);
                               }).catch(() => { });
@@ -962,13 +953,13 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 />
               ) : undefined}
             >
-              <ActionButton title="Abrir" onClick={() => window.open(generatedVideoUrls[selectedVideoIdx], '_blank')}>
+              <ActionButton title={tCommon('open')} onClick={() => window.open(generatedVideoUrls[selectedVideoIdx], '_blank')}>
                 <ArrowUpRight className="h-3.5 w-3.5" />
               </ActionButton>
-              <ActionButton title="Baixar" onClick={() => handleDownload(generatedVideoUrls[selectedVideoIdx])}>
+              <ActionButton title={tCommon('download')} onClick={() => handleDownload(generatedVideoUrls[selectedVideoIdx])}>
                 <Download className="h-3.5 w-3.5" />
               </ActionButton>
-              <ActionButton title="Descartar" onClick={handleDiscard}>
+              <ActionButton title={tCommon('discard')} onClick={handleDiscard}>
                 <X className="h-3.5 w-3.5" />
               </ActionButton>
             </GenerationPreview>
@@ -1017,7 +1008,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="left" sideOffset={6}>
-                  {optionsOpen ? 'Ocultar opções' : 'Mostrar opções'}
+                  {optionsOpen ? tCommon('hideOptions') : tCommon('showOptions')}
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -1034,8 +1025,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 {/* Audio toggle */}
                 <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/10 px-3 py-2.5" style={{ opacity: isGenerating || isKieModel ? 0.4 : 1, pointerEvents: isGenerating || isKieModel ? 'none' : undefined }}>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-[#f3f0ed]/60">Áudio</span>
-                    {isKieModel && <span className="text-[11px] text-[#a2dd00]/60">(sempre ativo)</span>}
+                    <span className="text-[11px] font-bold text-[#f3f0ed]/60">{t('labels.audio')}</span>
+                    {isKieModel && <span className="text-[11px] text-[#a2dd00]/60">{t('labels.audioAlwaysOn')}</span>}
                   </div>
                   <ToggleSwitch checked={isKieModel ? true : audio} onChange={isKieModel ? () => { } : setAudio} />
                 </div>
@@ -1044,17 +1035,18 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                      MODELO
+                      {t('labels.model')}
                     </label>
                     <PanelSelect
                       value={model}
                       onValueChange={setModel}
                       options={videoModelOptions}
+                      maintenanceLabel={t('modelMaintenance')}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                      RESOLUÇÃO
+                      {t('labels.resolution')}
                     </label>
                     <PanelSelect
                       value={resolution}
@@ -1073,7 +1065,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                   {!isKieModel && (
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                        DURAÇÃO
+                        {t('labels.duration')}
                       </label>
                       <div className="flex gap-1.5">
                         {['4s', '6s', '8s'].map((d) => {
@@ -1084,7 +1076,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                               key={d}
                               onClick={() => !disabled && setDuration(d)}
                               disabled={disabled}
-                              title={disabled ? 'Apenas 8s disponível com referências' : undefined}
+                              title={disabled ? t('only8s') : undefined}
                               className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-30"
                               style={{
                                 background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
@@ -1103,7 +1095,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                      PROPORÇÃO
+                      {t('labels.proportion')}
                     </label>
                     <div className="flex gap-1.5">
                       {['16:9', '9:16', '1:1'].map((p) => {
@@ -1133,7 +1125,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 {!isKieModel && (
                   <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
                     <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                      QUANTIDADE
+                      {t('labels.quantity')}
                     </label>
                     <div className="flex gap-1.5">
                       {[1, 2, 3, 4].map((n) => {
@@ -1163,7 +1155,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                   <div className="space-y-2" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
                     <div className="flex items-center justify-between">
                       <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                        IMAGENS DE REFERÊNCIA (opcional)
+                        {t('labels.referenceImages')}
                       </label>
                       <span className="text-[10px] text-[#f3f0ed]/25">{refImages.length}/3</span>
                     </div>
@@ -1191,18 +1183,18 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                                 <ImagePlus className="h-5 w-5" />
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent side="top" sideOffset={6}>Enviar do dispositivo</TooltipContent>
+                            <TooltipContent side="top" sideOffset={6}>{tCommon('uploadFromDevice')}</TooltipContent>
                           </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
-                                onClick={() => openGalleryPicker({ nodeId, remaining: 3 - refImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success('Imagem adicionada como referência!'); } })}
+                                onClick={() => openGalleryPicker({ nodeId, remaining: 3 - refImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success(tCommon('imageAddedAsReference')); } })}
                                 className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
                               >
                                 <FolderOpen className="h-5 w-5" />
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent side="top" sideOffset={6}>Escolher da galeria</TooltipContent>
+                            <TooltipContent side="top" sideOffset={6}>{tCommon('pickFromGallery')}</TooltipContent>
                           </Tooltip>
                         </>
                       )}
@@ -1225,23 +1217,23 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-2">
                         <Sparkles className="h-3 w-3 text-emerald-400" />
                         <span className="text-[11px] font-bold text-emerald-400">
-                          Geração gratuita! ({estimate.freeVeoGenerationsRemaining} restante{estimate.freeVeoGenerationsRemaining !== 1 ? 's' : ''})
+                          {t('freeGeneration')} {t('freeGenerationRemaining', { count: estimate.freeVeoGenerationsRemaining, plural: estimate.freeVeoGenerationsRemaining !== 1 ? 's' : '' })}
                         </span>
                       </div>
                     )}
                     <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
                       <div className="flex items-center gap-1.5">
                         <Coins className="h-3 w-3 text-[#a2dd00]" />
-                        <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Custo</span>
+                        <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">{tCommon('cost')}</span>
                       </div>
                       {estimateLoading ? (
                         <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
                       ) : estimate ? (
                         <div className="flex items-center gap-2">
                           {estimate.canUseFreeGeneration ? (
-                            <span className="text-xs font-bold text-emerald-400">Grátis</span>
+                            <span className="text-xs font-bold text-emerald-400">{t('free')}</span>
                           ) : (
-                            <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
+                            <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} {tCommon('credits')}</span>
                           )}
                           <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
                         </div>
@@ -1264,12 +1256,12 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                   {genState === 'generating' ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      GERANDO...
+                      {tCommon('generating')}
                     </>
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4" />
-                      {genState === 'done' ? 'GERAR NOVAMENTE' : 'GERAR'}
+                      {genState === 'done' ? tCommon('generateAgain') : tCommon('generate')}
                     </>
                   )}
                 </button>
@@ -1360,10 +1352,12 @@ function PanelSelect({
   value,
   onValueChange,
   options,
+  maintenanceLabel,
 }: {
   value: string;
   onValueChange: (v: string) => void;
   options: { value: string; label: string; disabled?: boolean }[];
+  maintenanceLabel?: string;
 }) {
   return (
     <Select value={value} onValueChange={onValueChange}>
@@ -1381,7 +1375,7 @@ function PanelSelect({
             <span className="flex items-center gap-1.5">
               {opt.label}
               {opt.disabled && (
-                <span title="Em manutenção">
+                <span title={maintenanceLabel}>
                   <TriangleAlert className="h-3 w-3 text-amber-400" />
                 </span>
               )}

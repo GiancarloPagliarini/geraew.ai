@@ -19,6 +19,7 @@ import { ArrowBigUp, ArrowUpRight, ChevronDown, Coins, Download, FolderOpen, Fol
 import { EnhancePromptToggle } from './EnhancePromptToggle';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { createPortal } from 'react-dom';
 import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -42,24 +43,6 @@ const RADIUS = 36;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 // ─── loading messages ─────────────────────────────────────────────────────────
-
-const LOADING_MESSAGES = [
-  'CONSULTANDO OS PIXELS...',
-  'ENSINANDO A IA A PINTAR...',
-  'MISTURANDO CORES DIGITAIS...',
-  'PEDINDO INSPIRAÇÃO AO UNIVERSO...',
-  'AQUECENDO OS NEURÔNIOS...',
-  'INVOCANDO O ARTISTA INTERIOR...',
-  'CALCULANDO CRIATIVIDADE...',
-  'SONHANDO EM ALTA RESOLUÇÃO...',
-  'TREINANDO O OLHO ARTÍSTICO...',
-  'APLICANDO CAMADAS DE GENIALIDADE...',
-  'BUSCANDO REFERÊNCIAS NO MUSEU...',
-  'CONVERSANDO COM OS PIXELS...',
-  'CONVENCENDO A IA A CAPRICHAR...',
-  'PROCESSANDO BOAS VIBES...',
-  'ADICIONANDO UM TOQUE DE MAGIA...',
-];
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -111,6 +94,9 @@ interface GenerateImagePanelProps {
 }
 
 export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateImagePanelProps) {
+  const t = useTranslations('editorPanels.image');
+  const tCommon = useTranslations('editorPanels.common');
+  const LOADING_MESSAGES = t.raw('loadingMessages') as string[];
   const { setNodeImage, nodeUpscaleStates, setNodeUpscaleState, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker, pendingPromptRef, consumePendingPrompt, setNodeGenerating } =
     useEditor();
   const [initialPendingPrompt] = useState(() => {
@@ -205,12 +191,12 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   // Update document title while generating
   useEffect(() => {
     if (genState === 'generating') {
-      document.title = 'Geraew AI - Gerando imagem';
+      document.title = t('docTitleGenerating');
     } else {
       document.title = 'Geraew AI';
     }
     return () => { document.title = 'Geraew AI'; };
-  }, [genState]);
+  }, [genState, t]);
 
   // Immediately check generation status when page regains visibility (fixes mobile app-switch)
   useGenerationRecovery(generationId, accessToken, genState === 'generating', {
@@ -225,7 +211,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
       clearPollTimer();
       clearSSE();
       setGenState('idle');
-      setErrorMsg(showGenerationError({ errorMessage: gen.errorMessage, fallback: 'Erro ao gerar imagem.' }));
+      setErrorMsg(showGenerationError({ errorMessage: gen.errorMessage, fallback: tCommon('errors.generateImage') }));
       refetchCredits();
     },
   });
@@ -270,7 +256,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
         const { dataUrl, mimeType } = await compressImage(rawDataUrl, file.type);
         const base64 = dataUrl.split(',')[1];
         setAttachedImages((prev) => [...prev, { base64, mime_type: mimeType, preview: dataUrl }]);
-        toast.success('Imagem adicionada como referência!');
+        toast.success(tCommon('imageAddedAsReference'));
       };
       reader.readAsDataURL(file);
     });
@@ -416,14 +402,14 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
           clearProgressTimer();
           clearMsgTimer();
           setGenState('idle');
-          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: 'Erro ao gerar imagem.' }));
+          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: tCommon('errors.generateImage') }));
           refetchCredits();
         }
       } catch {
         clearPollTimer();
         clearProgressTimer();
         setGenState('idle');
-        setErrorMsg(showGenerationError({ fallback: 'Erro ao verificar status da geração.' }));
+        setErrorMsg(showGenerationError({ fallback: tCommon('errors.checkStatus') }));
       }
     }, 3000);
   }
@@ -507,7 +493,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
             clearPollTimer();
             clearSSE();
             setGenState('idle');
-            setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: 'Erro ao gerar imagem.' }));
+            setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: tCommon('errors.generateImage') }));
             refetchCredits();
           },
           onError: () => {
@@ -518,7 +504,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
       } catch (err) {
         // 429 MAX_CONCURRENT_REACHED — wait for a slot and retry automatically
         if (err instanceof ApiError && err.status === 429 && attempt < MAX_QUEUE_RETRIES) {
-          setLoadingMsg('AGUARDANDO VAGA NA FILA...');
+          setLoadingMsg(t('queueWaiting'));
           await new Promise<void>((resolve) => setTimeout(resolve, QUEUE_RETRY_DELAY));
           continue;
         }
@@ -531,10 +517,10 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
           return;
         }
         if (err instanceof ApiError && err.status === 429) {
-          setErrorMsg(showGenerationError({ errorMessage: 'Limite de gerações simultâneas atingido. Tente novamente em instantes.', fallback: 'Erro ao iniciar geração.' }));
+          setErrorMsg(showGenerationError({ errorMessage: t('concurrentLimit'), fallback: tCommon('errors.startGeneration') }));
           return;
         }
-        setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: 'Erro ao iniciar geração.' }));
+        setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: tCommon('errors.startGeneration') }));
         return;
       }
     }
@@ -634,9 +620,9 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
       queryClient.invalidateQueries({ queryKey: ['generation-folders', generationId] });
       const folder = folders.find((f) => f.id === folderId);
-      toast.success('Adicionada à pasta', { description: folder ? `"${folder.name}"` : undefined });
+      toast.success(t('actions.addedToFolder'), { description: folder ? `"${folder.name}"` : undefined });
     },
-    onError: () => toast.error('Erro ao adicionar à pasta', { description: 'Tente novamente.' }),
+    onError: () => toast.error(t('actions.errorAddToFolder'), { description: t('actions.tryAgain') }),
   });
 
   const createFolderAndAddMutation = useMutation({
@@ -649,9 +635,9 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
       queryClient.invalidateQueries({ queryKey: ['folders'] });
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
       queryClient.invalidateQueries({ queryKey: ['generation-folders', generationId] });
-      toast.success('Pasta criada e imagem adicionada', { description: `"${folder.name}"` });
+      toast.success(t('actions.folderCreatedAndAdded'), { description: `"${folder.name}"` });
     },
-    onError: () => toast.error('Erro ao criar pasta', { description: 'Tente novamente.' }),
+    onError: () => toast.error(t('actions.errorCreateFolder'), { description: t('actions.tryAgain') }),
   });
 
   const isGenerating = genState === 'generating';
@@ -672,7 +658,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
             <div className="flex items-center gap-2">
               <Image className="h-4 w-4 text-[#a2dd00]" />
               <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
-                GERAR IMAGEM
+                {t('header')}
               </span>
             </div>
             <div className="flex items-center gap-1">
@@ -692,7 +678,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               rows={3}
-              placeholder="Descreva o que deseja gerar..."
+              placeholder={t('promptPlaceholder')}
               className="w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30"
             />
 
@@ -731,18 +717,18 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                   <span className="text-[8px] font-black tracking-widest text-[#1a2123]">HD+</span>
                 </div>
               )}
-              <ActionButton title="Expandir" onClick={() => window.open(generatedImageUrl!, '_blank')}>
+              <ActionButton title={tCommon('expand')} onClick={() => window.open(generatedImageUrl!, '_blank')}>
                 <ArrowUpRight className="h-3.5 w-3.5" />
               </ActionButton>
-              <ActionButton title="Baixar" onClick={() => handleDownload(generatedImageUrl!)}>
+              <ActionButton title={tCommon('download')} onClick={() => handleDownload(generatedImageUrl!)}>
                 <Download className="h-3.5 w-3.5" />
               </ActionButton>
               {generationId && (
-                <ActionButton title="Adicionar à pasta" onClick={() => setFolderDialogOpen(true)}>
+                <ActionButton title={t('actions.addToFolder')} onClick={() => setFolderDialogOpen(true)}>
                   <FolderPlus className="h-3.5 w-3.5" />
                 </ActionButton>
               )}
-              <ActionButton title="Descartar" onClick={handleDiscard}>
+              <ActionButton title={tCommon('discard')} onClick={handleDiscard}>
                 <X className="h-3.5 w-3.5" />
               </ActionButton>
             </GenerationPreview>
@@ -756,6 +742,9 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                 activeFolderIds={generationFolders.map((f) => f.id)}
                 onAddToFolder={(folderId) => addToFolderMutation.mutate({ folderId })}
                 onCreateAndAdd={(name) => createFolderAndAddMutation.mutate(name)}
+                title={t('folderDialog.title')}
+                description={t('folderDialog.description')}
+                newFolderPlaceholder={t('folderDialog.newFolderPlaceholder')}
               />
             )}
 
@@ -775,7 +764,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="left" sideOffset={6}>
-                  {optionsOpen ? 'Ocultar opções' : 'Mostrar opções'}
+                  {optionsOpen ? tCommon('hideOptions') : tCommon('showOptions')}
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -790,7 +779,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
               <div className="space-y-4 pt-0.5">
                 <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
                   <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                    MODELO
+                    {t('labels.model')}
                   </label>
                   <PanelSelect
                     value={model}
@@ -805,22 +794,22 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                 <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                      PROPORÇÃO
+                      {t('labels.proportion')}
                     </label>
                     <PanelSelect
                       value={proportion}
                       onValueChange={setProportion}
                       options={[
-                        { value: '16-9', label: '16:9 Paisagem' },
-                        { value: '9-16', label: '9:16 Retrato' },
-                        { value: '1-1', label: '1:1 Quadrado' },
-                        { value: '4-3', label: '4:3' },
+                        { value: '16-9', label: t('proportionOptions.landscape') },
+                        { value: '9-16', label: t('proportionOptions.portrait') },
+                        { value: '1-1', label: t('proportionOptions.square') },
+                        { value: '4-3', label: t('proportionOptions.43') },
                       ]}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                      QUALIDADE
+                      {t('labels.quality')}
                     </label>
                     <PanelSelect
                       value={quality}
@@ -838,7 +827,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                 <div className="space-y-2" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
                   <div className="flex items-center justify-between">
                     <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                      REFERÊNCIAS (OPCIONAL)
+                      {t('labels.references')}
                     </label>
                     <span className="text-[10px] text-[#f3f0ed]/25">{attachedImages.length}/4</span>
                   </div>
@@ -866,18 +855,18 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                               <ImagePlus className="h-5 w-5" />
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent side="top" sideOffset={6}>Enviar do dispositivo</TooltipContent>
+                          <TooltipContent side="top" sideOffset={6}>{tCommon('uploadFromDevice')}</TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <button
-                              onClick={() => openGalleryPicker({ nodeId, remaining: 4 - attachedImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success('Imagem adicionada como referência!'); } })}
+                              onClick={() => openGalleryPicker({ nodeId, remaining: 4 - attachedImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success(tCommon('imageAddedAsReference')); } })}
                               className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
                             >
                               <FolderOpen className="h-5 w-5" />
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent side="top" sideOffset={6}>Escolher da galeria</TooltipContent>
+                          <TooltipContent side="top" sideOffset={6}>{tCommon('pickFromGallery')}</TooltipContent>
                         </Tooltip>
                       </>
                     )}
@@ -898,13 +887,13 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                   <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
                     <div className="flex items-center gap-1.5">
                       <Coins className="h-3 w-3 text-[#a2dd00]" />
-                      <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Custo</span>
+                      <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">{tCommon('cost')}</span>
                     </div>
                     {estimateLoading ? (
                       <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
                     ) : estimate ? (
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
+                        <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} {tCommon('credits')}</span>
                         <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
                       </div>
                     ) : null}
@@ -925,12 +914,12 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                   {genState === 'generating' ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      GERANDO...
+                      {tCommon('generating')}
                     </>
                   ) : (
                     <>
                       <Wand2 className="h-4 w-4" />
-                      {genState === 'done' ? 'GERAR NOVAMENTE' : 'GERAR'}
+                      {genState === 'done' ? tCommon('generateAgain') : tCommon('generate')}
                     </>
                   )}
                 </button>
@@ -997,6 +986,9 @@ function FolderAddDialog({
   activeFolderIds,
   onAddToFolder,
   onCreateAndAdd,
+  title,
+  description,
+  newFolderPlaceholder,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -1004,6 +996,9 @@ function FolderAddDialog({
   activeFolderIds: string[];
   onAddToFolder: (folderId: string) => void;
   onCreateAndAdd: (name: string) => void;
+  title: string;
+  description: string;
+  newFolderPlaceholder: string;
 }) {
   const [newName, setNewName] = useState('');
 
@@ -1019,9 +1014,9 @@ function FolderAddDialog({
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setNewName(''); }}>
       <DialogContent className="max-w-xs rounded-2xl border border-[#f3f0ed]/10 bg-[#1a2123] p-5 shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="text-sm font-bold text-[#f3f0ed]">Adicionar à pasta</DialogTitle>
+          <DialogTitle className="text-sm font-bold text-[#f3f0ed]">{title}</DialogTitle>
           <DialogDescription className="text-xs text-[#f3f0ed]/40">
-            Escolha uma pasta existente ou crie uma nova.
+            {description}
           </DialogDescription>
         </DialogHeader>
 
@@ -1051,7 +1046,7 @@ function FolderAddDialog({
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }}
-            placeholder="Nova pasta..."
+            placeholder={newFolderPlaceholder}
             className="flex-1 rounded-lg border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 px-3 py-2 text-xs text-[#f3f0ed]/80 placeholder-[#f3f0ed]/25 outline-none focus:border-[#a2dd00]/40"
           />
           <button

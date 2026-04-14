@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useEditor } from '@/lib/editor-context';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface BottomToolbarProps {
   zoom: number;
@@ -44,6 +45,7 @@ export function BottomToolbar({
   onDelete,
   onFitView,
 }: BottomToolbarProps) {
+  const t = useTranslations('editor.bottomToolbar');
   const { leftPanelOpen } = useEditor();
   const [mobileOpen, setMobileOpen] = useState(true);
 
@@ -71,7 +73,7 @@ export function BottomToolbar({
 
           {/* Mode toggle — Hand / Pointer */}
           <ModeButton
-            tooltip="Mover canvas"
+            tooltip={t('moveCanvas')}
             active={!isSelectMode}
             onClick={() => isSelectMode && onToggleSelectMode()}
           >
@@ -80,7 +82,7 @@ export function BottomToolbar({
 
           <div className="hidden sm:block">
             <ModeButton
-              tooltip="Selecionar nodes (arrastar para selecionar vários)"
+              tooltip={t('selectNodes')}
               active={isSelectMode}
               onClick={() => !isSelectMode && onToggleSelectMode()}
             >
@@ -91,27 +93,27 @@ export function BottomToolbar({
           <div className="mx-1 h-4 w-px bg-[#f3f0ed]/[0.08] sm:mx-1.5" />
 
           {/* Add panels */}
-          <ToolbarButton tooltip="Gerar imagem" onClick={onAddImage}>
+          <ToolbarButton tooltip={t('generateImage')} onClick={onAddImage}>
             <ImageIcon className="h-4 w-4" />
           </ToolbarButton>
 
-          <ToolbarButton tooltip="Criar AI Influencer" onClick={onAddInfluencer}>
+          <ToolbarButton tooltip={t('createInfluencer')} onClick={onAddInfluencer}>
             <PersonStanding className="h-4 w-4" />
           </ToolbarButton>
 
-          <ToolbarButton tooltip="Gerar Vídeo" onClick={onAddVideo}>
+          <ToolbarButton tooltip={t('generateVideo')} onClick={onAddVideo}>
             <Video className="h-4 w-4" />
           </ToolbarButton>
 
-          <ToolbarButton tooltip="Copiar movimentos" onClick={onAddMotionControl}>
+          <ToolbarButton tooltip={t('copyMotion')} onClick={onAddMotionControl}>
             <AudioWaveform className="h-4 w-4" />
           </ToolbarButton>
 
-          <ToolbarButton tooltip="Provador Virtual" onClick={onAddVirtualTryOn}>
+          <ToolbarButton tooltip={t('virtualTryOn')} onClick={onAddVirtualTryOn}>
             <Shirt className="h-4 w-4" />
           </ToolbarButton>
 
-          <ToolbarButton tooltip="Troca de Rosto" onClick={onAddFaceSwap}>
+          <ToolbarButton tooltip={t('faceSwap')} onClick={onAddFaceSwap}>
             <Repeat2 className="h-4 w-4" />
           </ToolbarButton>
           {/*
@@ -123,7 +125,7 @@ export function BottomToolbar({
 
           {/* Zoom */}
           <div className="flex items-center">
-            <ToolbarButton tooltip="Reduzir" onClick={onZoomOut}>
+            <ToolbarButton tooltip={t('zoomOut')} onClick={onZoomOut}>
               <Minus className="h-4 w-4" />
             </ToolbarButton>
 
@@ -137,11 +139,11 @@ export function BottomToolbar({
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom" sideOffset={8}>
-                Resetar zoom
+                {t('resetZoom')}
               </TooltipContent>
             </Tooltip>
 
-            <ToolbarButton tooltip="Ampliar" onClick={onZoomIn}>
+            <ToolbarButton tooltip={t('zoomIn')} onClick={onZoomIn}>
               <Plus className="h-4 w-4" />
             </ToolbarButton>
 
@@ -150,12 +152,12 @@ export function BottomToolbar({
 
           {/* Actions */}
           <div className="hidden sm:block">
-            <ToolbarButton tooltip="Excluir selecionado" onClick={onDelete}>
+            <ToolbarButton tooltip={t('deleteSelected')} onClick={onDelete}>
               <Trash2 className="h-4 w-4" />
             </ToolbarButton>
           </div>
 
-          <ToolbarButton tooltip="Encaixar na tela" onClick={onFitView}>
+          <ToolbarButton tooltip={t('fitView')} onClick={onFitView}>
             <Fullscreen className="h-4 w-4" />
           </ToolbarButton>
         </div>

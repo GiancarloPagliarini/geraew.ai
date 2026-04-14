@@ -4,12 +4,14 @@ import { CheckCircle, XCircle, Loader2, ArrowRight, ArrowLeft, RefreshCw } from 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useRef, useEffect, Suspense } from 'react';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 
 function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const emailParam = searchParams.get('email') || '';
+  const t = useTranslations('auth.verifyEmail');
 
   const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [status, setStatus] = useState<'input' | 'loading' | 'success' | 'error'>('input');
@@ -89,7 +91,7 @@ function VerifyEmailContent() {
       setMessage(res.message);
     } catch (err) {
       setStatus('error');
-      setMessage(err instanceof Error ? err.message : 'Código inválido ou expirado.');
+      setMessage(err instanceof Error ? err.message : t('invalidCode'));
     }
   }
 
@@ -107,9 +109,9 @@ function VerifyEmailContent() {
     setResendSuccess('');
     try {
       const res = await api.auth.resendVerificationByEmail(emailParam);
-      setResendSuccess(res.message || 'Código reenviado!');
+      setResendSuccess(res.message || t('resendSuccess'));
     } catch (err) {
-      setResendSuccess(err instanceof Error ? err.message : 'Erro ao reenviar.');
+      setResendSuccess(err instanceof Error ? err.message : t('resendError'));
     } finally {
       setResendLoading(false);
     }
@@ -133,25 +135,28 @@ function VerifyEmailContent() {
               <CheckCircle className="h-8 w-8 text-[#a2dd00]" />
             </div>
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-[#f3f0ed]">Email verificado!</h1>
+              <h1 className="text-2xl font-bold text-[#f3f0ed]">{t('successTitle')}</h1>
               <p className="mt-2 text-sm text-[#f3f0ed]/50">{message}</p>
             </div>
             <button
               onClick={() => router.push('/login')}
               className="flex items-center gap-2 rounded-xl bg-[#a2dd00] px-6 py-3 text-sm font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-[0.98]"
             >
-              Ir para o login
+              {t('goToLogin')}
               <ArrowRight className="h-4 w-4" />
             </button>
           </>
         ) : (
           <>
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-[#f3f0ed]">Verifique seu email</h1>
+              <h1 className="text-2xl font-bold text-[#f3f0ed]">{t('title')}</h1>
               <p className="mt-2 text-sm text-[#f3f0ed]/50">
                 {emailParam
-                  ? <>Enviamos um código de 6 dígitos para <span className="text-[#f3f0ed]/70">{emailParam}</span></>
-                  : 'Digite o código de 6 dígitos enviado para seu email'
+                  ? t.rich('descriptionWithEmail', {
+                      email: emailParam,
+                      strong: (chunks) => <span className="text-[#f3f0ed]/70">{chunks}</span>,
+                    })
+                  : t('descriptionGeneric')
                 }
               </p>
             </div>
@@ -182,7 +187,7 @@ function VerifyEmailContent() {
             {status === 'loading' && (
               <div className="flex items-center gap-2 text-[#f3f0ed]/50">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Verificando...</span>
+                <span className="text-sm">{t('verifying')}</span>
               </div>
             )}
 
@@ -196,7 +201,7 @@ function VerifyEmailContent() {
                   onClick={handleRetry}
                   className="text-xs text-[#a2dd00]/70 hover:text-[#a2dd00] transition-colors"
                 >
-                  Tentar novamente
+                  {t('tryAgain')}
                 </button>
               </div>
             )}
@@ -216,7 +221,7 @@ function VerifyEmailContent() {
                   className="flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors disabled:opacity-50"
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${resendLoading ? 'animate-spin' : ''}`} />
-                  {resendLoading ? 'Reenviando...' : 'Reenviar código'}
+                  {resendLoading ? t('resending') : t('resend')}
                 </button>
               )}
               <button
@@ -224,7 +229,7 @@ function VerifyEmailContent() {
                 className="flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
-                Voltar para o login
+                {t('backToLogin')}
               </button>
             </div>
           </>

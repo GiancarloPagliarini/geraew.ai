@@ -12,18 +12,18 @@ import { TutorialDialog } from './TutorialDialog';
 import { VideoEditorDialog } from './VideoEditorDialog';
 import { Flame, FolderOpen, GraduationCap, Star, Type } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useEditor } from '@/lib/editor-context';
 import Image from 'next/image';
 
-const navItems = [
-  { id: 'gallery', icon: FolderOpen, label: 'Galeria' },
-  // { id: 'videoEditor', icon: Film, label: 'Editor de Video' },
-  { id: 'tutorial', icon: GraduationCap, label: 'Tutorial' },
-  { id: 'prompts', icon: Type, label: 'Prompts', tooltip: 'Fábrica de Prompts', isNew: true },
-  { id: 'trending', icon: Flame, label: 'Trending', tooltip: 'Produtos Mais Vendidos', isNew: true },
-];
-
 export function LeftSidebar() {
+  const t = useTranslations('editorChrome.leftSidebar');
+  const navItems: Array<{ id: string; icon: typeof FolderOpen; label: string; tooltip?: string; isNew?: boolean }> = [
+    { id: 'gallery', icon: FolderOpen, label: t('gallery') },
+    { id: 'tutorial', icon: GraduationCap, label: t('tutorial') },
+    { id: 'prompts', icon: Type, label: t('prompts'), tooltip: t('promptsTooltip'), isNew: true },
+    { id: 'trending', icon: Flame, label: t('trending'), tooltip: t('trendingTooltip'), isNew: true },
+  ];
   const { galleryPickerRequest, setLeftPanelOpen } = useEditor();
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [videoEditorOpen, setVideoEditorOpen] = useState(false);
@@ -126,7 +126,7 @@ export function LeftSidebar() {
 
         {/* Logo */}
         <div className="hidden md:flex md:mt-auto md:items-center md:justify-center md:pb-1">
-          <Image src="/logo_2.svg" alt="Geraew" width={28} height={28} className="opacity-30" />
+          <Image src="/logo_2.svg" alt={t('logoAlt')} width={28} height={28} className="opacity-30" />
         </div>
       </aside>
       <GalleryDialog open={galleryOpen} onOpenChange={setGalleryOpen} />

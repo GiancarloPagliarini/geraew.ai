@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { api, ApiError } from '@/lib/api';
 import { useLoginModal } from '@/lib/login-modal-context';
@@ -12,36 +13,28 @@ import { useLoginModal } from '@/lib/login-modal-context';
 const slides = [
   {
     id: 0,
-    tag: 'Geração de Vídeos profissionais',
-    title: 'Crie vídeos únicos com IA',
-    description: 'Transforme texto em vídeo em segundos com modelos de última geração.',
+    slideKey: 's0' as const,
     bg: 'bg-black',
     accent: '#a2dd00',
     video: 'https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmmwn2wq5007vus01furnxyh4/22c243fd-ce57-4c3e-aa8a-afadc811da46/output_0.mp4',
   },
   {
     id: 1,
-    tag: 'Identidade Visual',
-    title: 'Sua marca, do seu jeito',
-    description: 'Crie conteúdo visual consistente para campanhas, redes sociais e muito mais.',
+    slideKey: 's1' as const,
     bg: 'bg-black',
     accent: '#ff6b9d',
     video: 'https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmmxjmvws00fyus01sxwu628l/5727b0ea-86d6-4887-8707-57eeb1db17bf/output_2.mp4',
   },
   {
     id: 2,
-    tag: 'Personagens com IA',
-    title: 'Personagens que parecem reais',
-    description: 'Monte personagens únicos com controle total de estilo, etnia, expressão e muito mais.',
+    slideKey: 's2' as const,
     bg: 'bg-gradient-to-br from-teal-950 via-emerald-900 to-cyan-950',
     accent: '#00d4aa',
     video: 'https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmndiy1070058n4018hi1nnr7/848a6510-414d-4796-9da7-4a9a428a11fb/output_0.mp4',
   },
   {
     id: 3,
-    tag: 'Geração de Imagens',
-    title: 'Imagine. Descreva. Crie.',
-    description: 'Transforme qualquer ideia em imagem com modelos de última geração — rápido e sem limitações.',
+    slideKey: 's3' as const,
     bg: 'bg-black',
     accent: '#ffa040',
     image: 'https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmmxldri200gzus01z4fip7qf/04d6bbed-eb33-4e0a-ae27-8df3e14b6b92/output_0.png',
@@ -55,6 +48,10 @@ function LoginModalContent() {
   const router = useRouter();
   const { login } = useAuth();
   const { isOpen, planParam, initialMode, closeLoginModal } = useLoginModal();
+  const tCommon = useTranslations('auth.common');
+  const tForgot = useTranslations('auth.forgotPassword');
+  const tVerify = useTranslations('auth.verifyEmail');
+  const tSlides = useTranslations('auth.common.slides');
 
   const redirectAfterLogin = planParam ? `/creditos?plan=${planParam}` : '/workspace';
 
@@ -282,7 +279,7 @@ function LoginModalContent() {
       handleLoginSuccess();
     } catch (err) {
       setVerifyStatus('error');
-      setVerifyMessage(err instanceof Error ? err.message : 'Código inválido ou expirado.');
+      setVerifyMessage(err instanceof Error ? err.message : tVerify('invalidCode'));
     }
   }
   function handleVerifyRetry() {
@@ -295,9 +292,9 @@ function LoginModalContent() {
     setResendVerifyLoading(true); setResendVerifySuccess('');
     try {
       const res = await api.auth.resendVerificationByEmail(email);
-      setResendVerifySuccess(res.message || 'Código reenviado!');
+      setResendVerifySuccess(res.message || tVerify('resendSuccess'));
     } catch (err) {
-      setResendVerifySuccess(err instanceof Error ? err.message : 'Erro ao reenviar.');
+      setResendVerifySuccess(err instanceof Error ? err.message : tVerify('resendError'));
     } finally { setResendVerifyLoading(false); }
   }
   async function handleForgotSubmit(e: React.FormEvent) {
@@ -306,7 +303,7 @@ function LoginModalContent() {
       await api.auth.forgotPassword(forgotEmail);
       setForgotSent(true);
     } catch (err) {
-      setForgotError(err instanceof Error ? err.message : 'Erro ao enviar email. Tente novamente.');
+      setForgotError(err instanceof Error ? err.message : tForgot('error'));
     } finally { setForgotLoading(false); }
   }
   async function handleEmailSubmit(e: { preventDefault(): void }) {
@@ -321,7 +318,7 @@ function LoginModalContent() {
         setView('verify');
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Ocorreu um erro. Tente novamente.';
+      const message = err instanceof Error ? err.message : tCommon('genericError');
       setError(message);
       if (err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED') setShowResend(true);
     } finally { setLoading(false); }
@@ -332,7 +329,7 @@ function LoginModalContent() {
       const res = await api.auth.resendVerificationByEmail(email);
       setSuccess(res.message); setShowResend(false);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erro ao reenviar email. Tente novamente.');
+      setError(err instanceof Error ? err.message : tCommon('genericError'));
     } finally { setResendLoading(false); }
   }
 
@@ -361,14 +358,14 @@ function LoginModalContent() {
           {/* Logo */}
           <div className="mb-6 flex flex-col items-center">
             <Image src="/full_logo.svg" alt="Geraew AI" width={140} height={140} className="mix-blend-lighten" />
-            <p className="mt-1 text-xs text-white/25">Gerador de imagens com inteligência artificial</p>
+            <p className="mt-1 text-xs text-white/25">{tCommon('tagline')}</p>
           </div>
 
           {/* ── View: Options ── */}
           {view === 'options' && (
             <div className="w-full flex flex-col gap-3">
-              <h2 className="text-center text-base font-semibold text-white mb-1">Bem-vindo de volta</h2>
-              <p className="text-center text-xs text-white/35 mb-3">Entre ou crie sua conta para começar a criar</p>
+              <h2 className="text-center text-base font-semibold text-white mb-1">{tCommon('welcomeBack')}</h2>
+              <p className="text-center text-xs text-white/35 mb-3">{tCommon('welcomeSubtitle')}</p>
 
               <button
                 onClick={() => {
@@ -392,7 +389,7 @@ function LoginModalContent() {
                     <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z" />
                   </svg>
                 )}
-                {googleLoading ? 'Redirecionando...' : 'Continuar com Google'}
+                {googleLoading ? tCommon('redirecting') : tCommon('continueWithGoogle')}
               </button>
 
               {error && (
@@ -401,7 +398,7 @@ function LoginModalContent() {
 
               <div className="flex items-center gap-3">
                 <div className="h-px flex-1 bg-white/[0.06]" />
-                <span className="text-[10px] text-white/20">ou</span>
+                <span className="text-[10px] text-white/20">{tCommon('or')}</span>
                 <div className="h-px flex-1 bg-white/[0.06]" />
               </div>
 
@@ -410,14 +407,18 @@ function LoginModalContent() {
                 className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.05] text-sm font-medium text-white transition-all hover:bg-white/10 active:scale-[0.98]"
               >
                 <Mail className="h-4 w-4 opacity-60" />
-                Continuar com Email
+                {tCommon('continueWithEmail')}
               </button>
 
               <p className="mt-3 text-center text-[11px] text-white/18 leading-relaxed">
-                Ao continuar, você concorda com nossos{' '}
-                <Link href="/termos-de-uso" onClick={closeLoginModal} className="text-[#a2dd00]/50 hover:text-[#a2dd00]/80 transition-colors">Termos de Uso</Link>{' '}
-                e{' '}
-                <Link href="/politica-de-privacidade" onClick={closeLoginModal} className="text-[#a2dd00]/50 hover:text-[#a2dd00]/80 transition-colors">Política de Privacidade</Link>
+                {tCommon.rich('legal', {
+                  terms: (chunks) => (
+                    <Link href="/termos-de-uso" onClick={closeLoginModal} className="text-[#a2dd00]/50 hover:text-[#a2dd00]/80 transition-colors">{chunks}</Link>
+                  ),
+                  privacy: (chunks) => (
+                    <Link href="/politica-de-privacidade" onClick={closeLoginModal} className="text-[#a2dd00]/50 hover:text-[#a2dd00]/80 transition-colors">{chunks}</Link>
+                  ),
+                })}
               </p>
             </div>
           )}
@@ -426,35 +427,40 @@ function LoginModalContent() {
           {view === 'forgot' && (
             <div className="w-full">
               <button onClick={() => { setView('email'); setForgotEmail(''); setForgotError(''); setForgotSent(false); }} className="mb-5 flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors">
-                <ArrowLeft className="h-3.5 w-3.5" /> Voltar
+                <ArrowLeft className="h-3.5 w-3.5" /> {tCommon('back')}
               </button>
               {forgotSent ? (
                 <div className="flex flex-col items-center gap-4 text-center">
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#a2dd00]/15">
                     <CheckCircle className="h-7 w-7 text-[#a2dd00]" />
                   </div>
-                  <h2 className="text-lg font-bold text-white">Email enviado!</h2>
-                  <p className="text-sm text-white/50">Se o email <span className="text-white/70">{forgotEmail}</span> estiver cadastrado, você receberá um link para redefinir sua senha.</p>
-                  <p className="text-xs text-white/30">Verifique também sua pasta de spam.</p>
+                  <h2 className="text-lg font-bold text-white">{tForgot('sentTitle')}</h2>
+                  <p className="text-sm text-white/50">
+                    {tForgot.rich('sentBody', {
+                      email: forgotEmail,
+                      strong: (chunks) => <span className="text-white/70">{chunks}</span>,
+                    })}
+                  </p>
+                  <p className="text-xs text-white/30">{tForgot('checkSpam')}</p>
                   <button onClick={() => { setView('email'); setForgotEmail(''); setForgotSent(false); }} className="mt-1 flex items-center gap-1.5 text-xs text-[#a2dd00]/60 hover:text-[#a2dd00]/90 transition-colors">
-                    <ArrowLeft className="h-3.5 w-3.5" /> Voltar ao login
+                    <ArrowLeft className="h-3.5 w-3.5" /> {tCommon('backToLogin')}
                   </button>
                 </div>
               ) : (
                 <>
-                  <h2 className="mb-1 text-lg font-bold text-white">Esqueceu sua senha?</h2>
-                  <p className="mb-5 text-xs text-white/40">Digite seu email e enviaremos um link para redefinir sua senha.</p>
+                  <h2 className="mb-1 text-lg font-bold text-white">{tForgot('title')}</h2>
+                  <p className="mb-5 text-xs text-white/40">{tForgot('description')}</p>
                   <form onSubmit={handleForgotSubmit} className="flex flex-col gap-3">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">EMAIL</label>
+                      <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">{tCommon('labels.email')}</label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/25" />
-                        <input type="email" required value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="seu@email.com" className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-10 pr-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]" />
+                        <input type="email" required value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder={tCommon('placeholders.email')} className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-10 pr-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]" />
                       </div>
                     </div>
                     {forgotError && <p className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs text-red-400">{forgotError}</p>}
                     <button type="submit" disabled={forgotLoading} className="mt-1 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#a2dd00] font-bold text-[#1a2123] text-sm transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60">
-                      {forgotLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Enviar link de reset'}
+                      {forgotLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : tForgot('submit')}
                     </button>
                   </form>
                 </>
@@ -466,8 +472,13 @@ function LoginModalContent() {
           {view === 'verify' && (
             <div className="w-full flex flex-col items-center gap-6">
               <div className="text-center">
-                <h2 className="text-xl font-bold text-[#f3f0ed]">Verifique seu email</h2>
-                <p className="mt-2 text-sm text-[#f3f0ed]/50">Enviamos um código de 6 dígitos para <span className="text-[#f3f0ed]/70">{email}</span></p>
+                <h2 className="text-xl font-bold text-[#f3f0ed]">{tVerify('title')}</h2>
+                <p className="mt-2 text-sm text-[#f3f0ed]/50">
+                  {tVerify.rich('descriptionWithEmail', {
+                    email,
+                    strong: (chunks) => <span className="text-[#f3f0ed]/70">{chunks}</span>,
+                  })}
+                </p>
               </div>
               <div className="flex gap-3">
                 {digits.map((digit, i) => (
@@ -484,22 +495,22 @@ function LoginModalContent() {
                 ))}
               </div>
               {verifyStatus === 'loading' && (
-                <div className="flex items-center gap-2 text-[#f3f0ed]/50"><Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm">Verificando...</span></div>
+                <div className="flex items-center gap-2 text-[#f3f0ed]/50"><Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm">{tVerify('verifying')}</span></div>
               )}
               {verifyStatus === 'error' && (
                 <div className="flex flex-col items-center gap-3">
                   <div className="flex items-center gap-2 text-red-400"><XCircle className="h-4 w-4" /><span className="text-sm">{verifyMessage}</span></div>
-                  <button onClick={handleVerifyRetry} className="text-xs text-[#a2dd00]/70 hover:text-[#a2dd00] transition-colors">Tentar novamente</button>
+                  <button onClick={handleVerifyRetry} className="text-xs text-[#a2dd00]/70 hover:text-[#a2dd00] transition-colors">{tVerify('tryAgain')}</button>
                 </div>
               )}
               {resendVerifySuccess && <p className="rounded-xl border border-[#a2dd00]/20 bg-[#a2dd00]/10 px-3 py-2 text-xs text-[#a2dd00]">{resendVerifySuccess}</p>}
               <div className="flex flex-col items-center gap-3 pt-1">
                 <button onClick={handleResendVerify} disabled={resendVerifyLoading} className="flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors disabled:opacity-50">
                   <RefreshCw className={`h-3.5 w-3.5 ${resendVerifyLoading ? 'animate-spin' : ''}`} />
-                  {resendVerifyLoading ? 'Reenviando...' : 'Reenviar código'}
+                  {resendVerifyLoading ? tVerify('resending') : tVerify('resend')}
                 </button>
                 <button onClick={() => { setView('email'); setVerifyStatus('input'); setDigits(['', '', '', '', '', '']); }} className="flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors">
-                  <ArrowLeft className="h-3.5 w-3.5" /> Voltar
+                  <ArrowLeft className="h-3.5 w-3.5" /> {tCommon('back')}
                 </button>
               </div>
             </div>
@@ -509,28 +520,28 @@ function LoginModalContent() {
           {view === 'email' && (
             <div className="w-full">
               <button onClick={() => { setView('options'); setError(''); }} className="mb-5 flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors">
-                <ArrowLeft className="h-3.5 w-3.5" /> Voltar
+                <ArrowLeft className="h-3.5 w-3.5" /> {tCommon('back')}
               </button>
               <div className="mb-6 flex rounded-xl border border-white/[0.07] bg-white/[0.03] p-1">
                 {(['login', 'register'] as const).map((m) => (
                   <button key={m} onClick={() => { setMode(m); setError(''); }} className={`flex-1 rounded-lg py-2 text-xs font-medium transition-all ${mode === m ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/50'}`}>
-                    {m === 'login' ? 'Entrar' : 'Criar conta'}
+                    {m === 'login' ? tCommon('loginTab') : tCommon('registerTab')}
                   </button>
                 ))}
               </div>
               <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3">
                 {mode === 'register' && (
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">NOME</label>
-                    <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]" />
+                    <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">{tCommon('labels.name')}</label>
+                    <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder={tCommon('placeholders.name')} className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]" />
                   </div>
                 )}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">EMAIL</label>
-                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]" />
+                  <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">{tCommon('labels.email')}</label>
+                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={tCommon('placeholders.email')} className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]" />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">SENHA</label>
+                  <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">{tCommon('labels.password')}</label>
                   <div className="relative">
                     <input type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 pr-10 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]" />
                     <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors">
@@ -540,14 +551,14 @@ function LoginModalContent() {
                 </div>
                 {mode === 'register' && (
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">TELEFONE (WHATSAPP)</label>
+                    <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">{tCommon('labels.phone')}</label>
                     <div className="relative">
                       <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-white/40 text-sm">
                         <Phone className="h-3.5 w-3.5" /><span>+55</span>
                       </div>
-                      <input type="tel" required value={formatPhoneDisplay(phone)} onChange={handlePhoneChange} placeholder="(11) 99999-8888" className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-[4.5rem] pr-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]" />
+                      <input type="tel" required value={formatPhoneDisplay(phone)} onChange={handlePhoneChange} placeholder={tCommon('placeholders.phone')} className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-[4.5rem] pr-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]" />
                     </div>
-                    <p className="text-[10px] text-white/25">Usado para contato e recuperação de conta</p>
+                    <p className="text-[10px] text-white/25">{tCommon('phoneHelper')}</p>
                   </div>
                 )}
                 {success && <p className="rounded-xl border border-[#a2dd00]/20 bg-[#a2dd00]/10 px-3 py-2 text-xs text-[#a2dd00]">{success}</p>}
@@ -556,7 +567,7 @@ function LoginModalContent() {
                     <p className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs text-red-400">{error}</p>
                     {showResend && (
                       <button type="button" onClick={handleResendVerification} disabled={resendLoading} className="text-xs text-[#a2dd00]/70 hover:text-[#a2dd00] transition-colors disabled:opacity-50">
-                        {resendLoading ? 'Reenviando...' : 'Reenviar email de verificação'}
+                        {resendLoading ? tCommon('resending') : tCommon('resendVerification')}
                       </button>
                     )}
                   </div>
@@ -564,7 +575,7 @@ function LoginModalContent() {
                 {mode === 'login' && (
                   <div className="flex justify-end">
                     <button type="button" onClick={() => { setForgotEmail(email); setView('forgot'); }} className="text-[11px] text-[#a2dd00]/50 hover:text-[#a2dd00]/80 transition-colors">
-                      Esqueceu a senha?
+                      {tCommon('forgotPasswordLink')}
                     </button>
                   </div>
                 )}
@@ -572,9 +583,9 @@ function LoginModalContent() {
                   {loading ? (
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#1a2123]/30 border-t-[#1a2123]" />
                   ) : mode === 'register' ? (
-                    <><UserPlus className="h-4 w-4" />Criar conta</>
+                    <><UserPlus className="h-4 w-4" />{tCommon('submitRegister')}</>
                   ) : (
-                    <><LogIn className="h-4 w-4" />Entrar</>
+                    <><LogIn className="h-4 w-4" />{tCommon('submitLogin')}</>
                   )}
                 </button>
               </form>
@@ -604,7 +615,7 @@ function LoginModalContent() {
                   className={`absolute inset-0 h-full w-full object-cover transition-[filter] duration-700 ${loadedMedia.has(s.id) ? '' : 'blur-xl scale-105'}`}
                 />
               ) : s.image ? (
-                <Image src={s.image} alt={s.title} fill className={`object-cover transition-[filter] duration-700 ${loadedMedia.has(s.id) ? '' : 'blur-xl scale-105'}`} priority={i === 0} onLoad={() => markLoaded(s.id)} />
+                <Image src={s.image} alt={tSlides(`${s.slideKey}.title`)} fill className={`object-cover transition-[filter] duration-700 ${loadedMedia.has(s.id) ? '' : 'blur-xl scale-105'}`} priority={i === 0} onLoad={() => markLoaded(s.id)} />
               ) : (
                 <>
                   <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")` }} />
@@ -631,13 +642,13 @@ function LoginModalContent() {
           <div className="absolute bottom-0 left-0 right-0 p-8 z-20">
             <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-widest uppercase transition-all duration-500 backdrop-blur-sm" style={{ borderColor: `${slide.accent}50`, color: slide.accent, backgroundColor: `${slide.accent}20` }}>
               <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: slide.accent }} />
-              {slide.tag}
+              {tSlides(`${slide.slideKey}.tag`)}
             </div>
             <h2 key={`title-${currentSlide}`} className="text-2xl font-bold text-white leading-tight mb-2 animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.8)' }}>
-              {slide.title}
+              {tSlides(`${slide.slideKey}.title`)}
             </h2>
             <p key={`desc-${currentSlide}`} className="text-sm text-white/70 leading-relaxed animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}>
-              {slide.description}
+              {tSlides(`${slide.slideKey}.description`)}
             </p>
             <div className="mt-4 flex gap-1.5">
               {slides.map((_, i) => (

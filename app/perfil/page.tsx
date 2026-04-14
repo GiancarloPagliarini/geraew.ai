@@ -28,6 +28,7 @@ import { useRouter } from 'next/navigation';
 import { useLoginModal } from '@/lib/login-modal-context';
 import { useEffect, useState } from 'react';
 import { ManageSubscriptionModal } from '@/components/editor/ManageSubscriptionModal';
+import { useLocale, useTranslations } from 'next-intl';
 
 export default function PerfilPage() {
   const router = useRouter();
@@ -36,14 +37,17 @@ export default function PerfilPage() {
   const loadingMsg = useLoadingMessage('perfil');
   const queryClient = useQueryClient();
   const [showManageModal, setShowManageModal] = useState(false);
+  const t = useTranslations('account.profile');
+  const tCommon = useTranslations('account.common');
+  const locale = useLocale();
 
   const reactivateMutation = useMutation({
     mutationFn: () => api.subscriptions.reactivate(accessToken!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
-      toast.success('Assinatura reativada', { description: 'Seu plano continua ativo normalmente.' });
+      toast.success(t('reactivateSuccessTitle'), { description: t('reactivateSuccessDescription') });
     },
-    onError: () => toast.error('Erro ao reativar', { description: 'Tente novamente.' }),
+    onError: () => toast.error(t('reactivateErrorTitle'), { description: t('reactivateErrorDescription') }),
   });
 
   const { data: profile, isLoading, error } = useQuery({
@@ -78,13 +82,13 @@ export default function PerfilPage() {
       <div className="flex min-h-screen items-center justify-center bg-[#1a2123] px-4">
         <div className="w-full max-w-md text-center">
           <p className="rounded-lg border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-400">
-            {error instanceof Error ? error.message : 'Erro ao carregar perfil'}
+            {error instanceof Error ? error.message : t('errorLoading')}
           </p>
           <button
             onClick={() => router.push('/workspace')}
             className="mt-4 text-sm text-[#a2dd00]/70 hover:text-[#a2dd00]"
           >
-            Voltar ao editor
+            {tCommon('backToEditor')}
           </button>
         </div>
       </div>
@@ -93,7 +97,8 @@ export default function PerfilPage() {
 
   if (!profile) return null;
 
-  const createdAt = new Date(profile.createdAt).toLocaleDateString('pt-BR', {
+  const dateLocale = locale === 'pt-BR' ? 'pt-BR' : 'en-US';
+  const createdAt = new Date(profile.createdAt).toLocaleDateString(dateLocale, {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
@@ -106,10 +111,10 @@ export default function PerfilPage() {
   const usagePercent =
     totalCredits > 0 ? (balance!.planCreditsUsed / totalCredits) * 100 : 0;
   const periodStart = balance
-    ? new Date(balance.periodStart).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+    ? new Date(balance.periodStart).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short' })
     : '';
   const periodEnd = balance
-    ? new Date(balance.periodEnd).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+    ? new Date(balance.periodEnd).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short' })
     : '';
 
   // Plan
@@ -124,7 +129,7 @@ export default function PerfilPage() {
   const subStatus = (sub?.status as string) || null;
   const cancelAtPeriodEnd = (sub?.cancelAtPeriodEnd as boolean) || false;
   const subEnd = sub?.currentPeriodEnd
-    ? new Date(sub.currentPeriodEnd as string).toLocaleDateString('pt-BR', {
+    ? new Date(sub.currentPeriodEnd as string).toLocaleDateString(dateLocale, {
       day: '2-digit',
       month: 'long',
       year: 'numeric',
@@ -141,16 +146,20 @@ export default function PerfilPage() {
   };
 
   const statusLabel = (s: string | null) => {
-    if (!s) return '—';
+    if (!s) return t('status.empty');
     const map: Record<string, string> = {
-      active: 'Ativo',
-      trialing: 'Trial',
-      canceled: 'Cancelado',
-      past_due: 'Vencido',
-      inactive: 'Inativo',
+      active: t('status.active'),
+      ativo: t('status.active'),
+      trialing: t('status.trialing'),
+      canceled: t('status.canceled'),
+      cancelado: t('status.canceled'),
+      past_due: t('status.pastDue'),
+      inactive: t('status.inactive'),
     };
     return map[s.toLowerCase()] ?? s;
   };
+
+  const numFmt = new Intl.NumberFormat(dateLocale);
 
   return (
     <div className="flex min-h-screen flex-col bg-[#1a2123]">
@@ -161,7 +170,7 @@ export default function PerfilPage() {
           className="flex items-center gap-2 text-sm text-[#f3f0ed]/60 transition-colors hover:text-[#f3f0ed]"
         >
           <ArrowLeft className="h-4 w-4" />
-          Voltar ao editor
+          {tCommon('backToEditor')}
         </button>
       </header>
 
@@ -215,7 +224,7 @@ export default function PerfilPage() {
           {/* Member since */}
           <div className="mt-4 flex items-center gap-1.5 text-xs text-[#f3f0ed]/30">
             <Calendar className="h-3.5 w-3.5" />
-            Membro desde {createdAt}
+            {t('memberSince', { date: createdAt })}
           </div>
         </div>
 
@@ -223,13 +232,13 @@ export default function PerfilPage() {
         <div>
           <SectionHeader
             icon={Coins}
-            title="Créditos"
+            title={t('credits')}
             action={
               <button
                 onClick={() => router.push('/creditos')}
                 className="flex items-center gap-1 text-xs text-[#a2dd00]/60 transition-colors hover:text-[#a2dd00]"
               >
-                Ver detalhes
+                {t('viewDetails')}
                 <ExternalLink className="h-3 w-3" />
               </button>
             }
@@ -239,28 +248,28 @@ export default function PerfilPage() {
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {/* Disponiveis */}
               <div className="col-span-2 rounded-xl border border-[#a2dd00]/20 bg-[#a2dd00]/6 p-4 sm:col-span-1">
-                <p className="text-[10px] font-bold tracking-[0.12em] text-[#a2dd00]/60">DISPONIVEIS</p>
+                <p className="text-[10px] font-bold tracking-[0.12em] text-[#a2dd00]/60">{t('available')}</p>
                 <p className="mt-1.5 text-3xl font-bold tabular-nums text-[#a2dd00]">
-                  {isFreeUser ? '30' : balance.totalCreditsAvailable.toLocaleString('pt-BR')}
+                  {isFreeUser ? '30' : numFmt.format(balance.totalCreditsAvailable)}
                 </p>
                 {isFreeUser && (
-                  <p className="mt-1 text-[11px] text-[#a2dd00]/50">creditos</p>
+                  <p className="mt-1 text-[11px] text-[#a2dd00]/50">{t('creditsLabel')}</p>
                 )}
               </div>
 
               {/* Plano */}
               <div className="rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 p-4">
-                <p className="text-[10px] font-bold tracking-[0.12em] text-[#f3f0ed]/40">DO PLANO</p>
+                <p className="text-[10px] font-bold tracking-[0.12em] text-[#f3f0ed]/40">{t('fromPlan')}</p>
                 <p className="mt-1.5 text-2xl font-bold tabular-nums text-[#f3f0ed]">
-                  {isFreeUser ? '30' : balance.planCreditsRemaining.toLocaleString('pt-BR')}
+                  {isFreeUser ? '30' : numFmt.format(balance.planCreditsRemaining)}
                 </p>
               </div>
 
               {/* Bonus */}
               <div className="rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 p-4">
-                <p className="text-[10px] font-bold tracking-[0.12em] text-[#f3f0ed]/40">BONUS</p>
+                <p className="text-[10px] font-bold tracking-[0.12em] text-[#f3f0ed]/40">{t('bonus')}</p>
                 <p className="mt-1.5 text-2xl font-bold tabular-nums text-[#f3f0ed]">
-                  {balance.bonusCreditsRemaining.toLocaleString('pt-BR')}
+                  {numFmt.format(balance.bonusCreditsRemaining)}
                 </p>
               </div>
 
@@ -269,12 +278,12 @@ export default function PerfilPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-[#f3f0ed]/40">
                     <TrendingUp className="h-3.5 w-3.5" />
-                    <span className="text-[10px] font-bold tracking-[0.12em]">USO NO PERIODO</span>
+                    <span className="text-[10px] font-bold tracking-[0.12em]">{t('usageInPeriod')}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[#f3f0ed]/40">
                     <CalendarDays className="h-3.5 w-3.5" />
                     <span className="text-xs">
-                      {isFreeUser ? 'Diario' : `${periodStart} \u2014 ${periodEnd}`}
+                      {isFreeUser ? t('daily') : `${periodStart} \u2014 ${periodEnd}`}
                     </span>
                   </div>
                 </div>
@@ -285,13 +294,13 @@ export default function PerfilPage() {
                   />
                 </div>
                 <div className="mt-1.5 flex items-center justify-between text-[11px] text-[#f3f0ed]/30">
-                  <span>{balance.planCreditsUsed.toLocaleString('pt-BR')} utilizados</span>
+                  <span>{t('creditsUsed', { count: numFmt.format(balance.planCreditsUsed) })}</span>
                   <span>{usagePercent.toFixed(1)}%</span>
                 </div>
               </div>
             </div>
           ) : (
-            <EmptyState icon={Zap} text="Dados de crédito indisponíveis" />
+            <EmptyState icon={Zap} text={t('creditsUnavailable')} />
           )}
         </div>
 
@@ -301,7 +310,7 @@ export default function PerfilPage() {
           <div className="rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 p-4">
             <div className="flex items-center gap-2 text-[#f3f0ed]/40">
               <Crown className="h-4 w-4" />
-              <span className="text-[10px] font-bold tracking-[0.12em]">PLANO</span>
+              <span className="text-[10px] font-bold tracking-[0.12em]">{t('plan')}</span>
             </div>
             {plan && planName ? (
               <div className="mt-3 flex flex-col gap-2">
@@ -313,7 +322,7 @@ export default function PerfilPage() {
                 )}
               </div>
             ) : (
-              <p className="mt-3 text-sm text-[#f3f0ed]/30">Sem plano ativo</p>
+              <p className="mt-3 text-sm text-[#f3f0ed]/30">{t('noActivePlan')}</p>
             )}
           </div>
 
@@ -321,7 +330,7 @@ export default function PerfilPage() {
           <div className="rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 p-4">
             <div className="flex items-center gap-2 text-[#f3f0ed]/40">
               <CreditCard className="h-4 w-4" />
-              <span className="text-[10px] font-bold tracking-[0.12em]">ASSINATURA</span>
+              <span className="text-[10px] font-bold tracking-[0.12em]">{t('subscription')}</span>
             </div>
             {sub && subStatus ? (
               <div className="mt-3 flex flex-col gap-2">
@@ -329,11 +338,11 @@ export default function PerfilPage() {
                   {statusLabel(subStatus)}
                 </span>
                 {subEnd && (
-                  <p className="text-xs text-[#f3f0ed]/40">Renova em {subEnd}</p>
+                  <p className="text-xs text-[#f3f0ed]/40">{t('renewsOn', { date: subEnd })}</p>
                 )}
               </div>
             ) : (
-              <p className="mt-3 text-sm text-[#f3f0ed]/30">Sem assinatura ativa</p>
+              <p className="mt-3 text-sm text-[#f3f0ed]/30">{t('noActiveSubscription')}</p>
             )}
           </div>
         </div>
@@ -344,22 +353,22 @@ export default function PerfilPage() {
           className="flex items-center gap-3 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 px-4 py-3.5 text-left transition-colors hover:border-[#a2dd00]/20 hover:bg-[#a2dd00]/[0.04]"
         >
           <Settings className="h-4 w-4 shrink-0 text-[#a2dd00]/60" />
-          <span className="flex-1 text-sm font-medium text-[#f3f0ed]">Gerenciar sua assinatura</span>
+          <span className="flex-1 text-sm font-medium text-[#f3f0ed]">{t('manageSubscription')}</span>
           <ExternalLink className="h-3.5 w-3.5 text-[#f3f0ed]/30" />
         </button>
 
         {/* ── Conta ── */}
         <div>
-          <SectionHeader icon={User} title="Conta" />
+          <SectionHeader icon={User} title={t('account')} />
           <div className="mt-3 flex flex-col gap-2">
-            <InfoRow icon={Mail} label="Email" value={profile.email} />
+            <InfoRow icon={Mail} label={t('email')} value={profile.email} />
             <InfoRow
               icon={profile.emailVerified ? CheckCircle : XCircle}
-              label="Email verificado"
-              value={profile.emailVerified ? 'Verificado' : 'Não verificado'}
+              label={t('emailVerified')}
+              value={profile.emailVerified ? t('verified') : t('notVerified')}
               valueColor={profile.emailVerified ? 'text-green-400' : 'text-red-400'}
             />
-            <InfoRow icon={Calendar} label="Membro desde" value={createdAt} />
+            <InfoRow icon={Calendar} label={t('memberSinceLabel')} value={createdAt} />
           </div>
         </div>
 
@@ -368,11 +377,11 @@ export default function PerfilPage() {
           <div className="flex flex-col gap-3 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/[0.02] p-4">
             <div className="flex flex-col gap-1">
               <p className="text-sm font-medium text-[#f3f0ed]/50">
-                Sua assinatura esta programada para cancelar.
+                {t('scheduledToCancel')}
               </p>
               {subEnd && (
                 <p className="text-xs text-[#f3f0ed]/35">
-                  Voce tera acesso ate <span className="font-medium text-[#f3f0ed]/50">{subEnd}</span>.
+                  {t('accessUntil', { date: subEnd })}
                 </p>
               )}
             </div>
@@ -382,7 +391,7 @@ export default function PerfilPage() {
               className="flex h-9 w-fit items-center gap-2 rounded-xl bg-[#a2dd00] px-4 text-xs font-bold text-[#1a2123] transition-colors hover:bg-[#b5e82d] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {reactivateMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              Reativar assinatura
+              {t('reactivateSubscription')}
             </button>
           </div>
         )}

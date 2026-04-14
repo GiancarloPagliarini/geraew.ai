@@ -1,0 +1,154 @@
+{
+  "editorPlans": {
+    "free": "Grátis",
+    "perMonth": "/mês",
+    "credits": "créditos",
+    "creditsPerMonth": "créditos/mês",
+    "creditsCount": "{count, number} créditos",
+    "units": {
+      "image": "{count, plural, one {# Imagem} other {# Imagens}}",
+      "generation": "{count, plural, one {# Geração} other {# Gerações}}",
+      "video": "{count, plural, one {# Vídeo} other {# Vídeos}}",
+      "videoFree": "{count, plural, one {# Vídeo Grátis} other {# Vídeos Grátis}}",
+      "blocked": "Bloqueado"
+    },
+    "badges": {
+      "yourPlan": "Seu Plano",
+      "mostPopular": "Mais Popular",
+      "bestValue": "Melhor Valor",
+      "discountOff": "{pct}% OFF",
+      "upgrade": "UPGRADE"
+    },
+    "actions": {
+      "upgrade": "Fazer upgrade",
+      "downgrade": "Fazer downgrade",
+      "create": "Começar agora",
+      "current": "Plano ativo",
+      "buyNow": "Comprar agora"
+    },
+    "whatYouCanCreate": "O que dá pra criar",
+    "features": {
+      "credits": "{count, number} créditos",
+      "emailSupport": "Suporte por e-mail",
+      "prioritySupport": "Suporte prioritário",
+      "queuePriority": "Prioridade na fila de gerações",
+      "fasterGenerations": "Velocidade maior nas gerações",
+      "gallery7": "7 dias de galeria",
+      "gallery90": "90 dias de galeria",
+      "gallery180": "180 dias de galeria",
+      "gallery365": "365 dias de galeria",
+      "tryNoCommit": "Teste sem compromisso"
+    },
+    "subtitles": {
+      "starter": "Explorador",
+      "creator": "Criador",
+      "pro": "Produtor",
+      "studio": "Profissional"
+    },
+    "socialProof": {
+      "free": "Teste nossa capacidade!",
+      "starter": "Ideal para projetos pessoais",
+      "creator": "Escolha de 68% dos criadores",
+      "pro": "Para quem leva a sério",
+      "studio": "Para equipes e agências"
+    },
+    "boost": {
+      "boost-p": {
+        "label": "Emergência",
+        "description": "Recarrega rápida para continuar gerando"
+      },
+      "boost-m": {
+        "label": "Fôlego",
+        "description": "Créditos extras para projetos maiores"
+      },
+      "boost-g": {
+        "label": "Pré-upgrade",
+        "description": "Quase um plano — ideal para testar"
+      }
+    },
+    "packages": {
+      "saveByCredit": "Economize {pct}% por crédito",
+      "perks": {
+        "instant": "Créditos entram na hora",
+        "neverExpire": "Nunca expiram",
+        "stackWithPlan": "Acumulam com os do plano"
+      },
+      "trust": "Pagamento único · Sem assinatura"
+    },
+    "plansModal": {
+      "limitedOffer": "Oferta por tempo limitado",
+      "titlePlans": "Escolha seu plano e comece a criar",
+      "titleCredits": "Pacotes de créditos avulsos",
+      "plansSubtitle": "Mais de {count} criadores já estão gerando conteúdo.",
+      "creatorsCount": "2.400 criadores",
+      "creditsSubtitle": "Compra única · Sem assinatura · Créditos nunca expiram",
+      "cancelAnytime": "Cancele quando quiser",
+      "stackWithPlan": "Acumulam com os créditos do plano",
+      "instant": "Entram na hora",
+      "tabPlans": "Planos",
+      "tabCredits": "Pacotes de Créditos",
+      "noCancelFee": "Sem taxa de cancelamento",
+      "creditsRenew": "Créditos renovam mensalmente"
+    },
+    "manage": {
+      "title": "Gerenciar assinatura",
+      "subtitle": "Detalhes do seu plano e pagamento",
+      "plan": "Plano",
+      "noPlan": "Sem plano",
+      "active": "Ativo",
+      "canceling": "Cancelando",
+      "scheduledChange": "Muda para <name>{planName}</name> ({price}/mês) na próxima renovação",
+      "undo": "Desfazer",
+      "undoing": "Cancelando...",
+      "remainingCredits": "Créditos restantes",
+      "planCost": "Custo do plano",
+      "nextPayment": "Próximo pagamento",
+      "canceled": "Cancelado",
+      "onDate": "em {date}",
+      "accessUntil": "acesso até {date}",
+      "amountOff": "- {amount}",
+      "discountMonths": " ({m}m)",
+      "manageBillingPortal": "Gerenciar cartões e faturas",
+      "changePlan": "Alterar plano",
+      "willCancelOn": "Assinatura será cancelada em {date}.",
+      "reactivate": "Reativar assinatura",
+      "reactivating": "Reativando...",
+      "needToCancel": "Precisa cancelar? Clique aqui",
+      "freeUserMessage": "Você está no plano gratuito. Faça upgrade para ter mais créditos e funcionalidades.",
+      "perMonthShort": "/mês",
+      "toasts": {
+        "downgradeScheduled": "Downgrade agendado",
+        "downgradeScheduledDesc": "Seu plano será alterado na próxima renovação.",
+        "downgradeError": "Erro ao fazer downgrade",
+        "tryAgain": "Tente novamente.",
+        "upgradeError": "Erro ao fazer upgrade",
+        "portalError": "Erro ao abrir portal",
+        "subscriptionCanceled": "Assinatura cancelada",
+        "subscriptionCanceledDesc": "Você terá acesso até o fim do período atual.",
+        "cancelError": "Erro ao cancelar",
+        "offerDiscountTitle": "Desconto aplicado!",
+        "offerBonusTitle": "Créditos bônus adicionados!",
+        "offerPauseTitle": "Assinatura pausada!",
+        "offerPauseDesc": "Sem cobrança por 30 dias.",
+        "offerAcceptedTitle": "Oferta aceita!",
+        "offerApplyError": "Erro ao aplicar oferta",
+        "downgradeUndone": "Downgrade cancelado",
+        "downgradeUndoneDesc": "Seu plano atual será mantido.",
+        "downgradeUndoError": "Erro ao cancelar downgrade",
+        "reactivated": "Assinatura reativada",
+        "reactivatedDesc": "Sua assinatura continuará normalmente.",
+        "reactivateError": "Erro ao reativar",
+        "changePlanError": "Erro ao mudar de plano"
+      },
+      "retentionLostBenefits": {
+        "allCredits": "Todos os créditos do plano {plan}",
+        "speedPriority": "Velocidade e prioridade nas gerações",
+        "extendedGallery": "Acesso à galeria estendida",
+        "prioritySupport": "Suporte prioritário",
+        "noWatermark": "Gerações sem marca d'água",
+        "currentPlanBenefits": "Créditos e funcionalidades do plano atual",
+        "creditsLess": "{count, number} créditos mensais a menos"
+      }
+    }
+  }
+}

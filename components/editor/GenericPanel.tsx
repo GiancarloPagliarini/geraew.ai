@@ -10,6 +10,7 @@ import {
 import { ArrowUp, Image, ImagePlus, Loader2, Settings2, Trash, Trash2, X } from 'lucide-react';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useEditor } from '@/lib/editor-context';
 import { GenerationPreview, PROPORTION_ASPECT } from './GenerationPreview';
 
@@ -26,6 +27,7 @@ interface GenericPanelProps {
 }
 
 export function GenericPanel({ nodeId, onClose, onDuplicate }: GenericPanelProps) {
+  const t = useTranslations('editorPanels.generic');
   const { consumeCredits, setNodeGenerating } = useEditor();
 
   const [prompt, setPrompt] = useState('');
@@ -74,10 +76,7 @@ export function GenericPanel({ nodeId, onClose, onDuplicate }: GenericPanelProps
     setTimeout(() => {
       if (progressRef.current) clearInterval(progressRef.current);
       setProgress(100);
-      setResult(
-        'Este é um resultado simulado para o prompt fornecido. ' +
-        'Em produção, este painel enviará o prompt para a API configurada e retornará o resultado real.'
-      );
+      setResult(t('simulatedResult'));
       setGenState('done');
       setTimeout(() => setImageVisible(true), 60);
     }, 2000);
@@ -145,7 +144,7 @@ export function GenericPanel({ nodeId, onClose, onDuplicate }: GenericPanelProps
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-1.5">
               <Image className="h-3.5 w-3.5 text-[#f3f0ed]/40" />
-              <span className="text-[11px] font-semibold text-[#f3f0ed]/40">Imagem</span>
+              <span className="text-[11px] font-semibold text-[#f3f0ed]/40">{t('header')}</span>
             </div>
             <span className="text-[11px] font-semibold text-[#a2dd00]/70">
               {MODEL_LABELS[model]}
@@ -162,7 +161,7 @@ export function GenericPanel({ nodeId, onClose, onDuplicate }: GenericPanelProps
               >
                 <div className="flex flex-col items-center gap-2 text-center">
                   <Image className="h-8 w-8 text-[#f3f0ed] opacity-25" />
-                  <span className="text-xs text-[#f3f0ed]/25">Sua geração aparecerá aqui</span>
+                  <span className="text-xs text-[#f3f0ed]/25">{t('emptyState')}</span>
                 </div>
               </div>
             ) : (
@@ -174,12 +173,12 @@ export function GenericPanel({ nodeId, onClose, onDuplicate }: GenericPanelProps
                 renderMedia={result ? () => (
                   <div className="sidebar-scroll h-full w-full overflow-y-auto bg-[#111819] p-4">
                     <div className="flex items-center justify-between pb-2">
-                      <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">RESULTADO</span>
+                      <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">{t('resultLabel')}</span>
                       <button
                         onClick={handleClear}
                         className="text-[10px] font-bold tracking-widest text-[#f3f0ed]/25 transition-colors hover:text-[#f3f0ed]/50"
                       >
-                        LIMPAR
+                        {t('clear')}
                       </button>
                     </div>
                     <p className="text-sm leading-relaxed text-[#f3f0ed]/80">{result}</p>
@@ -194,7 +193,7 @@ export function GenericPanel({ nodeId, onClose, onDuplicate }: GenericPanelProps
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 rows={3}
-                placeholder="Digite seu prompt aqui..."
+                placeholder={t('promptPlaceholder')}
                 disabled={isGenerating}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -272,7 +271,7 @@ export function GenericPanel({ nodeId, onClose, onDuplicate }: GenericPanelProps
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={attachedImages.length >= 4}
-              title="Adicionar imagem de referência"
+              title={t('addReference')}
               className="flex h-6 w-6 items-center justify-center rounded-full text-[#f3f0ed]/35 transition-all hover:text-[#f3f0ed]/70 disabled:cursor-not-allowed disabled:opacity-30"
             >
               <ImagePlus className="h-4 w-4" />

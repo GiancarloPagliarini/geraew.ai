@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Phone, Loader2, XCircle, CheckCircle, RefreshCw, ArrowRight, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { usePhoneVerification } from '@/lib/phone-verification-context';
 import { useQueryClient } from '@tanstack/react-query';
@@ -28,6 +29,7 @@ export function PhoneVerificationModal() {
   const { open, closeModal } = usePhoneVerification();
   const queryClient = useQueryClient();
   const pathname = usePathname();
+  const t = useTranslations('auth.phoneVerify');
 
   // 3 steps: send-sms (has phone, needs to send), phone-input (no phone, Google users), code-input
   const [step, setStep] = useState<'send-sms' | 'phone-input' | 'code-input'>('send-sms');
@@ -71,7 +73,7 @@ export function PhoneVerificationModal() {
       setStatus('idle');
     } catch (err) {
       setStatus('error');
-      setErrorMessage(err instanceof ApiError ? err.message : 'Erro ao enviar SMS. Tente novamente.');
+      setErrorMessage(err instanceof ApiError ? err.message : t('sendError'));
     }
   }
 
@@ -86,7 +88,7 @@ export function PhoneVerificationModal() {
       setStatus('idle');
     } catch (err) {
       setStatus('error');
-      setErrorMessage(err instanceof ApiError ? err.message : 'Erro ao enviar SMS. Tente novamente.');
+      setErrorMessage(err instanceof ApiError ? err.message : t('sendError'));
     }
   }
 
@@ -96,9 +98,9 @@ export function PhoneVerificationModal() {
     try {
       const phone = user?.phone ? `+${user.phone}` : `+55${phoneInput}`;
       await api.auth.sendPhoneVerification(phone);
-      setResendSuccess('SMS reenviado!');
+      setResendSuccess(t('resendSuccess'));
     } catch (err) {
-      setResendSuccess(err instanceof Error ? err.message : 'Erro ao reenviar.');
+      setResendSuccess(err instanceof Error ? err.message : t('resendError'));
     } finally {
       setResendLoading(false);
     }
@@ -113,11 +115,11 @@ export function PhoneVerificationModal() {
       const res = await api.auth.verifyPhone(accessToken, phone, code);
       updateAuth(res);
       queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
-      toast.success('Telefone verificado! Seus créditos gratuitos foram liberados.');
+      toast.success(t('toastSuccess'));
       setStatus('success');
     } catch (err) {
       setStatus('error');
-      setErrorMessage(err instanceof ApiError ? err.message : 'Codigo invalido ou expirado.');
+      setErrorMessage(err instanceof ApiError ? err.message : t('invalidCode'));
       setDigits(['', '', '', '', '', '']);
       setTimeout(() => inputsRef.current[0]?.focus(), 50);
     }
@@ -167,9 +169,9 @@ export function PhoneVerificationModal() {
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#a2dd00]/15">
               <CheckCircle className="h-8 w-8 text-[#a2dd00]" />
             </div>
-            <h2 className="text-xl font-bold text-white">Telefone verificado!</h2>
+            <h2 className="text-xl font-bold text-white">{t('successTitle')}</h2>
             <p className="text-sm text-white/50">
-              Seus creditos gratuitos foram liberados. Bom uso!
+              {t('successBody')}
             </p>
           </div>
         </div>
@@ -198,9 +200,9 @@ export function PhoneVerificationModal() {
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#a2dd00]/10">
             <Phone className="h-6 w-6 text-[#a2dd00]" />
           </div>
-          <h2 className="text-xl font-bold text-white">Confirme seu celular</h2>
+          <h2 className="text-xl font-bold text-white">{t('title')}</h2>
           <p className="text-sm text-white/40 leading-relaxed">
-            Para liberar seus creditos gratuitos, confirme seu numero de celular via SMS.
+            {t('description')}
           </p>
         </div>
 
@@ -208,7 +210,7 @@ export function PhoneVerificationModal() {
         {step === 'send-sms' && (
           <div className="flex flex-col items-center gap-5">
             <p className="text-sm text-white/50">
-              Vamos enviar um codigo SMS para{' '}
+              {t('willSendTo')}{' '}
               <span className="text-white/70 font-medium">
                 +55 {maskPhone(user.phone || '')}
               </span>
@@ -229,7 +231,7 @@ export function PhoneVerificationModal() {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  Enviar codigo SMS
+                  {t('sendCode')}
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
@@ -242,7 +244,7 @@ export function PhoneVerificationModal() {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">
-                TELEFONE (WHATSAPP)
+                {t('phoneLabel')}
               </label>
               <div className="relative">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-white/40 text-sm">
@@ -256,7 +258,7 @@ export function PhoneVerificationModal() {
                     const d = e.target.value.replace(/\D/g, '').slice(0, 11);
                     setPhoneInput(d);
                   }}
-                  placeholder="(11) 99999-8888"
+                  placeholder={t('phonePlaceholder')}
                   className="h-12 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-[4.5rem] pr-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]"
                   autoFocus
                 />
@@ -278,7 +280,7 @@ export function PhoneVerificationModal() {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  Enviar codigo SMS
+                  {t('sendCode')}
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
@@ -290,7 +292,7 @@ export function PhoneVerificationModal() {
         {step === 'code-input' && (
           <div className="flex flex-col items-center gap-5">
             <p className="text-sm text-white/50">
-              Enviamos um SMS para{' '}
+              {t('sentTo')}{' '}
               <span className="text-white/70 font-medium">
                 +55 {maskPhone(phoneToVerify)}
               </span>
@@ -322,7 +324,7 @@ export function PhoneVerificationModal() {
             {status === 'verifying' && (
               <div className="flex items-center gap-2 text-white/50">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Verificando...</span>
+                <span className="text-sm">{t('verifying')}</span>
               </div>
             )}
 
@@ -346,7 +348,7 @@ export function PhoneVerificationModal() {
                 className="flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors disabled:opacity-50"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${resendLoading ? 'animate-spin' : ''}`} />
-                {resendLoading ? 'Reenviando...' : 'Reenviar SMS'}
+                {resendLoading ? t('resending') : t('resend')}
               </button>
 
               {/* Allow Google users to go back and change phone */}
@@ -355,7 +357,7 @@ export function PhoneVerificationModal() {
                   onClick={() => { setStep('phone-input'); setDigits(['', '', '', '', '', '']); setStatus('idle'); setErrorMessage(''); setResendSuccess(''); }}
                   className="text-xs text-white/25 hover:text-white/50 transition-colors"
                 >
-                  Alterar numero
+                  {t('changePhone')}
                 </button>
               )}
             </div>

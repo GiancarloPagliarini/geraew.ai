@@ -4,6 +4,10 @@ import { Flame, Zap, Trophy, Users, TestTubeDiagonal } from 'lucide-react';
 
 export const PLAN_ORDER = ['free', 'starter', 'creator', 'pro', 'studio'];
 
+/**
+ * @deprecated Use `editorPlans.subtitles.<slug>` via next-intl.
+ * Kept for backward compatibility with non-i18n callers.
+ */
 export const PLAN_SUBTITLES: Record<string, string> = {
   starter: 'Explorador',
   creator: 'Criador',
@@ -13,10 +17,70 @@ export const PLAN_SUBTITLES: Record<string, string> = {
 
 export interface PlanGenerationExample {
   label: string;
+  /** @deprecated Use `countNumber` + `unit` + translate via `editorPlans.units.<unit>`. */
   count: string;
   blocked?: boolean;
 }
 
+export type GenerationUnit = 'image' | 'generation' | 'video';
+
+export interface PlanGenerationEntry {
+  label: string;
+  countNumber: number;
+  unit: GenerationUnit;
+  blocked?: boolean;
+}
+
+/**
+ * Locale-agnostic generation examples. Use this with
+ * `useTranslations('editorPlans')` to render `units.<unit>` with ICU plural.
+ */
+export const PLAN_GENERATION_ENTRIES: Record<string, PlanGenerationEntry[]> = {
+  free: [
+    { label: 'Nano Banana 2', countNumber: 3, unit: 'image' },
+    { label: 'Motion Control', countNumber: 1, unit: 'generation' },
+    { label: 'Geraew Fast', countNumber: 2, unit: 'video' },
+    { label: 'Geraew Quality', countNumber: 2, unit: 'video' },
+    { label: 'Veo 3.1', countNumber: 0, unit: 'video', blocked: true },
+  ],
+  starter: [
+    { label: 'Nano Banana 2', countNumber: 44, unit: 'image' },
+    { label: 'Motion Control', countNumber: 5, unit: 'generation' },
+    { label: 'Geraew Fast', countNumber: 4, unit: 'video' },
+    { label: 'Geraew Quality', countNumber: 2, unit: 'video' },
+    { label: 'Veo 3.1 Fast', countNumber: 3, unit: 'video' },
+    { label: 'Veo 3.1 Quality', countNumber: 1, unit: 'video' },
+  ],
+  creator: [
+    { label: 'Nano Banana 2', countNumber: 133, unit: 'image' },
+    { label: 'Motion Control', countNumber: 17, unit: 'generation' },
+    { label: 'Geraew Fast', countNumber: 13, unit: 'video' },
+    { label: 'Geraew Quality', countNumber: 6, unit: 'video' },
+    { label: 'Veo 3.1 Fast', countNumber: 9, unit: 'video' },
+    { label: 'Veo 3.1 Quality', countNumber: 4, unit: 'video' },
+  ],
+  pro: [
+    { label: 'Nano Banana 2', countNumber: 333, unit: 'image' },
+    { label: 'Motion Control', countNumber: 42, unit: 'generation' },
+    { label: 'Geraew Fast', countNumber: 33, unit: 'video' },
+    { label: 'Geraew Quality', countNumber: 15, unit: 'video' },
+    { label: 'Veo 3.1 Fast', countNumber: 23, unit: 'video' },
+    { label: 'Veo 3.1 Quality', countNumber: 10, unit: 'video' },
+  ],
+  studio: [
+    { label: 'Nano Banana 2', countNumber: 888, unit: 'image' },
+    { label: 'Motion Control', countNumber: 114, unit: 'generation' },
+    { label: 'Geraew Fast', countNumber: 88, unit: 'video' },
+    { label: 'Geraew Quality', countNumber: 40, unit: 'video' },
+    { label: 'Veo 3.1 Fast', countNumber: 61, unit: 'video' },
+    { label: 'Veo 3.1 Quality', countNumber: 27, unit: 'video' },
+  ],
+};
+
+/**
+ * @deprecated Use `PLAN_GENERATION_ENTRIES` + translations instead.
+ * Retained for backward compatibility.
+ */
 export const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
   free: [
     { label: 'Nano Banana 2', count: '3 Imagens' },
@@ -66,26 +130,58 @@ export interface BoostMeta {
   description: string;
 }
 
+/** @deprecated Use `getBoostMetaKey` + `editorPlans.boost.<key>.{label,description}`. */
 export const BOOST_META: Record<string, BoostMeta> = {
   'boost-p': { label: 'Emergência', description: 'Recarrega rápida para continuar gerando' },
   'boost-m': { label: 'Fôlego', description: 'Créditos extras para projetos maiores' },
   'boost-g': { label: 'Pré-upgrade', description: 'Quase um plano — ideal para testar' },
 };
 
+export function getBoostMetaKey(pkg: CreditPackage): 'boost-p' | 'boost-m' | 'boost-g' | null {
+  const normalized = pkg.name.toLowerCase().replace(/\s+/g, '-');
+  if (normalized === 'boost-p' || normalized === 'boost-m' || normalized === 'boost-g') {
+    return normalized;
+  }
+  const lastChar = pkg.name.toLowerCase().charAt(pkg.name.length - 1);
+  const inferred = `boost-${lastChar}`;
+  if (inferred === 'boost-p' || inferred === 'boost-m' || inferred === 'boost-g') {
+    return inferred;
+  }
+  return null;
+}
+
+/** @deprecated Use `getBoostMetaKey` + translations instead. */
 export function getBoostMeta(pkg: CreditPackage): BoostMeta {
-  const key = pkg.name.toLowerCase().replace(/\s+/g, '-');
-  return (
-    BOOST_META[key] ??
-    BOOST_META[`boost-${pkg.name.toLowerCase().charAt(pkg.name.length - 1)}`] ??
-    { label: pkg.name, description: '' }
-  );
+  const key = getBoostMetaKey(pkg);
+  if (key) return BOOST_META[key];
+  return { label: pkg.name, description: '' };
 }
 
-export function formatBoostPrice(priceCents: number) {
-  const value = priceCents / 100;
-  return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`;
+/** @deprecated Use `formatCurrency(cents, currency, locale)` instead. */
+export function formatBoostPrice(priceCents: number): string;
+export function formatBoostPrice(priceCents: number, currency: string, locale: string): string;
+export function formatBoostPrice(
+  priceCents: number,
+  currency = 'BRL',
+  locale = 'pt-BR',
+): string {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(priceCents / 100);
 }
 
+export function formatCurrency(priceCents: number, currency: string, locale: string): string {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+  }).format(priceCents / 100);
+}
+
+/** @deprecated Use locale-aware translated perks in the component. */
 export function getPackagePerks(pkg: CreditPackage): string[] {
   return [
     `${pkg.credits.toLocaleString('pt-BR')} créditos`,
@@ -121,6 +217,15 @@ export const PLAN_DISCOUNT_LABELS: Record<string, string> = {
   studio: '28% OFF',
 };
 
+export const PLAN_SOCIAL_PROOF_ICONS: Record<string, LucideIcon> = {
+  free: TestTubeDiagonal,
+  starter: Users,
+  creator: Flame,
+  pro: Zap,
+  studio: Trophy,
+};
+
+/** @deprecated Use `PLAN_SOCIAL_PROOF_ICONS` + `plans.socialProof.<slug>`. */
 export const PLAN_SOCIAL_PROOF: Record<string, { icon: LucideIcon; text: string }> = {
   free: { icon: TestTubeDiagonal, text: 'Teste nossa capacidade!' },
   starter: { icon: Users, text: 'Ideal para projetos pessoais' },
@@ -131,19 +236,86 @@ export const PLAN_SOCIAL_PROOF: Record<string, { icon: LucideIcon; text: string 
 
 /* ── Price formatting ── */
 
-export function formatPrice(priceCents: number) {
-  if (priceCents === 0) return { main: 'Grátis', sub: null };
-  const int = Math.floor(priceCents / 100);
-  const cents = String(priceCents % 100).padStart(2, '0');
-  return { main: `R$ ${int.toLocaleString('pt-BR')},${cents}`, sub: '/mês' };
+const FREE_LABEL: Record<string, string> = {
+  'pt-BR': 'Grátis',
+  en: 'Free',
+};
+
+const PER_MONTH: Record<string, string> = {
+  'pt-BR': '/mês',
+  en: '/mo',
+};
+
+/** @deprecated Prefer `formatPlanPrice(plan, locale, t)` — pass translated free/per-month labels. */
+export function formatPrice(
+  priceCents: number,
+  currency = 'BRL',
+  locale = 'pt-BR',
+): { main: string; sub: string | null } {
+  if (priceCents === 0) return { main: FREE_LABEL[locale] ?? 'Free', sub: null };
+  const main = new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+  }).format(priceCents / 100);
+  return { main, sub: PER_MONTH[locale] ?? '/mo' };
 }
 
-export function formatPriceRaw(priceCents: number) {
-  const int = Math.floor(priceCents / 100);
-  const cents = String(priceCents % 100).padStart(2, '0');
-  return `R$ ${int.toLocaleString('pt-BR')},${cents}`;
+export function formatPriceRaw(
+  priceCents: number,
+  currency = 'BRL',
+  locale = 'pt-BR',
+): string {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+  }).format(priceCents / 100);
 }
 
+export interface PlanFeatureEntry {
+  key: string;
+  values?: Record<string, string | number>;
+}
+
+/**
+ * Returns a list of i18n keys (+ ICU values) that callers resolve with
+ * `useTranslations('editorPlans')` under `features.*`.
+ */
+export function getPlanFeatureKeys(plan: Plan): PlanFeatureEntry[] {
+  const features: PlanFeatureEntry[] = [];
+
+  if (plan.slug === 'free') {
+    features.push({ key: 'features.credits', values: { count: 350 } });
+    features.push({ key: 'features.emailSupport' });
+    features.push({ key: 'features.gallery7' });
+    features.push({ key: 'features.tryNoCommit' });
+    return features;
+  }
+
+  features.push({ key: 'features.credits', values: { count: plan.creditsPerMonth } });
+
+  if (plan.slug === 'pro' || plan.slug === 'studio') {
+    features.push({ key: 'features.queuePriority' });
+    features.push({ key: 'features.fasterGenerations' });
+    features.push({ key: 'features.prioritySupport' });
+    features.push({ key: 'features.gallery365' });
+  } else if (plan.slug === 'creator') {
+    features.push({ key: 'features.fasterGenerations' });
+    features.push({ key: 'features.emailSupport' });
+    features.push({ key: 'features.gallery180' });
+  } else {
+    features.push({ key: 'features.emailSupport' });
+    features.push({ key: 'features.gallery90' });
+  }
+
+  return features;
+}
+
+/**
+ * @deprecated Use `getPlanFeatureKeys` together with next-intl in components.
+ * Kept for `app/creditos/page.tsx` (non-scope) — returns PT strings.
+ */
 export function getPlanFeatures(plan: Plan): string[] {
   const features: string[] = [];
 

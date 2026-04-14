@@ -1,31 +1,27 @@
 "use client";
 
 import { Sparkles, SlidersHorizontal, Download, ArrowRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useScrollReveal } from "./use-scroll-reveal";
 import { useAuth } from "@/lib/auth-context";
 
-const STEPS = [
-  {
-    num: "01",
-    icon: Sparkles,
-    title: "Crie sua Influencer",
-    desc: "Escolha um modelo da galeria ou gere uma persona totalmente nova. Defina rosto, corpo, estilo e personalidade em poucos cliques.",
-  },
-  {
-    num: "02",
-    icon: SlidersHorizontal,
-    title: "Personalize o Conteúdo",
-    desc: "Escolha cenário, pose, roupa e movimento. Use prompts prontos ou escreva o seu. Controle total sobre cada detalhe.",
-  },
-  {
-    num: "03",
-    icon: Download,
-    title: "Exporte e Publique",
-    desc: "Baixe em alta qualidade, pronto para TikTok, Instagram, YouTube ou qualquer rede. Sem marca d'água nos planos pagos.",
-  },
-];
+const STEP_META = [
+  { num: "01", icon: Sparkles, key: "step1" },
+  { num: "02", icon: SlidersHorizontal, key: "step2" },
+  { num: "03", icon: Download, key: "step3" },
+] as const;
 
-function Step({ step, i }: { step: (typeof STEPS)[number]; i: number }) {
+function Step({
+  step,
+  i,
+  title,
+  desc,
+}: {
+  step: (typeof STEP_META)[number];
+  i: number;
+  title: string;
+  desc: string;
+}) {
   const { ref, isVisible } = useScrollReveal();
   const Icon = step.icon;
 
@@ -53,10 +49,10 @@ function Step({ step, i }: { step: (typeof STEPS)[number]; i: number }) {
 
         {/* Content */}
         <h3 className="relative font-sora text-lg font-semibold text-landing-text">
-          {step.title}
+          {title}
         </h3>
         <p className="relative mt-2.5 text-[15px] leading-relaxed text-landing-text-secondary">
-          {step.desc}
+          {desc}
         </p>
 
         {/* Placeholder visual */}
@@ -78,6 +74,7 @@ export function HowItWorks() {
   const { user } = useAuth();
   const isLoggedIn = !!user;
   const { ref, isVisible } = useScrollReveal();
+  const t = useTranslations("howItWorks");
 
   return (
     <section className="py-16 sm:py-28 lg:py-36">
@@ -92,14 +89,13 @@ export function HowItWorks() {
           }}
         >
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-landing-accent">
-            Simples Assim
+            {t("tag")}
           </span>
           <h2 className="mt-4 font-sora text-[26px] font-bold tracking-tight text-landing-text sm:mt-5 sm:text-3xl lg:text-[44px]">
-            Do zero ao conteúdo pronto em 3 passos.
+            {t("title")}
           </h2>
           <p className="mt-3.5 text-[15px] leading-relaxed text-landing-text-secondary sm:mt-5 sm:text-[17px]">
-            Você não precisa de experiência com IA, edição ou design. A Geraew
-            faz o trabalho pesado por você.
+            {t("subtitle")}
           </p>
         </div>
 
@@ -111,8 +107,14 @@ export function HowItWorks() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 lg:gap-7">
-            {STEPS.map((step, i) => (
-              <Step key={step.num} step={step} i={i} />
+            {STEP_META.map((step, i) => (
+              <Step
+                key={step.num}
+                step={step}
+                i={i}
+                title={t(`${step.key}.title`)}
+                desc={t(`${step.key}.description`)}
+              />
             ))}
           </div>
         </div>
@@ -123,7 +125,7 @@ export function HowItWorks() {
             href="/workspace"
             className="group inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-6 py-3 text-[13px] font-bold text-landing-bg-secondary shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-colors duration-200 hover:bg-[#b5e82d] active:scale-[0.98] sm:px-7 sm:py-3.5 sm:text-[14px]"
           >
-            {isLoggedIn ? "Acessar Plataforma" : "Quero criar minha primeira influencer"}
+            {isLoggedIn ? t("ctaLoggedIn") : t("cta")}
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
           </a>
         </div>

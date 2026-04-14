@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { Gift, Sparkles, X, Image, Video, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 function IgIcon({ className }: { className?: string }) {
   return (
@@ -18,6 +19,7 @@ interface PostAndEarnModalProps {
 }
 
 export function PostAndEarnModal({ onClose }: PostAndEarnModalProps) {
+  const t = useTranslations('editorDialogs.postAndEarn');
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
@@ -62,9 +64,11 @@ export function PostAndEarnModal({ onClose }: PostAndEarnModalProps) {
         <div className="sidebar-scroll flex-1 overflow-y-auto px-6 pb-6 pt-9">
           {/* Heading */}
           <div className="text-center">
-            <h2 className="text-xl font-bold text-[#f3f0ed]">Poste e Ganhe</h2>
+            <h2 className="text-xl font-bold text-[#f3f0ed]">{t('title')}</h2>
             <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-[#f3f0ed]/50">
-              Compartilhe suas criações em <span className="font-semibold text-[#a2dd00]">collab</span> com <span className="font-semibold text-[#a2dd00]">@geraew.ai</span> e dobre suas gerações!
+              {t.rich('subtitle', {
+                green: (chunks) => <span className="font-semibold text-[#a2dd00]">{chunks}</span>,
+              })}
             </p>
           </div>
 
@@ -77,13 +81,13 @@ export function PostAndEarnModal({ onClose }: PostAndEarnModalProps) {
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#a2dd00]/10 ring-1 ring-[#a2dd00]/20">
                   <Image className="h-5 w-5 text-[#a2dd00]" />
                 </div>
-                <p className="mt-3 text-sm font-semibold text-[#f3f0ed]/90">Poste uma imagem</p>
-                <p className="mt-0.5 text-[11px] text-[#f3f0ed]/35">Em collab com @geraew.ai</p>
+                <p className="mt-3 text-sm font-semibold text-[#f3f0ed]/90">{t('postImage')}</p>
+                <p className="mt-0.5 text-[11px] text-[#f3f0ed]/35">{t('inCollab')}</p>
                 <div className="mt-3 flex items-baseline gap-1">
                   <span className="text-2xl font-extrabold text-[#a2dd00]">+2</span>
-                  <span className="text-[10px] font-semibold text-[#a2dd00]/50">gerações</span>
+                  <span className="text-[10px] font-semibold text-[#a2dd00]/50">{t('generations')}</span>
                 </div>
-                <span className="mt-0.5 inline-block text-[10px] text-[#f3f0ed]/30">de imagem</span>
+                <span className="mt-0.5 inline-block text-[10px] text-[#f3f0ed]/30">{t('imageType')}</span>
               </div>
             </div>
 
@@ -94,25 +98,25 @@ export function PostAndEarnModal({ onClose }: PostAndEarnModalProps) {
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#a2dd00]/10 ring-1 ring-[#a2dd00]/20">
                   <Video className="h-5 w-5 text-[#a2dd00]" />
                 </div>
-                <p className="mt-3 text-sm font-semibold text-[#f3f0ed]/90">Poste um vídeo</p>
-                <p className="mt-0.5 text-[11px] text-[#f3f0ed]/35">Em collab com @geraew.ai</p>
+                <p className="mt-3 text-sm font-semibold text-[#f3f0ed]/90">{t('postVideo')}</p>
+                <p className="mt-0.5 text-[11px] text-[#f3f0ed]/35">{t('inCollab')}</p>
                 <div className="mt-3 flex items-baseline gap-1">
                   <span className="text-2xl font-extrabold text-[#a2dd00]">+2</span>
-                  <span className="text-[10px] font-semibold text-[#a2dd00]/50">gerações</span>
+                  <span className="text-[10px] font-semibold text-[#a2dd00]/50">{t('generations')}</span>
                 </div>
-                <span className="mt-0.5 inline-block text-[10px] text-[#f3f0ed]/30">de vídeo</span>
+                <span className="mt-0.5 inline-block text-[10px] text-[#f3f0ed]/30">{t('videoType')}</span>
               </div>
             </div>
           </div>
 
           {/* Steps */}
           <div className="mt-5">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#f3f0ed]/25">Como funciona</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#f3f0ed]/25">{t('howItWorks')}</span>
             <div className="mt-2.5 flex flex-col gap-2">
               {[
-                { step: '1', text: 'Crie sua imagem ou vídeo na geraew.ai' },
-                { step: '2', text: 'Poste em collab com @geraew.ai no Instagram' },
-                { step: '3', text: 'Envie seu e-mail de cadastro na DM do nosso Instagram' },
+                { step: '1', text: t('steps.s1') },
+                { step: '2', text: t('steps.s2') },
+                { step: '3', text: t('steps.s3') },
               ].map(({ step, text }) => (
                 <div key={step} className="flex items-center gap-3 rounded-xl bg-[#f3f0ed]/[0.02] px-3.5 py-2.5 ring-1 ring-[#f3f0ed]/[0.05]">
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#a2dd00]/15 text-[11px] font-bold text-[#a2dd00]">
@@ -128,7 +132,7 @@ export function PostAndEarnModal({ onClose }: PostAndEarnModalProps) {
           <div className="mt-4 flex items-center gap-2.5 rounded-xl bg-[#a2dd00]/[0.06] px-4 py-3 ring-1 ring-[#a2dd00]/15">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-[#a2dd00]/70" />
             <p className="text-[11px] leading-relaxed text-[#f3f0ed]/50">
-              Seus créditos serão adicionados após a verificação do post.
+              {t('confirmation')}
             </p>
           </div>
 
@@ -141,14 +145,14 @@ export function PostAndEarnModal({ onClose }: PostAndEarnModalProps) {
               className="flex items-center justify-center gap-2 w-full rounded-xl bg-gradient-to-r from-[#a2dd00] to-[#8bc700] py-3 text-sm font-bold text-[#1a2123] shadow-lg shadow-[#a2dd00]/15 transition-all hover:brightness-110 active:scale-[0.98]"
             >
               <IgIcon className="h-4.5 w-4.5" />
-              Seguir @geraew.ai
+              {t('follow')}
               <ArrowRight className="h-4 w-4" />
             </a>
             <button
               onClick={onClose}
               className="w-full rounded-xl border border-[#f3f0ed]/[0.08] bg-[#f3f0ed]/[0.03] py-2.5 text-sm font-semibold text-[#f3f0ed]/60 transition-all hover:border-[#f3f0ed]/15 hover:text-[#f3f0ed]/80 active:scale-[0.98]"
             >
-              Entendido
+              {t('gotIt')}
             </button>
           </div>
         </div>

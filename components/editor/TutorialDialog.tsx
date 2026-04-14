@@ -2,52 +2,26 @@
 
 import { GraduationCap, ImageIcon, VideoIcon, UserRound, PlayCircle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
-const tutorials = [
+const tutorialMeta = [
   {
-    id: 'image',
+    id: 'image' as const,
     icon: ImageIcon,
     showVideo: true,
     videoUrl: 'https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/utils/Design%20sem%20nome.mp4',
-    title: 'Gerar sua primeira imagem',
-    description:
-      'Aprenda a usar o painel de geração de imagens para criar artes incríveis com IA em poucos cliques.',
-    steps: [
-      'Abra o painel "Gerar Imagem".',
-      'Descreva a imagem que deseja criar no campo de prompt.',
-      'Escolha o estilo e as configurações desejadas.',
-      'Clique em "Gerar" e aguarde o resultado.',
-    ],
   },
   {
-    id: 'video',
+    id: 'video' as const,
     icon: VideoIcon,
     showVideo: true,
     videoUrl: 'https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/utils/video_geracao.mp4',
-    title: 'Gerar um vídeo',
-    description:
-      'Transforme imagens ou prompts em vídeos animados de alta qualidade usando modelos de IA de última geração.',
-    steps: [
-      'Abra o painel "Gerar Vídeo".',
-      'Selecione uma imagem base ou escreva um prompt de vídeo.',
-      'Ajuste a duração e o estilo do vídeo.',
-      'Clique em "Gerar Vídeo" e aguarde o processamento.',
-    ],
   },
   {
-    id: 'influencer',
+    id: 'influencer' as const,
     icon: UserRound,
     showVideo: false,
     videoUrl: null,
-    title: 'Criar sua IA Influencer',
-    description:
-      'Crie uma influencer digital completa com identidade visual, personalidade e consistência visual entre gerações.',
-    steps: [
-      'Acesse o painel "Criar Influencer".',
-      'Defina o nome, personalidade e estilo visual da sua influencer.',
-      'Gere o modelo base da sua influencer com IA.',
-      'Use a influencer criada para gerar imagens e vídeos consistentes.',
-    ],
   },
 ];
 
@@ -57,9 +31,13 @@ interface TutorialDialogProps {
 }
 
 export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
+  const t = useTranslations('editorDialogs.tutorial');
   const [selected, setSelected] = useState<string | null>(null);
 
-  const selectedTutorial = tutorials.find((t) => t.id === selected);
+  const selectedTutorial = tutorialMeta.find((tu) => tu.id === selected);
+  const selectedSteps = selectedTutorial
+    ? (t.raw(`items.${selectedTutorial.id}.steps`) as string[])
+    : [];
 
   function handleBack() {
     setSelected(null);
@@ -71,8 +49,8 @@ export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
     if (open) { setMounted(true); setClosing(false); }
     else if (mounted) {
       setClosing(true);
-      const t = setTimeout(() => { setMounted(false); setClosing(false); }, 200);
-      return () => clearTimeout(t);
+      const ti = setTimeout(() => { setMounted(false); setClosing(false); }, 200);
+      return () => clearTimeout(ti);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -88,8 +66,8 @@ export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
             <GraduationCap className="h-3.5 w-3.5 text-[#a2dd00]" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-[#f3f0ed]/60">Tutoriais</h2>
-            <p className="text-xs text-[#f3f0ed]/30">Aprenda a usar todas as funcionalidades</p>
+            <h2 className="text-sm font-bold text-[#f3f0ed]/60">{t('title')}</h2>
+            <p className="text-xs text-[#f3f0ed]/30">{t('subtitle')}</p>
           </div>
         </div>
         <button
@@ -108,7 +86,7 @@ export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
                 onClick={handleBack}
                 className="self-start text-xs font-medium text-[#a2dd00] hover:text-[#a2dd00]/80 transition-colors"
               >
-                &larr; Voltar para tutoriais
+                {t('back')}
               </button>
 
               {/* Video */}
@@ -126,7 +104,7 @@ export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
                     <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#a2dd00]/10 ring-1 ring-[#a2dd00]/20">
                       <PlayCircle className="h-7 w-7 text-[#a2dd00]" />
                     </div>
-                    <p className="text-xs text-[#f3f0ed]/30 font-medium">Vídeo em breve</p>
+                    <p className="text-xs text-[#f3f0ed]/30 font-medium">{t('comingSoon')}</p>
                   </div>
                 )
               )}
@@ -135,16 +113,16 @@ export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <selectedTutorial.icon className="h-4 w-4 text-[#a2dd00]" />
-                  <h3 className="text-md font-semibold text-[#f3f0ed]">{selectedTutorial.title}</h3>
+                  <h3 className="text-md font-semibold text-[#f3f0ed]">{t(`items.${selectedTutorial.id}.title`)}</h3>
                 </div>
-                <p className="text-sm text-[#f3f0ed]/50 leading-relaxed">{selectedTutorial.description}</p>
+                <p className="text-sm text-[#f3f0ed]/50 leading-relaxed">{t(`items.${selectedTutorial.id}.description`)}</p>
               </div>
 
               {/* Steps */}
               <div className="flex flex-col gap-2">
-                <p className="text-[10px] font-bold tracking-widest text-[#f3f0ed]/30 uppercase">Passo a passo</p>
+                <p className="text-[10px] font-bold tracking-widest text-[#f3f0ed]/30 uppercase">{t('stepByStep')}</p>
                 <ol className="flex flex-col gap-2">
-                  {selectedTutorial.steps.map((step, i) => (
+                  {selectedSteps.map((step, i) => (
                     <li key={i} className="flex items-start gap-3">
                       <span className="flex text-sm h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#a2dd00]/10 text-[10px] font-bold text-[#a2dd00]">
                         {i + 1}
@@ -157,7 +135,7 @@ export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              {tutorials.map(({ id, icon: Icon, title, description }) => (
+              {tutorialMeta.map(({ id, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => setSelected(id)}
@@ -168,9 +146,9 @@ export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
                   </div>
                   <div className="flex flex-col gap-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-[#f3f0ed]">{title}</span>
+                      <span className="text-sm font-semibold text-[#f3f0ed]">{t(`items.${id}.title`)}</span>
                     </div>
-                    <span className="text-xs text-[#f3f0ed]/40 leading-relaxed">{description}</span>
+                    <span className="text-xs text-[#f3f0ed]/40 leading-relaxed">{t(`items.${id}.description`)}</span>
                   </div>
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center">
                     <PlayCircle className="h-5 w-5 text-[#f3f0ed]/20 group-hover:text-[#a2dd00]/60 transition-colors" />
@@ -184,7 +162,7 @@ export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
         {!selected && (
           <div className="flex items-center justify-between border-t border-[#f3f0ed]/[0.07] pt-3">
             <span className="text-[10px] font-medium tracking-wider text-[#f3f0ed]/30 uppercase">
-              {tutorials.length} tutoriais disponíveis
+              {t('availableCount', { count: tutorialMeta.length })}
             </span>
           </div>
         )}

@@ -10,61 +10,27 @@ import {
 } from '@/components/ui/context-menu';
 import { AudioWaveform, ImageIcon, Mic, Repeat2, Shirt, User, Video } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface CanvasContextMenuProps {
     children: React.ReactNode;
     onAddPanel?: (type: string) => void;
 }
 
-const menuItems = [
-    {
-        type: 'generate-image',
-        icon: ImageIcon,
-        label: 'Gerar Imagem',
-        description: 'Criar imagem com IA',
-    },
-    {
-        type: 'create-influencer',
-        icon: User,
-        label: 'Criar Influencer',
-        description: 'Construa sua AI influencer',
-    },
-    {
-        type: 'generate-video',
-        icon: Video,
-        label: 'Gerar Vídeo',
-        description: 'Criar vídeo com IA',
-    },
-    {
-        type: 'motion-control',
-        icon: AudioWaveform,
-        label: 'Copiar movimentos',
-        description: 'Copiar movimentos de um vídeo para outro',
-    },
-    {
-        type: 'virtual-try-on',
-        icon: Shirt,
-        label: 'Provador Virtual',
-        description: 'Vista roupas na sua influencer de IA',
-    },
-    {
-        type: 'face-swap',
-        icon: Repeat2,
-        label: 'Troca de Rosto',
-        description: 'Troque rostos em imagens com IA',
-    },
-    {
-        type: 'generate-voice',
-        icon: Mic,
-        label: 'Gerar Voz',
-        description: 'Texto para áudio com IA',
-        comingSoon: true,
-    },
-];
-
 export function CanvasContextMenu({ children, onAddPanel }: CanvasContextMenuProps) {
+    const t = useTranslations('editor.contextMenu');
     const [isMobile, setIsMobile] = useState(false);
     useEffect(() => { setIsMobile(window.innerWidth < 640); }, []);
+
+    const menuItems = [
+        { type: 'generate-image', icon: ImageIcon, label: t('items.generateImage.label'), description: t('items.generateImage.description') },
+        { type: 'create-influencer', icon: User, label: t('items.createInfluencer.label'), description: t('items.createInfluencer.description') },
+        { type: 'generate-video', icon: Video, label: t('items.generateVideo.label'), description: t('items.generateVideo.description') },
+        { type: 'motion-control', icon: AudioWaveform, label: t('items.motionControl.label'), description: t('items.motionControl.description') },
+        { type: 'virtual-try-on', icon: Shirt, label: t('items.virtualTryOn.label'), description: t('items.virtualTryOn.description') },
+        { type: 'face-swap', icon: Repeat2, label: t('items.faceSwap.label'), description: t('items.faceSwap.description') },
+        { type: 'generate-voice', icon: Mic, label: t('items.generateVoice.label'), description: t('items.generateVoice.description'), comingSoon: true },
+    ];
 
     if (isMobile) return <>{children}</>;
 
@@ -78,7 +44,7 @@ export function CanvasContextMenu({ children, onAddPanel }: CanvasContextMenuPro
                 className="w-64 overflow-hidden rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl"
             >
                 <ContextMenuLabel className="mb-1 px-3 py-2 text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                    O QUE VOCÊ QUER GERAR?
+                    {t('heading')}
                 </ContextMenuLabel>
 
                 {menuItems.map((item) => {
@@ -110,7 +76,7 @@ export function CanvasContextMenu({ children, onAddPanel }: CanvasContextMenuPro
                             {/* Coming soon badge */}
                             {item.comingSoon && (
                                 <div className="flex items-center gap-1 rounded-full border border-[#a2dd00]/30 bg-[#a2dd00]/5 px-2 py-0.5 shrink-0">
-                                    <span className="text-[10px] font-medium text-[#a2dd00]/70">Em breve</span>
+                                    <span className="text-[10px] font-medium text-[#a2dd00]/70">{t('comingSoon')}</span>
                                     <div className="flex items-center gap-0.5">
                                         <span className="h-0.5 w-0.5 rounded-full bg-[#a2dd00]/70 animate-bounce [animation-delay:0ms]" />
                                         <span className="h-0.5 w-0.5 rounded-full bg-[#a2dd00]/70 animate-bounce [animation-delay:150ms]" />
@@ -126,7 +92,7 @@ export function CanvasContextMenu({ children, onAddPanel }: CanvasContextMenuPro
 
                 <ContextMenuItem className="group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 outline-none transition-all focus:bg-[#f3f0ed]/[0.04] data-[highlighted]:bg-[#f3f0ed]/[0.04]">
                     <span className="text-xs text-[#f3f0ed]/30 transition-colors group-focus:text-[#f3f0ed]/60">
-                        Mais opções em breve...
+                        {t('moreSoon')}
                     </span>
                 </ContextMenuItem>
             </ContextMenuContent>

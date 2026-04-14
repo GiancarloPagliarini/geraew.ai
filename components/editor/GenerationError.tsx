@@ -2,6 +2,7 @@
 
 import { AlertCircle, Coins, RefreshCcw } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 // ─── Toast helper ─────────────────────────────────────────────────────────────
 
@@ -9,6 +10,21 @@ interface ShowGenerationErrorParams {
   errorMessage?: string | null;
   creditsRefunded?: number;
   fallback?: string;
+  /**
+   * Optional i18n strings. When provided, these override defaults.
+   * - refundedDescription: used as toast description when credits were refunded. `{count}` is replaced.
+   * - tryAgain: used as toast description when no refund.
+   * - refundedSuffix: appended to the returned message when credits were refunded. `{count}` is replaced.
+   */
+  strings?: {
+    refundedDescription?: string;
+    tryAgain?: string;
+    refundedSuffix?: string;
+  };
+}
+
+function interpolate(template: string, count: number): string {
+  return template.replace(/\{count\}/g, String(count));
 }
 
 /**
@@ -19,21 +35,25 @@ export function showGenerationError({
   errorMessage,
   creditsRefunded = 0,
   fallback = 'Erro ao gerar.',
+  strings,
 }: ShowGenerationErrorParams): string {
   const msg = errorMessage ?? fallback;
   const n = creditsRefunded ?? 0;
 
+  const refundedDescTpl =
+    strings?.refundedDescription ??
+    `${n} crédito${n !== 1 ? 's' : ''} estornado${n !== 1 ? 's' : ''} para sua conta.`;
+  const tryAgainText = strings?.tryAgain ?? 'Tente novamente em instantes.';
+  const refundedSuffixTpl =
+    strings?.refundedSuffix ??
+    `(${n} crédito${n !== 1 ? 's' : ''} estornado${n !== 1 ? 's' : ''})`;
+
   toast.error(msg, {
-    description:
-      n > 0
-        ? `${n} crédito${n !== 1 ? 's' : ''} estornado${n !== 1 ? 's' : ''} para sua conta.`
-        : 'Tente novamente em instantes.',
+    description: n > 0 ? interpolate(refundedDescTpl, n) : tryAgainText,
     duration: 7000,
   });
 
-  return n > 0
-    ? `${msg} (${n} crédito${n !== 1 ? 's' : ''} estornado${n !== 1 ? 's' : ''})`
-    : msg;
+  return n > 0 ? `${msg} ${interpolate(refundedSuffixTpl, n)}` : msg;
 }
 
 // ─── Inline banner ────────────────────────────────────────────────────────────
@@ -55,6 +75,7 @@ interface GenerationErrorBannerProps {
  * Automatically parses and highlights the credits-refunded info when present.
  */
 export function GenerationErrorBanner({ msg }: GenerationErrorBannerProps) {
+  const t = useTranslations('editor.generationError');
   if (!msg) return null;
 
   const { text, credits } = parseMsg(msg);
@@ -78,12 +99,12 @@ export function GenerationErrorBanner({ msg }: GenerationErrorBannerProps) {
             <div className="flex items-center gap-1.5">
               <Coins className="h-3 w-3 shrink-0 text-[#a2dd00]/60" />
               <span className="text-[11px] font-semibold leading-none text-[#a2dd00]/60">
-                {credits} crédito{credits !== 1 ? 's' : ''} estornado{credits !== 1 ? 's' : ''} para sua conta
+                {t('refundedBanner', { count: credits })}
               </span>
             </div>
           ) : (
             <span className="text-[11px] leading-none text-white/30">
-              Nenhum crédito foi descontado. Tente novamente em instantes.
+              {t('noDeduction')}
             </span>
           )}
         </div>

@@ -5,47 +5,41 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { api, ApiError } from '@/lib/api';
 
-const slides = [
+const slideMedia = [
   {
     id: 0,
-    tag: 'Geração de Vídeos profissionais',
-    title: 'Crie vídeos únicos com IA',
-    description: 'Transforme texto em vídeo em segundos com modelos de última geração.',
+    slideKey: 's0' as const,
     bg: 'bg-black',
     accent: '#a2dd00',
     video: 'https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmmwn2wq5007vus01furnxyh4/22c243fd-ce57-4c3e-aa8a-afadc811da46/output_0.mp4',
   },
   {
     id: 1,
-    tag: 'Identidade Visual',
-    title: 'Sua marca, do seu jeito',
-    description: 'Crie conteúdo visual consistente para campanhas, redes sociais e muito mais.',
+    slideKey: 's1' as const,
     bg: 'bg-black',
     accent: '#ff6b9d',
     video: 'https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmmxjmvws00fyus01sxwu628l/5727b0ea-86d6-4887-8707-57eeb1db17bf/output_2.mp4',
   },
   {
     id: 2,
-    tag: 'Geração de Imagens',
-    title: 'Imagine. Descreva. Crie.',
-    description: 'Transforme qualquer ideia em imagem com modelos de última geração — rápido e sem limitações.',
+    slideKey: 's3' as const,
     bg: 'bg-black',
     accent: '#ffa040',
     image: 'https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmmxldri200gzus01z4fip7qf/04d6bbed-eb33-4e0a-ae27-8df3e14b6b92/output_0.png',
   },
   {
     id: 3,
-    tag: 'Personagens com IA',
-    title: 'Personagens que parecem reais',
-    description: 'Monte personagens únicos com controle total de estilo, etnia, expressão e muito mais.',
+    slideKey: 's2' as const,
     bg: 'bg-gradient-to-br from-teal-950 via-emerald-900 to-cyan-950',
     accent: '#00d4aa',
     image: 'https://qwmnnkgejgjlpzofrxrl.supabase.co/storage/v1/s3/ai-generations/generations/cmmxwz1zt00zsus01w8hjs14n/2738ecf9-5b07-4fc0-ac89-589eb0b45600/output_0.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=2e3c372ae61232c26638c35c24b50688%2F20260319%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260319T202137Z&X-Amz-Expires=604800&X-Amz-Signature=ef47cb739b190f79059bd5fb95e9f78a579e062d999d89f578c3ecaf0d241e15&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject'
   },
 ];
+const slides = slideMedia;
 
 const SLIDE_DURATION = 5000;
 const TICK_MS = 50;
@@ -54,6 +48,11 @@ function LoginPageContent() {
   const router = useRouter();
   const { login } = useAuth();
   const searchParams = useSearchParams();
+  const tCommon = useTranslations('auth.common');
+  const tForgot = useTranslations('auth.forgotPassword');
+  const tReset = useTranslations('auth.resetPassword');
+  const tVerify = useTranslations('auth.verifyEmail');
+  const tSlides = useTranslations('auth.common.slides');
 
   const planParam = searchParams.get('plan');
   const refParam = searchParams.get('ref');
@@ -118,17 +117,11 @@ function LoginPageContent() {
   const googleError = searchParams.get('error');
   useEffect(() => {
     if (googleError) {
-      const messages: Record<string, string> = {
-        google_denied: 'Login com Google foi cancelado.',
-        google_exchange_failed: 'Erro ao autenticar com Google. Tente novamente.',
-        google_no_token: 'Erro ao obter credenciais do Google.',
-        auth_failed: 'Erro ao entrar com Google. Tente novamente.',
-        google_failed: 'Erro ao entrar com Google. Tente novamente.',
-        google_config: 'Configuração do Google incompleta.',
-      };
-      setError(messages[googleError] || 'Erro ao entrar com Google.');
+      const keys = ['google_denied', 'google_exchange_failed', 'google_no_token', 'auth_failed', 'google_failed', 'google_config'];
+      const key = keys.includes(googleError) ? `googleErrors.${googleError}` : 'googleErrors.default';
+      setError(tCommon(key));
     }
-  }, [googleError]);
+  }, [googleError, tCommon]);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const videosRef = useRef<Map<number, HTMLVideoElement>>(new Map());
@@ -311,7 +304,7 @@ function LoginPageContent() {
       router.push(redirectAfterLogin);
     } catch (err) {
       setVerifyStatus('error');
-      setVerifyMessage(err instanceof Error ? err.message : 'Código inválido ou expirado.');
+      setVerifyMessage(err instanceof Error ? err.message : tVerify('invalidCode'));
     }
   }
 
@@ -329,9 +322,9 @@ function LoginPageContent() {
     setResendVerifySuccess('');
     try {
       const res = await api.auth.resendVerificationByEmail(email);
-      setResendVerifySuccess(res.message || 'Código reenviado!');
+      setResendVerifySuccess(res.message || tVerify('resendSuccess'));
     } catch (err) {
-      setResendVerifySuccess(err instanceof Error ? err.message : 'Erro ao reenviar.');
+      setResendVerifySuccess(err instanceof Error ? err.message : tVerify('resendError'));
     } finally {
       setResendVerifyLoading(false);
     }
@@ -345,7 +338,7 @@ function LoginPageContent() {
       await api.auth.forgotPassword(forgotEmail);
       setForgotSent(true);
     } catch (err) {
-      setForgotError(err instanceof Error ? err.message : 'Erro ao enviar email. Tente novamente.');
+      setForgotError(err instanceof Error ? err.message : tForgot('error'));
     } finally {
       setForgotLoading(false);
     }
@@ -355,15 +348,15 @@ function LoginPageContent() {
     e.preventDefault();
     setResetError('');
     if (resetNewPassword !== resetConfirmPassword) {
-      setResetError('As senhas não coincidem.');
+      setResetError(tReset('passwordsDontMatch'));
       return;
     }
     if (resetNewPassword.length < 8) {
-      setResetError('A senha deve ter no mínimo 8 caracteres.');
+      setResetError(tReset('passwordTooShort'));
       return;
     }
     if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(resetNewPassword)) {
-      setResetError('A senha deve conter pelo menos uma letra maiúscula, uma minúscula e um número.');
+      setResetError(tReset('passwordWeak'));
       return;
     }
     setResetLoading(true);
@@ -371,7 +364,7 @@ function LoginPageContent() {
       await api.auth.resetPassword(resetToken, resetNewPassword);
       setResetSuccess(true);
     } catch (err) {
-      setResetError(err instanceof Error ? err.message : 'Erro ao redefinir senha. Tente novamente.');
+      setResetError(err instanceof Error ? err.message : tReset('error'));
     } finally {
       setResetLoading(false);
     }
@@ -394,7 +387,7 @@ function LoginPageContent() {
         setView('verify');
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Ocorreu um erro. Tente novamente.';
+      const message = err instanceof Error ? err.message : tCommon('genericError');
       setError(message);
       if (err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED') {
         setShowResend(true);
@@ -413,7 +406,7 @@ function LoginPageContent() {
       setSuccess(res.message);
       setShowResend(false);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Erro ao reenviar email. Tente novamente.';
+      const message = err instanceof Error ? err.message : tCommon('genericError');
       setError(message);
     } finally {
       setResendLoading(false);
@@ -436,7 +429,7 @@ function LoginPageContent() {
             className="mix-blend-lighten"
           />
           <p className="mt-2 text-xs text-white/25">
-            Gerador de imagens com inteligência artificial
+            {tCommon('tagline')}
           </p>
         </div>
 
@@ -444,10 +437,10 @@ function LoginPageContent() {
         {view === 'options' && (
           <div className="w-full flex flex-col gap-3">
             <h2 className="text-center text-base font-semibold text-white mb-1">
-              Bem-vindo de volta
+              {tCommon('welcomeBack')}
             </h2>
             <p className="text-center text-xs text-white/35 mb-3">
-              Entre ou crie sua conta para começar a criar
+              {tCommon('welcomeSubtitle')}
             </p>
 
             {/* Google */}
@@ -476,7 +469,7 @@ function LoginPageContent() {
                   <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z" />
                 </svg>
               )}
-              {googleLoading ? 'Redirecionando...' : 'Continuar com Google'}
+              {googleLoading ? tCommon('redirecting') : tCommon('continueWithGoogle')}
             </button>
 
             {error && view === 'options' && (
@@ -488,7 +481,7 @@ function LoginPageContent() {
             {/* Divider */}
             <div className="flex items-center gap-3">
               <div className="h-px flex-1 bg-white/[0.06]" />
-              <span className="text-[10px] text-white/20">ou</span>
+              <span className="text-[10px] text-white/20">{tCommon('or')}</span>
               <div className="h-px flex-1 bg-white/[0.06]" />
             </div>
 
@@ -498,18 +491,18 @@ function LoginPageContent() {
               className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.05] text-sm font-medium text-white transition-all hover:bg-white/10 active:scale-[0.98]"
             >
               <Mail className="h-4 w-4 opacity-60" />
-              Continuar com Email
+              {tCommon('continueWithEmail')}
             </button>
 
             <p className="mt-4 text-center text-[11px] text-white/18 leading-relaxed">
-              Ao continuar, você concorda com nossos{' '}
-              <Link href="/termos-de-uso" className="text-[#a2dd00]/50 hover:text-[#a2dd00]/80 transition-colors">
-                Termos de Uso
-              </Link>{' '}
-              e{' '}
-              <Link href="/politica-de-privacidade" className="text-[#a2dd00]/50 hover:text-[#a2dd00]/80 transition-colors">
-                Política de Privacidade
-              </Link>
+              {tCommon.rich('legal', {
+                terms: (chunks) => (
+                  <Link href="/termos-de-uso" className="text-[#a2dd00]/50 hover:text-[#a2dd00]/80 transition-colors">{chunks}</Link>
+                ),
+                privacy: (chunks) => (
+                  <Link href="/politica-de-privacidade" className="text-[#a2dd00]/50 hover:text-[#a2dd00]/80 transition-colors">{chunks}</Link>
+                ),
+              })}
             </p>
           </div>
         )}
@@ -522,7 +515,7 @@ function LoginPageContent() {
               className="mb-5 flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              Voltar
+              {tCommon('back')}
             </button>
 
             {forgotSent ? (
@@ -530,28 +523,31 @@ function LoginPageContent() {
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#a2dd00]/15">
                   <CheckCircle className="h-7 w-7 text-[#a2dd00]" />
                 </div>
-                <h2 className="text-lg font-bold text-white">Email enviado!</h2>
+                <h2 className="text-lg font-bold text-white">{tForgot('sentTitle')}</h2>
                 <p className="text-sm text-white/50">
-                  Se o email <span className="text-white/70">{forgotEmail}</span> estiver cadastrado, você receberá um link para redefinir sua senha.
+                  {tForgot.rich('sentBody', {
+                    email: forgotEmail,
+                    strong: (chunks) => <span className="text-white/70">{chunks}</span>,
+                  })}
                 </p>
-                <p className="text-xs text-white/30">Verifique também sua pasta de spam.</p>
+                <p className="text-xs text-white/30">{tForgot('checkSpam')}</p>
                 <button
                   onClick={() => { setView('email'); setForgotEmail(''); setForgotSent(false); }}
                   className="mt-1 flex items-center gap-1.5 text-xs text-[#a2dd00]/60 hover:text-[#a2dd00]/90 transition-colors"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
-                  Voltar ao login
+                  {tCommon('backToLogin')}
                 </button>
               </div>
             ) : (
               <>
-                <h2 className="mb-1 text-lg font-bold text-white">Esqueceu sua senha?</h2>
+                <h2 className="mb-1 text-lg font-bold text-white">{tForgot('title')}</h2>
                 <p className="mb-5 text-xs text-white/40">
-                  Digite seu email e enviaremos um link para redefinir sua senha.
+                  {tForgot('description')}
                 </p>
                 <form onSubmit={handleForgotSubmit} className="flex flex-col gap-3">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">EMAIL</label>
+                    <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">{tCommon('labels.email')}</label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/25" />
                       <input
@@ -559,7 +555,7 @@ function LoginPageContent() {
                         required
                         value={forgotEmail}
                         onChange={(e) => setForgotEmail(e.target.value)}
-                        placeholder="seu@email.com"
+                        placeholder={tCommon('placeholders.email')}
                         className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-10 pr-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]"
                       />
                     </div>
@@ -574,7 +570,7 @@ function LoginPageContent() {
                     disabled={forgotLoading}
                     className="mt-1 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#a2dd00] font-bold text-[#1a2123] text-sm transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
                   >
-                    {forgotLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Enviar link de reset'}
+                    {forgotLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : tForgot('submit')}
                   </button>
                 </form>
               </>
@@ -590,14 +586,14 @@ function LoginPageContent() {
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#a2dd00]/15">
                   <CheckCircle className="h-7 w-7 text-[#a2dd00]" />
                 </div>
-                <h2 className="text-lg font-bold text-white">Senha alterada!</h2>
-                <p className="text-sm text-white/50">Sua senha foi redefinida com sucesso.</p>
+                <h2 className="text-lg font-bold text-white">{tReset('successTitle')}</h2>
+                <p className="text-sm text-white/50">{tReset('successBodyShort')}</p>
                 <button
                   onClick={() => { setView('email'); setResetSuccess(false); setResetNewPassword(''); setResetConfirmPassword(''); }}
                   className="mt-1 flex items-center gap-2 rounded-xl bg-[#a2dd00] px-5 py-2.5 text-sm font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-[0.98]"
                 >
                   <LogIn className="h-4 w-4" />
-                  Fazer login
+                  {tReset('signIn')}
                 </button>
               </div>
             ) : (
@@ -607,13 +603,13 @@ function LoginPageContent() {
                   className="mb-5 flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
-                  Voltar
+                  {tCommon('back')}
                 </button>
-                <h2 className="mb-1 text-lg font-bold text-white">Redefinir senha</h2>
-                <p className="mb-5 text-xs text-white/40">Escolha uma nova senha para sua conta.</p>
+                <h2 className="mb-1 text-lg font-bold text-white">{tReset('title')}</h2>
+                <p className="mb-5 text-xs text-white/40">{tReset('description')}</p>
                 <form onSubmit={handleResetSubmit} className="flex flex-col gap-3">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">NOVA SENHA</label>
+                    <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">{tCommon('labels.newPassword')}</label>
                     <div className="relative">
                       <input
                         type={resetShowPassword ? 'text' : 'password'}
@@ -633,7 +629,7 @@ function LoginPageContent() {
                     </div>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">CONFIRMAR SENHA</label>
+                    <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">{tCommon('labels.confirmPassword')}</label>
                     <input
                       type={resetShowPassword ? 'text' : 'password'}
                       required
@@ -644,7 +640,7 @@ function LoginPageContent() {
                     />
                   </div>
                   <p className="text-[10px] text-white/25">
-                    Mínimo 8 caracteres, com letra maiúscula, minúscula e número.
+                    {tReset('passwordHelper')}
                   </p>
                   {resetError && (
                     <p className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs text-red-400">
@@ -656,7 +652,7 @@ function LoginPageContent() {
                     disabled={resetLoading}
                     className="mt-1 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#a2dd00] font-bold text-[#1a2123] text-sm transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
                   >
-                    {resetLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Redefinir senha'}
+                    {resetLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : tReset('submit')}
                   </button>
                 </form>
               </>
@@ -668,10 +664,12 @@ function LoginPageContent() {
         {view === 'verify' && (
           <div className="w-full flex flex-col items-center gap-6">
             <div className="text-center">
-              <h2 className="text-xl font-bold text-[#f3f0ed]">Verifique seu email</h2>
+              <h2 className="text-xl font-bold text-[#f3f0ed]">{tVerify('title')}</h2>
               <p className="mt-2 text-sm text-[#f3f0ed]/50">
-                Enviamos um código de 6 dígitos para{' '}
-                <span className="text-[#f3f0ed]/70">{email}</span>
+                {tVerify.rich('descriptionWithEmail', {
+                  email,
+                  strong: (chunks) => <span className="text-[#f3f0ed]/70">{chunks}</span>,
+                })}
               </p>
             </div>
 
@@ -699,7 +697,7 @@ function LoginPageContent() {
             {verifyStatus === 'loading' && (
               <div className="flex items-center gap-2 text-[#f3f0ed]/50">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Verificando...</span>
+                <span className="text-sm">{tVerify('verifying')}</span>
               </div>
             )}
 
@@ -713,7 +711,7 @@ function LoginPageContent() {
                   onClick={handleVerifyRetry}
                   className="text-xs text-[#a2dd00]/70 hover:text-[#a2dd00] transition-colors"
                 >
-                  Tentar novamente
+                  {tVerify('tryAgain')}
                 </button>
               </div>
             )}
@@ -731,14 +729,14 @@ function LoginPageContent() {
                 className="flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors disabled:opacity-50"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${resendVerifyLoading ? 'animate-spin' : ''}`} />
-                {resendVerifyLoading ? 'Reenviando...' : 'Reenviar código'}
+                {resendVerifyLoading ? tVerify('resending') : tVerify('resend')}
               </button>
               <button
                 onClick={() => { setView('email'); setVerifyStatus('input'); setDigits(['', '', '', '', '', '']); }}
                 className="flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
-                Voltar
+                {tCommon('back')}
               </button>
             </div>
           </div>
@@ -752,7 +750,7 @@ function LoginPageContent() {
               className="mb-5 flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              Voltar
+              {tCommon('back')}
             </button>
 
             {/* Mode toggle */}
@@ -766,7 +764,7 @@ function LoginPageContent() {
                     : 'text-white/30 hover:text-white/50'
                     }`}
                 >
-                  {m === 'login' ? 'Entrar' : 'Criar conta'}
+                  {m === 'login' ? tCommon('loginTab') : tCommon('registerTab')}
                 </button>
               ))}
             </div>
@@ -775,14 +773,14 @@ function LoginPageContent() {
               {mode === 'register' && (
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">
-                    NOME
+                    {tCommon('labels.name')}
                   </label>
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Seu nome"
+                    placeholder={tCommon('placeholders.name')}
                     className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]"
                   />
                 </div>
@@ -790,21 +788,21 @@ function LoginPageContent() {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">
-                  EMAIL
+                  {tCommon('labels.email')}
                 </label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu@email.com"
+                  placeholder={tCommon('placeholders.email')}
                   className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">
-                  SENHA
+                  {tCommon('labels.password')}
                 </label>
                 <div className="relative">
                   <input
@@ -832,7 +830,7 @@ function LoginPageContent() {
               {mode === 'register' && (
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">
-                    TELEFONE (WHATSAPP)
+                    {tCommon('labels.phone')}
                   </label>
                   <div className="relative">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-white/40 text-sm">
@@ -844,12 +842,12 @@ function LoginPageContent() {
                       required
                       value={formatPhoneDisplay(phone)}
                       onChange={handlePhoneChange}
-                      placeholder="(11) 99999-8888"
+                      placeholder={tCommon('placeholders.phone')}
                       className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-[4.5rem] pr-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]"
                     />
                   </div>
                   <p className="text-[10px] text-white/25">
-                    Usado para contato e recuperação de conta
+                    {tCommon('phoneHelper')}
                   </p>
                 </div>
               )}
@@ -872,7 +870,7 @@ function LoginPageContent() {
                       disabled={resendLoading}
                       className="text-xs text-[#a2dd00]/70 hover:text-[#a2dd00] transition-colors disabled:opacity-50"
                     >
-                      {resendLoading ? 'Reenviando...' : 'Reenviar email de verificação'}
+                      {resendLoading ? tCommon('resending') : tCommon('resendVerification')}
                     </button>
                   )}
                 </div>
@@ -885,7 +883,7 @@ function LoginPageContent() {
                     onClick={() => { setForgotEmail(email); setView('forgot'); }}
                     className="text-[11px] text-[#a2dd00]/50 hover:text-[#a2dd00]/80 transition-colors"
                   >
-                    Esqueceu a senha?
+                    {tCommon('forgotPasswordLink')}
                   </button>
                 </div>
               )}
@@ -900,12 +898,12 @@ function LoginPageContent() {
                 ) : mode === 'register' ? (
                   <>
                     <UserPlus className="h-4 w-4" />
-                    Criar conta
+                    {tCommon('submitRegister')}
                   </>
                 ) : (
                   <>
                     <LogIn className="h-4 w-4" />
-                    Entrar
+                    {tCommon('submitLogin')}
                   </>
                 )}
               </button>
@@ -943,7 +941,7 @@ function LoginPageContent() {
               /* Image slide */
               <Image
                 src={s.image}
-                alt={s.title}
+                alt={tSlides(`${s.slideKey}.title`)}
                 fill
                 className={`object-cover transition-[filter] duration-700 ${loadedMedia.has(s.id) ? '' : 'blur-xl scale-105'}`}
                 priority={i === 0}
@@ -999,7 +997,7 @@ function LoginPageContent() {
               className="h-1.5 w-1.5 rounded-full"
               style={{ backgroundColor: slide.accent }}
             />
-            {slide.tag}
+            {tSlides(`${slide.slideKey}.tag`)}
           </div>
 
           <h2
@@ -1007,7 +1005,7 @@ function LoginPageContent() {
             className="text-2xl font-bold text-white leading-tight mb-2 animate-in fade-in slide-in-from-bottom-2 duration-500"
             style={{ textShadow: '0 2px 12px rgba(0,0,0,0.8)' }}
           >
-            {slide.title}
+            {tSlides(`${slide.slideKey}.title`)}
           </h2>
 
           <p
@@ -1015,7 +1013,7 @@ function LoginPageContent() {
             className="text-sm text-white/70 leading-relaxed animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75"
             style={{ textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}
           >
-            {slide.description}
+            {tSlides(`${slide.slideKey}.description`)}
           </p>
 
           {/* Slide dots */}

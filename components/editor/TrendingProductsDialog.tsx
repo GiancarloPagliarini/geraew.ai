@@ -7,6 +7,7 @@ import {
   Spotlight, Medal
 } from 'lucide-react';
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -51,11 +52,16 @@ interface ApiResponse {
 
 // ── Tabs config ────────────────────────────────────────────────────────────────
 
-const TABS: { id: Tab; label: string; shortLabel: string; icon: React.ElementType; subtitle: string }[] = [
-  { id: 'sales', icon: BadgeDollarSign, label: 'Produtos com mais vendas', shortLabel: 'Mais vendas', subtitle: 'TOP 10 Produtos com mais vendas no TikTok BR' },
-  { id: 'recommended', icon: ChartNoAxesCombined, label: 'Produtos mais populares', shortLabel: 'Populares', subtitle: 'TOP 10 Produtos mais populares do TikTok BR' },
-  { id: 'new', icon: Star, label: 'Novos produtos', shortLabel: 'Novos', subtitle: 'TOP 10 Lançamentos em alta no TikTok BR' },
+const TAB_META: { id: Tab; icon: React.ElementType }[] = [
+  { id: 'sales', icon: BadgeDollarSign },
+  { id: 'recommended', icon: ChartNoAxesCombined },
+  { id: 'new', icon: Star },
 ];
+const TAB_I18N_KEY: Record<Tab, { label: string; short: string; subtitle: string }> = {
+  sales: { label: 'tabs.salesLabel', short: 'tabs.salesShort', subtitle: 'tabs.salesSubtitle' },
+  recommended: { label: 'tabs.recommendedLabel', short: 'tabs.recommendedShort', subtitle: 'tabs.recommendedSubtitle' },
+  new: { label: 'tabs.newLabel', short: 'tabs.newShort', subtitle: 'tabs.newSubtitle' },
+};
 
 // ── Growth badge ───────────────────────────────────────────────────────────────
 
@@ -76,6 +82,7 @@ function GrowthBadge({ value }: { value?: string }) {
 // ── Product Card ───────────────────────────────────────────────────────────────
 
 function ProductCard({ item, rank, highlight }: { item: RankItem; rank: number; highlight?: 'sales' | 'affiliates' }) {
+  const t = useTranslations('editorDialogs.trendingProducts.card');
   const rankColors: Record<number, string> = {
     1: 'text-yellow-400 bg-yellow-400/15 ring-yellow-400/30',
     2: 'text-zinc-300 bg-zinc-300/10 ring-zinc-300/20',
@@ -152,11 +159,11 @@ function ProductCard({ item, rank, highlight }: { item: RankItem; rank: number; 
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-1.5">
-          {item.yd_sold_count_show && <StatBadge icon={ShoppingBag} label="Vendas hoje" value={item.yd_sold_count_show} highlighted={highlight === 'sales'} />}
-          {item.yd_sale_amount_show && <StatBadge icon={TrendingUp} label="Faturamento" value={item.yd_sale_amount_show} />}
-          {item.author_count_show && <StatBadge icon={Users} label="Afiliados" value={item.author_count_show} highlighted={highlight === 'affiliates'} />}
-          {item.live_count_show && <StatBadge icon={Radio} label="Lives" value={item.live_count_show} />}
-          {hasCommission && <StatBadge icon={Percent} label="Comissão" value={item.commission_rate_show!} />}
+          {item.yd_sold_count_show && <StatBadge icon={ShoppingBag} label={t('salesToday')} value={item.yd_sold_count_show} highlighted={highlight === 'sales'} />}
+          {item.yd_sale_amount_show && <StatBadge icon={TrendingUp} label={t('revenue')} value={item.yd_sale_amount_show} />}
+          {item.author_count_show && <StatBadge icon={Users} label={t('affiliates')} value={item.author_count_show} highlighted={highlight === 'affiliates'} />}
+          {item.live_count_show && <StatBadge icon={Radio} label={t('lives')} value={item.live_count_show} />}
+          {hasCommission && <StatBadge icon={Percent} label={t('commission')} value={item.commission_rate_show!} />}
         </div>
 
         {/* Growth */}
@@ -169,14 +176,14 @@ function ProductCard({ item, rank, highlight }: { item: RankItem; rank: number; 
         {/* Total */}
         {item.total_sold_count_show && (
           <div className="mt-auto flex items-center justify-between rounded-lg bg-white/2 px-2 py-1.5 ring-1 ring-white/4">
-            <span className="text-[9px] text-white/25">Total acumulado</span>
-            <span className="text-[10px] font-bold text-white/55 tabular-nums">{item.total_sold_count_show} vendas</span>
+            <span className="text-[9px] text-white/25">{t('totalAccumulated')}</span>
+            <span className="text-[10px] font-bold text-white/55 tabular-nums">{item.total_sold_count_show} {t('salesSuffix')}</span>
           </div>
         )}
 
         {/* CTA */}
         <button disabled className="cursor-not-allowed mt-1 w-full rounded-lg bg-[#a2dd00]/5 py-1.5 text-[10px] font-black text-[#a2dd00]/40 ring-1 ring-[#a2dd00]/10 transition-all duration-200 disabled:pointer-events-none">
-          Usar produto (em breve)
+          {t('useProductSoon')}
         </button>
       </div>
     </div>
@@ -203,6 +210,7 @@ interface TrendingProductsDialogProps {
 }
 
 export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsDialogProps) {
+  const t = useTranslations('editorDialogs.trendingProducts');
   const [mounted, setMounted] = useState(false);
   const [closing, setClosing] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('sales');
@@ -265,7 +273,7 @@ export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsD
 
   if (!mounted) return null;
 
-  const activeTabConfig = TABS.find((t) => t.id === activeTab)!;
+  const activeTabSubtitleKey = TAB_I18N_KEY[activeTab].subtitle;
 
   return (
     <aside className={`${closing ? 'aside-out-left' : 'aside-in-left'} fixed inset-0 z-50 flex flex-col border-r border-landing-text/[0.07] bg-[#171f21] text-landing-text overflow-hidden sm:static sm:h-full sm:w-xl sm:shrink-0`}>
@@ -277,14 +285,14 @@ export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsD
             <Flame className="h-3.5 w-3.5 text-[#a2dd00]" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-[#f3f0ed]/80">Ranking TikTok Shop</h2>
-            <p className="hidden sm:block text-xs text-landing-text/30">{activeTabConfig.subtitle}</p>
+            <h2 className="text-sm font-bold text-[#f3f0ed]/80">{t('title')}</h2>
+            <p className="hidden sm:block text-xs text-landing-text/30">{t(activeTabSubtitleKey)}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[9px] flex items-center gap-1 font-black tracking-widest text-[#a2dd00] bg-[#a2dd00]/10 px-2 py-0.5 rounded-full ring-1 ring-[#a2dd00]/25">
             <Spotlight className="h-3.5 w-3.5 text-[#a2dd00]" />
-            TOP 10
+            {t('top10')}
           </span>
           <button
             onClick={() => onOpenChange(false)}
@@ -297,8 +305,9 @@ export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsD
 
       {/* Tab bar */}
       <div className="flex gap-1 px-3 pt-2.5 pb-2 border-b border-white/5">
-        {TABS.map(({ id, label, shortLabel, icon: Icon }) => {
+        {TAB_META.map(({ id, icon: Icon }) => {
           const isActive = activeTab === id;
+          const keys = TAB_I18N_KEY[id];
           return (
             <button
               key={id}
@@ -309,8 +318,8 @@ export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsD
                 }`}
             >
               <Icon className="h-3.5 w-3.5 shrink-0" />
-              <span className="inline sm:hidden">{shortLabel}</span>
-              <span className="hidden sm:inline">{label}</span>
+              <span className="inline sm:hidden">{t(keys.short)}</span>
+              <span className="hidden sm:inline">{t(keys.label)}</span>
             </button>
           );
         })}
@@ -323,7 +332,7 @@ export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsD
             <div className="flex items-center justify-center py-24">
               <div className="flex flex-col items-center gap-2">
                 <Loader2 className="h-5 w-5 animate-spin text-white/15" />
-                <span className="text-xs font-semibold animate-pulse text-white/50">Rankeando produtos...</span>
+                <span className="text-xs font-semibold animate-pulse text-white/50">{t('loading')}</span>
               </div>
             </div>
           )}
@@ -334,14 +343,14 @@ export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsD
                 <Flame className="h-5 w-5 text-red-400/60" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-white/50">Não foi possível carregar</p>
-                <p className="text-[10px] text-white/25 mt-0.5">Verifique sua conexão e tente novamente</p>
+                <p className="text-xs font-semibold text-white/50">{t('loadErrorTitle')}</p>
+                <p className="text-[10px] text-white/25 mt-0.5">{t('loadErrorHint')}</p>
               </div>
               <button
                 onClick={() => fetchProducts(activeTab)}
                 className="rounded-lg bg-[#a2dd00]/10 px-3 py-1.5 text-[10px] font-bold text-[#a2dd00] ring-1 ring-[#a2dd00]/20 hover:bg-[#a2dd00]/20 transition-colors"
               >
-                Tentar novamente
+                {t('retry')}
               </button>
             </div>
           )}
@@ -361,7 +370,7 @@ export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsD
 
           {!loading && !error && items.length === 0 && (
             <div className="flex items-center justify-center py-24">
-              <p className="text-xs text-white/25">Nenhum produto encontrado</p>
+              <p className="text-xs text-white/25">{t('noProducts')}</p>
             </div>
           )}
         </div>
@@ -373,16 +382,16 @@ export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsD
               <Lock className="h-6 w-6 text-[#a2dd00]" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-bold text-white/80">Recurso exclusivo para assinantes</p>
+              <p className="text-sm font-bold text-white/80">{t('paywallTitle')}</p>
               <p className="text-[11px] text-white/40 leading-relaxed">
-                Assine o plano Starter ou superior para visualizar os produtos em alta no TikTok Shop.
+                {t('paywallDescription')}
               </p>
             </div>
             <a
               href="/creditos"
               className="rounded-xl bg-[#a2dd00] px-5 py-2 text-xs font-black text-black hover:bg-[#b8f000] transition-colors"
             >
-              Ver planos
+              {t('viewPlans')}
             </a>
           </div>
         )}

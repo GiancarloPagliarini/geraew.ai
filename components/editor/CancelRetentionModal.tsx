@@ -14,6 +14,7 @@ import {
   Sparkles,
   ArrowDown,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export type RetentionAction = 'cancel' | 'downgrade';
 
@@ -45,14 +46,23 @@ export interface CancelRetentionModalProps {
 
 type Step = 'achievements' | 'loss' | 'reason' | 'offer' | 'final';
 
-const CANCEL_REASONS = [
-  { id: 'expensive', label: 'Esta caro para mim', icon: '💰' },
-  { id: 'not_using', label: 'Nao estou usando o suficiente', icon: '😴' },
-  { id: 'quality', label: 'A qualidade nao atende minhas expectativas', icon: '🎯' },
-  { id: 'competitor', label: 'Encontrei uma alternativa melhor', icon: '🔄' },
-  { id: 'temporary', label: 'Preciso pausar temporariamente', icon: '⏸️' },
-  { id: 'other', label: 'Outro motivo', icon: '💬' },
-];
+const CANCEL_REASON_IDS = ['expensive', 'not_using', 'quality', 'competitor', 'temporary', 'other'] as const;
+const REASON_ICONS: Record<string, string> = {
+  expensive: '💰',
+  not_using: '😴',
+  quality: '🎯',
+  competitor: '🔄',
+  temporary: '⏸️',
+  other: '💬',
+};
+const REASON_I18N_KEYS: Record<string, string> = {
+  expensive: 'expensive',
+  not_using: 'notUsing',
+  quality: 'quality',
+  competitor: 'competitor',
+  temporary: 'temporary',
+  other: 'other',
+};
 
 /* ── Dynamic offers per reason ── */
 interface RetentionOffer {
@@ -68,82 +78,43 @@ interface RetentionOffer {
 function getOfferForReason(
   reasonId: string,
   isCancel: boolean,
+  t: (key: string, values?: Record<string, string | number>) => string,
+  actionWord: string,
 ): RetentionOffer {
-  const actionWord = isCancel ? 'cancelar' : 'fazer downgrade';
+  const offerKey = (() => {
+    switch (reasonId) {
+      case 'expensive': return 'expensive';
+      case 'not_using': return 'notUsing';
+      case 'quality': return 'quality';
+      case 'competitor': return 'competitor';
+      case 'temporary': return 'temporary';
+      default: return 'default';
+    }
+  })();
 
-  switch (reasonId) {
-    case 'expensive':
-      return {
-        icon: Gift,
-        title: 'E se o preco nao fosse um problema?',
-        subtitle:
-          'Sabemos que investir em ferramentas precisa fazer sentido. Por isso, preparamos algo especial so pra voce:',
-        highlight: '15% OFF',
-        highlightSub: 'nos proximos 2 meses',
-        acceptLabel: 'Aceitar desconto e continuar',
-        rejectLabel: `Nao, quero ${actionWord} mesmo assim`,
-      };
+  const icon: typeof Gift = (() => {
+    switch (reasonId) {
+      case 'not_using':
+      case 'quality':
+        return Sparkles;
+      case 'temporary':
+        return Pause;
+      default:
+        return Gift;
+    }
+  })();
 
-    case 'not_using':
-      return {
-        icon: Sparkles,
-        title: 'Talvez voce ainda nao tenha descoberto o melhor da GeraEW.',
-        subtitle:
-          '90% dos criadores que mais faturam usam funcionalidades que voce talvez nao tenha explorado. Vamos te dar uma chance de testar tudo:',
-        highlight: '+50 creditos bonus',
-        highlightSub: 'para explorar agora',
-        acceptLabel: 'Explorar com creditos bonus',
-        rejectLabel: `Nao tenho interesse, quero ${actionWord}`,
-      };
-
-    case 'quality':
-      return {
-        icon: Sparkles,
-        title: 'Atualizamos nossos modelos recentemente.',
-        subtitle:
-          'Nosso time esta constantemente melhorando a qualidade das geracoes. Que tal testar as melhorias com creditos extras?',
-        highlight: '+30 creditos',
-        highlightSub: 'para testar as melhorias',
-        acceptLabel: 'Testar melhorias com bonus',
-        rejectLabel: `Nao, quero ${actionWord} mesmo assim`,
-      };
-
-    case 'competitor':
-      return {
-        icon: Gift,
-        title: 'Antes de ir, veja o que so a GeraEW faz.',
-        subtitle:
-          'Motion Control, Face Swap e Video em 4K com IA sao exclusivos da nossa plataforma. Que tal creditos extras para testar tudo antes de decidir?',
-        highlight: '+100 creditos bonus',
-        highlightSub: 'para comparar a fundo',
-        acceptLabel: 'Receber creditos e comparar',
-        rejectLabel: `Nao, quero ${actionWord} mesmo assim`,
-      };
-
-    case 'temporary':
-      return {
-        icon: Pause,
-        title: 'Que tal pausar em vez de cancelar?',
-        subtitle:
-          'Congele sua assinatura por ate 30 dias. Sem cobranca, sem perder seus dados. Quando voltar, tudo estara exatamente como voce deixou.',
-        highlight: 'Pausar 30 dias',
-        highlightSub: 'sem cobranca, sem perder nada',
-        acceptLabel: 'Pausar minha assinatura por 30 dias',
-        rejectLabel: `Prefiro ${actionWord} definitivamente`,
-      };
-
-    default:
-      return {
-        icon: Gift,
-        title: 'Queremos te manter conosco.',
-        subtitle:
-          'Antes de ir, que tal aproveitar uma oferta exclusiva para continuar criando conteudo profissional?',
-        highlight: '20% OFF',
-        highlightSub: 'na proxima renovacao',
-        acceptLabel: 'Aceitar desconto e continuar',
-        rejectLabel: `Nao, quero ${actionWord} mesmo assim`,
-      };
-  }
+  return {
+    icon,
+    title: t(`offers.${offerKey}.title`),
+    subtitle: t(`offers.${offerKey}.subtitle`),
+    highlight: t(`offers.${offerKey}.highlight`),
+    highlightSub: t(`offers.${offerKey}.highlightSub`),
+    acceptLabel: t(`offers.${offerKey}.acceptLabel`),
+    rejectLabel: t(`offers.${offerKey}.rejectLabel`, { action: actionWord }),
+  };
+  // isCancel param retained for future logic tweaks
+  void isCancel;
 }
 
 /* ── Delay hook for continue buttons ── */
@@ -176,14 +147,15 @@ export function CancelRetentionModal({
   userStats,
   hideOffers = false,
 }: CancelRetentionModalProps) {
+  const t = useTranslations('editor.retention');
   const [step, setStep] = useState<Step>('achievements');
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [additionalFeedback, setAdditionalFeedback] = useState('');
 
   const isCancel = action === 'cancel';
-  const actionLabel = isCancel ? 'cancelar' : 'fazer downgrade';
+  const actionWord = isCancel ? t('action.cancel') : t('action.downgrade');
 
-  // Delay for destructive action buttons (4 seconds)
+  // Delay for destructive action buttons
   const achievementsDelayReady = useButtonDelay(4000, step === 'achievements');
   const lossDelayReady = useButtonDelay(3000, step === 'loss');
   const offerDelayReady = useButtonDelay(5000, step === 'offer');
@@ -205,11 +177,10 @@ export function CancelRetentionModal({
     handleStart();
   }, [handleStart]);
 
-  const offer = selectedReason ? getOfferForReason(selectedReason, isCancel) : null;
+  const offer = selectedReason ? getOfferForReason(selectedReason, isCancel, t, actionWord) : null;
   const OfferIcon = offer?.icon ?? Gift;
 
   async function handleFinalConfirm() {
-    // TODO: Send selectedReason + additionalFeedback to backend
     await onConfirm();
   }
 
@@ -238,12 +209,12 @@ export function CancelRetentionModal({
                 <Trophy className="h-6 w-6 text-[#a2dd00]" />
               </div>
               <h3 className="text-lg font-bold text-[#f3f0ed]">
-                Voce construiu algo incrivel aqui.
+                {t('achievements.title')}
               </h3>
               <p className="text-sm text-[#f3f0ed]/50">
                 {daysMember > 0
-                  ? `Nos ultimos ${daysMember} dias, voce criou conteudo profissional com a GeraEW.`
-                  : 'Veja o que voce ja conquistou com a GeraEW.'}
+                  ? t('achievements.subtitleWithDays', { days: daysMember })
+                  : t('achievements.subtitleNoDays')}
               </p>
             </div>
 
@@ -254,7 +225,7 @@ export function CancelRetentionModal({
                   <span className="text-2xl font-bold text-[#a2dd00]">
                     {totalImages.toLocaleString('pt-BR')}
                   </span>
-                  <span className="text-[11px] text-[#a2dd00]/60">imagens criadas</span>
+                  <span className="text-[11px] text-[#a2dd00]/60">{t('achievements.imagesLabel')}</span>
                 </div>
               )}
               {totalVideos > 0 && (
@@ -262,14 +233,13 @@ export function CancelRetentionModal({
                   <span className="text-2xl font-bold text-[#a2dd00]">
                     {totalVideos.toLocaleString('pt-BR')}
                   </span>
-                  <span className="text-[11px] text-[#a2dd00]/60">videos criados</span>
+                  <span className="text-[11px] text-[#a2dd00]/60">{t('achievements.videosLabel')}</span>
                 </div>
               )}
             </div>
 
             <p className="text-center text-xs text-[#f3f0ed]/35">
-              Seus influencers digitais estao prontos para trabalhar por voce.
-              Tem certeza que quer perder acesso a tudo isso?
+              {t('achievements.footer')}
             </p>
 
             <div className="flex flex-col gap-2">
@@ -277,14 +247,14 @@ export function CancelRetentionModal({
                 onClick={onClose}
                 className="flex h-11 w-full items-center justify-center rounded-xl bg-[#a2dd00] text-sm font-bold text-[#1a2123] transition-colors hover:bg-[#b5e82d]"
               >
-                Continuar Criando
+                {t('achievements.keep')}
               </button>
               <button
                 onClick={() => setStep('loss')}
                 disabled={!achievementsDelayReady}
                 className="flex h-9 w-full items-center justify-center rounded-xl text-xs text-[#f3f0ed]/25 transition-colors hover:text-[#f3f0ed]/40 disabled:cursor-default disabled:opacity-0"
               >
-                Mesmo assim, quero {actionLabel}
+                {t('achievements.anyway', { action: actionWord })}
               </button>
             </div>
           </div>
@@ -298,24 +268,15 @@ export function CancelRetentionModal({
                 <AlertTriangle className="h-6 w-6 text-red-400" />
               </div>
               <h3 className="text-lg font-bold text-[#f3f0ed]">
-                Isso e o que voce perde ao sair.
+                {t('loss.title')}
               </h3>
               <p className="text-sm text-[#f3f0ed]/50">
                 {isCancel
-                  ? 'Ao cancelar sua assinatura, voce perde acesso a:'
-                  : (
-                    <>
-                      Ao mudar de{' '}
-                      <span className="font-semibold text-[#f3f0ed]/70">
-                        {currentPlanName ?? 'seu plano atual'}
-                      </span>{' '}
-                      para{' '}
-                      <span className="font-semibold text-red-400/80">
-                        {targetPlanName ?? 'um plano menor'}
-                      </span>
-                      :
-                    </>
-                  )}
+                  ? t('loss.cancelIntro')
+                  : t('loss.downgradeIntro', {
+                      current: currentPlanName ?? t('loss.currentPlanFallback'),
+                      target: targetPlanName ?? t('loss.targetPlanFallback'),
+                    })}
               </p>
             </div>
 
@@ -344,9 +305,9 @@ export function CancelRetentionModal({
 
             {accessEndDate && isCancel && (
               <p className="text-center text-xs text-[#f3f0ed]/35">
-                Voce tera acesso ate{' '}
-                <span className="font-medium text-[#f3f0ed]/50">{accessEndDate}</span>.
-                Apos essa data, perdera tudo listado acima.
+                {t('loss.accessEndPrefix')}{' '}
+                <span className="font-medium text-[#f3f0ed]/50">{accessEndDate}</span>
+                {t('loss.accessEndSuffix')}
               </p>
             )}
 
@@ -355,14 +316,14 @@ export function CancelRetentionModal({
                 onClick={onClose}
                 className="flex h-11 w-full items-center justify-center rounded-xl bg-[#a2dd00] text-sm font-bold text-[#1a2123] transition-colors hover:bg-[#b5e82d]"
               >
-                Quero manter meu plano
+                {t('loss.keep')}
               </button>
               <button
                 onClick={() => setStep(hideOffers ? 'final' : 'reason')}
                 disabled={!lossDelayReady}
                 className="flex h-9 w-full items-center justify-center rounded-xl text-xs text-[#f3f0ed]/25 transition-colors hover:text-[#f3f0ed]/40 disabled:cursor-default disabled:opacity-0"
               >
-                Entendo, quero continuar
+                {t('loss.continue')}
               </button>
             </div>
           </div>
@@ -376,26 +337,26 @@ export function CancelRetentionModal({
                 <MessageSquare className="h-6 w-6 text-[#f3f0ed]/50" />
               </div>
               <h3 className="text-lg font-bold text-[#f3f0ed]">
-                Nos ajude a melhorar.
+                {t('reason.title')}
               </h3>
               <p className="text-sm text-[#f3f0ed]/50">
-                Saber o motivo nos ajuda a construir uma plataforma melhor para todos.
+                {t('reason.subtitle')}
               </p>
             </div>
 
             <div className="flex flex-col gap-2">
-              {CANCEL_REASONS.map((reason) => (
+              {CANCEL_REASON_IDS.map((reasonId) => (
                 <button
-                  key={reason.id}
-                  onClick={() => setSelectedReason(reason.id)}
-                  className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-all ${selectedReason === reason.id
+                  key={reasonId}
+                  onClick={() => setSelectedReason(reasonId)}
+                  className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-all ${selectedReason === reasonId
                     ? 'border-[#a2dd00]/40 bg-[#a2dd00]/8 text-[#f3f0ed]'
                     : 'border-[#f3f0ed]/8 bg-[#f3f0ed]/3 text-[#f3f0ed]/60 hover:border-[#f3f0ed]/15 hover:bg-[#f3f0ed]/5'
                     }`}
                 >
-                  <span className="text-base">{reason.icon}</span>
-                  <span className="flex-1">{reason.label}</span>
-                  {selectedReason === reason.id && (
+                  <span className="text-base">{REASON_ICONS[reasonId]}</span>
+                  <span className="flex-1">{t(`reasons.${REASON_I18N_KEYS[reasonId]}`)}</span>
+                  {selectedReason === reasonId && (
                     <span className="h-2 w-2 rounded-full bg-[#a2dd00]" />
                   )}
                 </button>
@@ -406,7 +367,7 @@ export function CancelRetentionModal({
             <textarea
               value={additionalFeedback}
               onChange={(e) => setAdditionalFeedback(e.target.value)}
-              placeholder="Conte mais sobre sua decisao (opcional)"
+              placeholder={t('reason.feedbackPlaceholder')}
               className="h-16 w-full resize-none rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 px-4 py-3 text-xs text-[#f3f0ed]/70 placeholder:text-[#f3f0ed]/20 focus:border-[#f3f0ed]/20 focus:outline-none"
             />
 
@@ -416,14 +377,14 @@ export function CancelRetentionModal({
                 disabled={!selectedReason}
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/10 text-sm font-medium text-[#f3f0ed]/50 transition-colors hover:border-[#f3f0ed]/20 hover:text-[#f3f0ed]/70 disabled:cursor-not-allowed disabled:opacity-30"
               >
-                Continuar
+                {t('reason.continue')}
                 <ChevronRight className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setStep(hasStats ? 'achievements' : 'loss')}
                 className="flex h-9 w-full items-center justify-center rounded-xl text-xs text-[#f3f0ed]/25 transition-colors hover:text-[#f3f0ed]/40"
               >
-                Voltar
+                {t('reason.back')}
               </button>
             </div>
           </div>
@@ -491,44 +452,40 @@ export function CancelRetentionModal({
                 <AlertTriangle className="h-6 w-6 text-red-400" />
               </div>
               <h3 className="text-lg font-bold text-[#f3f0ed]">
-                Ultima confirmacao.
+                {t('final.title')}
               </h3>
               <p className="text-sm leading-relaxed text-[#f3f0ed]/50">
                 {isCancel
-                  ? (
-                    <>
-                      Seu plano <span className="font-semibold text-[#f3f0ed]/70">{currentPlanName}</span> sera
-                      encerrado{accessEndDate ? ` em ${accessEndDate}` : ' ao fim do periodo atual'}.
-                    </>
-                  )
-                  : (
-                    <>
-                      Seu plano sera alterado de{' '}
-                      <span className="font-semibold text-[#f3f0ed]/70">{currentPlanName}</span> para{' '}
-                      <span className="font-semibold text-red-400/80">{targetPlanName}</span> na proxima
-                      renovacao.
-                    </>
-                  )}
+                  ? t('final.cancelBody', {
+                      plan: currentPlanName ?? '',
+                      when: accessEndDate
+                        ? t('final.cancelWhenDate', { date: accessEndDate })
+                        : t('final.cancelWhenDefault'),
+                    })
+                  : t('final.downgradeBody', {
+                      current: currentPlanName ?? '',
+                      target: targetPlanName ?? '',
+                    })}
               </p>
             </div>
 
             {/* Summary of consequences */}
             <div className="flex flex-col gap-2 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/[0.02] p-4">
               <p className="text-[10px] font-bold tracking-[0.12em] text-[#f3f0ed]/30">
-                APOS ESSA DATA:
+                {t('final.afterDate')}
               </p>
               <div className="flex flex-col gap-1.5">
                 {isCancel ? (
                   <>
-                    <ConsequenceItem text="Seus creditos voltam para o plano Free" />
-                    <ConsequenceItem text="Geracoes futuras terao marca d'agua" />
-                    <ConsequenceItem text="Voce perde prioridade na fila de geracao" />
-                    <ConsequenceItem text="Funcionalidades premium ficam indisponiveis" />
+                    <ConsequenceItem text={t('final.cancel.creditsReset')} />
+                    <ConsequenceItem text={t('final.cancel.watermark')} />
+                    <ConsequenceItem text={t('final.cancel.lowPriority')} />
+                    <ConsequenceItem text={t('final.cancel.noPremium')} />
                   </>
                 ) : (
                   <>
-                    <ConsequenceItem text="Seus creditos serao reduzidos" />
-                    <ConsequenceItem text="Funcionalidades exclusivas do plano atual serao removidas" />
+                    <ConsequenceItem text={t('final.downgrade.creditsReduced')} />
+                    <ConsequenceItem text={t('final.downgrade.featuresRemoved')} />
                   </>
                 )}
               </div>
@@ -536,8 +493,9 @@ export function CancelRetentionModal({
 
             {accessEndDate && (
               <p className="text-center text-xs text-[#f3f0ed]/30">
-                Voce pode reativar a qualquer momento antes de{' '}
-                <span className="font-medium text-[#f3f0ed]/45">{accessEndDate}</span>.
+                {t.rich('final.reactivate', {
+                  date: () => <span className="font-medium text-[#f3f0ed]/45">{accessEndDate}</span>,
+                })}
               </p>
             )}
 
@@ -548,7 +506,7 @@ export function CancelRetentionModal({
                 disabled={isLoading}
                 className="flex h-12 w-full items-center justify-center rounded-xl bg-[#a2dd00] text-sm font-bold text-[#1a2123] transition-colors hover:bg-[#b5e82d] disabled:opacity-50"
               >
-                Mudei de ideia, quero manter meu plano
+                {t('final.keep')}
               </button>
 
               {/* Confirm cancel — small, gray, no emphasis */}
@@ -560,7 +518,7 @@ export function CancelRetentionModal({
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin text-[#f3f0ed]/30" />
                 ) : (
-                  `Confirmar ${isCancel ? 'cancelamento' : 'downgrade'}`
+                  isCancel ? t('final.confirmCancel') : t('final.confirmDowngrade')
                 )}
               </button>
             </div>

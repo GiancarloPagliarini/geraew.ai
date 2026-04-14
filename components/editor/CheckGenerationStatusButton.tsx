@@ -2,6 +2,7 @@
 
 import { RefreshCw } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { api, Generation } from '@/lib/api';
 import { showGenerationError } from './GenerationError';
@@ -20,6 +21,7 @@ export function CheckGenerationStatusButton({
   onFailed,
 }: CheckGenerationStatusButtonProps) {
   const [isChecking, setIsChecking] = useState(false);
+  const t = useTranslations('editorChrome.buttons');
 
   async function handleCheck() {
     if (!accessToken || !generationId || isChecking) return;
@@ -29,13 +31,13 @@ export function CheckGenerationStatusButton({
       if (generation.status === 'COMPLETED') {
         onCompleted(generation);
       } else if (generation.status === 'FAILED') {
-        showGenerationError({ errorMessage: generation.errorMessage, fallback: 'Erro ao gerar.' });
+        showGenerationError({ errorMessage: generation.errorMessage, fallback: t('fallbackError') });
         onFailed(generation);
       } else {
-        toast.info('Ainda processando...', { description: 'A geração continua em andamento.' });
+        toast.info(t('stillProcessing'), { description: t('stillProcessingDesc') });
       }
     } catch {
-      toast.error('Erro ao verificar status.', { description: 'Tente novamente.' });
+      toast.error(t('errorCheck'), { description: t('tryAgain') });
     } finally {
       setIsChecking(false);
     }
@@ -48,7 +50,7 @@ export function CheckGenerationStatusButton({
       className="mt-1 flex items-center gap-1.5 animate-pulse border border-white/15 rounded-lg px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/60 disabled:opacity-40"
     >
       <RefreshCw className={`h-3 w-3 ${isChecking ? 'animate-spin' : ''}`} />
-      {isChecking ? 'VERIFICANDO...' : 'VERIFICAR GERAÇÃO'}
+      {isChecking ? t('checking') : t('checkGeneration')}
     </button>
   );
 }

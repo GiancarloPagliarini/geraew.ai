@@ -1,6 +1,7 @@
 'use client';
 
 import { CopyPlus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface PanelDuplicateButtonProps {
@@ -8,6 +9,7 @@ interface PanelDuplicateButtonProps {
 }
 
 export function PanelDuplicateButton({ onClick }: PanelDuplicateButtonProps) {
+  const t = useTranslations('editorChrome.buttons');
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -18,7 +20,7 @@ export function PanelDuplicateButton({ onClick }: PanelDuplicateButtonProps) {
           <CopyPlus className="h-4 w-4" />
         </button>
       </TooltipTrigger>
-      <TooltipContent side="bottom" sideOffset={6}>Duplicar painel</TooltipContent>
+      <TooltipContent side="bottom" sideOffset={6}>{t('duplicatePanel')}</TooltipContent>
     </Tooltip>
   );
 }

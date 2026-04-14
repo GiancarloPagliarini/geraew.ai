@@ -1,0 +1,217 @@
+{
+  "editorDialogs": {
+    "gallery": {
+      "title": "Galeria",
+      "subtitle": "Suas imagens e vídeos gerados com IA",
+      "pickerBanner": "Selecione imagens ou arraste para o node",
+      "cancel": "CANCELAR",
+      "add": "ADICIONAR",
+      "selectedSingular": "{count} selecionada",
+      "selectedPlural": "{count} selecionadas",
+      "itemsCountSingular": "{shown} de {total} item",
+      "itemsCountPlural": "{shown} de {total} itens",
+      "tabs": {
+        "all": "Tudo",
+        "photos": "Fotos",
+        "videos": "Vídeos",
+        "favorites": "Favoritos"
+      },
+      "stats": {
+        "generations": "Gerações",
+        "credits": "Créditos",
+        "favorites": "Favoritos",
+        "images": "Imagens",
+        "videos": "Vídeos",
+        "folders": "Pastas"
+      },
+      "refresh": "Atualizar galeria",
+      "refreshed": "Galeria atualizada",
+      "refreshedDescription": "As imagens foram recarregadas.",
+      "folders": {
+        "myFolders": "Minhas Pastas",
+        "newFolderPlaceholder": "Nova pasta...",
+        "noFolders": "Nenhuma pasta",
+        "noFoldersHint": "Crie uma pasta para organizar suas gerações",
+        "itemSingular": "item",
+        "itemPlural": "itens",
+        "rename": "Renomear",
+        "delete": "Excluir",
+        "cancel": "Cancelar",
+        "deleteTitle": "Excluir pasta",
+        "deleteDescription": "Tem certeza que deseja excluir \"{name}\"? As gerações dentro dela não serão apagadas.",
+        "addToFolder": "Adicionar à pasta",
+        "addToFolderDescription": "Selecione uma pasta ou crie uma nova.",
+        "folderButton": "Pasta",
+        "created": "Pasta criada",
+        "createdDescription": "\"{name}\" foi criada com sucesso.",
+        "createError": "Erro ao criar pasta",
+        "tryAgain": "Tente novamente.",
+        "renamed": "Pasta renomeada",
+        "renamedDescription": "O nome foi atualizado com sucesso.",
+        "renameError": "Erro ao renomear pasta",
+        "deleted": "Pasta excluída",
+        "deletedDescription": "A pasta foi removida com sucesso.",
+        "deleteError": "Erro ao excluir pasta",
+        "addedToFolder": "Adicionada à pasta",
+        "addedToFolderDescription": "A imagem foi movida com sucesso.",
+        "addToFolderError": "Erro ao adicionar à pasta",
+        "removedFromFolder": "Removida da pasta",
+        "removedFromFolderDescription": "A imagem foi removida com sucesso.",
+        "removeFromFolderError": "Erro ao remover da pasta"
+      },
+      "detail": {
+        "back": "Voltar para galeria",
+        "favorited": "Favoritado",
+        "favorite": "Favoritar",
+        "download": "Download",
+        "deleteVersion": "Excluir versão",
+        "delete": "Excluir",
+        "confirm": "Confirmar",
+        "cancel": "Cancelar",
+        "copyPrompt": "Copiar prompt",
+        "copied": "Copiado!",
+        "versionsGenerated": "{count} versões geradas",
+        "referencesUsed": "Referências usadas",
+        "referenceAlt": "Referência {n}",
+        "versionAlt": "Versão {n}",
+        "imageAlt": "Imagem gerada"
+      },
+      "empty": "Nenhuma imagem gerada ainda.",
+      "loadDetailsError": "Erro ao carregar detalhes",
+      "favorited": "Adicionada aos favoritos",
+      "unfavorited": "Removida dos favoritos",
+      "favoriteError": "Erro ao atualizar favorito",
+      "versionDeleted": "Versão excluída",
+      "versionDeletedDescription": "A versão foi removida com sucesso.",
+      "deleteVersionError": "Erro ao excluir versão",
+      "generationDeleted": "Geração excluída",
+      "generationDeletedDescription": "A geração foi removida com sucesso.",
+      "deleteError": "Erro ao excluir"
+    },
+    "prompts": {
+      "title": "Prompts",
+      "searchPlaceholder": "Buscar prompts...",
+      "add": "Adicionar",
+      "noneFound": "Nenhum prompt encontrado",
+      "clearSearch": "Limpar busca",
+      "loadError": "Erro ao carregar prompts",
+      "tryAgain": "Tentar novamente",
+      "loginTitle": "Faça login para acessar",
+      "loginDescription": "Entre na sua conta para visualizar e usar os prompts disponíveis.",
+      "signIn": "Entrar",
+      "loginRequired": "Faça login para usar os prompts",
+      "copied": "Prompt copiado!",
+      "delete": {
+        "title": "Excluir prompt",
+        "description": "Tem certeza que deseja excluir este prompt? Essa ação não pode ser desfeita.",
+        "cancel": "Cancelar",
+        "confirm": "Excluir",
+        "success": "Prompt excluído!",
+        "error": "Erro ao excluir prompt"
+      },
+      "addModal": {
+        "title": "Adicionar Prompt",
+        "titlePlaceholder": "Título",
+        "promptPlaceholder": "Prompt",
+        "imageUrlPlaceholder": "URL da imagem (opcional)",
+        "submit": "Adicionar",
+        "saving": "Salvando...",
+        "validationError": "Preencha o título e o prompt",
+        "success": "Prompt adicionado!",
+        "error": "Erro ao adicionar prompt"
+      }
+    },
+    "trendingProducts": {
+      "title": "Ranking TikTok Shop",
+      "top10": "TOP 10",
+      "tabs": {
+        "salesLabel": "Produtos com mais vendas",
+        "salesShort": "Mais vendas",
+        "salesSubtitle": "TOP 10 Produtos com mais vendas no TikTok BR",
+        "recommendedLabel": "Produtos mais populares",
+        "recommendedShort": "Populares",
+        "recommendedSubtitle": "TOP 10 Produtos mais populares do TikTok BR",
+        "newLabel": "Novos produtos",
+        "newShort": "Novos",
+        "newSubtitle": "TOP 10 Lançamentos em alta no TikTok BR"
+      },
+      "loading": "Rankeando produtos...",
+      "loadErrorTitle": "Não foi possível carregar",
+      "loadErrorHint": "Verifique sua conexão e tente novamente",
+      "retry": "Tentar novamente",
+      "noProducts": "Nenhum produto encontrado",
+      "paywallTitle": "Recurso exclusivo para assinantes",
+      "paywallDescription": "Assine o plano Starter ou superior para visualizar os produtos em alta no TikTok Shop.",
+      "viewPlans": "Ver planos",
+      "card": {
+        "salesToday": "Vendas hoje",
+        "revenue": "Faturamento",
+        "affiliates": "Afiliados",
+        "lives": "Lives",
+        "commission": "Comissão",
+        "totalAccumulated": "Total acumulado",
+        "salesSuffix": "vendas",
+        "useProductSoon": "Usar produto (em breve)"
+      }
+    },
+    "tutorial": {
+      "title": "Tutoriais",
+      "subtitle": "Aprenda a usar todas as funcionalidades",
+      "back": "← Voltar para tutoriais",
+      "comingSoon": "Vídeo em breve",
+      "stepByStep": "Passo a passo",
+      "availableCount": "{count} tutoriais disponíveis",
+      "items": {
+        "image": {
+          "title": "Gerar sua primeira imagem",
+          "description": "Aprenda a usar o painel de geração de imagens para criar artes incríveis com IA em poucos cliques.",
+          "steps": [
+            "Abra o painel \"Gerar Imagem\".",
+            "Descreva a imagem que deseja criar no campo de prompt.",
+            "Escolha o estilo e as configurações desejadas.",
+            "Clique em \"Gerar\" e aguarde o resultado."
+          ]
+        },
+        "video": {
+          "title": "Gerar um vídeo",
+          "description": "Transforme imagens ou prompts em vídeos animados de alta qualidade usando modelos de IA de última geração.",
+          "steps": [
+            "Abra o painel \"Gerar Vídeo\".",
+            "Selecione uma imagem base ou escreva um prompt de vídeo.",
+            "Ajuste a duração e o estilo do vídeo.",
+            "Clique em \"Gerar Vídeo\" e aguarde o processamento."
+          ]
+        },
+        "influencer": {
+          "title": "Criar sua IA Influencer",
+          "description": "Crie uma influencer digital completa com identidade visual, personalidade e consistência visual entre gerações.",
+          "steps": [
+            "Acesse o painel \"Criar Influencer\".",
+            "Defina o nome, personalidade e estilo visual da sua influencer.",
+            "Gere o modelo base da sua influencer com IA.",
+            "Use a influencer criada para gerar imagens e vídeos consistentes."
+          ]
+        }
+      }
+    },
+    "postAndEarn": {
+      "title": "Poste e Ganhe",
+      "subtitle": "Compartilhe suas criações em <green>collab</green> com <green>@geraew.ai</green> e dobre suas gerações!",
+      "postImage": "Poste uma imagem",
+      "postVideo": "Poste um vídeo",
+      "inCollab": "Em collab com @geraew.ai",
+      "generations": "gerações",
+      "imageType": "de imagem",
+      "videoType": "de vídeo",
+      "howItWorks": "Como funciona",
+      "steps": {
+        "s1": "Crie sua imagem ou vídeo na geraew.ai",
+        "s2": "Poste em collab com @geraew.ai no Instagram",
+        "s3": "Envie seu e-mail de cadastro na DM do nosso Instagram"
+      },
+      "confirmation": "Seus créditos serão adicionados após a verificação do post.",
+      "follow": "Seguir @geraew.ai",
+      "gotIt": "Entendido"
+    }
+  }
+}

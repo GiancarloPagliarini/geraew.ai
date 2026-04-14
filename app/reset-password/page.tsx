@@ -4,12 +4,15 @@ import { ArrowLeft, Eye, EyeOff, Loader2, CheckCircle, XCircle } from 'lucide-re
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, Suspense } from 'react';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 
 function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
+  const t = useTranslations('auth.resetPassword');
+  const tCommon = useTranslations('auth.common');
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -23,22 +26,22 @@ function ResetPasswordContent() {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('As senhas não coincidem.');
+      setError(t('passwordsDontMatch'));
       return;
     }
 
     if (password.length < 8) {
-      setError('A senha deve ter no mínimo 8 caracteres.');
+      setError(t('passwordTooShort'));
       return;
     }
 
     if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-      setError('A senha deve conter pelo menos uma letra maiúscula, uma minúscula e um número.');
+      setError(t('passwordWeak'));
       return;
     }
 
     if (!token) {
-      setError('Token de reset não encontrado.');
+      setError(t('tokenMissing'));
       return;
     }
 
@@ -48,7 +51,7 @@ function ResetPasswordContent() {
       await api.auth.resetPassword(token, password);
       setSuccess(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao redefinir senha. Tente novamente.');
+      setError(err instanceof Error ? err.message : t('error'));
     } finally {
       setLoading(false);
     }
@@ -61,16 +64,16 @@ function ResetPasswordContent() {
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-400/15">
             <XCircle className="h-8 w-8 text-red-400" />
           </div>
-          <h1 className="text-2xl font-bold text-[#f3f0ed]">Link inválido</h1>
+          <h1 className="text-2xl font-bold text-[#f3f0ed]">{t('invalidLinkTitle')}</h1>
           <p className="max-w-md text-sm text-[#f3f0ed]/50">
-            O link de reset de senha é inválido ou expirou. Solicite um novo.
+            {t('invalidLinkBody')}
           </p>
         </div>
         <button
           onClick={() => router.push('/forgot-password')}
           className="flex items-center gap-2 rounded-xl bg-[#a2dd00] px-6 py-3 text-sm font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-[0.98]"
         >
-          Solicitar novo link
+          {t('requestNewLink')}
         </button>
       </div>
     );
@@ -83,16 +86,16 @@ function ResetPasswordContent() {
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#a2dd00]/15">
             <CheckCircle className="h-8 w-8 text-[#a2dd00]" />
           </div>
-          <h1 className="text-2xl font-bold text-[#f3f0ed]">Senha alterada!</h1>
+          <h1 className="text-2xl font-bold text-[#f3f0ed]">{t('successTitle')}</h1>
           <p className="max-w-md text-sm text-[#f3f0ed]/50">
-            Sua senha foi redefinida com sucesso. Faça login com a nova senha.
+            {t('successBody')}
           </p>
         </div>
         <button
           onClick={() => router.push('/login')}
           className="flex items-center gap-2 rounded-xl bg-[#a2dd00] px-6 py-3 text-sm font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-[0.98]"
         >
-          Ir para o login
+          {t('goToLogin')}
         </button>
       </div>
     );
@@ -117,18 +120,18 @@ function ResetPasswordContent() {
           className="mb-5 flex items-center gap-1.5 text-xs text-white/35 hover:text-white/60 transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Voltar ao login
+          {tCommon('backToLogin')}
         </button>
 
-        <h1 className="mb-2 text-lg font-bold text-white">Redefinir senha</h1>
+        <h1 className="mb-2 text-lg font-bold text-white">{t('title')}</h1>
         <p className="mb-6 text-xs text-white/40">
-          Escolha uma nova senha para sua conta.
+          {t('description')}
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">
-              NOVA SENHA
+              {tCommon('labels.newPassword')}
             </label>
             <div className="relative">
               <input
@@ -151,7 +154,7 @@ function ResetPasswordContent() {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">
-              CONFIRMAR SENHA
+              {tCommon('labels.confirmPassword')}
             </label>
             <input
               type={showPassword ? 'text' : 'password'}
@@ -164,7 +167,7 @@ function ResetPasswordContent() {
           </div>
 
           <p className="text-[10px] text-white/25">
-            Mínimo 8 caracteres, com letra maiúscula, minúscula e número.
+            {t('passwordHelper')}
           </p>
 
           {error && (
@@ -181,7 +184,7 @@ function ResetPasswordContent() {
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              'Redefinir senha'
+              t('submit')
             )}
           </button>
         </form>

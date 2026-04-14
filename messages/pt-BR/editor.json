@@ -1,0 +1,211 @@
+{
+  "editor": {
+    "canvas": {
+      "maxNodesTitle": "Limite atingido",
+      "maxNodesMessage": "Máximo de {count} painéis abertos simultaneamente.",
+      "waitBeforeClose": "Aguarde a geração finalizar antes de fechar o painel.",
+      "emptyTitle": "Tudo pronto!",
+      "emptySubtitle": "Escolha o que você deseja criar",
+      "actions": {
+        "generateImage": "Gerar imagem",
+        "createInfluencer": "Criar influencer",
+        "generateVideo": "Gerar vídeo",
+        "copyMotion": "Copiar movimentos",
+        "virtualTryOn": "Provador Virtual",
+        "faceSwap": "Troca de Rosto"
+      }
+    },
+    "contextMenu": {
+      "heading": "O QUE VOCÊ QUER GERAR?",
+      "moreSoon": "Mais opções em breve...",
+      "comingSoon": "Em breve",
+      "items": {
+        "generateImage": { "label": "Gerar Imagem", "description": "Criar imagem com IA" },
+        "createInfluencer": { "label": "Criar Influencer", "description": "Construa sua AI influencer" },
+        "generateVideo": { "label": "Gerar Vídeo", "description": "Criar vídeo com IA" },
+        "motionControl": { "label": "Copiar movimentos", "description": "Copiar movimentos de um vídeo para outro" },
+        "virtualTryOn": { "label": "Provador Virtual", "description": "Vista roupas na sua influencer de IA" },
+        "faceSwap": { "label": "Troca de Rosto", "description": "Troque rostos em imagens com IA" },
+        "generateVoice": { "label": "Gerar Voz", "description": "Texto para áudio com IA" }
+      }
+    },
+    "bottomToolbar": {
+      "moveCanvas": "Mover canvas",
+      "selectNodes": "Selecionar nodes (arrastar para selecionar vários)",
+      "generateImage": "Gerar imagem",
+      "createInfluencer": "Criar AI Influencer",
+      "generateVideo": "Gerar Vídeo",
+      "copyMotion": "Copiar movimentos",
+      "virtualTryOn": "Provador Virtual",
+      "faceSwap": "Troca de Rosto",
+      "zoomOut": "Reduzir",
+      "zoomIn": "Ampliar",
+      "resetZoom": "Resetar zoom",
+      "deleteSelected": "Excluir selecionado",
+      "fitView": "Encaixar na tela"
+    },
+    "generationError": {
+      "fallback": "Erro ao gerar.",
+      "refundedDescription": "{count, plural, one {# crédito estornado} other {# créditos estornados}} para sua conta.",
+      "tryAgain": "Tente novamente em instantes.",
+      "refundedSuffix": "({count, plural, one {# crédito estornado} other {# créditos estornados}})",
+      "refundedBanner": "{count, plural, one {# crédito estornado} other {# créditos estornados}} para sua conta",
+      "noDeduction": "Nenhum crédito foi descontado. Tente novamente em instantes."
+    },
+    "videoDialog": {
+      "construction": {
+        "title": "Em construção",
+        "description": "O editor de vídeo está sendo desenvolvido e em breve estará disponível.",
+        "badge": "Em breve",
+        "close": "Fechar"
+      },
+      "header": {
+        "title": "Editor de Vídeo",
+        "subtitle": "Crie e gerencie seus projetos",
+        "projectsBack": "Projetos"
+      },
+      "projects": {
+        "placeholder": "Nome do novo projeto...",
+        "create": "Criar",
+        "empty": "Nenhum projeto ainda",
+        "clipsCount": "{count, plural, one {# clipe} other {# clipes}}"
+      },
+      "status": {
+        "draft": "Rascunho",
+        "processing": "Processando",
+        "completed": "Concluído",
+        "failed": "Falhou"
+      },
+      "timeline": {
+        "heading": "TIMELINE",
+        "summary": "{count, plural, one {# clipe} other {# clipes}} · {duration}",
+        "empty": "Adicione clipes para começar"
+      },
+      "footer": {
+        "totalDuration": "Duração total:",
+        "download": "Baixar",
+        "renderError": "Erro ao renderizar",
+        "rendering": "Renderizando...",
+        "render": "Renderizar"
+      },
+      "gallery": {
+        "heading": "ESCOLHER VÍDEO DA GALERIA",
+        "empty": "Nenhum vídeo na galeria."
+      }
+    },
+    "retention": {
+      "reasons": {
+        "expensive": "Está caro para mim",
+        "notUsing": "Não estou usando o suficiente",
+        "quality": "A qualidade não atende minhas expectativas",
+        "competitor": "Encontrei uma alternativa melhor",
+        "temporary": "Preciso pausar temporariamente",
+        "other": "Outro motivo"
+      },
+      "action": {
+        "cancel": "cancelar",
+        "downgrade": "fazer downgrade"
+      },
+      "offers": {
+        "expensive": {
+          "title": "E se o preço não fosse um problema?",
+          "subtitle": "Sabemos que investir em ferramentas precisa fazer sentido. Por isso, preparamos algo especial só para você:",
+          "highlight": "15% OFF",
+          "highlightSub": "nos próximos 2 meses",
+          "acceptLabel": "Aceitar desconto e continuar",
+          "rejectLabel": "Não, quero {action} mesmo assim"
+        },
+        "notUsing": {
+          "title": "Talvez você ainda não tenha descoberto o melhor da GeraEW.",
+          "subtitle": "90% dos criadores que mais faturam usam funcionalidades que você talvez não tenha explorado. Vamos te dar uma chance de testar tudo:",
+          "highlight": "+50 créditos bônus",
+          "highlightSub": "para explorar agora",
+          "acceptLabel": "Explorar com créditos bônus",
+          "rejectLabel": "Não tenho interesse, quero {action}"
+        },
+        "quality": {
+          "title": "Atualizamos nossos modelos recentemente.",
+          "subtitle": "Nosso time está constantemente melhorando a qualidade das gerações. Que tal testar as melhorias com créditos extras?",
+          "highlight": "+30 créditos",
+          "highlightSub": "para testar as melhorias",
+          "acceptLabel": "Testar melhorias com bônus",
+          "rejectLabel": "Não, quero {action} mesmo assim"
+        },
+        "competitor": {
+          "title": "Antes de ir, veja o que só a GeraEW faz.",
+          "subtitle": "Motion Control, Face Swap e Vídeo em 4K com IA são exclusivos da nossa plataforma. Que tal créditos extras para testar tudo antes de decidir?",
+          "highlight": "+100 créditos bônus",
+          "highlightSub": "para comparar a fundo",
+          "acceptLabel": "Receber créditos e comparar",
+          "rejectLabel": "Não, quero {action} mesmo assim"
+        },
+        "temporary": {
+          "title": "Que tal pausar em vez de cancelar?",
+          "subtitle": "Congele sua assinatura por até 30 dias. Sem cobrança, sem perder seus dados. Quando voltar, tudo estará exatamente como você deixou.",
+          "highlight": "Pausar 30 dias",
+          "highlightSub": "sem cobrança, sem perder nada",
+          "acceptLabel": "Pausar minha assinatura por 30 dias",
+          "rejectLabel": "Prefiro {action} definitivamente"
+        },
+        "default": {
+          "title": "Queremos te manter conosco.",
+          "subtitle": "Antes de ir, que tal aproveitar uma oferta exclusiva para continuar criando conteúdo profissional?",
+          "highlight": "20% OFF",
+          "highlightSub": "na próxima renovação",
+          "acceptLabel": "Aceitar desconto e continuar",
+          "rejectLabel": "Não, quero {action} mesmo assim"
+        }
+      },
+      "achievements": {
+        "title": "Você construiu algo incrível aqui.",
+        "subtitleWithDays": "Nos últimos {days} dias, você criou conteúdo profissional com a GeraEW.",
+        "subtitleNoDays": "Veja o que você já conquistou com a GeraEW.",
+        "imagesLabel": "imagens criadas",
+        "videosLabel": "vídeos criados",
+        "footer": "Seus influencers digitais estão prontos para trabalhar por você. Tem certeza que quer perder acesso a tudo isso?",
+        "keep": "Continuar Criando",
+        "anyway": "Mesmo assim, quero {action}"
+      },
+      "loss": {
+        "title": "Isso é o que você perde ao sair.",
+        "cancelIntro": "Ao cancelar sua assinatura, você perde acesso a:",
+        "downgradeIntro": "Ao mudar de {current} para {target}:",
+        "currentPlanFallback": "seu plano atual",
+        "targetPlanFallback": "um plano menor",
+        "accessEndPrefix": "Você terá acesso até",
+        "accessEndSuffix": ". Após essa data, perderá tudo listado acima.",
+        "keep": "Quero manter meu plano",
+        "continue": "Entendo, quero continuar"
+      },
+      "reason": {
+        "title": "Nos ajude a melhorar.",
+        "subtitle": "Saber o motivo nos ajuda a construir uma plataforma melhor para todos.",
+        "feedbackPlaceholder": "Conte mais sobre sua decisão (opcional)",
+        "continue": "Continuar",
+        "back": "Voltar"
+      },
+      "final": {
+        "title": "Última confirmação.",
+        "cancelBody": "Seu plano {plan} será encerrado {when}.",
+        "cancelWhenDate": "em {date}",
+        "cancelWhenDefault": "ao fim do período atual",
+        "downgradeBody": "Seu plano será alterado de {current} para {target} na próxima renovação.",
+        "afterDate": "APÓS ESSA DATA:",
+        "cancel": {
+          "creditsReset": "Seus créditos voltam para o plano Free",
+          "watermark": "Gerações futuras terão marca d'água",
+          "lowPriority": "Você perde prioridade na fila de geração",
+          "noPremium": "Funcionalidades premium ficam indisponíveis"
+        },
+        "downgrade": {
+          "creditsReduced": "Seus créditos serão reduzidos",
+          "featuresRemoved": "Funcionalidades exclusivas do plano atual serão removidas"
+        },
+        "reactivate": "Você pode reativar a qualquer momento antes de {date}.",
+        "keep": "Mudei de ideia, quero manter meu plano",
+        "confirmCancel": "Confirmar cancelamento",
+        "confirmDowngrade": "Confirmar downgrade"
+      }
+    }
+  }
+}

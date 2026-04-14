@@ -12,33 +12,36 @@ import {
   X,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Section } from './Section';
 import { InfluencerSidebar } from './InfluencerSidebar';
 
 // ─── WipOverlay ───────────────────────────────────────────────────────────────
 
 function WipOverlay() {
+  const t = useTranslations('editorChrome.rightSidebar');
   return (
     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-xl backdrop-blur-[2px] bg-[#1a2123]/60">
       <div className="flex items-center gap-2 rounded-full border border-[#f3f0ed]/10 bg-[#1a2123]/80 px-3 py-1.5">
         <Construction className="h-3.5 w-3.5 text-[#a2dd00]" />
-        <span className="text-[10px] font-bold tracking-widest text-[#f3f0ed]/60 uppercase">Em desenvolvimento</span>
+        <span className="text-[10px] font-bold tracking-widest text-[#f3f0ed]/60 uppercase">{t('wipBadge')}</span>
       </div>
-      <p className="text-[9px] text-[#f3f0ed]/30">Disponível em breve</p>
+      <p className="text-[9px] text-[#f3f0ed]/30">{t('wipSubtitle')}</p>
     </div>
   );
 }
 
 // ─── UpscaleSection ───────────────────────────────────────────────────────────
 
-const MODELS = [
-  { value: 'real-esrgan-x4', name: 'Real-ESRGAN', tag: 'x4', desc: 'Melhor qualidade', recommended: true },
-  { value: 'real-esrgan-x2', name: 'Real-ESRGAN', tag: 'x2', desc: 'Mais rápido' },
-  { value: 'esrgan-pro', name: 'ESRGAN', tag: 'Pro', desc: 'Detalhes nítidos' },
-  { value: 'swinir-ultra', name: 'SwinIR', tag: 'Ultra', desc: 'Preserva texturas' },
-];
-
 function UpscaleSection({ generatedImage, nodeId }: { generatedImage: string; nodeId: string }) {
+  const t = useTranslations('editorChrome.rightSidebar.upscale');
+  const tModels = useTranslations('editorChrome.rightSidebar.upscale.models');
+  const MODELS = [
+    { value: 'real-esrgan-x4', name: tModels('realEsrganX4Name'), tag: 'x4', desc: tModels('realEsrganX4Desc'), recommended: true },
+    { value: 'real-esrgan-x2', name: tModels('realEsrganX2Name'), tag: 'x2', desc: tModels('realEsrganX2Desc') },
+    { value: 'esrgan-pro', name: tModels('esrganProName'), tag: 'Pro', desc: tModels('esrganProDesc') },
+    { value: 'swinir-ultra', name: tModels('swinirUltraName'), tag: 'Ultra', desc: tModels('swinirUltraDesc') },
+  ];
   const { nodeUpscaleStates, setNodeUpscaleState } = useEditor();
   const upscaleState = nodeUpscaleStates[nodeId] ?? 'idle';
   const [model, setModel] = useState('real-esrgan-x4');
@@ -61,7 +64,7 @@ function UpscaleSection({ generatedImage, nodeId }: { generatedImage: string; no
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={generatedImage}
-          alt="Preview"
+          alt={t('previewAlt')}
           className="h-32 w-full object-cover"
           draggable={false}
           style={{
@@ -79,7 +82,7 @@ function UpscaleSection({ generatedImage, nodeId }: { generatedImage: string; no
           <div className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-[#a2dd00] px-2 py-0.5">
             <CheckCircle2 className="h-2.5 w-2.5 text-[#1a2123]" />
             <span className="text-[8px] font-black tracking-wide text-[#1a2123]">
-              UPSCALE APLICADO
+              {t('applied')}
             </span>
           </div>
         )}
@@ -87,7 +90,7 @@ function UpscaleSection({ generatedImage, nodeId }: { generatedImage: string; no
 
       {/* Model cards 2×2 */}
       <div className="space-y-1.5">
-        <p className="text-[9px] font-bold tracking-[0.15em] text-[#f3f0ed]/30">MODELO</p>
+        <p className="text-[9px] font-bold tracking-[0.15em] text-[#f3f0ed]/30">{t('model')}</p>
         <div className="grid grid-cols-2 gap-1.5">
           {MODELS.map((m) => {
             const active = model === m.value;
@@ -127,7 +130,7 @@ function UpscaleSection({ generatedImage, nodeId }: { generatedImage: string; no
 
       {/* Scale pills */}
       <div className="space-y-1.5">
-        <p className="text-[9px] font-bold tracking-[0.15em] text-[#f3f0ed]/30">FATOR DE ESCALA</p>
+        <p className="text-[9px] font-bold tracking-[0.15em] text-[#f3f0ed]/30">{t('scaleFactor')}</p>
         <div className="flex gap-1.5">
           {['2×', '4×', '8×'].map((s) => {
             const active = scale === s;
@@ -170,11 +173,11 @@ function UpscaleSection({ generatedImage, nodeId }: { generatedImage: string; no
         }
       >
         {upscaleState === 'upscaling' ? (
-          <><Loader2 className="h-3.5 w-3.5 animate-spin" />PROCESSANDO...</>
+          <><Loader2 className="h-3.5 w-3.5 animate-spin" />{t('processing')}</>
         ) : upscaleState === 'done' ? (
-          <><CheckCircle2 className="h-3.5 w-3.5" />APLICAR NOVAMENTE</>
+          <><CheckCircle2 className="h-3.5 w-3.5" />{t('applyAgain')}</>
         ) : (
-          <><Maximize2 className="h-3.5 w-3.5" />APLICAR UPSCALE</>
+          <><Maximize2 className="h-3.5 w-3.5" />{t('apply')}</>
         )}
       </button>
     </div>
@@ -184,6 +187,7 @@ function UpscaleSection({ generatedImage, nodeId }: { generatedImage: string; no
 // ─── FaceSwapSection ──────────────────────────────────────────────────────────
 
 function FaceSwapSection({ generatedImage }: { generatedImage: string }) {
+  const t = useTranslations('editorChrome.rightSidebar.faceSwap');
   const [facePhoto, setFacePhoto] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -200,19 +204,19 @@ function FaceSwapSection({ generatedImage }: { generatedImage: string }) {
         {/* Left — target image */}
         <div className="flex flex-col gap-2 rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/10 p-2.5">
           <span className="text-[9px] font-bold tracking-[0.1em] text-[#f3f0ed]/35">
-            IMAGEM ALVO
+            {t('targetLabel')}
           </span>
           <div className="overflow-hidden rounded-lg">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={generatedImage}
-              alt="Imagem alvo"
+              alt={t('targetAlt')}
               className="h-auto w-full object-cover"
               draggable={false}
             />
           </div>
           <p className="text-[8px] leading-snug text-[#f3f0ed]/20">
-            Rosto a ser substituído
+            {t('targetHint')}
           </p>
         </div>
 
@@ -238,7 +242,7 @@ function FaceSwapSection({ generatedImage }: { generatedImage: string }) {
           }}
         >
           <span className="text-[9px] font-bold tracking-[0.1em] text-[#f3f0ed]/35">
-            SEU ROSTO
+            {t('yourFaceLabel')}
           </span>
 
           {facePhoto ? (
@@ -246,7 +250,7 @@ function FaceSwapSection({ generatedImage }: { generatedImage: string }) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={facePhoto}
-                alt="Seu rosto"
+                alt={t('yourFaceAlt')}
                 className="h-auto w-full object-cover"
                 draggable={false}
               />
@@ -255,13 +259,13 @@ function FaceSwapSection({ generatedImage }: { generatedImage: string }) {
             <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[#f3f0ed]/[0.1] py-5 transition-all group-hover:border-[#a2dd00]/25">
               <ScanFace className="h-5 w-5 text-[#f3f0ed]/15 transition-colors group-hover:text-[#a2dd00]/40" />
               <span className="text-center text-[8px] leading-snug text-[#f3f0ed]/20 transition-colors group-hover:text-[#f3f0ed]/35">
-                Clique para enviar
+                {t('uploadHint')}
               </span>
             </div>
           )}
 
           <p className="text-[8px] leading-snug text-[#f3f0ed]/20">
-            Rosto a ser inserido
+            {t('sourceHint')}
           </p>
         </button>
 
@@ -292,7 +296,7 @@ function FaceSwapSection({ generatedImage }: { generatedImage: string }) {
         }
       >
         <ScanFace className="h-3.5 w-3.5" />
-        APLICAR FACE SWAP
+        {t('apply')}
       </button>
     </div>
   );
@@ -301,6 +305,7 @@ function FaceSwapSection({ generatedImage }: { generatedImage: string }) {
 // ─── RightSidebar ─────────────────────────────────────────────────────────────
 
 export function RightSidebar() {
+  const t = useTranslations('editorChrome.rightSidebar');
   const { selectedNodeId, setSelectedNodeId, nodeImages, nodeUpscaleStates, nodePanelTypes } = useEditor();
   const panelType = selectedNodeId ? nodePanelTypes[selectedNodeId] : null;
   const selectedImage = selectedNodeId ? nodeImages[selectedNodeId] : null;
@@ -318,7 +323,7 @@ export function RightSidebar() {
             <User className="h-3.5 w-3.5 text-[#f3f0ed]/35" />
           </div>
           <h2 className="flex-1 text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
-            INFLUENCER BUILDER
+            {t('header')}
           </h2>
           <button onClick={() => setSelectedNodeId(null)} className="flex h-6 w-6 items-center justify-center rounded-lg text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/60 sm:hidden">
             <X className="h-4 w-4" />

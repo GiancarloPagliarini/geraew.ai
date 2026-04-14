@@ -1,0 +1,712 @@
+{
+  "nav": {
+    "features": "Funcionalidades",
+    "results": "Resultados",
+    "pricing": "Preços",
+    "faq": "FAQ",
+    "login": "Entrar",
+    "tryFree": "Testar Grátis"
+  },
+  "hero": {
+    "badge": "Plataforma de criação com Inteligência Artificial",
+    "title": "Crie influencers digitais com IA e domine qualquer plataforma.",
+    "subtitle": "Gere imagens, vídeos ultra-realistas e movimentos com poucos cliques. Sem estúdio, sem modelos, sem aparecer. Tudo que você precisa para criar conteúdo profissional está aqui.",
+    "cta": "Começar Grátis",
+    "microcopy": "Sem cartão de crédito · Pronto em menos de 2 minutos"
+  },
+  "howItWorks": {
+    "tag": "SIMPLES ASSIM",
+    "title": "Do zero ao conteúdo pronto em 3 passos.",
+    "subtitle": "Você não precisa de experiência com IA, edição ou design. A Geraew faz o trabalho pesado por você.",
+    "step1": {
+      "title": "Crie sua Influencer",
+      "description": "Escolha um modelo da galeria ou gere uma persona totalmente nova. Defina rosto, corpo, estilo e personalidade em poucos cliques."
+    },
+    "step2": {
+      "title": "Personalize o Conteúdo",
+      "description": "Escolha cenário, pose, roupa e movimento. Use prompts prontos ou escreva o seu. Controle total sobre cada detalhe."
+    },
+    "step3": {
+      "title": "Exporte e Publique",
+      "description": "Baixe em alta qualidade, pronto para TikTok, Instagram, YouTube ou qualquer rede. Sem marca d'água nos planos pagos."
+    },
+    "cta": "Quero criar minha primeira influencer",
+    "ctaLoggedIn": "Acessar Plataforma"
+  },
+  "features": {
+    "tag": "TUDO QUE VOCÊ PRECISA",
+    "title": "Uma plataforma completa para criar conteúdo que converte.",
+    "subtitle": "Fotos, vídeos, movimentos e edição, tudo com inteligência artificial, tudo em um só lugar.",
+    "items": {
+      "influencers": {
+        "title": "Criação de Influencers",
+        "description": "Gere personas únicas com qualidade de estúdio profissional. Cada detalhe — pele, expressão, iluminação — é pensado para parecer real."
+      },
+      "videos": {
+        "title": "Vídeos Ultra-Realistas",
+        "description": "Transforme qualquer imagem em vídeo com movimentos naturais. Pronto para Reels, TikTok e Stories em poucos segundos."
+      },
+      "motion": {
+        "title": "Controle de Movimento",
+        "description": "Copie o movimento de qualquer vídeo de referência e aplique na sua persona. Danças, gestos, expressões — com um clique."
+      },
+      "faceSwap": {
+        "title": "Face Swap",
+        "description": "Troque rostos em qualquer imagem ou vídeo. Perfeito para reviews de produto, UGC e criativos para anúncios."
+      },
+      "prompts": {
+        "title": "Biblioteca de Prompts",
+        "description": "Acesse centenas de prompts prontos por nicho. Moda, fitness, beleza, finanças, tech — é só escolher e gerar."
+      },
+      "speed": {
+        "title": "Velocidade Absurda",
+        "description": "Da ideia ao conteúdo pronto em segundos. Sem fila de espera, sem processamento lento. Pensou, criou."
+      }
+    }
+  },
+  "pricing": {
+    "tag": "Preços",
+    "title": "Planos simples. Sem surpresas.",
+    "subtitle": "Comece grátis e escale quando quiser. Cancele a qualquer momento.",
+    "mostPopular": "Mais Popular",
+    "perMonth": "/mês",
+    "creditsPerMonth": "{credits} créditos por mês",
+    "creditsForTesting": "créditos para testar",
+    "creditsMonthly": "créditos por mês",
+    "subscribe": "Assinar {plan}",
+    "startFree": "Começar Grátis",
+    "accessPlatform": "Acessar Plataforma",
+    "generationEstimate": "Estimativa de gerações",
+    "blocked": "bloqueado",
+    "generationFootnote": "Usando todos os créditos em um único modelo",
+    "guarantee": "Garantia de 7 Dias",
+    "guaranteeText": "Experimente sem risco. Se não ficar satisfeito nos primeiros 7 dias, devolvemos 100% do seu dinheiro. Sem perguntas, sem burocracia.",
+    "badges": {
+      "noCancelFee": "Sem taxa de cancelamento",
+      "securePayment": "Pagamento seguro",
+      "creditsRenew": "Créditos renovam mensalmente"
+    },
+    "features": {
+      "credits": "{count} créditos",
+      "emailSupport": "Suporte por e-mail",
+      "gallery7": "7 dias de galeria",
+      "gallery90": "90 dias de galeria",
+      "gallery180": "180 dias de galeria",
+      "gallery365": "365 dias de galeria",
+      "tryNoCommit": "Teste sem compromisso",
+      "queuePriority": "Prioridade na fila de gerações",
+      "fasterGen": "Velocidade maior nas gerações",
+      "prioritySupport": "Suporte prioritário"
+    }
+  },
+  "plans": {
+    "subtitles": {
+      "starter": "Explorador",
+      "creator": "Criador",
+      "pro": "Produtor",
+      "studio": "Profissional"
+    },
+    "socialProof": {
+      "free": "Teste nossa capacidade!",
+      "starter": "Ideal para projetos pessoais",
+      "creator": "Escolha de 68% dos criadores",
+      "pro": "Para quem leva a sério",
+      "studio": "Para equipes e agências"
+    }
+  },
+  "gallery": {
+    "tag": "Galeria",
+    "title": "Veja o que já está sendo criado com a Geraew.",
+    "subtitle": "Cada imagem e vídeo abaixo foi gerado 100% por inteligência artificial dentro da nossa plataforma.",
+    "cta": "Crie o seu agora",
+    "ctaLoggedIn": "Acessar Plataforma",
+    "alt": "Resultado {index}"
+  },
+  "testimonials": {
+    "tag": "O Que Dizem Sobre Nós",
+    "title": "Criadores reais. Resultados reais.",
+    "cta": "Junte-se a eles",
+    "ctaLoggedIn": "Acessar Plataforma",
+    "items": [
+      {
+        "name": "Lucas Ferreira",
+        "handle": "@lucasferreira.ai",
+        "niche": "Criador de Conteúdo",
+        "text": "Em 2 semanas já tinha mais conteúdo pronto do que nos últimos 3 meses. A qualidade dos vídeos é absurda."
+      },
+      {
+        "name": "Mariana Costa",
+        "handle": "@maricosta.digital",
+        "niche": "Afiliada Digital",
+        "text": "Meus reviews de produto com influencer virtual converteram 3x mais que os antigos. Não volto mais pro método tradicional."
+      },
+      {
+        "name": "Rafael Souza",
+        "handle": "@rafasouza.mkt",
+        "niche": "Social Media",
+        "text": "Consigo entregar conteúdo pra 5 clientes diferentes sem precisar de equipe. A Geraew mudou meu negócio."
+      },
+      {
+        "name": "Camila Oliveira",
+        "handle": "@camilaoliveira.brand",
+        "niche": "Agência de Marketing",
+        "text": "Reduzimos o custo de produção em 80% e triplicamos o volume de criativos para nossos clientes."
+      }
+    ]
+  },
+  "comparison": {
+    "tag": "Por Que Geraew",
+    "title": "O jeito antigo custa caro. O jeito novo custa centavos.",
+    "withoutTitle": "Sem Geraew",
+    "withTitle": "Com Geraew",
+    "withoutTotal": "Total: R$1.600+ por sessão",
+    "withTotal": "A partir de R$0/mês",
+    "cta": "Economize agora",
+    "ctaLoggedIn": "Acessar Plataforma",
+    "without": [
+      "Contratar modelo: R$500+",
+      "Fotógrafo: R$800+",
+      "Editor de vídeo: R$300+",
+      "Tempo de produção: 3-5 dias",
+      "Locação e logística"
+    ],
+    "with": [
+      "Influencer gerada em segundos",
+      "Vídeo pronto em poucos cliques",
+      "Edição automática com IA",
+      "Conteúdo pronto em minutos",
+      "Publique de qualquer lugar"
+    ]
+  },
+  "useCases": {
+    "tag": "Para Quem É",
+    "title": "Não importa seu nicho. A Geraew se adapta ao seu objetivo.",
+    "items": {
+      "creators": {
+        "title": "Criadores de Conteúdo",
+        "desc": "Publique todos os dias sem mostrar o rosto. Crie uma persona que vira a identidade do seu canal e construa audiência real com conteúdo gerado por IA."
+      },
+      "sellers": {
+        "title": "Vendedores e Afiliados",
+        "desc": "Gere vídeos de review, unboxing e demonstração com influencers virtuais. Escale vendas no TikTok Shop, Instagram e qualquer plataforma sem depender de ninguém."
+      },
+      "brands": {
+        "title": "Marcas e Agências",
+        "desc": "Produza UGC ilimitado sem contratar modelos ou influencers. Reduza custos de produção e tenha criativos novos todos os dias para campanhas."
+      },
+      "social": {
+        "title": "Social Media Managers",
+        "desc": "Entregue mais resultados com menos tempo e custo. Crie conteúdo para múltiplas marcas usando personas diferentes para cada uma."
+      }
+    }
+  },
+  "socialProof": {
+    "creators": "Criadores Ativos",
+    "images": "Imagens Geradas",
+    "videos": "Vídeos Criados",
+    "rating": "Avaliação Média"
+  },
+  "faq": {
+    "tag": "DÚVIDAS",
+    "title": "Perguntas Frequentes",
+    "subtitle": "Tudo que você precisa saber antes de começar.",
+    "items": [
+      {
+        "question": "Como funciona o teste grátis?",
+        "answer": "Você cria sua conta em menos de 2 minutos e recebe créditos gratuitos para testar a plataforma. Sem cartão de crédito, sem compromisso. Se gostar, é só escolher um plano."
+      },
+      {
+        "question": "Preciso instalar alguma coisa?",
+        "answer": "Não. A Geraew funciona 100% online, direto pelo navegador. Funciona no computador e no celular."
+      },
+      {
+        "question": "Posso usar o conteúdo para vender no TikTok Shop?",
+        "answer": "Sim. Muitos criadores usam a Geraew para gerar vídeos de review e demonstração para o TikTok Shop. Use em qualquer plataforma para qualquer finalidade comercial."
+      },
+      {
+        "question": "Os vídeos ficam com marca d'água?",
+        "answer": "Nos planos pagos, não. Todo conteúdo gerado é seu, sem marca d'água e pronto para publicar."
+      },
+      {
+        "question": "Posso usar para anúncios pagos?",
+        "answer": "Sim. Imagens e vídeos gerados podem ser usados em Meta Ads, TikTok Ads, Google Ads e qualquer outra plataforma."
+      },
+      {
+        "question": "O conteúdo gerado é exclusivo meu?",
+        "answer": "Sim. Cada geração é única. Mesmo usando o mesmo prompt, os resultados são diferentes. Seu conteúdo é exclusivamente seu."
+      },
+      {
+        "question": "O que acontece se meus créditos acabarem?",
+        "answer": "Você pode aguardar a renovação mensal ou adquirir créditos extras a qualquer momento, sem precisar trocar de plano."
+      },
+      {
+        "question": "Posso cancelar a qualquer momento?",
+        "answer": "Sim. Sem multa, sem taxa, sem burocracia. Cancele direto pelo painel e continue usando até o fim do período pago."
+      }
+    ]
+  },
+  "ctaFinal": {
+    "title": "Pronto para criar seu primeiro influencer digital?",
+    "subtitle": "Junte-se a milhares de criadores que já estão transformando ideias em conteúdo profissional com inteligência artificial.",
+    "cta": "Começar Grátis",
+    "ctaLoggedIn": "Acessar Plataforma",
+    "microcopy": "Sem cartão de crédito · Setup em 2 minutos · Cancele quando quiser",
+    "microcopyShort": "Setup em 2 minutos · Cancele quando quiser",
+    "creatorsUsing": "+2.000 criadores já estão usando"
+  },
+  "footer": {
+    "tagline": "Crie influencers, vídeos e imagens profissionais com inteligência artificial.",
+    "product": "Produto",
+    "company": "Empresa",
+    "legal": "Legal",
+    "social": "Redes",
+    "terms": "Termos de Uso",
+    "privacy": "Política de Privacidade",
+    "about": "Sobre",
+    "contact": "Contato",
+    "features": "Funcionalidades",
+    "pricing": "Preços",
+    "gallery": "Galeria",
+    "faq": "FAQ",
+    "rights": "© 2026 Geraew. Todos os direitos reservados."
+  },
+  "auth": {
+    "login": {
+      "title": "Entrar",
+      "email": "E-mail",
+      "password": "Senha",
+      "submit": "Entrar",
+      "forgotPassword": "Esqueceu a senha?",
+      "noAccount": "Não tem conta?",
+      "signUp": "Cadastre-se",
+      "or": "ou",
+      "continueWith": "Continuar com {provider}"
+    },
+    "signup": {
+      "title": "Criar conta",
+      "name": "Nome",
+      "email": "E-mail",
+      "password": "Senha",
+      "phone": "Telefone",
+      "submit": "Criar conta grátis",
+      "hasAccount": "Já tem conta?",
+      "signIn": "Entrar"
+    },
+    "common": {
+      "tagline": "Gerador de imagens com inteligência artificial",
+      "welcomeBack": "Bem-vindo de volta",
+      "welcomeSubtitle": "Entre ou crie sua conta para começar a criar",
+      "continueWithGoogle": "Continuar com Google",
+      "continueWithEmail": "Continuar com Email",
+      "redirecting": "Redirecionando...",
+      "or": "ou",
+      "back": "Voltar",
+      "backToLogin": "Voltar ao login",
+      "legal": "Ao continuar, você concorda com nossos <terms>Termos de Uso</terms> e <privacy>Política de Privacidade</privacy>",
+      "loginTab": "Entrar",
+      "registerTab": "Criar conta",
+      "labels": {
+        "name": "NOME",
+        "email": "EMAIL",
+        "password": "SENHA",
+        "phone": "TELEFONE (WHATSAPP)",
+        "newPassword": "NOVA SENHA",
+        "confirmPassword": "CONFIRMAR SENHA"
+      },
+      "placeholders": {
+        "name": "Seu nome",
+        "email": "seu@email.com",
+        "phone": "(11) 99999-8888"
+      },
+      "phoneHelper": "Usado para contato e recuperação de conta",
+      "submitLogin": "Entrar",
+      "submitRegister": "Criar conta",
+      "genericError": "Ocorreu um erro. Tente novamente.",
+      "resendVerification": "Reenviar email de verificação",
+      "resending": "Reenviando...",
+      "forgotPasswordLink": "Esqueceu a senha?",
+      "googleErrors": {
+        "google_denied": "Login com Google foi cancelado.",
+        "google_exchange_failed": "Erro ao autenticar com Google. Tente novamente.",
+        "google_no_token": "Erro ao obter credenciais do Google.",
+        "auth_failed": "Erro ao entrar com Google. Tente novamente.",
+        "google_failed": "Erro ao entrar com Google. Tente novamente.",
+        "google_config": "Configuração do Google incompleta.",
+        "default": "Erro ao entrar com Google."
+      },
+      "slides": {
+        "s0": {
+          "tag": "Geração de Vídeos profissionais",
+          "title": "Crie vídeos únicos com IA",
+          "description": "Transforme texto em vídeo em segundos com modelos de última geração."
+        },
+        "s1": {
+          "tag": "Identidade Visual",
+          "title": "Sua marca, do seu jeito",
+          "description": "Crie conteúdo visual consistente para campanhas, redes sociais e muito mais."
+        },
+        "s2": {
+          "tag": "Personagens com IA",
+          "title": "Personagens que parecem reais",
+          "description": "Monte personagens únicos com controle total de estilo, etnia, expressão e muito mais."
+        },
+        "s3": {
+          "tag": "Geração de Imagens",
+          "title": "Imagine. Descreva. Crie.",
+          "description": "Transforme qualquer ideia em imagem com modelos de última geração — rápido e sem limitações."
+        }
+      }
+    },
+    "forgotPassword": {
+      "title": "Esqueceu sua senha?",
+      "description": "Digite seu email e enviaremos um link para redefinir sua senha.",
+      "submit": "Enviar link de reset",
+      "sentTitle": "Email enviado!",
+      "sentBody": "Se o email <strong>{email}</strong> estiver cadastrado, você receberá um link para redefinir sua senha.",
+      "checkSpam": "Verifique também sua pasta de spam.",
+      "error": "Erro ao enviar email. Tente novamente."
+    },
+    "resetPassword": {
+      "title": "Redefinir senha",
+      "description": "Escolha uma nova senha para sua conta.",
+      "submit": "Redefinir senha",
+      "passwordHelper": "Mínimo 8 caracteres, com letra maiúscula, minúscula e número.",
+      "passwordsDontMatch": "As senhas não coincidem.",
+      "passwordTooShort": "A senha deve ter no mínimo 8 caracteres.",
+      "passwordWeak": "A senha deve conter pelo menos uma letra maiúscula, uma minúscula e um número.",
+      "tokenMissing": "Token de reset não encontrado.",
+      "invalidLinkTitle": "Link inválido",
+      "invalidLinkBody": "O link de reset de senha é inválido ou expirou. Solicite um novo.",
+      "requestNewLink": "Solicitar novo link",
+      "successTitle": "Senha alterada!",
+      "successBody": "Sua senha foi redefinida com sucesso. Faça login com a nova senha.",
+      "successBodyShort": "Sua senha foi redefinida com sucesso.",
+      "goToLogin": "Ir para o login",
+      "signIn": "Fazer login",
+      "error": "Erro ao redefinir senha. Tente novamente."
+    },
+    "verifyEmail": {
+      "title": "Verifique seu email",
+      "descriptionWithEmail": "Enviamos um código de 6 dígitos para <strong>{email}</strong>",
+      "descriptionGeneric": "Digite o código de 6 dígitos enviado para seu email",
+      "verifying": "Verificando...",
+      "invalidCode": "Código inválido ou expirado.",
+      "tryAgain": "Tentar novamente",
+      "resend": "Reenviar código",
+      "resending": "Reenviando...",
+      "resendError": "Erro ao reenviar.",
+      "resendSuccess": "Código reenviado!",
+      "successTitle": "Email verificado!",
+      "goToLogin": "Ir para o login",
+      "backToLogin": "Voltar para o login"
+    },
+    "phoneVerify": {
+      "title": "Confirme seu celular",
+      "description": "Para liberar seus créditos gratuitos, confirme seu número de celular via SMS.",
+      "willSendTo": "Vamos enviar um código SMS para",
+      "sentTo": "Enviamos um SMS para",
+      "sendCode": "Enviar código SMS",
+      "sendError": "Erro ao enviar SMS. Tente novamente.",
+      "invalidCode": "Código inválido ou expirado.",
+      "verifying": "Verificando...",
+      "resend": "Reenviar SMS",
+      "resending": "Reenviando...",
+      "resendSuccess": "SMS reenviado!",
+      "resendError": "Erro ao reenviar.",
+      "changePhone": "Alterar número",
+      "successTitle": "Telefone verificado!",
+      "successBody": "Seus créditos gratuitos foram liberados. Bom uso!",
+      "toastSuccess": "Telefone verificado! Seus créditos gratuitos foram liberados.",
+      "phoneLabel": "TELEFONE (WHATSAPP)",
+      "phonePlaceholder": "(11) 99999-8888"
+    }
+  },
+  "checkout": {
+    "success": {
+      "title": "Pagamento confirmado!",
+      "description": "Seus créditos já estão disponíveis. Agora é só criar.",
+      "cta": "Ir para o editor",
+      "toast": "Pagamento aprovado!"
+    },
+    "cancel": {
+      "title": "Pagamento cancelado",
+      "description": "Nenhuma cobrança foi realizada. Você pode tentar novamente quando quiser.",
+      "cta": "Voltar ao editor",
+      "toast": "Pagamento cancelado"
+    },
+    "redirecting": "Redirecionando..."
+  },
+  "legal": {
+    "common": {
+      "tag": "Legal",
+      "back": "Voltar",
+      "logoAlt": "Geraew AI",
+      "lastUpdated": "Última atualização: 26 de março de 2026",
+      "rights": "© 2026 Geraew AI — Todos os direitos reservados.",
+      "seeTerms": "Ver Termos de Uso →",
+      "seePrivacy": "Ver Política de Privacidade →"
+    },
+    "terms": {
+      "title": "Termos de Uso",
+      "sections": [
+        {
+          "title": "1. Aceitação dos Termos",
+          "content": [
+            "Ao acessar ou utilizar a plataforma Geraew AI (\"Plataforma\"), disponível em www.geraew.com.br, você declara que leu, compreendeu e concorda integralmente com estes Termos de Uso. Caso não concorde com qualquer disposição aqui prevista, você não deverá utilizar a Plataforma.",
+            "A Geraew AI reserva-se o direito de alterar estes Termos a qualquer momento, sendo o usuário notificado por meio da Plataforma ou por e-mail. O uso continuado após a notificação constitui aceitação das alterações."
+          ]
+        },
+        {
+          "title": "2. Descrição do Serviço",
+          "content": [
+            "A Geraew AI é uma plataforma online que utiliza tecnologias de inteligência artificial para geração de imagens e vídeos a partir de comandos textuais (prompts) fornecidos pelo usuário. Os serviços podem incluir, entre outros:"
+          ],
+          "list": [
+            "Geração de imagens estáticas com base em descrições textuais",
+            "Geração e edição de vídeos com auxílio de inteligência artificial",
+            "Ferramentas de edição, aprimoramento e personalização de conteúdo visual",
+            "Armazenamento temporário de conteúdos gerados na Plataforma"
+          ]
+        },
+        {
+          "title": "3. Cadastro e Conta do Usuário",
+          "content": [
+            "Para acessar determinadas funcionalidades, o usuário deverá criar uma conta, fornecendo informações verdadeiras, completas e atualizadas. O usuário é integralmente responsável por:"
+          ],
+          "list": [
+            "Manter a confidencialidade de suas credenciais de acesso (login e senha)",
+            "Todas as atividades realizadas em sua conta",
+            "Notificar imediatamente a Geraew AI sobre qualquer uso não autorizado de sua conta"
+          ],
+          "after": "A Geraew AI reserva-se o direito de suspender ou encerrar contas que violem estes Termos, sem aviso prévio."
+        },
+        {
+          "title": "4. Uso Aceitável da Plataforma",
+          "content": [
+            "O usuário compromete-se a utilizar a Plataforma de maneira ética e em conformidade com a legislação vigente. É expressamente proibido utilizar a Plataforma para:"
+          ],
+          "list": [
+            "Gerar conteúdo que envolva pornografia infantil, exploração de menores ou qualquer conteúdo ilícito",
+            "Criar imagens ou vídeos de pessoas reais sem o consentimento explícito dessas pessoas",
+            "Produzir conteúdo difamatório, discriminatório, que incite violência ou ódio",
+            "Gerar conteúdo que viole direitos autorais, marcas registradas ou outros direitos de propriedade intelectual de terceiros",
+            "Criar deepfakes ou conteúdos enganosos com o intuito de desinformar ou fraudar",
+            "Praticar engenharia reversa, descompilar ou tentar acessar o código-fonte da Plataforma",
+            "Utilizar a Plataforma para envio de spam, phishing ou qualquer atividade maliciosa",
+            "Sobrecarregar intencionalmente os servidores ou interferir no funcionamento da Plataforma"
+          ],
+          "after": "A Geraew AI reserva-se o direito de remover qualquer conteúdo que viole estas diretrizes e de suspender ou banir usuários infratores."
+        },
+        {
+          "title": "5. Propriedade Intelectual",
+          "subsections": [
+            {
+              "title": "5.1. Conteúdo Gerado pelo Usuário",
+              "content": [
+                "O conteúdo gerado pelo usuário por meio da Plataforma (imagens e vídeos) poderá ser utilizado pelo usuário para fins pessoais e comerciais, conforme o plano contratado, observadas as restrições legais aplicáveis.",
+                "O usuário reconhece que o conteúdo gerado por inteligência artificial pode não ser protegido por direitos autorais em todas as jurisdições e que a Geraew AI não garante exclusividade sobre o conteúdo gerado."
+              ]
+            },
+            {
+              "title": "5.2. Propriedade da Plataforma",
+              "content": [
+                "A Plataforma, incluindo seu design, código-fonte, algoritmos, modelos de IA, logotipos, marcas e demais elementos, é de propriedade exclusiva da Geraew AI, protegida pelas leis de propriedade intelectual aplicáveis."
+              ]
+            }
+          ]
+        },
+        {
+          "title": "6. Planos e Pagamentos",
+          "content": [
+            "A Geraew AI pode oferecer planos gratuitos e pagos. Ao contratar um plano pago, o usuário concorda com os preços e condições vigentes no momento da contratação. As condições específicas de cada plano, incluindo limites de geração, funcionalidades disponíveis e políticas de reembolso, estarão descritas na página de preços da Plataforma.",
+            "O não pagamento poderá resultar na suspensão do acesso às funcionalidades do plano contratado."
+          ]
+        },
+        {
+          "title": "7. Limitação de Responsabilidade",
+          "content": [
+            "A Geraew AI é fornecida \"no estado em que se encontra\" (as is). Na máxima extensão permitida por lei, a Geraew AI não se responsabiliza por:"
+          ],
+          "list": [
+            "Indisponibilidade temporária da Plataforma ou interrupções no serviço",
+            "Conteúdo gerado pela inteligência artificial que possa ser considerado impreciso, ofensivo ou inadequado",
+            "Danos diretos, indiretos, incidentais ou consequenciais decorrentes do uso da Plataforma",
+            "Perda de dados ou conteúdos armazenados na Plataforma",
+            "Uso indevido do conteúdo gerado por terceiros"
+          ],
+          "after": "O usuário é o único responsável pelo uso que faz do conteúdo gerado na Plataforma."
+        },
+        {
+          "title": "8. Privacidade e Proteção de Dados",
+          "content": [
+            "O tratamento de dados pessoais dos usuários é regido pela nossa Política de Privacidade, que constitui parte integrante destes Termos de Uso. A Geraew AI compromete-se a tratar os dados pessoais em conformidade com a Lei Geral de Proteção de Dados (LGPD – Lei nº 13.709/2018)."
+          ]
+        },
+        {
+          "title": "9. Rescisão",
+          "content": [
+            "O usuário pode encerrar sua conta a qualquer momento através das configurações da Plataforma. A Geraew AI pode suspender ou encerrar o acesso do usuário a qualquer momento, em caso de violação destes Termos, sem prejuízo de outras medidas cabíveis.",
+            "Após o encerramento, os conteúdos armazenados na conta do usuário poderão ser permanentemente excluídos após o período de retenção previsto na Política de Privacidade."
+          ]
+        },
+        {
+          "title": "10. Disposições Gerais",
+          "content": [
+            "Estes Termos são regidos pelas leis da República Federativa do Brasil. Fica eleito o foro da comarca da sede da Geraew AI para dirimir quaisquer controvérsias oriundas destes Termos, com renúncia expressa a qualquer outro, por mais privilegiado que seja.",
+            "Caso qualquer cláusula destes Termos seja considerada inválida ou inexequível, as demais cláusulas permanecerão em pleno vigor e efeito."
+          ]
+        }
+      ]
+    },
+    "privacy": {
+      "title": "Política de Privacidade",
+      "sections": [
+        {
+          "title": "1. Introdução",
+          "content": [
+            "A Geraew AI (\"nós\", \"nosso\" ou \"Plataforma\"), disponível em www.geraew.com.br, valoriza e respeita a privacidade de seus usuários. Esta Política de Privacidade descreve como coletamos, utilizamos, armazenamos, compartilhamos e protegemos seus dados pessoais em conformidade com a Lei Geral de Proteção de Dados Pessoais (LGPD – Lei nº 13.709/2018).",
+            "Ao utilizar nossa Plataforma, você consente com as práticas descritas nesta Política. Recomendamos a leitura atenta de todo o documento."
+          ]
+        },
+        {
+          "title": "2. Dados Pessoais Coletados",
+          "subsections": [
+            {
+              "title": "2.1. Dados fornecidos pelo usuário",
+              "content": ["Podemos coletar os seguintes dados quando você se cadastra ou utiliza a Plataforma:"],
+              "list": [
+                "Nome completo",
+                "Endereço de e-mail",
+                "Informações de perfil (foto, nome de exibição)",
+                "Dados de pagamento (processados por gateways de pagamento terceirizados)",
+                "Prompts (comandos textuais) inseridos para geração de conteúdo"
+              ]
+            },
+            {
+              "title": "2.2. Dados coletados automaticamente",
+              "content": ["Ao acessar a Plataforma, coletamos automaticamente:"],
+              "list": [
+                "Endereço IP e dados de geolocalização aproximada",
+                "Tipo de navegador, sistema operacional e dispositivo utilizado",
+                "Páginas visitadas, tempo de acesso e interações com a Plataforma",
+                "Cookies e tecnologias similares de rastreamento",
+                "Dados de uso do serviço (tipo e quantidade de gerações realizadas)"
+              ]
+            },
+            {
+              "title": "2.3. Dados de terceiros",
+              "content": [
+                "Caso você realize login por meio de serviços de terceiros (como Google ou redes sociais), podemos receber dados básicos de seu perfil conforme autorizado pelo provedor e por você."
+              ]
+            }
+          ]
+        },
+        {
+          "title": "3. Finalidades do Tratamento de Dados",
+          "content": ["Utilizamos seus dados pessoais para as seguintes finalidades:"],
+          "list": [
+            "Criação e gerenciamento de sua conta na Plataforma",
+            "Prestação e melhoria dos serviços de geração de imagens e vídeos com IA",
+            "Processamento de pagamentos e gestão de assinaturas",
+            "Envio de comunicações sobre o serviço (atualizações, alterações, avisos de segurança)",
+            "Envio de comunicações de marketing (com consentimento prévio e opção de descadastro)",
+            "Análise de uso e desempenho da Plataforma para melhorias contínuas",
+            "Prevenção de fraudes e garantia da segurança da Plataforma",
+            "Cumprimento de obrigações legais e regulatórias",
+            "Treinamento e aprimoramento dos modelos de inteligência artificial (de forma anonimizada)"
+          ]
+        },
+        {
+          "title": "4. Bases Legais para o Tratamento",
+          "content": ["O tratamento dos seus dados pessoais fundamenta-se nas seguintes bases legais previstas na LGPD:"],
+          "highlights": [
+            { "label": "Consentimento", "desc": "quando você autoriza expressamente o tratamento (ex.: marketing)" },
+            { "label": "Execução de contrato", "desc": "para prestação dos serviços contratados" },
+            { "label": "Legítimo interesse", "desc": "para melhoria da Plataforma e prevenção de fraudes" },
+            { "label": "Cumprimento de obrigação legal", "desc": "quando exigido por lei ou regulamentação" }
+          ]
+        },
+        {
+          "title": "5. Compartilhamento de Dados",
+          "content": ["Seus dados pessoais poderão ser compartilhados com:"],
+          "list": [
+            "Provedores de serviços de pagamento para processamento de transações financeiras",
+            "Provedores de infraestrutura e hospedagem em nuvem",
+            "Provedores de modelos de inteligência artificial utilizados na geração de conteúdo",
+            "Ferramentas de análise e monitoramento de desempenho",
+            "Autoridades competentes, quando exigido por lei ou ordem judicial"
+          ],
+          "after": "Não vendemos, alugamos ou comercializamos seus dados pessoais a terceiros para fins de marketing. Todos os parceiros e fornecedores estão sujeitos a obrigações contratuais de confidencialidade e proteção de dados."
+        },
+        {
+          "title": "6. Transferência Internacional de Dados",
+          "content": [
+            "Seus dados poderão ser transferidos e armazenados em servidores localizados fora do Brasil, inclusive em países que podem não possuir leis de proteção de dados equivalentes à LGPD. Nesses casos, adotamos medidas de segurança adequadas, como cláusulas contratuais padrão, para garantir a proteção dos seus dados."
+          ]
+        },
+        {
+          "title": "7. Armazenamento e Segurança dos Dados",
+          "content": [
+            "Adotamos medidas técnicas e organizacionais adequadas para proteger seus dados pessoais contra acesso não autorizado, destruição, perda, alteração ou tratamento indevido, incluindo:"
+          ],
+          "list": [
+            "Criptografia de dados em trânsito (TLS/SSL) e em repouso",
+            "Controle de acesso baseado em funções",
+            "Monitoramento contínuo de segurança"
+          ],
+          "after": "Seus dados pessoais serão armazenados pelo tempo necessário para cumprir as finalidades para as quais foram coletados, ou conforme exigido por lei."
+        },
+        {
+          "title": "8. Cookies e Tecnologias de Rastreamento",
+          "content": ["A Plataforma utiliza cookies e tecnologias similares para:"],
+          "list": [
+            "Manter sua sessão ativa e lembrar suas preferências",
+            "Analisar o uso da Plataforma e melhorar a experiência do usuário",
+            "Personalizar conteúdo e anúncios (quando aplicável)"
+          ],
+          "after": "Você pode gerenciar suas preferências de cookies através das configurações do seu navegador. A desativação de determinados cookies pode afetar a funcionalidade da Plataforma."
+        },
+        {
+          "title": "9. Direitos do Titular dos Dados",
+          "content": ["Em conformidade com a LGPD, você tem direito a:"],
+          "list": [
+            "Confirmação da existência de tratamento de seus dados pessoais",
+            "Acesso aos seus dados pessoais",
+            "Correção de dados incompletos, inexatos ou desatualizados",
+            "Anonimização, bloqueio ou eliminação de dados desnecessários ou tratados em desconformidade com a LGPD",
+            "Portabilidade dos dados a outro fornecedor de serviço",
+            "Eliminação dos dados pessoais tratados com base no consentimento",
+            "Informação sobre com quem seus dados foram compartilhados",
+            "Informação sobre a possibilidade de não fornecer consentimento e suas consequências",
+            "Revogação do consentimento a qualquer tempo"
+          ],
+          "after": "Para exercer qualquer desses direitos, entre em contato conosco pelos canais disponíveis na Plataforma. Responderemos à sua solicitação no prazo legal de 15 (quinze) dias."
+        },
+        {
+          "title": "10. Dados de Menores de Idade",
+          "content": [
+            "A Plataforma não é destinada a menores de 18 (dezoito) anos. Não coletamos intencionalmente dados pessoais de menores. Caso tenhamos conhecimento de que dados de um menor foram coletados sem o consentimento adequado, tomaremos as medidas necessárias para excluí-los."
+          ]
+        },
+        {
+          "title": "11. Alterações nesta Política",
+          "content": [
+            "Esta Política de Privacidade poderá ser atualizada periodicamente para refletir mudanças em nossas práticas ou na legislação aplicável. A versão atualizada será publicada na Plataforma com a data da última modificação. Recomendamos a consulta periódica deste documento."
+          ]
+        }
+      ]
+    }
+  },
+  "common": {
+    "loading": "Carregando...",
+    "error": "Erro",
+    "tryAgain": "Tentar novamente",
+    "close": "Fechar",
+    "save": "Salvar",
+    "cancel": "Cancelar"
+  },
+  "locale": {
+    "portuguese": "Português",
+    "english": "Inglês"
+  }
+}

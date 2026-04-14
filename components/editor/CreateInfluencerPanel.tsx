@@ -3,7 +3,8 @@
 import { Coins, Loader2, PersonStanding, Sparkles, X } from 'lucide-react';
 import { GenerationErrorBanner, showGenerationError } from './GenerationError';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
@@ -21,16 +22,6 @@ type GenState = 'idle' | 'generating' | 'done';
 const RADIUS = 36;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-const LOADING_MESSAGES = [
-  'CRIANDO SUA INFLUENCER...',
-  'AJUSTANDO TRAÇOS FACIAIS...',
-  'APLICANDO ESTILO ÚNICO...',
-  'REFINANDO DETALHES...',
-  'QUASE LÁ...',
-  'ADICIONANDO UM TOQUE DE MAGIA...',
-  'CONSULTANDO OS PIXELS...',
-  'SONHANDO EM ALTA RESOLUÇÃO...',
-];
 
 // ─── component ────────────────────────────────────────────────────────────────
 
@@ -41,6 +32,19 @@ interface CreateInfluencerPanelProps {
 }
 
 export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateInfluencerPanelProps) {
+  const t = useTranslations('editorChrome.createPanel');
+  const tLoading = useTranslations('editorChrome.createPanel.loading');
+  const tErrors = useTranslations('editorChrome.createPanel.errors');
+  const LOADING_MESSAGES = useMemo(() => [
+    tLoading('creating'),
+    tLoading('adjustingFeatures'),
+    tLoading('applyingStyle'),
+    tLoading('refining'),
+    tLoading('almostThere'),
+    tLoading('magic'),
+    tLoading('consulting'),
+    tLoading('dreaming'),
+  ], [tLoading]);
   const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating } = useEditor();
   const { accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
@@ -136,7 +140,7 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
           clearProgressTimer();
           clearMsgTimer();
           setGenState('idle');
-          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: 'Erro ao gerar influencer.' }));
+          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: tErrors('generateInfluencer') }));
           refetchCredits();
         }
       } catch {
@@ -144,7 +148,7 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
         clearProgressTimer();
         clearMsgTimer();
         setGenState('idle');
-        setErrorMsg(showGenerationError({ fallback: 'Erro ao verificar status da geração.' }));
+        setErrorMsg(showGenerationError({ fallback: tErrors('checkStatus') }));
       }
     }, 3000);
   }
@@ -197,7 +201,7 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
           clearProgressTimer();
           clearMsgTimer();
           setGenState('idle');
-          setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: 'Erro ao gerar influencer.' }));
+          setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: tErrors('generateInfluencer') }));
           refetchCredits();
         },
         onError: () => {
@@ -208,7 +212,7 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
       clearProgressTimer();
       clearMsgTimer();
       setGenState('idle');
-      setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: 'Erro ao iniciar geração.' }));
+      setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: tErrors('startGeneration') }));
     }
   }
 
@@ -238,7 +242,7 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
         <div className="flex items-center gap-2">
           <PersonStanding className="h-4 w-4 text-[#a2dd00]" />
           <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
-            AI INFLUENCER
+            {t('title')}
           </span>
         </div>
         <div className="flex items-center gap-1">
@@ -264,10 +268,10 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
             </div>
             <div className="text-center">
               <p className="text-xs font-semibold text-[#f3f0ed]/60">
-                Sua AI influencer mora aqui.
+                {t('emptyTitle')}
               </p>
               <p className="mt-1 text-[10px] leading-relaxed text-[#f3f0ed]/25">
-                Configure na sidebar e clique em gerar
+                {t('emptySubtitle')}
               </p>
             </div>
           </div>
@@ -288,13 +292,13 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
           <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
             <div className="flex items-center gap-1.5">
               <Coins className="h-3 w-3 text-[#a2dd00]" />
-              <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">Custo</span>
+              <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">{t('cost')}</span>
             </div>
             {estimateLoading ? (
               <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
             ) : estimate ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
+                <span className="text-xs font-bold text-[#f3f0ed]/70">{t('creditsLabel', { credits: estimate.creditsRequired })}</span>
                 <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
               </div>
             ) : null}
@@ -315,12 +319,12 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
           {genState === 'generating' ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              GERANDO...
+              {t('generating')}
             </>
           ) : (
             <>
               <Sparkles className="h-4 w-4" />
-              {generatedImageUrl ? 'GERAR NOVAMENTE' : 'GERAR INFLUENCER'}
+              {generatedImageUrl ? t('generateAgain') : t('generate')}
             </>
           )}
         </button>

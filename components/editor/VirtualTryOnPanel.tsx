@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
 import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
@@ -34,17 +35,6 @@ import { GenerationPreview } from './GenerationPreview';
 // ─── types ────────────────────────────────────────────────────────────────────
 
 type GenState = 'idle' | 'generating' | 'done';
-
-const LOADING_MESSAGES = [
-  'ANALISANDO INFLUENCER...',
-  'IDENTIFICANDO ROUPA...',
-  'AJUSTANDO CAIMENTO...',
-  'APLICANDO TEXTURA...',
-  'COMBINANDO ILUMINAÇÃO...',
-  'RENDERIZANDO RESULTADO...',
-  'AQUECENDO OS NEURÔNIOS...',
-  'QUASE PRONTO...',
-];
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_IMAGE_DIMENSION = 1920;
@@ -94,6 +84,9 @@ interface VirtualTryOnPanelProps {
 }
 
 export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOnPanelProps) {
+  const t = useTranslations('editorPanels.virtualTryOn');
+  const tCommon = useTranslations('editorPanels.common');
+  const LOADING_MESSAGES = t.raw('loadingMessages') as string[];
   const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating } = useEditor();
   const { accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
@@ -192,12 +185,12 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
   // Document title
   useEffect(() => {
     if (genState === 'generating') {
-      document.title = 'Geraew AI - Provador Virtual';
+      document.title = t('docTitleGenerating');
     } else {
       document.title = 'Geraew AI';
     }
     return () => { document.title = 'Geraew AI'; };
-  }, [genState]);
+  }, [genState, t]);
 
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const msgIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -218,7 +211,7 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
       clearPollTimer();
       clearSSE();
       setGenState('idle');
-      setErrorMsg(showGenerationError({ errorMessage: gen.errorMessage, fallback: 'Erro ao gerar imagem.' }));
+      setErrorMsg(showGenerationError({ errorMessage: gen.errorMessage, fallback: tCommon('errors.generateImage') }));
       refetchCredits();
     },
   });
@@ -237,12 +230,12 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
     e.target.value = '';
 
     if (file.size > MAX_IMAGE_SIZE) {
-      toast.error('Imagem deve ter no máximo 10MB.');
+      toast.error(tCommon('errors.imageMax10MB'));
       return;
     }
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Formato de imagem inválido.');
+      toast.error(tCommon('errors.invalidImageFormat'));
       return;
     }
 
@@ -278,7 +271,7 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
     // First dropped image goes to influencer slot if empty, second to clothing
     for (const file of files) {
       if (file.size > MAX_IMAGE_SIZE) {
-        toast.error('Imagem deve ter no máximo 10MB.');
+        toast.error(tCommon('errors.imageMax10MB'));
         continue;
       }
       const reader = new FileReader();
@@ -288,10 +281,10 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
         const imgData = { base64: dataUrl.split(',')[1], mime_type: mimeType, preview: dataUrl };
         if (!influencerImage) {
           setInfluencerImage(imgData);
-          toast.success('Foto da influencer adicionada!');
+          toast.success(t('toasts.influencerAdded'));
         } else if (!clothingImage) {
           setClothingImage(imgData);
-          toast.success('Foto da roupa adicionada!');
+          toast.success(t('toasts.clothingAdded'));
         }
       };
       reader.readAsDataURL(file);
@@ -309,10 +302,10 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
           const imgData = { base64: dataUrl.split(',')[1], mime_type: mimeType, preview: dataUrl };
           if (!influencerImage) {
             setInfluencerImage(imgData);
-            toast.success('Foto da influencer adicionada!');
+            toast.success(t('toasts.influencerAdded'));
           } else if (!clothingImage) {
             setClothingImage(imgData);
-            toast.success('Foto da roupa adicionada!');
+            toast.success(t('toasts.clothingAdded'));
           }
         };
         reader.readAsDataURL(blob);
@@ -381,14 +374,14 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
           clearProgressTimer();
           clearMsgTimer();
           setGenState('idle');
-          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: 'Erro ao gerar imagem.' }));
+          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: tCommon('errors.generateImage') }));
           refetchCredits();
         }
       } catch {
         clearPollTimer();
         clearProgressTimer();
         setGenState('idle');
-        setErrorMsg(showGenerationError({ fallback: 'Erro ao verificar status da geração.' }));
+        setErrorMsg(showGenerationError({ fallback: tCommon('errors.checkStatus') }));
       }
     }, 3000);
   }
@@ -438,7 +431,7 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
           clearPollTimer();
           clearSSE();
           setGenState('idle');
-          setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: 'Erro ao gerar imagem.' }));
+          setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: tCommon('errors.generateImage') }));
           refetchCredits();
         },
         onError: () => {
@@ -449,7 +442,7 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
       clearProgressTimer();
       clearMsgTimer();
       setGenState('idle');
-      setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: 'Erro ao iniciar geração.' }));
+      setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: tCommon('errors.startGeneration') }));
     }
   }
 
@@ -508,7 +501,7 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
           <div className="flex items-center gap-2">
             <Shirt className="h-4 w-4 text-[#a2dd00]" />
             <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
-              PROVADOR VIRTUAL
+              {t('header')}
             </span>
           </div>
           <div className="flex items-center gap-1">
@@ -547,17 +540,17 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
                       className="flex h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/8 bg-[#1e494b]/20 text-xs font-semibold text-[#f3f0ed]/60 transition-all hover:border-[#a2dd00]/30 hover:text-[#a2dd00]"
                     >
                       <Download className="h-3.5 w-3.5" />
-                      Download
+                      {tCommon('download')}
                     </a>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={4}>Baixar imagem</TooltipContent>
+                  <TooltipContent side="bottom" sideOffset={4}>{tCommon('downloadImage')}</TooltipContent>
                 </Tooltip>
               </div>
               <button
                 onClick={handleDiscard}
                 className="flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/6 text-xs font-semibold text-[#f3f0ed]/40 transition-all hover:border-[#f3f0ed]/15 hover:text-[#f3f0ed]/70"
               >
-                Gerar outro
+                {tCommon('generateAnother')}
               </button>
             </div>
           )}
@@ -568,7 +561,7 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
               {/* Influencer image upload */}
               <div>
                 <label className="mb-1.5 block text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
-                  FOTO DA INFLUENCER
+                  {t('labels.influencerPhoto')}
                 </label>
                 {influencerImage ? (
                   <div className="relative overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08]">
@@ -587,7 +580,7 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/[0.12] bg-[#1e494b]/10 px-3 py-4 text-xs text-[#f3f0ed]/40 transition-all hover:border-[#a2dd00]/30 hover:text-[#a2dd00]/70"
                   >
                     <User className="h-4 w-4" />
-                    Clique ou arraste a foto da influencer
+                    {t('uploads.influencer')}
                   </button>
                 )}
                 <input
@@ -595,14 +588,14 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   className="hidden"
-                  onChange={(e) => handleImageSelect(e, setInfluencerImage, 'Foto da influencer')}
+                  onChange={(e) => handleImageSelect(e, setInfluencerImage, t('toasts.influencerLabel'))}
                 />
               </div>
 
               {/* Clothing image upload */}
               <div>
                 <label className="mb-1.5 block text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
-                  FOTO DA ROUPA
+                  {t('labels.clothingPhoto')}
                 </label>
                 {clothingImage ? (
                   <div className="relative overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08]">
@@ -621,7 +614,7 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/[0.12] bg-[#1e494b]/10 px-3 py-4 text-xs text-[#f3f0ed]/40 transition-all hover:border-[#a2dd00]/30 hover:text-[#a2dd00]/70"
                   >
                     <Shirt className="h-4 w-4" />
-                    Clique ou arraste a foto da roupa
+                    {t('uploads.clothing')}
                   </button>
                 )}
                 <input
@@ -629,19 +622,19 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   className="hidden"
-                  onChange={(e) => handleImageSelect(e, setClothingImage, 'Foto da roupa')}
+                  onChange={(e) => handleImageSelect(e, setClothingImage, t('toasts.clothingLabel'))}
                 />
               </div>
 
               {/* Additional instructions */}
               <div>
                 <label className="mb-1.5 block text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
-                  INSTRUÇÕES ADICIONAIS <span className="font-normal text-[#f3f0ed]/25">(opcional)</span>
+                  {t('labels.additionalInstructions')} <span className="font-normal text-[#f3f0ed]/25">{t('labels.optional')}</span>
                 </label>
                 <textarea
                   value={additionalInstructions}
                   onChange={(e) => setAdditionalInstructions(e.target.value)}
-                  placeholder="Ex: fundo branco, iluminação natural, foto de corpo inteiro..."
+                  placeholder={t('instructionsPlaceholder')}
                   className="w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-xs text-[#f3f0ed]/80 outline-none transition-all placeholder:text-[#f3f0ed]/25 focus:border-[#a2dd00]/40"
                   rows={2}
                 />
@@ -651,7 +644,7 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                    RESOLUÇÃO
+                    {t('labels.resolution')}
                   </label>
                   <Select value={resolution} onValueChange={setResolution}>
                     <SelectTrigger className="h-9 w-full rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 text-xs text-[#f3f0ed]/80 outline-none transition-all focus:border-[#a2dd00]/40 focus:ring-0 data-placeholder:text-[#f3f0ed]/35 [&>svg]:text-[#f3f0ed]/30">
@@ -669,7 +662,7 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                    PROPORÇÃO
+                    {t('labels.proportion')}
                   </label>
                   <Select value={aspectRatio} onValueChange={setAspectRatio}>
                     <SelectTrigger className="h-9 w-full rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 text-xs text-[#f3f0ed]/80 outline-none transition-all focus:border-[#a2dd00]/40 focus:ring-0 data-placeholder:text-[#f3f0ed]/35 [&>svg]:text-[#f3f0ed]/30">
@@ -695,14 +688,14 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
                   <div className="flex items-center gap-1.5">
                     <Coins className="h-3 w-3 text-[#a2dd00]" />
                     <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">
-                      Custo estimado
+                      {tCommon('estimatedCost')}
                     </span>
                   </div>
                   {estimateLoading ? (
                     <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
                   ) : estimate ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
+                      <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} {tCommon('credits')}</span>
                       <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
                     </div>
                   ) : null}
@@ -720,11 +713,11 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
                 }}
               >
                 <Wand2 className="h-4 w-4" />
-                EXPERIMENTAR ROUPA
+                {t('button')}
               </button>
 
               <p className="text-center text-[10px] text-[#f3f0ed]/25">
-                Veste a roupa na sua influencer de IA automaticamente
+                {t('footnote')}
               </p>
             </>
           )}

@@ -1,5 +1,8 @@
+"use client";
+
 import { Instagram } from "lucide-react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 
 function TikTokIcon({ className }: { className?: string }) {
   return (
@@ -9,29 +12,31 @@ function TikTokIcon({ className }: { className?: string }) {
   );
 }
 
-const PRODUCT = [
-  { label: "Funcionalidades", href: "#funcionalidades" },
-  { label: "Preços", href: "#precos" },
-  { label: "Galeria", href: "#resultados" },
-  { label: "FAQ", href: "#faq" },
-];
-
-const COMPANY = [
-  { label: "Sobre", href: "#" },
-  { label: "Contato", href: "#" },
-];
-
-const LEGAL = [
-  { label: "Termos de Uso", href: "/termos-de-uso" },
-  { label: "Política de Privacidade", href: "/politica-de-privacidade" },
-];
-
 const SOCIAL = [
   { Icon: Instagram, href: "https://www.instagram.com/geraew.ai/", label: "Instagram" },
   { Icon: TikTokIcon, href: "https://www.tiktok.com/@geraew.ia", label: "TikTok" },
 ];
 
 export function Footer() {
+  const t = useTranslations("footer");
+
+  const PRODUCT = [
+    { label: t("features"), href: "#funcionalidades" },
+    { label: t("pricing"), href: "#precos" },
+    { label: t("gallery"), href: "#resultados" },
+    { label: t("faq"), href: "#faq" },
+  ];
+
+  const COMPANY = [
+    { label: t("about"), href: "#" },
+    { label: t("contact"), href: "#" },
+  ];
+
+  const LEGAL = [
+    { label: t("terms"), href: "/termos-de-uso" },
+    { label: t("privacy"), href: "/politica-de-privacidade" },
+  ];
+
   return (
     <footer className="border-t border-[#f3f0ed]/[0.04] bg-landing-bg py-12 sm:py-16 lg:py-20">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
@@ -52,8 +57,7 @@ export function Footer() {
               </span>
             </div>
             <p className="mt-5 max-w-[260px] text-[14px] leading-relaxed text-landing-text-muted">
-              Crie influencers, vídeos e imagens profissionais com inteligência
-              artificial.
+              {t("tagline")}
             </p>
 
             {/* Social */}
@@ -76,7 +80,7 @@ export function Footer() {
           {/* Produto */}
           <div className="md:col-span-2 md:col-start-6">
             <h4 className="text-[13px] font-semibold text-landing-text">
-              Produto
+              {t("product")}
             </h4>
             <ul className="mt-4 space-y-3">
               {PRODUCT.map((l) => (
@@ -95,7 +99,7 @@ export function Footer() {
           {/* Empresa */}
           <div className="md:col-span-2">
             <h4 className="text-[13px] font-semibold text-landing-text">
-              Empresa
+              {t("company")}
             </h4>
             <ul className="mt-4 space-y-3">
               {COMPANY.map((l) => (
@@ -114,7 +118,7 @@ export function Footer() {
           {/* Legal */}
           <div className="md:col-span-2">
             <h4 className="text-[13px] font-semibold text-landing-text">
-              Legal
+              {t("legal")}
             </h4>
             <ul className="mt-4 space-y-3">
               {LEGAL.map((l) => (
@@ -133,7 +137,7 @@ export function Footer() {
 
         {/* Bottom */}
         <div className="mt-10 border-t border-[#f3f0ed]/[0.04] pt-6 sm:mt-14 sm:pt-8 text-center text-[13px] text-landing-text-muted">
-          &copy; 2026 Geraew. Todos os direitos reservados.
+          {t("rights")}
         </div>
       </div>
     </footer>

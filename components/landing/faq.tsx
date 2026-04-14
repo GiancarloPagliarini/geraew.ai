@@ -2,50 +2,20 @@
 
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { useScrollReveal } from "./use-scroll-reveal";
 
-const FAQS = [
-  {
-    q: "Como funciona o teste grátis?",
-    a: "Você cria sua conta em menos de 2 minutos e recebe créditos gratuitos para testar a plataforma. Sem cartão de crédito, sem compromisso. Se gostar, é só escolher um plano.",
-  },
-  {
-    q: "Preciso instalar alguma coisa?",
-    a: "Não. A Geraew funciona 100% online, direto pelo navegador. Funciona no computador e no celular.",
-  },
-  {
-    q: "Posso usar o conteúdo para vender no TikTok Shop?",
-    a: "Sim. Muitos criadores usam a Geraew para gerar vídeos de review e demonstração para o TikTok Shop. Use em qualquer plataforma para qualquer finalidade comercial.",
-  },
-  {
-    q: "Os vídeos ficam com marca d'água?",
-    a: "Nos planos pagos, não. Todo conteúdo gerado é seu, sem marca d'água e pronto para publicar.",
-  },
-  {
-    q: "Posso usar para anúncios pagos?",
-    a: "Sim. Imagens e vídeos gerados podem ser usados em Meta Ads, TikTok Ads, Google Ads e qualquer outra plataforma.",
-  },
-  {
-    q: "O conteúdo gerado é exclusivo meu?",
-    a: "Sim. Cada geração é única. Mesmo usando o mesmo prompt, os resultados são diferentes. Seu conteúdo é exclusivamente seu.",
-  },
-  {
-    q: "O que acontece se meus créditos acabarem?",
-    a: "Você pode aguardar a renovação mensal ou adquirir créditos extras a qualquer momento, sem precisar trocar de plano.",
-  },
-  {
-    q: "Posso cancelar a qualquer momento?",
-    a: "Sim. Sem multa, sem taxa, sem burocracia. Cancele direto pelo painel e continue usando até o fim do período pago.",
-  },
-];
+const FAQ_COUNT = 8;
 
 function Item({
-  faq,
+  question,
+  answer,
   open,
   onToggle,
 }: {
-  faq: (typeof FAQS)[number];
+  question: string;
+  answer: string;
   open: boolean;
   onToggle: () => void;
 }) {
@@ -63,7 +33,7 @@ function Item({
         className="group flex w-full items-center justify-between py-5 text-left sm:py-6"
       >
         <span className="pr-6 text-[14px] font-medium text-landing-text sm:text-[15px] transition-colors group-hover:text-landing-accent">
-          {faq.q}
+          {question}
         </span>
         <div
           className={cn(
@@ -87,7 +57,7 @@ function Item({
       >
         <div ref={body} className="pb-6">
           <p className="text-[14px] leading-relaxed text-landing-text-secondary">
-            {faq.a}
+            {answer}
           </p>
         </div>
       </div>
@@ -98,6 +68,7 @@ function Item({
 export function Faq() {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   const { ref, isVisible } = useScrollReveal();
+  const t = useTranslations("faq");
 
   return (
     <section id="faq" className="bg-landing-bg-secondary py-16 sm:py-28 lg:py-36">
@@ -112,22 +83,23 @@ export function Faq() {
           }}
         >
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-landing-accent">
-            Dúvidas
+            {t("tag")}
           </span>
           <h2 className="mt-4 font-sora text-[26px] font-bold tracking-tight text-landing-text sm:mt-5 sm:text-3xl lg:text-[44px]">
-            Perguntas Frequentes
+            {t("title")}
           </h2>
           <p className="mt-3.5 text-[15px] leading-relaxed text-landing-text-secondary sm:mt-5 sm:text-[17px]">
-            Tudo que você precisa saber antes de começar.
+            {t("subtitle")}
           </p>
         </div>
 
         {/* Accordion */}
         <div className="mt-10 sm:mt-14">
-          {FAQS.map((faq, i) => (
+          {Array.from({ length: FAQ_COUNT }).map((_, i) => (
             <Item
               key={i}
-              faq={faq}
+              question={t(`items.${i}.question`)}
+              answer={t(`items.${i}.answer`)}
               open={openIdx === i}
               onToggle={() => setOpenIdx(openIdx === i ? null : i)}
             />

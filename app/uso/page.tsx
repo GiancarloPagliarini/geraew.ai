@@ -23,18 +23,9 @@ import {
 import { useRouter } from 'next/navigation';
 import { useLoginModal } from '@/lib/login-modal-context';
 import { useEffect, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 function getTransactionIcon(type: string, description: string) {
   const desc = description.toLowerCase();
@@ -53,25 +44,39 @@ function getTransactionIcon(type: string, description: string) {
   return <ArrowUpCircle className="h-4 w-4" />;
 }
 
-function getTransactionLabel(type: string) {
-  const labels: Record<string, string> = {
-    GENERATION_DEBIT: 'Geração',
-    PLAN_CREDIT: 'Crédito do plano',
-    BONUS_CREDIT: 'Bônus',
-    PURCHASE_CREDIT: 'Compra',
-    PAYMENT_CREDIT: 'Pagamento',
-  };
-  return labels[type] ?? type;
-}
-
 function isDebit(amount: number) {
   return amount < 0;
 }
 
 // ─── Row ──────────────────────────────────────────────────────────────────────
 
-function TransactionRow({ tx }: { tx: CreditTransaction }) {
+function TransactionRow({
+  tx,
+  dateLocale,
+  t,
+}: {
+  tx: CreditTransaction;
+  dateLocale: string;
+  t: (key: string) => string;
+}) {
   const debit = isDebit(tx.amount);
+  const numFmt = new Intl.NumberFormat(dateLocale);
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString(dateLocale, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+  const typeLabelMap: Record<string, string> = {
+    GENERATION_DEBIT: t('types.generationDebit'),
+    PLAN_CREDIT: t('types.planCredit'),
+    BONUS_CREDIT: t('types.bonusCredit'),
+    PURCHASE_CREDIT: t('types.purchaseCredit'),
+    PAYMENT_CREDIT: t('types.paymentCredit'),
+  };
 
   return (
     <div className="group flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 transition-colors hover:border-[#f3f0ed]/6 hover:bg-[#f3f0ed]/2 sm:gap-4 sm:px-4 sm:py-3.5">
@@ -90,7 +95,7 @@ function TransactionRow({ tx }: { tx: CreditTransaction }) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-xs font-medium text-[#f3f0ed]/80 sm:text-sm">{tx.description}</p>
         <div className="mt-0.5 flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
-          <span className="text-[10px] text-[#f3f0ed]/30 sm:text-[11px]">{getTransactionLabel(tx.type)}</span>
+          <span className="text-[10px] text-[#f3f0ed]/30 sm:text-[11px]">{typeLabelMap[tx.type] ?? tx.type}</span>
           <span className="hidden h-0.5 w-0.5 rounded-full bg-[#f3f0ed]/20 sm:block" />
           <span className="text-[10px] text-[#f3f0ed]/25 sm:text-[11px]">{formatDate(tx.createdAt)}</span>
         </div>
@@ -102,9 +107,9 @@ function TransactionRow({ tx }: { tx: CreditTransaction }) {
           className="text-sm font-bold tabular-nums"
           style={{ color: debit ? 'rgba(239,68,68,0.75)' : 'rgba(162,221,0,0.9)' }}
         >
-          {debit ? '' : '+'}{tx.amount.toLocaleString('pt-BR')}
+          {debit ? '' : '+'}{numFmt.format(tx.amount)}
         </span>
-        <p className="text-[10px] text-[#f3f0ed]/25">créditos</p>
+        <p className="text-[10px] text-[#f3f0ed]/25">{t('creditsUnit')}</p>
       </div>
     </div>
   );
@@ -134,6 +139,8 @@ function Pagination({
   limit,
   onPrev,
   onNext,
+  dateLocale,
+  t,
 }: {
   page: number;
   totalPages: number;
@@ -141,14 +148,17 @@ function Pagination({
   limit: number;
   onPrev: () => void;
   onNext: () => void;
+  dateLocale: string;
+  t: (key: string, values?: Record<string, string | number>) => string;
 }) {
   const from = (page - 1) * limit + 1;
   const to = Math.min(page * limit, total);
+  const numFmt = new Intl.NumberFormat(dateLocale);
 
   return (
     <div className="flex items-center justify-between px-1 pt-2">
       <p className="text-[10px] text-[#f3f0ed]/30 sm:text-xs">
-        {from}–{to} de {total.toLocaleString('pt-BR')}
+        {t('paginationRange', { from, to, total: numFmt.format(total) })}
       </p>
       <div className="flex items-center gap-1">
         <button
@@ -182,6 +192,11 @@ export default function UsoPage() {
   const loadingMsg = useLoadingMessage('uso');
   const [page, setPage] = useState(1);
   const LIMIT = 20;
+  const t = useTranslations('account.usage');
+  const tCommon = useTranslations('account.common');
+  const locale = useLocale();
+  const dateLocale = locale === 'pt-BR' ? 'pt-BR' : 'en-US';
+  const numFmt = new Intl.NumberFormat(dateLocale);
 
   useEffect(() => {
     if (!authLoading && !user) openLoginModal();
@@ -196,10 +211,6 @@ export default function UsoPage() {
 
   const transactions = data?.data ?? [];
   const meta = data?.meta;
-
-  const totalDebited = transactions
-    .filter((tx) => tx.amount < 0)
-    .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
 
   if (authLoading) {
     return (
@@ -219,7 +230,7 @@ export default function UsoPage() {
           className="flex items-center gap-2 text-sm text-[#f3f0ed]/60 transition-colors hover:text-[#f3f0ed]"
         >
           <ArrowLeft className="h-4 w-4" />
-          Voltar ao editor
+          {tCommon('backToEditor')}
         </button>
       </header>
 
@@ -228,8 +239,8 @@ export default function UsoPage() {
         {/* ── Title ── */}
         <div className="flex items-center gap-3">
           <div>
-            <h1 className="text-lg font-bold text-[#f3f0ed]">Histórico de uso</h1>
-            <p className="text-xs text-[#f3f0ed]/35">Todas as transações de créditos</p>
+            <h1 className="text-lg font-bold text-[#f3f0ed]">{t('historyTitle')}</h1>
+            <p className="text-xs text-[#f3f0ed]/35">{t('historySubtitle')}</p>
           </div>
         </div>
 
@@ -238,10 +249,10 @@ export default function UsoPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 px-4 py-3.5">
               <span className="text-[10px] font-bold tracking-[0.13em] text-[#f3f0ed]/35">
-                TOTAL DE TRANSAÇÕES
+                {t('totalTransactions')}
               </span>
               <span className="text-xl font-bold tabular-nums text-[#a2dd00] sm:text-2xl">
-                {meta.total.toLocaleString('pt-BR')}
+                {numFmt.format(meta.total)}
               </span>
             </div>
           </div>
@@ -252,7 +263,7 @@ export default function UsoPage() {
           {/* List header */}
           <div className="flex items-center justify-between border-b border-[#f3f0ed]/6 px-4 py-3">
             <span className="text-[11px] font-bold tracking-[0.12em] text-[#f3f0ed]/30">
-              TRANSAÇÕES
+              {t('transactions')}
             </span>
             {isFetching && !isLoading && (
               <Loader2 className="h-3.5 w-3.5 animate-spin text-[#f3f0ed]/30" />
@@ -266,10 +277,12 @@ export default function UsoPage() {
             ) : transactions.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-16 text-center">
                 <Receipt className="h-8 w-8 text-[#f3f0ed]/15" />
-                <p className="text-sm text-[#f3f0ed]/30">Nenhuma transação encontrada</p>
+                <p className="text-sm text-[#f3f0ed]/30">{t('empty')}</p>
               </div>
             ) : (
-              transactions.map((tx) => <TransactionRow key={tx.id} tx={tx} />)
+              transactions.map((tx) => (
+                <TransactionRow key={tx.id} tx={tx} dateLocale={dateLocale} t={t} />
+              ))
             )}
           </div>
 
@@ -283,6 +296,8 @@ export default function UsoPage() {
                 limit={LIMIT}
                 onPrev={() => setPage((p) => Math.max(1, p - 1))}
                 onNext={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
+                dateLocale={dateLocale}
+                t={t}
               />
             </div>
           )}

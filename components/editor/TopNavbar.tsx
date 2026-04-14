@@ -4,6 +4,7 @@ import { BadgePercent, BatteryCharging, Coins, CreditCard, Gift, Loader2, LogIn,
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
 import { PlansModal } from './PlansModal';
@@ -12,6 +13,9 @@ import { usePhoneVerification } from '@/lib/phone-verification-context';
 import { useLoginModal } from '@/lib/login-modal-context';
 
 export function TopNavbar() {
+  const t = useTranslations('editorChrome.navbar');
+  const tMenu = useTranslations('editorChrome.navbar.menu');
+  const locale = useLocale();
   const router = useRouter();
   const { credits, creditsLoading, creditsBalance } = useEditor();
   const { user, logout, loading: authLoading } = useAuth();
@@ -48,13 +52,13 @@ export function TopNavbar() {
         <div className="flex items-center gap-2.5">
           <Image
             src="/logo_2.svg"
-            alt="Geraew AI"
+            alt={t('logoAlt')}
             width={32}
             height={32}
             className="rounded-md mix-blend-lighten"
           />
           <span className="hidden text-sm font-medium text-[#f3f0ed] sm:inline">
-            Geraew.AI
+            {t('brand')}
           </span>
         </div>
 
@@ -75,7 +79,7 @@ export function TopNavbar() {
                 {creditsLoading ? (
                   <div className="h-3 w-10 animate-pulse rounded-full bg-[#f3f0ed]/10" />
                 ) : (
-                  <span className="text-xs font-semibold text-[#f3f0ed]">{credits.toLocaleString('pt-BR')}</span>
+                  <span className="text-xs font-semibold text-[#f3f0ed]">{new Intl.NumberFormat(locale).format(credits)}</span>
                 )}
               </div>
 
@@ -85,7 +89,7 @@ export function TopNavbar() {
                 className="flex items-center gap-1.5 rounded-full bg-[#a2dd00] p-2 text-xs font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95 sm:px-4 sm:py-1.5"
               >
                 <Plus className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Comprar Créditos</span>
+                <span className="hidden sm:inline">{t('buyCredits')}</span>
               </button>
 
               {/* Verify phone button — red, only when phone not verified */}
@@ -95,7 +99,7 @@ export function TopNavbar() {
                   className="relative flex items-center gap-1.5 overflow-hidden rounded-full bg-linear-to-r from-orange-500 via-red-500 to-pink-500 p-2 text-xs font-bold text-white shadow-lg shadow-red-500/40 transition-all hover:shadow-red-500/60 animate-pulse sm:px-4 sm:py-1.5"
                 >
                   <Gift className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Resgate seus créditos</span>
+                  <span className="hidden sm:inline">{t('redeemCredits')}</span>
                 </button>
               )}
 
@@ -105,7 +109,7 @@ export function TopNavbar() {
                 className="hidden items-center gap-1.5 rounded-full border border-[#1e494b] px-4 py-1.5 text-xs font-semibold text-[#f3f0ed]/80 transition-all hover:border-[#a2dd00]/50 hover:text-[#f3f0ed] sm:flex"
               >
                 <Gift className="h-3.5 w-3.5" />
-                Poste e ganhe
+                {t('postAndEarn')}
               </button>
             </div>
           ) : (
@@ -116,15 +120,15 @@ export function TopNavbar() {
                 className="flex items-center gap-2 rounded-full bg-[#a2dd00] px-3 py-1.5 text-xs font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95"
               >
                 <LogIn className="h-3.5 w-3.5" />
-                <span>Entrar</span>
+                <span>{t('signIn')}</span>
               </button>
 
               {menuOpen && (
                 /* Desktop dropdown only */
                 <div className="absolute right-0 top-full mt-2 hidden w-64 overflow-hidden rounded-xl border border-[#f3f0ed]/8 bg-[#1a2123] shadow-2xl sm:block">
                   <div className="px-4 py-3 border-b border-[#f3f0ed]/6">
-                    <p className="text-xs font-semibold text-[#f3f0ed]">Faça login para gerar</p>
-                    <p className="mt-0.5 text-[11px] text-[#f3f0ed]/40">Acesso gratuito com créditos iniciais</p>
+                    <p className="text-xs font-semibold text-[#f3f0ed]">{t('loginTitle')}</p>
+                    <p className="mt-0.5 text-[11px] text-[#f3f0ed]/40">{t('loginSubtitle')}</p>
                   </div>
                   <div className="p-3 flex flex-col gap-2">
                     <button
@@ -142,14 +146,14 @@ export function TopNavbar() {
                           <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z" />
                         </svg>
                       )}
-                      {googleLoading ? 'Redirecionando...' : 'Continuar com Google'}
+                      {googleLoading ? t('redirecting') : t('continueWithGoogle')}
                     </button>
                     <button
                       onClick={() => { setMenuOpen(false); openLoginModal(); }}
                       className="flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 text-xs font-medium text-[#f3f0ed] transition-all hover:bg-[#f3f0ed]/10 active:scale-[0.98]"
                     >
                       <LogIn className="h-3.5 w-3.5" />
-                      Entrar com e-mail
+                      {t('signInWithEmail')}
                     </button>
                   </div>
                 </div>
@@ -195,17 +199,17 @@ export function TopNavbar() {
               /* Desktop dropdown only */
               <div className="absolute right-0 top-full mt-2 hidden w-56 overflow-hidden rounded-xl border border-[#f3f0ed]/8 bg-[#1a2123] shadow-2xl sm:block">
                 <div className="border-b border-[#f3f0ed]/6 px-4 py-3">
-                  <p className="text-xs font-semibold text-[#f3f0ed]">{user?.name || 'Usuário'}</p>
+                  <p className="text-xs font-semibold text-[#f3f0ed]">{user?.name || t('defaultUser')}</p>
                   <p className="mt-0.5 text-[11px] text-[#f3f0ed]/40">{user?.email}</p>
                 </div>
                 <div className="py-1.5">
-                  <DropdownItem icon={User} label="Perfil" onClick={() => { setMenuOpen(false); router.push('/perfil'); }} />
-                  <DropdownItem icon={CreditCard} label="Créditos" onClick={() => { setMenuOpen(false); router.push('/creditos'); }} />
-                  <DropdownItem icon={BadgePercent} label="Planos" onClick={() => { setMenuOpen(false); setPlansModalOpen(true); }} />
-                  <DropdownItem icon={BatteryCharging} label="Uso" onClick={() => { setMenuOpen(false); router.push('/uso'); }} />
+                  <DropdownItem icon={User} label={tMenu('profile')} onClick={() => { setMenuOpen(false); router.push('/perfil'); }} />
+                  <DropdownItem icon={CreditCard} label={tMenu('credits')} onClick={() => { setMenuOpen(false); router.push('/creditos'); }} />
+                  <DropdownItem icon={BadgePercent} label={tMenu('plans')} onClick={() => { setMenuOpen(false); setPlansModalOpen(true); }} />
+                  <DropdownItem icon={BatteryCharging} label={tMenu('usage')} onClick={() => { setMenuOpen(false); router.push('/uso'); }} />
                 </div>
                 <div className="border-t border-[#f3f0ed]/6 py-1.5">
-                  <DropdownItem icon={LogOut} label="Sair" danger onClick={() => { setMenuOpen(false); handleLogout(); }} />
+                  <DropdownItem icon={LogOut} label={tMenu('logout')} danger onClick={() => { setMenuOpen(false); handleLogout(); }} />
                 </div>
               </div>
             )}
@@ -221,8 +225,8 @@ export function TopNavbar() {
           <aside ref={asideRef} className="absolute right-0 top-0 flex h-full w-72 flex-col border-l border-[#f3f0ed]/8 bg-[#1a2123]">
             <div className="flex items-center justify-between border-b border-[#f3f0ed]/6 px-4 py-4">
               <div>
-                <p className="text-sm font-semibold text-[#f3f0ed]">Faça login para gerar</p>
-                <p className="mt-0.5 text-[11px] text-[#f3f0ed]/40">Acesso gratuito com créditos iniciais</p>
+                <p className="text-sm font-semibold text-[#f3f0ed]">{t('loginTitle')}</p>
+                <p className="mt-0.5 text-[11px] text-[#f3f0ed]/40">{t('loginSubtitle')}</p>
               </div>
               <button onClick={() => setMenuOpen(false)} className="flex h-7 w-7 items-center justify-center rounded-full text-[#f3f0ed]/40 transition-colors hover:bg-[#f3f0ed]/6 hover:text-[#f3f0ed]">
                 <X className="h-4 w-4" />
@@ -244,14 +248,14 @@ export function TopNavbar() {
                     <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z" />
                   </svg>
                 )}
-                {googleLoading ? 'Redirecionando...' : 'Continuar com Google'}
+                {googleLoading ? t('redirecting') : t('continueWithGoogle')}
               </button>
               <button
                 onClick={() => { setMenuOpen(false); openLoginModal(); }}
                 className="flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 text-sm font-medium text-[#f3f0ed] transition-all hover:bg-[#f3f0ed]/10 active:scale-[0.98]"
               >
                 <LogIn className="h-4 w-4" />
-                Entrar com e-mail
+                {t('signInWithEmail')}
               </button>
             </div>
           </aside>
@@ -265,7 +269,7 @@ export function TopNavbar() {
           <aside ref={asideRef} className="absolute right-0 top-0 flex h-full w-72 flex-col border-l border-[#f3f0ed]/8 bg-[#1a2123]">
             <div className="flex items-center justify-between border-b border-[#f3f0ed]/6 px-4 py-4">
               <div>
-                <p className="text-sm font-semibold text-[#f3f0ed]">{user?.name || 'Usuário'}</p>
+                <p className="text-sm font-semibold text-[#f3f0ed]">{user?.name || t('defaultUser')}</p>
                 <p className="mt-0.5 text-[11px] text-[#f3f0ed]/40">{user?.email}</p>
               </div>
               <button onClick={() => setMenuOpen(false)} className="flex h-7 w-7 items-center justify-center rounded-full text-[#f3f0ed]/40 transition-colors hover:bg-[#f3f0ed]/6 hover:text-[#f3f0ed]">
@@ -273,13 +277,13 @@ export function TopNavbar() {
               </button>
             </div>
             <div className="flex-1 py-2">
-              <DropdownItem icon={User} label="Perfil" onClick={() => { setMenuOpen(false); router.push('/perfil'); }} />
-              <DropdownItem icon={CreditCard} label="Créditos" onClick={() => { setMenuOpen(false); router.push('/creditos'); }} />
-              <DropdownItem icon={BadgePercent} label="Planos" onClick={() => { setMenuOpen(false); setPlansModalOpen(true); }} />
-              <DropdownItem icon={BatteryCharging} label="Uso" onClick={() => { setMenuOpen(false); router.push('/uso'); }} />
+              <DropdownItem icon={User} label={tMenu('profile')} onClick={() => { setMenuOpen(false); router.push('/perfil'); }} />
+              <DropdownItem icon={CreditCard} label={tMenu('credits')} onClick={() => { setMenuOpen(false); router.push('/creditos'); }} />
+              <DropdownItem icon={BadgePercent} label={tMenu('plans')} onClick={() => { setMenuOpen(false); setPlansModalOpen(true); }} />
+              <DropdownItem icon={BatteryCharging} label={tMenu('usage')} onClick={() => { setMenuOpen(false); router.push('/uso'); }} />
             </div>
             <div className="border-t border-[#f3f0ed]/6 py-2">
-              <DropdownItem icon={LogOut} label="Sair" danger onClick={() => { setMenuOpen(false); handleLogout(); }} />
+              <DropdownItem icon={LogOut} label={tMenu('logout')} danger onClick={() => { setMenuOpen(false); handleLogout(); }} />
             </div>
           </aside>
         </div>

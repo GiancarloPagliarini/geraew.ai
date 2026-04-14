@@ -16,6 +16,7 @@ import { AudioWaveform, ImageIcon, LayoutGrid, Map, PersonStanding, Repeat2, Shi
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { useEditor } from '@/lib/editor-context';
 import { BottomToolbar } from '../editor/BottomToolbar';
 import { CanvasContextMenu } from './CanvasContextMenu';
@@ -60,6 +61,7 @@ function loadStoredViewport(): { x: number; y: number; zoom: number } | null {
 // ─── inner canvas — lives inside ReactFlowProvider ───────────────────────────
 
 function CanvasContent() {
+  const t = useTranslations('editor.canvas');
   const [mounted, setMounted] = useState(false);
   const [initialStoredNodes] = useState<Node[]>(() => loadStoredNodes());
   const [nodes, setNodes, onNodesChange] = useNodesState(initialStoredNodes);
@@ -184,9 +186,9 @@ function CanvasContent() {
       }
       return nds;
     });
-    if (blocked) toast.warning('Aguarde a geração finalizar antes de fechar o painel.');
+    if (blocked) toast.warning(t('waitBeforeClose'));
     setSelectedNodeId(null);
-  }, [selectedNodeId, setNodes, setSelectedNodeId, generatingNodeIds]);
+  }, [selectedNodeId, setNodes, setSelectedNodeId, generatingNodeIds, t]);
 
   // Delete/Backspace deletes selected nodes
   useEffect(() => {
@@ -323,8 +325,8 @@ function CanvasContent() {
               <LayoutGrid className="h-4 w-4 text-[#a2dd00]" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-semibold uppercase tracking-widest text-[#a2dd00]">Limite atingido</span>
-              <span className="text-sm text-[#f3f0ed]/70">Máximo de {MAX_NODES} painéis abertos simultaneamente.</span>
+              <span className="text-xs font-semibold uppercase tracking-widest text-[#a2dd00]">{t('maxNodesTitle')}</span>
+              <span className="text-sm text-[#f3f0ed]/70">{t('maxNodesMessage', { count: MAX_NODES })}</span>
             </div>
           </div>
         </div>
@@ -366,19 +368,19 @@ function CanvasContent() {
               />
             </div>
             <div className="empty-header-animate text-center" style={{ animationDelay: '0.25s' }}>
-              <h2 className="text-md font-semibold text-[#f3f0ed]">Tudo pronto!</h2>
+              <h2 className="text-md font-semibold text-[#f3f0ed]">{t('emptyTitle')}</h2>
               <p className="mt-1 text-sm text-[#f3f0ed]/35">
-                Escolha o que você deseja criar
+                {t('emptySubtitle')}
               </p>
             </div>
             <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:justify-center sm:gap-4">
               {[
-                { type: 'generate-image', icon: ImageIcon, label: 'Gerar imagem' },
-                { type: 'create-influencer', icon: PersonStanding, label: 'Criar influencer' },
-                { type: 'generate-video', icon: Video, label: 'Gerar vídeo' },
-                { type: 'motion-control', icon: AudioWaveform, label: 'Copiar movimentos' },
-                { type: 'virtual-try-on', icon: Shirt, label: 'Provador Virtual' },
-                { type: 'face-swap', icon: Repeat2, label: 'Troca de Rosto' },
+                { type: 'generate-image', icon: ImageIcon, label: t('actions.generateImage') },
+                { type: 'create-influencer', icon: PersonStanding, label: t('actions.createInfluencer') },
+                { type: 'generate-video', icon: Video, label: t('actions.generateVideo') },
+                { type: 'motion-control', icon: AudioWaveform, label: t('actions.copyMotion') },
+                { type: 'virtual-try-on', icon: Shirt, label: t('actions.virtualTryOn') },
+                { type: 'face-swap', icon: Repeat2, label: t('actions.faceSwap') },
               ].map((item, i) => (
                 <button
                   key={item.type}

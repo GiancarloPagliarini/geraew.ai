@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useTranslations } from "next-intl";
 
 const HERO_CARDS: { h: number; delay: string; float: string; rotate: number; src: string | null; video?: string | null }[] = [
   { h: 280, delay: "0s", float: "landing-float", rotate: -3, src: null, video: "https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmmo0y3ig001pmj012ef18i2x/f8b501b1-404e-4f90-80e5-6369dd0a1c85/output_1.mp4" },
@@ -121,6 +122,8 @@ function HeroCarousel() {
 export function HeroSection() {
   const { user, loading } = useAuth();
   const isLoggedIn = !!user;
+  const t = useTranslations("hero");
+  const tNav = useTranslations("nav");
 
   return (
     <section className="landing-noise relative overflow-hidden pt-24 pb-16 sm:pt-40 sm:pb-32 lg:pt-48 lg:pb-40">
@@ -148,20 +151,18 @@ export function HeroSection() {
           {/* Badge */}
           <div className="landing-shimmer mb-6 inline-flex items-center gap-2 rounded-full border border-landing-accent/20 bg-landing-accent/[0.07] px-4 py-1.5 sm:mb-8">
             <span className="text-[13px] font-medium text-landing-accent">
-              Quem dominar IA agora, vai dominar o mercado amanhã.
+              {t("badge")}
             </span>
           </div>
 
           {/* Headline */}
           <h1 className="font-sora text-[32px] leading-[1.1] font-extrabold tracking-tight text-landing-text sm:text-[56px] lg:text-[68px]">
-            Crie influencers digitais com IA e domine qualquer plataforma.
+            {t("title")}
           </h1>
 
           {/* Sub-headline */}
           <p className="mt-5 max-w-[620px] text-[15px] leading-relaxed text-landing-text-secondary sm:mt-7 sm:text-[17px] lg:text-[19px]">
-            Gere imagens, vídeos ultra-realistas e movimentos com poucos
-            cliques. Sem estúdio, sem modelos, sem aparecer. Tudo que você
-            precisa para criar conteúdo profissional está aqui.
+            {t("subtitle")}
           </p>
 
           {/* CTA */}
@@ -173,7 +174,7 @@ export function HeroSection() {
                 href="/workspace"
                 className="group inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-7 py-3.5 text-[14px] font-bold text-landing-bg-secondary shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-colors duration-200 hover:bg-[#b5e82d] active:scale-[0.98] sm:px-8 sm:py-4 sm:text-[15px]"
               >
-                {isLoggedIn ? "Acessar Plataforma" : "Começar Grátis"}
+                {isLoggedIn ? tNav("tryFree") : t("cta")}
                 <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
               </a>
             )}
@@ -181,7 +182,7 @@ export function HeroSection() {
 
           {/* Microcopy */}
           <p className="mt-5 text-[13px] tracking-wide text-landing-text-muted">
-            Pronto em menos de 2 minutos
+            {t("microcopy")}
           </p>
         </div>
 

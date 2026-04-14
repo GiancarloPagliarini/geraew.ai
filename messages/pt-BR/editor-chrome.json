@@ -1,0 +1,327 @@
+{
+  "editorChrome": {
+    "navbar": {
+      "logoAlt": "Geraew AI",
+      "brand": "Geraew.AI",
+      "buyCredits": "Comprar Créditos",
+      "redeemCredits": "Resgate seus créditos",
+      "postAndEarn": "Poste e ganhe",
+      "signIn": "Entrar",
+      "loginTitle": "Faça login para gerar",
+      "loginSubtitle": "Acesso gratuito com créditos iniciais",
+      "redirecting": "Redirecionando...",
+      "continueWithGoogle": "Continuar com Google",
+      "signInWithEmail": "Entrar com e-mail",
+      "defaultUser": "Usuário",
+      "menu": {
+        "profile": "Perfil",
+        "credits": "Créditos",
+        "plans": "Planos",
+        "usage": "Uso",
+        "logout": "Sair"
+      }
+    },
+    "leftSidebar": {
+      "gallery": "Galeria",
+      "tutorial": "Tutorial",
+      "prompts": "Prompts",
+      "promptsTooltip": "Fábrica de Prompts",
+      "trending": "Trending",
+      "trendingTooltip": "Produtos Mais Vendidos",
+      "logoAlt": "Geraew"
+    },
+    "rightSidebar": {
+      "wipBadge": "Em desenvolvimento",
+      "wipSubtitle": "Disponível em breve",
+      "header": "INFLUENCER BUILDER",
+      "upscale": {
+        "applied": "UPSCALE APLICADO",
+        "model": "MODELO",
+        "scaleFactor": "FATOR DE ESCALA",
+        "previewAlt": "Pré-visualização",
+        "processing": "PROCESSANDO...",
+        "applyAgain": "APLICAR NOVAMENTE",
+        "apply": "APLICAR UPSCALE",
+        "models": {
+          "realEsrganX4Name": "Real-ESRGAN",
+          "realEsrganX4Desc": "Melhor qualidade",
+          "realEsrganX2Name": "Real-ESRGAN",
+          "realEsrganX2Desc": "Mais rápido",
+          "esrganProName": "ESRGAN",
+          "esrganProDesc": "Detalhes nítidos",
+          "swinirUltraName": "SwinIR",
+          "swinirUltraDesc": "Preserva texturas"
+        }
+      },
+      "faceSwap": {
+        "targetLabel": "IMAGEM ALVO",
+        "targetAlt": "Imagem alvo",
+        "targetHint": "Rosto a ser substituído",
+        "yourFaceLabel": "SEU ROSTO",
+        "yourFaceAlt": "Seu rosto",
+        "uploadHint": "Clique para enviar",
+        "sourceHint": "Rosto a ser inserido",
+        "apply": "APLICAR FACE SWAP"
+      }
+    },
+    "influencer": {
+      "tabBuilder": "Construtor",
+      "tabPrompt": "Prompt",
+      "reset": "Resetar",
+      "promptTitle": "PROMPT GERADO (INGLÊS)",
+      "promptHint": "Este prompt é gerado automaticamente com base nas suas seleções no Construtor.",
+      "referenceTitle": "IMAGEM DE REFERÊNCIA",
+      "referenceAlt": "Referência",
+      "referenceActive": "Referência ativa",
+      "referenceDisabledHint": "As opções do construtor estão desativadas",
+      "uploadTitle": "Envie uma foto de referência",
+      "uploadSubtitle": "A IA criará uma pessoa inspirada nela",
+      "referenceDescription": "A IA vai gerar uma pessoa original inspirada na imagem enviada, mantendo a essência e estética geral mas criando um indivíduo único.",
+      "sections": {
+        "characterType": "TIPO DE PERSONAGEM",
+        "gender": "GÊNERO",
+        "ethnicity": "ETNIA",
+        "skinColor": "COR DA PELE",
+        "eyeColor": "COR DOS OLHOS",
+        "skinCondition": "CONDIÇÕES DA PELE",
+        "age": "IDADE",
+        "advancedConfig": "CONFIGURAÇÕES AVANÇADAS",
+        "eyeType": "OLHOS - TIPO",
+        "eyeDetails": "OLHOS - DETALHES",
+        "mouthTeeth": "BOCA & DENTES",
+        "ears": "ORELHAS",
+        "horns": "CHIFRES",
+        "skinMaterial": "MATERIAL DA PELE",
+        "surfacePattern": "PADRÃO DE SUPERFÍCIE",
+        "bodyType": "TIPO DE CORPO",
+        "leftArm": "BRAÇO ESQUERDO",
+        "rightArm": "BRAÇO DIREITO",
+        "leftLeg": "PERNA ESQUERDA",
+        "rightLeg": "PERNA DIREITA",
+        "hair": "CABELO / CABEÇA",
+        "hairColor": "COR DO CABELO",
+        "accessories": "ACESSÓRIOS & MARCAS",
+        "renderingStyle": "ESTILO DE RENDERIZAÇÃO"
+      },
+      "tabs": {
+        "face": "Rosto",
+        "body": "Corpo",
+        "style": "Estilo"
+      },
+      "ageOptions": {
+        "teen": "Adolescente",
+        "youngAdult": "Jovem adulto",
+        "adult": "Adulto",
+        "middleAge": "Meia-idade",
+        "senior": "Idoso"
+      },
+      "renderingOptions": {
+        "hyperrealistic": "Hiper-realista",
+        "anime": "Anime",
+        "cartoon": "Cartoon",
+        "illustration2d": "Ilustração 2D"
+      },
+      "character": {
+        "human": "Humano",
+        "ant": "Formiga",
+        "bee": "Abelha",
+        "octopus": "Polvo",
+        "crocodile": "Crocodilo",
+        "iguana": "Iguana",
+        "lizard": "Lagarto",
+        "alien": "Alienígena",
+        "beetle": "Besouro",
+        "reptile": "Réptil",
+        "amphibian": "Anfíbio",
+        "elf": "Elfo",
+        "mantis": "Louva-a-deus"
+      },
+      "gender": {
+        "female": "Feminino",
+        "male": "Masculino",
+        "transMan": "Homem trans",
+        "transWoman": "Mulher trans",
+        "nonBinary": "Não-binário"
+      },
+      "ethnicity": {
+        "african": "Africana",
+        "asian": "Asiática",
+        "european": "Europeia",
+        "indian": "Indiana",
+        "middleEastern": "Oriente Médio",
+        "mixed": "Mista"
+      },
+      "skin": {
+        "tan": "Morena",
+        "black": "Preta",
+        "white": "Branca"
+      },
+      "eyes": {
+        "black": "Preto",
+        "purple": "Roxo",
+        "green": "Verde",
+        "white": "Branco",
+        "brown": "Castanho",
+        "solid": "Sólido/Vazio",
+        "blind": "Cego/Vazio",
+        "deepBrown": "Castanho escuro",
+        "blue": "Azul",
+        "amber": "Âmbar",
+        "red": "Vermelho",
+        "grey": "Cinza"
+      },
+      "skinCondition": {
+        "vitiligo": "Vitiligo",
+        "pigmentation": "Pigmentação",
+        "freckles": "Sardas",
+        "birthmarks": "Marcas de nascença",
+        "scars": "Cicatrizes",
+        "burns": "Queimaduras",
+        "albinism": "Albinismo",
+        "cracked": "Pele rachada",
+        "wrinkled": "Pele enrugada"
+      },
+      "eyesType": {
+        "human": "Humano",
+        "reptile": "Réptil",
+        "mechanical": "Mecânico"
+      },
+      "eyesDetails": {
+        "different": "Cores diferentes",
+        "blind": "Olho cego",
+        "scarred": "Olho c/ cicatriz",
+        "glowing": "Olho brilhante"
+      },
+      "mouth": {
+        "small": "Boca pequena",
+        "large": "Boca grande",
+        "noTeeth": "Sem dentes",
+        "different": "Dentes diferentes",
+        "sharp": "Dentes afiados",
+        "forked": "Língua bifurcada",
+        "two": "Duas línguas"
+      },
+      "ears": {
+        "human": "Humana",
+        "elf": "Elfo",
+        "none": "Sem orelhas",
+        "wing": "Orelhas de asa"
+      },
+      "horns": {
+        "small": "Chifres pequenos",
+        "big": "Chifres grandes",
+        "antlers": "Galhadas"
+      },
+      "faceSkin": {
+        "human": "Pele humana",
+        "scales": "Escamas",
+        "fur": "Pelo",
+        "amphibian": "Pele de anfíbio",
+        "fish": "Pele de peixe",
+        "metallic": "Metálico"
+      },
+      "surface": {
+        "solid": "Sólido",
+        "stripes": "Listras",
+        "spots": "Manchas",
+        "chess": "Xadrez",
+        "veins": "Veias",
+        "giraffe": "Girafa",
+        "cowhide": "Bovino"
+      },
+      "body": {
+        "slim": "Magro",
+        "lean": "Esbelto",
+        "athletic": "Atlético",
+        "muscular": "Musculoso",
+        "curvy": "Curvilíneo",
+        "heavy": "Pesado",
+        "skinny": "Esquelético"
+      },
+      "limbs": {
+        "normal": "Normal",
+        "cute": "Fofo",
+        "robotic": "Robótico",
+        "prosthetic": "Protético",
+        "mechanical": "Mecânico",
+        "none": "Nenhum"
+      },
+      "hair": {
+        "bald": "Careca",
+        "short": "Curto",
+        "long": "Longo",
+        "afro": "Afro",
+        "punk": "Punk",
+        "fur": "Pelo",
+        "tentacles": "Tentáculos",
+        "spines": "Espinhos"
+      },
+      "hairColor": {
+        "black": "Preto",
+        "darkBrown": "Castanho escuro",
+        "brown": "Castanho",
+        "lightBrown": "Castanho claro",
+        "blonde": "Loiro",
+        "platinumBlonde": "Platinado",
+        "red": "Ruivo",
+        "ginger": "Ruivo claro",
+        "auburn": "Acaju",
+        "grey": "Grisalho",
+        "white": "Branco",
+        "blue": "Azul",
+        "pink": "Rosa",
+        "purple": "Roxo",
+        "green": "Verde",
+        "ombre": "Ombré",
+        "highlights": "Mechas"
+      },
+      "accessories": {
+        "tattoos": "Tatuagens",
+        "piercing": "Piercing",
+        "scarification": "Escarificação",
+        "symbols": "Símbolos",
+        "cyber": "Marcas cyber"
+      }
+    },
+    "createPanel": {
+      "title": "AI INFLUENCER",
+      "emptyTitle": "Sua AI influencer mora aqui.",
+      "emptySubtitle": "Configure na sidebar e clique em gerar",
+      "cost": "Custo",
+      "creditsLabel": "{credits} créditos",
+      "generating": "GERANDO...",
+      "generateAgain": "GERAR NOVAMENTE",
+      "generate": "GERAR INFLUENCER",
+      "loading": {
+        "creating": "CRIANDO SUA INFLUENCER...",
+        "adjustingFeatures": "AJUSTANDO TRAÇOS FACIAIS...",
+        "applyingStyle": "APLICANDO ESTILO ÚNICO...",
+        "refining": "REFINANDO DETALHES...",
+        "almostThere": "QUASE LÁ...",
+        "magic": "ADICIONANDO UM TOQUE DE MAGIA...",
+        "consulting": "CONSULTANDO OS PIXELS...",
+        "dreaming": "SONHANDO EM ALTA RESOLUÇÃO..."
+      },
+      "errors": {
+        "generateInfluencer": "Erro ao gerar influencer.",
+        "checkStatus": "Erro ao verificar status da geração.",
+        "startGeneration": "Erro ao iniciar geração."
+      }
+    },
+    "preview": {
+      "alt": "Imagem gerada"
+    },
+    "buttons": {
+      "duplicatePanel": "Duplicar painel",
+      "enhanceOn": "MELHORANDO...",
+      "enhanceOff": "MELHORAR PROMPT",
+      "checking": "VERIFICANDO...",
+      "checkGeneration": "VERIFICAR GERAÇÃO",
+      "stillProcessing": "Ainda processando...",
+      "stillProcessingDesc": "A geração continua em andamento.",
+      "errorCheck": "Erro ao verificar status.",
+      "tryAgain": "Tente novamente.",
+      "fallbackError": "Erro ao gerar."
+    }
+  }
+}

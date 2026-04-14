@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 
 // ─── Proportion → CSS aspect-ratio ────────────────────────────────────────────
 export const PROPORTION_ASPECT: Record<string, string> = {
@@ -66,6 +67,7 @@ export function GenerationPreview({
   proportion,
   children,
 }: GenerationPreviewProps) {
+  const t = useTranslations('editorChrome.preview');
   const hasMedia = !!(generatedImageUrl || renderMedia);
 
   // Only render something when actively generating or media exists
@@ -142,7 +144,7 @@ export function GenerationPreview({
             <img
               ref={imageRef}
               src={generatedImageUrl ?? undefined}
-              alt="Imagem gerada"
+              alt={t('alt')}
               className="nopan nodrag h-full w-full object-cover cursor-pointer"
               draggable="true"
               onClick={onImageClick}

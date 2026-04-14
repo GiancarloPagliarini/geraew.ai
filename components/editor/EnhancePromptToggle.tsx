@@ -1,6 +1,7 @@
 'use client';
 
 import { Loader2, Sparkles } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface EnhancePromptToggleProps {
   enabled: boolean;
@@ -17,6 +18,7 @@ export function EnhancePromptToggle({
   disabled = false,
   icon,
 }: EnhancePromptToggleProps) {
+  const t = useTranslations('editorChrome.buttons');
   return (
     <button
       onClick={() => onToggle(!enabled)}
@@ -37,7 +39,7 @@ export function EnhancePromptToggle({
           className="text-[10px] font-bold tracking-[0.12em]"
           style={{ color: enabled ? '#a2dd00' : 'rgba(243,240,237,0.4)' }}
         >
-          {isEnhancing ? 'MELHORANDO...' : 'MELHORAR PROMPT'}
+          {isEnhancing ? t('enhanceOn') : t('enhanceOff')}
         </span>
         {isEnhancing && <Loader2 className="h-3 w-3 animate-spin text-[#a2dd00]" />}
       </div>

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
 import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
@@ -36,17 +37,6 @@ type GenState = 'idle' | 'generating' | 'done';
 
 const RADIUS = 36;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-
-const LOADING_MESSAGES = [
-  'ANALISANDO MOVIMENTO...',
-  'SUBSTITUINDO SUJEITO...',
-  'RENDERIZANDO FRAMES...',
-  'APLICANDO MOTION CONTROL...',
-  'SINCRONIZANDO ANIMAÇÃO...',
-  'PROCESSANDO VÍDEO...',
-  'AQUECENDO OS NEURÔNIOS...',
-  'QUASE PRONTO...',
-];
 
 const MAX_VIDEO_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -82,6 +72,9 @@ interface MotionControlPanelProps {
 }
 
 export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionControlPanelProps) {
+  const t = useTranslations('editorPanels.motionControl');
+  const tCommon = useTranslations('editorPanels.common');
+  const LOADING_MESSAGES = t.raw('loadingMessages') as string[];
   const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating } = useEditor();
   const { accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
@@ -178,12 +171,12 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
   // Document title
   useEffect(() => {
     if (genState === 'generating') {
-      document.title = 'Geraew AI - Copiando movimentos';
+      document.title = t('docTitleGenerating');
     } else {
       document.title = 'Geraew AI';
     }
     return () => { document.title = 'Geraew AI'; };
-  }, [genState]);
+  }, [genState, t]);
 
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const msgIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -204,7 +197,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
       clearPollTimer();
       clearSSE();
       setGenState('idle');
-      setErrorMsg(showGenerationError({ errorMessage: gen.errorMessage, fallback: 'Erro ao gerar vídeo.' }));
+      setErrorMsg(showGenerationError({ errorMessage: gen.errorMessage, fallback: tCommon('errors.generateVideo') }));
       refetchCredits();
     },
   });
@@ -233,12 +226,12 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
     e.target.value = '';
 
     if (file.size > MAX_VIDEO_SIZE) {
-      toast.error('Vídeo deve ter no máximo 10MB.');
+      toast.error(tCommon('errors.videoMax10MB'));
       return;
     }
 
     if (!file.type.startsWith('video/')) {
-      toast.error('Formato de vídeo inválido.');
+      toast.error(tCommon('errors.invalidVideoFormat'));
       return;
     }
 
@@ -249,7 +242,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
       const dataUrl = ev.target?.result as string;
       const base64 = dataUrl.split(',')[1];
       setVideoFile({ base64, mime_type: file.type, name: file.name });
-      toast.success('Vídeo adicionado!');
+      toast.success(t('toasts.videoAdded'));
     };
     reader.readAsDataURL(file);
   }
@@ -260,12 +253,12 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
     e.target.value = '';
 
     if (file.size > MAX_IMAGE_SIZE) {
-      toast.error('Imagem deve ter no máximo 10MB.');
+      toast.error(tCommon('errors.imageMax10MB'));
       return;
     }
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Formato de imagem inválido.');
+      toast.error(tCommon('errors.invalidImageFormat'));
       return;
     }
 
@@ -274,7 +267,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
       const rawDataUrl = ev.target?.result as string;
       const { dataUrl, mimeType } = await compressImage(rawDataUrl, file.type);
       setImageFile({ base64: dataUrl.split(',')[1], mime_type: mimeType, preview: dataUrl });
-      toast.success('Imagem adicionada!');
+      toast.success(t('toasts.imageAdded'));
     };
     reader.readAsDataURL(file);
   }
@@ -302,14 +295,14 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
 
     if (videoF && !videoFile) {
       if (videoF.size > MAX_VIDEO_SIZE) {
-        toast.error('Vídeo deve ter no máximo 10MB.');
+        toast.error(tCommon('errors.videoMax10MB'));
       } else {
         readVideoDuration(videoF).then(setVideoDuration);
         const reader = new FileReader();
         reader.onload = (ev) => {
           const dataUrl = ev.target?.result as string;
           setVideoFile({ base64: dataUrl.split(',')[1], mime_type: videoF.type, name: videoF.name });
-          toast.success('Vídeo adicionado!');
+          toast.success(t('toasts.videoAdded'));
         };
         reader.readAsDataURL(videoF);
       }
@@ -317,14 +310,14 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
 
     if (imageF && !imageFile) {
       if (imageF.size > MAX_IMAGE_SIZE) {
-        toast.error('Imagem deve ter no máximo 10MB.');
+        toast.error(tCommon('errors.imageMax10MB'));
       } else {
         const reader = new FileReader();
         reader.onload = async (ev) => {
           const rawDataUrl = ev.target?.result as string;
           const { dataUrl, mimeType } = await compressImage(rawDataUrl, imageF.type);
           setImageFile({ base64: dataUrl.split(',')[1], mime_type: mimeType, preview: dataUrl });
-          toast.success('Imagem adicionada!');
+          toast.success(t('toasts.imageAdded'));
         };
         reader.readAsDataURL(imageF);
       }
@@ -340,7 +333,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
           const rawMime = blob.type || 'image/jpeg';
           const { dataUrl, mimeType } = await compressImage(rawDataUrl, rawMime);
           setImageFile({ base64: dataUrl.split(',')[1], mime_type: mimeType, preview: dataUrl });
-          toast.success('Imagem adicionada!');
+          toast.success(t('toasts.imageAdded'));
         };
         reader.readAsDataURL(blob);
       }).catch(() => { });
@@ -409,14 +402,14 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
           clearProgressTimer();
           clearMsgTimer();
           setGenState('idle');
-          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: 'Erro ao gerar vídeo.' }));
+          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: tCommon('errors.generateVideo') }));
           refetchCredits();
         }
       } catch {
         clearPollTimer();
         clearProgressTimer();
         setGenState('idle');
-        setErrorMsg(showGenerationError({ fallback: 'Erro ao verificar status da geração.' }));
+        setErrorMsg(showGenerationError({ fallback: tCommon('errors.checkStatus') }));
       }
     }, 3000);
   }
@@ -464,7 +457,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
           clearPollTimer();
           clearSSE();
           setGenState('idle');
-          setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: 'Erro ao gerar vídeo.' }));
+          setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: tCommon('errors.generateVideo') }));
           refetchCredits();
         },
         onError: () => {
@@ -475,7 +468,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
       clearProgressTimer();
       clearMsgTimer();
       setGenState('idle');
-      setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: 'Erro ao iniciar geração.' }));
+      setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: tCommon('errors.startGeneration') }));
     }
   }
 
@@ -531,7 +524,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
           <div className="flex items-center gap-2">
             <AudioWaveform className="h-4 w-4 text-[#a2dd00]" />
             <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
-              COPIAR MOVIMENTOS
+              {t('header')}
             </span>
           </div>
           <div className="flex items-center gap-1">
@@ -580,17 +573,17 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
                       className="flex h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/8 bg-[#1e494b]/20 text-xs font-semibold text-[#f3f0ed]/60 transition-all hover:border-[#a2dd00]/30 hover:text-[#a2dd00]"
                     >
                       <Download className="h-3.5 w-3.5" />
-                      Download
+                      {tCommon('download')}
                     </a>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={4}>Baixar vídeo</TooltipContent>
+                  <TooltipContent side="bottom" sideOffset={4}>{tCommon('downloadVideo')}</TooltipContent>
                 </Tooltip>
               </div>
               <button
                 onClick={handleDiscard}
                 className="flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/6 text-xs font-semibold text-[#f3f0ed]/40 transition-all hover:border-[#f3f0ed]/15 hover:text-[#f3f0ed]/70"
               >
-                Gerar outro
+                {tCommon('generateAnother')}
               </button>
             </div>
           )}
@@ -601,7 +594,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
               {/* Video upload */}
               <div>
                 <label className="mb-1.5 block text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
-                  VÍDEO DE REFERÊNCIA
+                  {t('labels.referenceVideo')}
                 </label>
                 {videoFile ? (
                   <div className="flex items-center gap-2 rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/15 px-3 py-2.5">
@@ -620,7 +613,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/[0.12] bg-[#1e494b]/10 px-3 py-4 text-xs text-[#f3f0ed]/40 transition-all hover:border-[#a2dd00]/30 hover:text-[#a2dd00]/70"
                   >
                     <Video className="h-4 w-4" />
-                    Clique ou arraste um vídeo (max 10MB)
+                    {t('uploads.video')}
                   </button>
                 )}
                 <input
@@ -635,7 +628,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
               {/* Image upload */}
               <div>
                 <label className="mb-1.5 block text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
-                  IMAGEM DE SUBSTITUIÇÃO
+                  {t('labels.replacementImage')}
                 </label>
                 {imageFile ? (
                   <div className="relative overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08]">
@@ -654,7 +647,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/[0.12] bg-[#1e494b]/10 px-3 py-4 text-xs text-[#f3f0ed]/40 transition-all hover:border-[#a2dd00]/30 hover:text-[#a2dd00]/70"
                   >
                     <Image className="h-4 w-4" />
-                    Clique ou arraste uma imagem (max 10MB)
+                    {t('uploads.image')}
                   </button>
                 )}
                 <input
@@ -669,7 +662,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
               {/* Resolution */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                  RESOLUÇÃO
+                  {t('labels.resolution')}
                 </label>
                 <Select value={resolution} onValueChange={setResolution}>
                   <SelectTrigger className="h-9 w-full rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 text-xs text-[#f3f0ed]/80 outline-none transition-all focus:border-[#a2dd00]/40 focus:ring-0 data-placeholder:text-[#f3f0ed]/35 [&>svg]:text-[#f3f0ed]/30">
@@ -692,20 +685,20 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
                     <div className="flex items-center gap-1.5">
                       <Coins className="h-3 w-3 text-[#a2dd00]" />
                       <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">
-                        Custo estimado
+                        {tCommon('estimatedCost')}
                       </span>
                     </div>
                     {estimateLoading ? (
                       <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
                     ) : estimate ? (
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
+                        <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} {tCommon('credits')}</span>
                         <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
                       </div>
                     ) : null}
                   </div>
                   <p className="text-[10px] text-[#f3f0ed]/30">
-                    {videoDuration}s × {resolution === '1080p' ? '100' : '70'} créditos/s
+                    {t('creditsPerSecond', { duration: videoDuration, rate: resolution === '1080p' ? '100' : '70' })}
                   </p>
                 </div>
               )}
@@ -721,11 +714,11 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
                 }}
               >
                 <Wand2 className="h-4 w-4" />
-                GERAR
+                {tCommon('generate')}
               </button>
 
               <p className="text-center text-[10px] text-[#f3f0ed]/25">
-                Copia os movimentos do vídeo para a imagem fornecida
+                {t('footnote')}
               </p>
             </>
           )}

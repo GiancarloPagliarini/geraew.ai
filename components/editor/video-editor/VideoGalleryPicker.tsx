@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { Loader2, Plus, X } from 'lucide-react';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { api, GalleryItem } from '@/lib/api';
 
 export function VideoGalleryPicker({
@@ -14,6 +15,7 @@ export function VideoGalleryPicker({
   onSelect: (gen: GalleryItem) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations('editor.videoDialog.gallery');
   const scrollRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -47,7 +49,7 @@ export function VideoGalleryPicker({
     <div className="shrink-0 rounded-xl border border-[#f3f0ed]/10 bg-[#151b1d] overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-[#f3f0ed]/7">
         <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/50">
-          ESCOLHER VIDEO DA GALERIA
+          {t('heading')}
         </span>
         <button
           onClick={onClose}
@@ -70,7 +72,7 @@ export function VideoGalleryPicker({
           </div>
         ) : items.length === 0 ? (
           <p className="text-center text-[10px] text-[#f3f0ed]/30 py-6">
-            Nenhum video na galeria.
+            {t('empty')}
           </p>
         ) : (
           <>

@@ -24,6 +24,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import {
   api,
@@ -54,6 +55,7 @@ interface VideoEditorDialogProps {
 // ─── component ────────────────────────────────────────────────────────────────
 
 export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps) {
+  const t = useTranslations('editor.videoDialog');
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
 
@@ -436,10 +438,10 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
 
   function statusBadge(status: VideoProject['status']) {
     const map: Record<string, { label: string; cls: string }> = {
-      DRAFT: { label: 'Rascunho', cls: 'bg-[#f3f0ed]/10 text-[#f3f0ed]/50' },
-      PROCESSING: { label: 'Processando', cls: 'bg-yellow-500/15 text-yellow-400' },
-      COMPLETED: { label: 'Concluido', cls: 'bg-[#a2dd00]/15 text-[#a2dd00]' },
-      FAILED: { label: 'Falhou', cls: 'bg-red-500/15 text-red-400' },
+      DRAFT: { label: t('status.draft'), cls: 'bg-[#f3f0ed]/10 text-[#f3f0ed]/50' },
+      PROCESSING: { label: t('status.processing'), cls: 'bg-yellow-500/15 text-yellow-400' },
+      COMPLETED: { label: t('status.completed'), cls: 'bg-[#a2dd00]/15 text-[#a2dd00]' },
+      FAILED: { label: t('status.failed'), cls: 'bg-red-500/15 text-red-400' },
     };
     const s = map[status] ?? map.DRAFT;
     return (
@@ -459,12 +461,12 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#a2dd00]/10 border border-[#a2dd00]/20">
             <Construction className="h-6 w-6 text-[#a2dd00]" />
           </div>
-          <h3 className="text-base font-bold text-[#f3f0ed]/90">Em construção</h3>
+          <h3 className="text-base font-bold text-[#f3f0ed]/90">{t('construction.title')}</h3>
           <p className="text-sm text-[#f3f0ed]/40 leading-relaxed max-w-[220px]">
-            O editor de vídeo está sendo desenvolvido e em breve estará disponível.
+            {t('construction.description')}
           </p>
           <div className="mt-1 flex items-center gap-2 rounded-full border border-[#a2dd00]/30 bg-[#a2dd00]/5 px-3 py-1">
-            <span className="text-[11px] font-medium text-[#a2dd00]/70">Em breve</span>
+            <span className="text-[11px] font-medium text-[#a2dd00]/70">{t('construction.badge')}</span>
             <div className="flex items-center gap-0.5">
               <span className="h-1 w-1 rounded-full bg-[#a2dd00]/70 animate-bounce [animation-delay:0ms]" />
               <span className="h-1 w-1 rounded-full bg-[#a2dd00]/70 animate-bounce [animation-delay:150ms]" />
@@ -476,7 +478,7 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
           onClick={() => onOpenChange(false)}
           className="mt-2 text-xs text-[#f3f0ed]/30 hover:text-[#f3f0ed]/60 transition-colors underline underline-offset-2"
         >
-          Fechar
+          {t('construction.close')}
         </button>
       </div>
       {/* Header */}
@@ -488,7 +490,7 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
               className="flex items-center gap-1.5 text-sm font-medium text-[#a2dd00] hover:text-[#a2dd00]/80 transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
-              Projetos
+              {t('header.projectsBack')}
             </button>
           ) : (
             <>
@@ -496,8 +498,8 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
                 <Film className="h-3.5 w-3.5 text-[#a2dd00]" />
               </div>
               <div>
-                <h2 className="text-sm font-bold text-[#f3f0ed]/60">Editor de Vídeo</h2>
-                <p className="text-xs text-[#f3f0ed]/30">Crie e gerencie seus projetos</p>
+                <h2 className="text-sm font-bold text-[#f3f0ed]/60">{t('header.title')}</h2>
+                <p className="text-xs text-[#f3f0ed]/30">{t('header.subtitle')}</p>
               </div>
             </>
           )}
@@ -526,7 +528,7 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
                     createProjectMutation.mutate(newProjectName.trim());
                   }
                 }}
-                placeholder="Nome do novo projeto..."
+                placeholder={t('projects.placeholder')}
                 className="flex-1 rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40"
               />
               <button
@@ -541,7 +543,7 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
                 ) : (
                   <Plus className="h-3.5 w-3.5" />
                 )}
-                Criar
+                {t('projects.create')}
               </button>
             </div>
 
@@ -555,7 +557,7 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
             ) : projects.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-3 py-12 text-[#f3f0ed]/30">
                 <Film className="h-10 w-10" />
-                <p className="text-sm">Nenhum projeto ainda</p>
+                <p className="text-sm">{t('projects.empty')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -602,7 +604,7 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
                       <div className="flex items-center gap-2">
                         {statusBadge(p.status)}
                         <span className="text-[10px] text-[#f3f0ed]/30">
-                          {p.clips?.length ?? 0} clipe{(p.clips?.length ?? 0) !== 1 ? 's' : ''}
+                          {t('projects.clipsCount', { count: p.clips?.length ?? 0 })}
                         </span>
                       </div>
                     </div>
@@ -713,10 +715,10 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
             <div className="shrink-0">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                  TIMELINE
+                  {t('timeline.heading')}
                 </span>
                 <span className="text-[10px] text-[#f3f0ed]/30">
-                  {clips.length} clipe{clips.length !== 1 ? 's' : ''} · {formatMs(totalMs)}
+                  {t('timeline.summary', { count: clips.length, duration: formatMs(totalMs) })}
                 </span>
               </div>
 
@@ -845,7 +847,7 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
                 {/* Empty state */}
                 {clips.length === 0 && (
                   <div className="flex-1 flex items-center justify-center text-[#f3f0ed]/20 text-xs">
-                    Adicione clipes para comecar
+                    {t('timeline.empty')}
                   </div>
                 )}
               </div>
@@ -872,7 +874,7 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
               <div className="flex items-center gap-2">
                 <Clock className="h-3.5 w-3.5 text-[#f3f0ed]/30" />
                 <span className="text-xs text-[#f3f0ed]/50">
-                  Duracao total: <span className="text-[#f3f0ed]/80 font-medium">{formatMs(totalMs)}</span>
+                  {t('footer.totalDuration')} <span className="text-[#f3f0ed]/80 font-medium">{formatMs(totalMs)}</span>
                 </span>
               </div>
 
@@ -888,12 +890,12 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
                     className="flex items-center gap-1.5 rounded-lg bg-[#f3f0ed]/10 px-3 py-2 text-xs font-medium text-[#f3f0ed]/70 transition-all hover:bg-[#f3f0ed]/15"
                   >
                     <Download className="h-3.5 w-3.5" />
-                    Baixar
+                    {t('footer.download')}
                   </button>
                 )}
 
                 {renderStatus === 'error' && (
-                  <span className="text-[10px] text-red-400 mr-2">Erro ao renderizar</span>
+                  <span className="text-[10px] text-red-400 mr-2">{t('footer.renderError')}</span>
                 )}
 
                 <button
@@ -904,12 +906,12 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
                   {renderStatus === 'rendering' ? (
                     <>
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Renderizando...
+                      {t('footer.rendering')}
                     </>
                   ) : (
                     <>
                       <Play className="h-3.5 w-3.5" />
-                      Renderizar
+                      {t('footer.render')}
                     </>
                   )}
                 </button>
@@ -1111,6 +1113,7 @@ function VideoGalleryPicker({
   onSelect: (gen: GalleryItem) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations('editor.videoDialog.gallery');
   const scrollRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -1144,7 +1147,7 @@ function VideoGalleryPicker({
     <div className="shrink-0 rounded-xl border border-[#f3f0ed]/10 bg-[#151b1d] overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-[#f3f0ed]/7">
         <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/50">
-          ESCOLHER VIDEO DA GALERIA
+          {t('heading')}
         </span>
         <button
           onClick={onClose}
@@ -1167,7 +1170,7 @@ function VideoGalleryPicker({
           </div>
         ) : items.length === 0 ? (
           <p className="text-center text-[10px] text-[#f3f0ed]/30 py-6">
-            Nenhum video na galeria.
+            {t('empty')}
           </p>
         ) : (
           <>
