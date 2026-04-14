@@ -74,9 +74,6 @@ export function TopNavbar() {
             </div>
           ) : user ? (
             <div className="navbar-fade-in flex items-center gap-1.5 sm:gap-2">
-              {/* Locale switcher — hidden on mobile */}
-              <LocaleSwitcher className="hidden sm:flex" />
-
               {/* Credit badge */}
               <div className="flex items-center gap-1.5 rounded-full border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 px-2 py-1.5 sm:px-3">
                 <Coins className="h-3.5 w-3.5 text-[#a2dd00]" />
@@ -202,9 +199,9 @@ export function TopNavbar() {
             {menuOpen && (
               /* Desktop dropdown only */
               <div className="absolute right-0 top-full mt-2 hidden w-56 overflow-hidden rounded-xl border border-[#f3f0ed]/8 bg-[#1a2123] shadow-2xl sm:block">
-                <div className="border-b border-[#f3f0ed]/6 px-4 py-3">
-                  <p className="text-xs font-semibold text-[#f3f0ed]">{user?.name || t('defaultUser')}</p>
-                  <p className="mt-0.5 text-[11px] text-[#f3f0ed]/40">{user?.email}</p>
+                <div className="border-b border-landing-text/6 px-4 py-3">
+                  <p className="text-xs font-semibold text-landing-text">{user?.name || t('defaultUser')}</p>
+                  <p className="mt-0.5 text-[11px] text-landing-text/40">{user?.email}</p>
                 </div>
                 <div className="py-1.5">
                   <DropdownItem icon={User} label={tMenu('profile')} onClick={() => { setMenuOpen(false); router.push('/perfil'); }} />
@@ -212,11 +209,11 @@ export function TopNavbar() {
                   <DropdownItem icon={BadgePercent} label={tMenu('plans')} onClick={() => { setMenuOpen(false); setPlansModalOpen(true); }} />
                   <DropdownItem icon={BatteryCharging} label={tMenu('usage')} onClick={() => { setMenuOpen(false); router.push('/uso'); }} />
                 </div>
-                <div className="flex items-center justify-center border-t border-[#f3f0ed]/6 px-4 py-2">
-                  <LocaleSwitcher />
-                </div>
-                <div className="border-t border-[#f3f0ed]/6 py-1.5">
-                  <DropdownItem icon={LogOut} label={tMenu('logout')} danger onClick={() => { setMenuOpen(false); handleLogout(); }} />
+                <div className="border-t border-landing-text/6 flex items-center pr-3">
+                  <div className="flex-1 min-w-0">
+                    <DropdownItem icon={LogOut} label={tMenu('logout')} danger onClick={() => { setMenuOpen(false); handleLogout(); }} />
+                  </div>
+                  <LocaleSwitcher compact />
                 </div>
               </div>
             )}
@@ -274,12 +271,12 @@ export function TopNavbar() {
         <div className="fixed inset-0 z-200 sm:hidden">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
           <aside ref={asideRef} className="absolute right-0 top-0 flex h-full w-72 flex-col border-l border-[#f3f0ed]/8 bg-[#1a2123]">
-            <div className="flex items-center justify-between border-b border-[#f3f0ed]/6 px-4 py-4">
+            <div className="flex items-center justify-between border-b border-landing-text/6 px-4 py-4">
               <div>
-                <p className="text-sm font-semibold text-[#f3f0ed]">{user?.name || t('defaultUser')}</p>
-                <p className="mt-0.5 text-[11px] text-[#f3f0ed]/40">{user?.email}</p>
+                <p className="text-sm font-semibold text-landing-text">{user?.name || t('defaultUser')}</p>
+                <p className="mt-0.5 text-[11px] text-landing-text/40">{user?.email}</p>
               </div>
-              <button onClick={() => setMenuOpen(false)} className="flex h-7 w-7 items-center justify-center rounded-full text-[#f3f0ed]/40 transition-colors hover:bg-[#f3f0ed]/6 hover:text-[#f3f0ed]">
+              <button onClick={() => setMenuOpen(false)} className="flex h-7 w-7 items-center justify-center rounded-full text-landing-text/40 transition-colors hover:bg-landing-text/6 hover:text-landing-text">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -289,11 +286,11 @@ export function TopNavbar() {
               <DropdownItem icon={BadgePercent} label={tMenu('plans')} onClick={() => { setMenuOpen(false); setPlansModalOpen(true); }} />
               <DropdownItem icon={BatteryCharging} label={tMenu('usage')} onClick={() => { setMenuOpen(false); router.push('/uso'); }} />
             </div>
-            <div className="flex items-center justify-center border-t border-[#f3f0ed]/6 px-4 py-3">
-              <LocaleSwitcher />
-            </div>
-            <div className="border-t border-[#f3f0ed]/6 py-2">
-              <DropdownItem icon={LogOut} label={tMenu('logout')} danger onClick={() => { setMenuOpen(false); handleLogout(); }} />
+            <div className="border-t border-landing-text/6 flex items-center pr-4 py-1">
+              <div className="flex-1 min-w-0">
+                <DropdownItem icon={LogOut} label={tMenu('logout')} danger onClick={() => { setMenuOpen(false); handleLogout(); }} />
+              </div>
+              <LocaleSwitcher compact />
             </div>
           </aside>
         </div>
