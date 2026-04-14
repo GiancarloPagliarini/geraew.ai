@@ -310,7 +310,7 @@
         "name": "NOME",
         "email": "EMAIL",
         "password": "SENHA",
-        "phone": "TELEFONE (WHATSAPP)",
+        "phone": "TELEFONE ",
         "newPassword": "NOVA SENHA",
         "confirmPassword": "CONFIRMAR SENHA"
       },
@@ -418,7 +418,7 @@
       "successTitle": "Telefone verificado!",
       "successBody": "Seus créditos gratuitos foram liberados. Bom uso!",
       "toastSuccess": "Telefone verificado! Seus créditos gratuitos foram liberados.",
-      "phoneLabel": "TELEFONE (WHATSAPP)",
+      "phoneLabel": "TELEFONE",
       "phonePlaceholder": "(11) 99999-8888"
     }
   },
@@ -574,7 +574,9 @@
           "subsections": [
             {
               "title": "2.1. Dados fornecidos pelo usuário",
-              "content": ["Podemos coletar os seguintes dados quando você se cadastra ou utiliza a Plataforma:"],
+              "content": [
+                "Podemos coletar os seguintes dados quando você se cadastra ou utiliza a Plataforma:"
+              ],
               "list": [
                 "Nome completo",
                 "Endereço de e-mail",
@@ -585,7 +587,9 @@
             },
             {
               "title": "2.2. Dados coletados automaticamente",
-              "content": ["Ao acessar a Plataforma, coletamos automaticamente:"],
+              "content": [
+                "Ao acessar a Plataforma, coletamos automaticamente:"
+              ],
               "list": [
                 "Endereço IP e dados de geolocalização aproximada",
                 "Tipo de navegador, sistema operacional e dispositivo utilizado",
@@ -604,7 +608,9 @@
         },
         {
           "title": "3. Finalidades do Tratamento de Dados",
-          "content": ["Utilizamos seus dados pessoais para as seguintes finalidades:"],
+          "content": [
+            "Utilizamos seus dados pessoais para as seguintes finalidades:"
+          ],
           "list": [
             "Criação e gerenciamento de sua conta na Plataforma",
             "Prestação e melhoria dos serviços de geração de imagens e vídeos com IA",
@@ -619,17 +625,33 @@
         },
         {
           "title": "4. Bases Legais para o Tratamento",
-          "content": ["O tratamento dos seus dados pessoais fundamenta-se nas seguintes bases legais previstas na LGPD:"],
+          "content": [
+            "O tratamento dos seus dados pessoais fundamenta-se nas seguintes bases legais previstas na LGPD:"
+          ],
           "highlights": [
-            { "label": "Consentimento", "desc": "quando você autoriza expressamente o tratamento (ex.: marketing)" },
-            { "label": "Execução de contrato", "desc": "para prestação dos serviços contratados" },
-            { "label": "Legítimo interesse", "desc": "para melhoria da Plataforma e prevenção de fraudes" },
-            { "label": "Cumprimento de obrigação legal", "desc": "quando exigido por lei ou regulamentação" }
+            {
+              "label": "Consentimento",
+              "desc": "quando você autoriza expressamente o tratamento (ex.: marketing)"
+            },
+            {
+              "label": "Execução de contrato",
+              "desc": "para prestação dos serviços contratados"
+            },
+            {
+              "label": "Legítimo interesse",
+              "desc": "para melhoria da Plataforma e prevenção de fraudes"
+            },
+            {
+              "label": "Cumprimento de obrigação legal",
+              "desc": "quando exigido por lei ou regulamentação"
+            }
           ]
         },
         {
           "title": "5. Compartilhamento de Dados",
-          "content": ["Seus dados pessoais poderão ser compartilhados com:"],
+          "content": [
+            "Seus dados pessoais poderão ser compartilhados com:"
+          ],
           "list": [
             "Provedores de serviços de pagamento para processamento de transações financeiras",
             "Provedores de infraestrutura e hospedagem em nuvem",
@@ -659,7 +681,9 @@
         },
         {
           "title": "8. Cookies e Tecnologias de Rastreamento",
-          "content": ["A Plataforma utiliza cookies e tecnologias similares para:"],
+          "content": [
+            "A Plataforma utiliza cookies e tecnologias similares para:"
+          ],
           "list": [
             "Manter sua sessão ativa e lembrar suas preferências",
             "Analisar o uso da Plataforma e melhorar a experiência do usuário",
@@ -669,7 +693,9 @@
         },
         {
           "title": "9. Direitos do Titular dos Dados",
-          "content": ["Em conformidade com a LGPD, você tem direito a:"],
+          "content": [
+            "Em conformidade com a LGPD, você tem direito a:"
+          ],
           "list": [
             "Confirmação da existência de tratamento de seus dados pessoais",
             "Acesso aos seus dados pessoais",

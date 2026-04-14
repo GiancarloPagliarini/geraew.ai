@@ -310,7 +310,7 @@
         "name": "NAME",
         "email": "EMAIL",
         "password": "PASSWORD",
-        "phone": "PHONE (WHATSAPP)",
+        "phone": "PHONE",
         "newPassword": "NEW PASSWORD",
         "confirmPassword": "CONFIRM PASSWORD"
       },
@@ -418,7 +418,7 @@
       "successTitle": "Phone verified!",
       "successBody": "Your free credits have been unlocked. Enjoy!",
       "toastSuccess": "Phone verified! Your free credits have been unlocked.",
-      "phoneLabel": "PHONE (WHATSAPP)",
+      "phoneLabel": "PHONE",
       "phonePlaceholder": "(11) 99999-8888"
     }
   },
@@ -574,7 +574,9 @@
           "subsections": [
             {
               "title": "2.1. Data provided by the user",
-              "content": ["We may collect the following data when you sign up or use the Platform:"],
+              "content": [
+                "We may collect the following data when you sign up or use the Platform:"
+              ],
               "list": [
                 "Full name",
                 "Email address",
@@ -585,7 +587,9 @@
             },
             {
               "title": "2.2. Data collected automatically",
-              "content": ["When you access the Platform, we automatically collect:"],
+              "content": [
+                "When you access the Platform, we automatically collect:"
+              ],
               "list": [
                 "IP address and approximate geolocation data",
                 "Browser type, operating system, and device used",
@@ -604,7 +608,9 @@
         },
         {
           "title": "3. Purposes of Data Processing",
-          "content": ["We use your personal data for the following purposes:"],
+          "content": [
+            "We use your personal data for the following purposes:"
+          ],
           "list": [
             "Creation and management of your account on the Platform",
             "Provision and improvement of AI image and video generation services",
@@ -619,17 +625,33 @@
         },
         {
           "title": "4. Legal Bases for Processing",
-          "content": ["The processing of your personal data is based on the following legal grounds provided by the LGPD:"],
+          "content": [
+            "The processing of your personal data is based on the following legal grounds provided by the LGPD:"
+          ],
           "highlights": [
-            { "label": "Consent", "desc": "when you expressly authorize the processing (e.g., marketing)" },
-            { "label": "Contract performance", "desc": "to provide the contracted services" },
-            { "label": "Legitimate interest", "desc": "to improve the Platform and prevent fraud" },
-            { "label": "Compliance with legal obligation", "desc": "when required by law or regulation" }
+            {
+              "label": "Consent",
+              "desc": "when you expressly authorize the processing (e.g., marketing)"
+            },
+            {
+              "label": "Contract performance",
+              "desc": "to provide the contracted services"
+            },
+            {
+              "label": "Legitimate interest",
+              "desc": "to improve the Platform and prevent fraud"
+            },
+            {
+              "label": "Compliance with legal obligation",
+              "desc": "when required by law or regulation"
+            }
           ]
         },
         {
           "title": "5. Data Sharing",
-          "content": ["Your personal data may be shared with:"],
+          "content": [
+            "Your personal data may be shared with:"
+          ],
           "list": [
             "Payment service providers for processing financial transactions",
             "Infrastructure and cloud hosting providers",
@@ -659,7 +681,9 @@
         },
         {
           "title": "8. Cookies and Tracking Technologies",
-          "content": ["The Platform uses cookies and similar technologies to:"],
+          "content": [
+            "The Platform uses cookies and similar technologies to:"
+          ],
           "list": [
             "Keep your session active and remember your preferences",
             "Analyze Platform usage and improve the user experience",
@@ -669,7 +693,9 @@
         },
         {
           "title": "9. Data Subject Rights",
-          "content": ["In accordance with the LGPD, you have the right to:"],
+          "content": [
+            "In accordance with the LGPD, you have the right to:"
+          ],
           "list": [
             "Confirmation of the existence of processing of your personal data",
             "Access to your personal data",
