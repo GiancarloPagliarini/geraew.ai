@@ -1,8 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { X, Upload, Loader2, Copy, Image as ImageIcon } from 'lucide-react';
+import { X, Upload, Loader2, Copy, Image as ImageIcon, Lock } from 'lucide-react';
 import { toast } from 'sonner';
+import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
+import { useLoginModal } from '@/lib/login-modal-context';
 
 interface Props {
   open: boolean;
@@ -13,6 +16,8 @@ const MAX_BYTES = 5 * 1024 * 1024;
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
 
 export function ImageToPromptDialog({ open, onOpenChange }: Props) {
+  const { user, accessToken } = useAuth();
+  const { openLoginModal } = useLoginModal();
   const [mounted, setMounted] = useState(false);
   const [closing, setClosing] = useState(false);
   const [imageData, setImageData] = useState<string | null>(null);
@@ -53,19 +58,14 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
 
   const analyze = async () => {
     if (!imageData) return;
+    if (!user || !accessToken) { openLoginModal({ mode: 'login' }); return; }
     setLoading(true); setResult(null);
     try {
-      const res = await fetch('/api/v1/prompt-agent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: imageData }),
-      });
-      const data = await res.json();
-      if (!res.ok) { toast.error(data.error || 'Falha na análise'); return; }
+      const data = await api.promptAgent.analyzeImage(accessToken, imageData);
       setResult(data);
       setTab('prompt');
     } catch (err: any) {
-      toast.error(err?.message || 'Erro de rede');
+      toast.error(err?.message || 'Falha na análise');
     } finally {
       setLoading(false);
     }
@@ -134,7 +134,7 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
             disabled={!imageData || loading}
             className="flex-1 h-9 rounded-lg bg-[#a2dd00] text-black text-xs font-bold tracking-wide hover:bg-[#b6f000] disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
-            {loading ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> ANALISANDO...</>) : 'ANALISAR IMAGEM'}
+            {loading ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> ANALISANDO...</>) : !user ? (<><Lock className="h-3.5 w-3.5" /> ENTRAR PARA ANALISAR</>) : 'ANALISAR (5 CRÉDITOS)'}
           </button>
           {imageData && !loading && (
             <button

@@ -1125,6 +1125,19 @@ export const api = {
     },
   },
 
+  promptAgent: {
+    analyzeImage(accessToken: string, image: string) {
+      return authRequest<{ json: any; compiledPrompt: string; creditsUsed: number }>(
+        '/api/v1/prompt-agent/analyze-image',
+        accessToken,
+        {
+          method: 'POST',
+          body: JSON.stringify({ image }),
+        },
+      );
+    },
+  },
+
   admin: {
     stats(accessToken: string) {
       return authRequest<AdminStats>('/api/v1/admin/stats', accessToken);
