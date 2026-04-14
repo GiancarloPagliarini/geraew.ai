@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { api, ApiError } from '@/lib/api';
 import { useLoginModal } from '@/lib/login-modal-context';
+import PhoneInput, { isValidPhoneNumber, type Country } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 const slides = [
   {
@@ -71,7 +73,9 @@ function LoginModalContent() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState<string | undefined>(undefined);
+  const locale = useLocale();
+  const defaultCountry: Country = locale === 'pt-BR' ? 'BR' : 'US';
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -225,15 +229,6 @@ function LoginModalContent() {
   }, [isOpen]);
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
-  function formatPhoneDisplay(value: string) {
-    const d = value.replace(/\D/g, '');
-    if (d.length <= 2) return d;
-    if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7, 11)}`;
-  }
-  function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setPhone(e.target.value.replace(/\D/g, '').slice(0, 11));
-  }
 
   function handleDigitChange(index: number, value: string) {
     if (!/^\d*$/.test(value)) return;
@@ -314,7 +309,7 @@ function LoginModalContent() {
         handleLoginSuccess();
       } else {
         const referralCode = document.cookie.match(/(?:^|; )geraew-ref=([^;]*)/)?.[1];
-        await api.auth.register(email, name, password, phone, referralCode || undefined);
+        await api.auth.register(email, name, password, phone ?? '', referralCode || undefined);
         setView('verify');
       }
     } catch (err: unknown) {
@@ -552,13 +547,14 @@ function LoginModalContent() {
                 {mode === 'register' && (
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">{tCommon('labels.phone')}</label>
-                    <div className="relative">
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-white/40 text-sm">
-                        <Phone className="h-3.5 w-3.5" /><span>+55</span>
-                      </div>
-                      <input type="tel" required value={formatPhoneDisplay(phone)} onChange={handlePhoneChange} placeholder={tCommon('placeholders.phone')} className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-[4.5rem] pr-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]" />
-                    </div>
-                    <p className="text-[10px] text-white/25">{tCommon('phoneHelper')}</p>
+                    <PhoneInput
+                      international
+                      defaultCountry={defaultCountry}
+                      value={phone}
+                      onChange={setPhone}
+                      placeholder={tCommon('placeholders.phone')}
+                      className="geraew-phone-input"
+                    />
                   </div>
                 )}
                 {success && <p className="rounded-xl border border-[#a2dd00]/20 bg-[#a2dd00]/10 px-3 py-2 text-xs text-[#a2dd00]">{success}</p>}
@@ -579,7 +575,7 @@ function LoginModalContent() {
                     </button>
                   </div>
                 )}
-                <button type="submit" disabled={loading || (mode === 'register' && phone.length < 10)} className="mt-1 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#a2dd00] font-bold text-[#1a2123] text-sm transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60">
+                <button type="submit" disabled={loading || (mode === 'register' && (!phone || !isValidPhoneNumber(phone)))} className="mt-1 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#a2dd00] font-bold text-[#1a2123] text-sm transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60">
                   {loading ? (
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#1a2123]/30 border-t-[#1a2123]" />
                   ) : mode === 'register' ? (

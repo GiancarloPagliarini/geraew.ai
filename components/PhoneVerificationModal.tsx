@@ -3,25 +3,22 @@
 import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Phone, Loader2, XCircle, CheckCircle, RefreshCw, ArrowRight, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { usePhoneVerification } from '@/lib/phone-verification-context';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api';
-
-function formatPhoneDisplay(value: string) {
-  const digits = value.replace(/\D/g, '');
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
-}
+import PhoneInput, { isValidPhoneNumber, type Country } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 function maskPhone(phone: string) {
-  if (phone.length < 6) return phone;
-  const areaCode = phone.startsWith('55') ? phone.slice(2, 4) : phone.slice(0, 2);
-  const lastFour = phone.slice(-4);
-  return `(${areaCode}) *****-${lastFour}`;
+  // phone comes as E.164 without "+" (backend strips it) — add back and mask
+  const e164 = phone.startsWith('+') ? phone : `+${phone}`;
+  if (e164.length < 6) return e164;
+  const lastFour = e164.slice(-4);
+  const prefix = e164.slice(0, Math.max(3, e164.length - 7));
+  return `${prefix}*****${lastFour}`;
 }
 
 export function PhoneVerificationModal() {
@@ -30,10 +27,13 @@ export function PhoneVerificationModal() {
   const queryClient = useQueryClient();
   const pathname = usePathname();
   const t = useTranslations('auth.phoneVerify');
+  const locale = useLocale();
+  const defaultCountry: Country = locale === 'pt-BR' ? 'BR' : 'US';
 
   // 3 steps: send-sms (has phone, needs to send), phone-input (no phone, Google users), code-input
   const [step, setStep] = useState<'send-sms' | 'phone-input' | 'code-input'>('send-sms');
-  const [phoneInput, setPhoneInput] = useState('');
+  // phoneInput holds E.164 string like "+14155552671" or undefined while typing
+  const [phoneInput, setPhoneInput] = useState<string | undefined>(undefined);
   const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [status, setStatus] = useState<'idle' | 'sending' | 'verifying' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
@@ -42,7 +42,7 @@ export function PhoneVerificationModal() {
   const [showSuccess, setShowSuccess] = useState(true);
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
-  const phoneToVerify = user?.phone || (phoneInput ? `55${phoneInput}` : '');
+  const phoneToVerify = user?.phone || (phoneInput ?? '');
 
   // Set initial step based on whether user has a phone
   useEffect(() => {
@@ -79,11 +79,11 @@ export function PhoneVerificationModal() {
 
   // Send SMS for Google OAuth user who just typed their phone
   async function handleSendSmsNew() {
-    if (!phoneInput || phoneInput.length < 10) return;
+    if (!phoneInput || !isValidPhoneNumber(phoneInput)) return;
     setStatus('sending');
     setErrorMessage('');
     try {
-      await api.auth.sendPhoneVerification(`+55${phoneInput}`);
+      await api.auth.sendPhoneVerification(phoneInput);
       setStep('code-input');
       setStatus('idle');
     } catch (err) {
@@ -96,7 +96,7 @@ export function PhoneVerificationModal() {
     setResendLoading(true);
     setResendSuccess('');
     try {
-      const phone = user?.phone ? `+${user.phone}` : `+55${phoneInput}`;
+      const phone = user?.phone ? `+${user.phone}` : phoneInput!;
       await api.auth.sendPhoneVerification(phone);
       setResendSuccess(t('resendSuccess'));
     } catch (err) {
@@ -111,7 +111,7 @@ export function PhoneVerificationModal() {
     setStatus('verifying');
     setErrorMessage('');
     try {
-      const phone = user?.phone ? `+${user.phone}` : `+55${phoneInput}`;
+      const phone = user?.phone ? `+${user.phone}` : phoneInput!;
       const res = await api.auth.verifyPhone(accessToken, phone, code);
       updateAuth(res);
       queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
@@ -212,7 +212,7 @@ export function PhoneVerificationModal() {
             <p className="text-sm text-white/50">
               {t('willSendTo')}{' '}
               <span className="text-white/70 font-medium">
-                +55 {maskPhone(user.phone || '')}
+                {maskPhone(user.phone || '')}
               </span>
             </p>
 
@@ -246,23 +246,15 @@ export function PhoneVerificationModal() {
               <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">
                 {t('phoneLabel')}
               </label>
-              <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-white/40 text-sm">
-                  <Phone className="h-3.5 w-3.5" />
-                  <span>+55</span>
-                </div>
-                <input
-                  type="tel"
-                  value={formatPhoneDisplay(phoneInput)}
-                  onChange={(e) => {
-                    const d = e.target.value.replace(/\D/g, '').slice(0, 11);
-                    setPhoneInput(d);
-                  }}
-                  placeholder={t('phonePlaceholder')}
-                  className="h-12 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-[4.5rem] pr-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]"
-                  autoFocus
-                />
-              </div>
+              <PhoneInput
+                international
+                defaultCountry={defaultCountry}
+                value={phoneInput}
+                onChange={setPhoneInput}
+                placeholder={t('phonePlaceholder')}
+                className="geraew-phone-input"
+                autoFocus
+              />
             </div>
 
             {status === 'error' && (
@@ -273,7 +265,7 @@ export function PhoneVerificationModal() {
 
             <button
               onClick={handleSendSmsNew}
-              disabled={phoneInput.length < 10 || status === 'sending'}
+              disabled={!phoneInput || !isValidPhoneNumber(phoneInput) || status === 'sending'}
               className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#a2dd00] font-bold text-[#1a2123] text-sm transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
             >
               {status === 'sending' ? (
@@ -294,7 +286,7 @@ export function PhoneVerificationModal() {
             <p className="text-sm text-white/50">
               {t('sentTo')}{' '}
               <span className="text-white/70 font-medium">
-                +55 {maskPhone(phoneToVerify)}
+                {maskPhone(phoneToVerify)}
               </span>
             </p>
 
