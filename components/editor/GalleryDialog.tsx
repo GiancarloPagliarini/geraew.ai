@@ -376,7 +376,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
       const t = setTimeout(() => { setMounted(false); setClosing(false); }, 200);
       return () => clearTimeout(t);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   if (!mounted) return null;
@@ -723,7 +723,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
       </button>
 
       {/* Main player */}
-      <div className="relative w-full rounded-xl overflow-hidden bg-[#f3f0ed]/3 max-h-[50vh] min-h-[40vh]">
+      <div className={`relative w-full rounded-xl overflow-hidden max-h-[50vh] ${!loaded ? 'bg-[#f3f0ed]/3 min-h-[40vh]' : ''}`}>
         {!loaded && <div className="absolute inset-0 animate-pulse bg-[#f3f0ed]/6 rounded-xl" />}
 
         {isVideo ? (
@@ -1083,7 +1083,7 @@ const GalleryItem = memo(function GalleryItem({
       }}
       onClick={() => { if (!folderDropdownOpen) onClick(); }}
       onKeyDown={(e) => { if (!folderDropdownOpen && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick(); } }}
-      className={`group relative aspect-square rounded-xl overflow-hidden bg-[#f3f0ed]/3 ring-2 transition-[box-shadow,ring-color,opacity] cursor-pointer ${pickerSelected
+      className={`group relative aspect-square rounded-xl overflow-hidden ring-2 transition-[box-shadow,ring-color,opacity] cursor-pointer ${pickerSelected
         ? 'ring-[#a2dd00] opacity-100'
         : pickerDisabled
           ? 'ring-transparent opacity-30 cursor-not-allowed'
