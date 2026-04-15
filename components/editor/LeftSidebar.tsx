@@ -11,7 +11,7 @@ import { TrendingProductsDialog } from './TrendingProductsDialog';
 import { TutorialDialog } from './TutorialDialog';
 import { VideoEditorDialog } from './VideoEditorDialog';
 import { ImageToPromptDialog } from './ImageToPromptDialog';
-import { Flame, FolderOpen, GraduationCap, Image as ImageIcon, Star, Type } from 'lucide-react';
+import { ChevronDown, Flame, FolderOpen, GraduationCap, Image as ImageIcon, Menu, Star, Type, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useEditor } from '@/lib/editor-context';
@@ -33,8 +33,10 @@ export function LeftSidebar() {
   const [promptsOpen, setPromptsOpen] = useState(false);
   const [trendingOpen, setTrendingOpen] = useState(false);
   const [imageToPromptOpen, setImageToPromptOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-  const CLOSE_DURATION = 250; // slightly above the 250ms aside-out-left animation to avoid overlap
+  const CLOSE_DURATION = 250;
   const switchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const openDialog = useCallback((id: string) => {
@@ -47,8 +49,18 @@ export function LeftSidebar() {
   }, []);
 
   const anyOpen = galleryOpen || videoEditorOpen || tutorialOpen || promptsOpen || trendingOpen || imageToPromptOpen;
+
+  const activeItem = navItems.find(({ id }) =>
+    (id === 'gallery' && galleryOpen) ||
+    (id === 'tutorial' && tutorialOpen) ||
+    (id === 'prompts' && promptsOpen) ||
+    (id === 'trending' && trendingOpen) ||
+    (id === 'imageToPrompt' && imageToPromptOpen)
+  );
+
   useEffect(() => {
     setLeftPanelOpen(anyOpen);
+    if (anyOpen) setMobileMenuOpen(false);
   }, [anyOpen, setLeftPanelOpen]);
 
   useEffect(() => {
@@ -57,8 +69,21 @@ export function LeftSidebar() {
 
   useEffect(() => () => { if (switchTimerRef.current) clearTimeout(switchTimerRef.current); }, []);
 
+  // Close mobile menu on outside click
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (!mobileMenuRef.current?.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick, true);
+    return () => document.removeEventListener('mousedown', handleClick, true);
+  }, [mobileMenuOpen]);
+
   function handleNavClick(id: string) {
     if (switchTimerRef.current) clearTimeout(switchTimerRef.current);
+    setMobileMenuOpen(false);
 
     const currentlyOpen =
       (id !== 'gallery' && galleryOpen) ||
@@ -77,13 +102,11 @@ export function LeftSidebar() {
       (id === 'imageToPrompt' && imageToPromptOpen);
 
     if (isToggleOff) {
-      // Just close the current one
       openDialog('none');
       return;
     }
 
     if (currentlyOpen) {
-      // Close current first, then open new after animation completes
       openDialog('none');
       switchTimerRef.current = setTimeout(() => openDialog(id), CLOSE_DURATION);
     } else {
@@ -93,48 +116,125 @@ export function LeftSidebar() {
 
   return (
     <>
-      <aside className="flex shrink-0 items-center justify-center gap-1.5 bg-[#1a2123] z-50 flex-row w-full h-10 border-b border-[#f3f0ed]/[0.07] px-3 md:justify-start md:flex-col md:h-full md:w-[72px] md:border-b-0 md:border-r md:py-3 md:px-1.5 md:items-stretch">
-        {navItems.map(({ id, icon: Icon, label, tooltip, isNew }) => {
-          const isActive = (id === 'gallery' && galleryOpen) || (id === 'videoEditor' && videoEditorOpen) || (id === 'tutorial' && tutorialOpen) || (id === 'prompts' && promptsOpen) || (id === 'trending' && trendingOpen) || (id === 'imageToPrompt' && imageToPromptOpen);
-          return (
-            <Tooltip key={id}>
-              <TooltipTrigger asChild>
-                <button
-                  id={id === 'tutorial' ? 'tour-tutorial-btn' : undefined}
-                  onClick={() => handleNavClick(id)}
-                  className={`group relative flex h-8 items-center justify-center rounded-md transition-all gap-1.5 px-2 w-auto md:w-full md:flex-col md:h-auto md:py-1.5 md:gap-0.5 md:px-1 ${isActive
-                    ? 'bg-[#a2dd00]/15 text-[#a2dd00]'
-                    : 'text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70'
+      <aside className="shrink-0 bg-[#1a2123] border-b border-[#f3f0ed]/[0.07] md:border-b-0 md:border-r md:h-full md:w-[72px]">
+
+        {/* ── Mobile: dropdown button ── */}
+        <div ref={mobileMenuRef} className="relative md:hidden">
+          <button
+            onClick={() => {
+              if (anyOpen) {
+                openDialog('none');
+              } else {
+                setMobileMenuOpen((v) => !v);
+              }
+            }}
+            className={`flex h-10 w-full items-center gap-2 px-3 transition-colors ${
+              anyOpen || mobileMenuOpen
+                ? 'text-[#a2dd00]'
+                : 'text-[#f3f0ed]/50 hover:text-[#f3f0ed]/80'
+            }`}
+          >
+            {activeItem ? (
+              <>
+                <activeItem.icon className="h-4 w-4 shrink-0" />
+                <span className="text-xs font-semibold">{activeItem.label}</span>
+              </>
+            ) : (
+              <>
+                <Menu className="h-4 w-4 shrink-0" />
+                <span className="text-xs font-semibold">{t('menuLabel')}</span>
+              </>
+            )}
+            <ChevronDown
+              className={`ml-auto h-3.5 w-3.5 transition-transform duration-200 ${anyOpen ? 'rotate-180' : mobileMenuOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {/* Dropdown */}
+          {mobileMenuOpen && (
+            <div className="absolute left-0 top-full z-[100] w-52 overflow-hidden rounded-b-xl border border-t-0 border-[#f3f0ed]/[0.08] bg-[#1a2123]/95 shadow-2xl backdrop-blur-md">
+              {navItems.map(({ id, icon: Icon, label, isNew }) => {
+                const isActive =
+                  (id === 'gallery' && galleryOpen) ||
+                  (id === 'tutorial' && tutorialOpen) ||
+                  (id === 'prompts' && promptsOpen) ||
+                  (id === 'trending' && trendingOpen) ||
+                  (id === 'imageToPrompt' && imageToPromptOpen);
+                return (
+                  <button
+                    key={id}
+                    id={id === 'tutorial' ? 'tour-tutorial-btn' : undefined}
+                    onClick={() => handleNavClick(id)}
+                    className={`relative flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${
+                      isActive
+                        ? 'bg-[#a2dd00]/10 text-[#a2dd00]'
+                        : 'text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/[0.04] hover:text-[#f3f0ed]'
                     }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="text-xs font-semibold">{label}</span>
+                    {isNew && (
+                      <span className="ml-auto flex h-4 w-4 items-center justify-center rounded-full bg-yellow-400 text-black">
+                        <Star className="h-2.5 w-2.5" />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Desktop: vertical sidebar ── */}
+        <div className="hidden md:flex md:h-full md:flex-col md:items-stretch md:gap-1.5 md:py-3 md:px-1.5">
+          {navItems.map(({ id, icon: Icon, label, tooltip, isNew }) => {
+            const isActive =
+              (id === 'gallery' && galleryOpen) ||
+              (id === 'videoEditor' && videoEditorOpen) ||
+              (id === 'tutorial' && tutorialOpen) ||
+              (id === 'prompts' && promptsOpen) ||
+              (id === 'trending' && trendingOpen) ||
+              (id === 'imageToPrompt' && imageToPromptOpen);
+            return (
+              <Tooltip key={id}>
+                <TooltipTrigger asChild>
+                  <button
+                    id={id === 'tutorial' ? 'tour-tutorial-btn' : undefined}
+                    onClick={() => handleNavClick(id)}
+                    className={`group relative flex w-full flex-col items-center gap-0.5 rounded-md py-1.5 px-1 transition-all ${
+                      isActive
+                        ? 'bg-[#a2dd00]/15 text-[#a2dd00]'
+                        : 'text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70'
+                    }`}
+                  >
+                    <Icon className="h-4.5 w-4.5 shrink-0" />
+                    <span className="text-[10px] font-bold tracking-wide text-center leading-tight">{label}</span>
+                    {isNew && (
+                      <div className="absolute group-hover:animate-pulse -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-400 text-black select-none">
+                        <Star className="h-2.5 w-2.5" />
+                      </div>
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  sideOffset={10}
+                  className="border border-[#f3f0ed]/8 bg-[#1a2123] px-2.5 py-1.5 text-[10px] font-bold tracking-widest text-[#f3f0ed]/90 shadow-2xl backdrop-blur-md"
                 >
-                  <Icon className="h-4.5 w-4.5 shrink-0" />
-                  <span className="text-[10px] font-bold tracking-wide md:text-center md:leading-tight">{label}</span>
-                  {isNew && (
-                    <div className="absolute group-hover:animate-pulse -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-400 text-black select-none">
-                      <Star className="h-2.5 w-2.5" />
-                    </div>
-                  )}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent
-                side="right"
-                sideOffset={10}
-                className="border border-[#f3f0ed]/8 bg-[#1a2123] px-2.5 py-1.5 text-[10px] font-bold tracking-widest text-[#f3f0ed]/90 shadow-2xl backdrop-blur-md"
-              >
-                {(tooltip ?? label).toUpperCase()}
-              </TooltipContent>
-            </Tooltip>
-          );
-        })}
+                  {(tooltip ?? label).toUpperCase()}
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
 
-        {/* Separator */}
-        <div className="hidden md:block md:my-1 md:h-px md:w-full md:bg-landing-text/[0.07]" />
+          <div className="my-1 h-px w-full bg-landing-text/[0.07]" />
 
-        {/* Logo */}
-        <div className="hidden md:flex md:mt-auto md:items-center md:justify-center md:pb-1">
-          <Image src="/logo_2.svg" alt={t('logoAlt')} width={28} height={28} className="opacity-30" />
+          <div className="mt-auto flex items-center justify-center pb-1">
+            <Image src="/logo_2.svg" alt={t('logoAlt')} width={28} height={28} className="opacity-30" />
+          </div>
         </div>
       </aside>
+
       <GalleryDialog open={galleryOpen} onOpenChange={setGalleryOpen} />
       <VideoEditorDialog open={videoEditorOpen} onOpenChange={setVideoEditorOpen} />
       <TutorialDialog open={tutorialOpen} onOpenChange={setTutorialOpen} />

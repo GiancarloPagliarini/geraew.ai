@@ -241,6 +241,14 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Fallback: if onLoadedData never fires (common on mobile after app-switch),
+  // force the preview visible after 4s so the aurora doesn't stay stuck.
+  useEffect(() => {
+    if (genState !== 'done' || generatedVideoUrls.length === 0 || videosVisible) return;
+    const t = setTimeout(() => setVideosVisible(true), 4000);
+    return () => clearTimeout(t);
+  }, [genState, generatedVideoUrls.length, videosVisible]);
+
   // Resume in-progress generation on mount (e.g. after page reload)
   useEffect(() => {
     if (stored?.genState === 'generating' && stored?.generationId && accessToken) {

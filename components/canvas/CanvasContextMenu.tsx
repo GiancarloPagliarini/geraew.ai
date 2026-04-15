@@ -8,7 +8,7 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import { AudioWaveform, ImageIcon, Mic, Repeat2, Shirt, Sparkles, User, Video } from 'lucide-react';
+import { AudioWaveform, ImageIcon, ImageUpscale, Mic, Repeat2, Shirt, User, Video } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
@@ -29,7 +29,7 @@ export function CanvasContextMenu({ children, onAddPanel }: CanvasContextMenuPro
         { type: 'motion-control', icon: AudioWaveform, label: t('items.motionControl.label'), description: t('items.motionControl.description') },
         { type: 'virtual-try-on', icon: Shirt, label: t('items.virtualTryOn.label'), description: t('items.virtualTryOn.description') },
         { type: 'face-swap', icon: Repeat2, label: t('items.faceSwap.label'), description: t('items.faceSwap.description') },
-        { type: 'upscale', icon: Sparkles, label: 'Upscale', description: 'Aprimora a qualidade da imagem em 2K' },
+        { type: 'upscale', icon: ImageUpscale, label: 'Upscale', description: 'Aprimora a qualidade da imagem em 2K' },
         { type: 'generate-voice', icon: Mic, label: t('items.generateVoice.label'), description: t('items.generateVoice.description'), comingSoon: true },
     ];
 

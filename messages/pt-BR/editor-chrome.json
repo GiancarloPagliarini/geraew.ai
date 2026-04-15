@@ -28,7 +28,8 @@
       "promptsTooltip": "Fábrica de Prompts",
       "trending": "Trending",
       "trendingTooltip": "Produtos Mais Vendidos",
-      "logoAlt": "Geraew"
+      "logoAlt": "Geraew",
+      "menuLabel": "Menu"
     },
     "rightSidebar": {
       "wipBadge": "Em desenvolvimento",

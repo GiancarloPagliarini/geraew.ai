@@ -1,6 +1,6 @@
 'use client';
 
-import { AudioWaveform, Fullscreen, Hand, ImageIcon, Minus, MousePointer2, PersonStanding, Plus, Repeat2, Shirt, Sparkles, Trash2, Video, Wrench, X } from 'lucide-react';
+import { AudioWaveform, Fullscreen, Hand, ImageIcon, ImageUpscale, Minus, MousePointer2, PersonStanding, Plus, Repeat2, Shirt, Trash2, Video, Wrench, X } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -61,7 +61,7 @@ export function BottomToolbar({
         <Wrench className="h-4.5 w-4.5 text-[#f3f0ed]/60" />
       </button>
 
-      <div className={`pointer-events-none absolute top-3 left-1/2 z-50 w-[calc(100%-1rem)] -translate-x-1/2 sm:top-auto sm:bottom-5 sm:w-auto ${leftPanelOpen ? 'hidden sm:block' : ''} ${!mobileOpen ? 'hidden sm:block' : ''}`}>
+      <div className={`pointer-events-none absolute top-3.5 left-1/2 z-50 w-[calc(100%-1rem)] -translate-x-1/2 sm:top-auto sm:bottom-5 sm:w-auto ${leftPanelOpen ? 'hidden sm:block' : ''} ${!mobileOpen ? 'hidden sm:block' : ''}`}>
         <div className="pointer-events-auto relative flex items-center justify-center gap-0.5 rounded-full border border-[#f3f0ed]/[0.08] bg-[#1a2123]/90 px-1.5 py-1.5 shadow-2xl backdrop-blur-md sm:px-2">
 
           {/* Mobile close button */}
@@ -120,7 +120,7 @@ export function BottomToolbar({
           </ToolbarButton>
 
           <ToolbarButton tooltip="Upscale" onClick={onAddUpscale}>
-            <Sparkles className="h-4 w-4" />
+            <ImageUpscale className="h-4 w-4" />
           </ToolbarButton>
           {/*
           <ToolbarButton tooltip="Painel customizável" onClick={onAdd}>
@@ -139,7 +139,7 @@ export function BottomToolbar({
               <TooltipTrigger asChild>
                 <button
                   onClick={onResetZoom}
-                  className="flex h-7 min-w-[3rem] items-center justify-center rounded-full px-2 text-xs font-semibold text-[#f3f0ed]/60 transition-all hover:bg-[#a2dd00]/10 hover:text-[#a2dd00]"
+                  className="flex h-7 min-w-[3rem] items-center justify-center rounded-full text-xs font-semibold text-[#f3f0ed]/60 transition-all hover:bg-[#a2dd00]/10 hover:text-[#a2dd00]"
                 >
                   {Math.round(zoom * 100)}%
                 </button>

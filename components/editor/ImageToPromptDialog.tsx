@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   open: boolean;
@@ -16,6 +17,7 @@ const MAX_BYTES = 5 * 1024 * 1024;
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
 
 export function ImageToPromptDialog({ open, onOpenChange }: Props) {
+  const t = useTranslations('editorDialogs.imageToPrompt');
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
   const [mounted, setMounted] = useState(false);
@@ -38,8 +40,8 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
   }, [open, mounted]);
 
   const handleFile = useCallback((file: File) => {
-    if (!ACCEPTED.includes(file.type)) { toast.error('Formato inválido. Use JPEG, PNG ou WebP.'); return; }
-    if (file.size > MAX_BYTES) { toast.error('Imagem muito grande (máx 5MB).'); return; }
+    if (!ACCEPTED.includes(file.type)) { toast.error(t('toastInvalidFormat')); return; }
+    if (file.size > MAX_BYTES) { toast.error(t('toastTooLarge')); return; }
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
@@ -65,7 +67,7 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
       setResult(data);
       setTab('prompt');
     } catch (err: any) {
-      toast.error(err?.message || 'Falha na análise');
+      toast.error(err?.message || t('toastAnalysisFailed'));
     } finally {
       setLoading(false);
     }
@@ -73,7 +75,7 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
 
   const copy = async (text: string, label: string) => {
     await navigator.clipboard.writeText(text);
-    toast.success(`${label} copiado!`);
+    toast.success(t('copied', { label }));
   };
 
   const reset = () => { setImageData(null); setPreviewUrl(null); setResult(null); };
@@ -87,7 +89,7 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5">
           <ImageIcon className="h-4 w-4 text-[#a2dd00]" />
-          <span className="text-sm font-semibold tracking-tight text-white/85">CLONE DE PROMPT</span>
+          <span className="text-sm font-semibold tracking-tight text-white/85">{t('title')}</span>
         </div>
         <button
           onClick={() => onOpenChange(false)}
@@ -99,7 +101,7 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <p className="text-xs text-white/50 leading-relaxed">
-          Envie uma imagem e receba o prompt estruturado pronto pra usar em Flux, Nano Banana, SDXL ou Veo.
+          {t('description')}
         </p>
 
         <div
@@ -111,12 +113,12 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
         >
           {previewUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={previewUrl} alt="preview" className="max-h-[300px] object-contain" />
+            <img src={previewUrl} alt={t('imageAlt')} className="max-h-[300px] object-contain" />
           ) : (
             <div className="text-center p-6 text-white/50">
               <Upload className="h-6 w-6 mx-auto mb-2 text-white/30" />
-              <p className="text-sm">Arraste uma imagem ou clique</p>
-              <p className="text-[10px] mt-1 text-white/30">JPEG, PNG ou WebP — máx 5MB</p>
+              <p className="text-sm">{t('dragOrClick')}</p>
+              <p className="text-[10px] mt-1 text-white/30">{t('fileHint')}</p>
             </div>
           )}
           <input
@@ -134,14 +136,14 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
             disabled={!imageData || loading}
             className="flex-1 h-9 rounded-lg bg-[#a2dd00] text-black text-xs font-bold tracking-wide hover:bg-[#b6f000] disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
-            {loading ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> ANALISANDO...</>) : !user ? (<><Lock className="h-3.5 w-3.5" /> ENTRAR PARA ANALISAR</>) : 'ANALISAR (5 CRÉDITOS)'}
+            {loading ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> {t('analyzing')}</>) : !user ? (<><Lock className="h-3.5 w-3.5" /> {t('loginToAnalyze')}</>) : t('analyze')}
           </button>
           {imageData && !loading && (
             <button
               onClick={reset}
               className="h-9 px-3 rounded-lg bg-white/[0.05] text-white/70 text-xs font-bold hover:bg-white/[0.1] transition-colors"
             >
-              LIMPAR
+              {t('clear')}
             </button>
           )}
         </div>
@@ -153,7 +155,7 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
                 onClick={() => setTab('prompt')}
                 className={`flex-1 h-7 rounded-md text-[10px] font-bold tracking-wide transition-colors ${tab === 'prompt' ? 'bg-white/[0.08] text-white' : 'text-white/40 hover:text-white/70'}`}
               >
-                PROMPT STRING
+                {t('tabPrompt')}
               </button>
               <button
                 onClick={() => setTab('json')}
@@ -170,7 +172,7 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
                     onClick={() => copy(result.compiledPrompt, 'Prompt')}
                     className="flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-[#a2dd00]/15 text-[#a2dd00] text-[10px] font-bold hover:bg-[#a2dd00]/25 transition-colors"
                   >
-                    <Copy className="h-3 w-3" /> COPIAR PROMPT
+                    <Copy className="h-3 w-3" /> {t('copyPrompt')}
                   </button>
                 </div>
                 <div className="bg-black/40 text-xs p-3 rounded-lg max-h-[400px] overflow-auto whitespace-pre-wrap text-white/80 leading-relaxed">
@@ -184,7 +186,7 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
                     onClick={() => copy(JSON.stringify(result.json, null, 2), 'JSON')}
                     className="flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-[#a2dd00]/15 text-[#a2dd00] text-[10px] font-bold hover:bg-[#a2dd00]/25 transition-colors"
                   >
-                    <Copy className="h-3 w-3" /> COPIAR JSON
+                    <Copy className="h-3 w-3" /> {t('copyJson')}
                   </button>
                 </div>
                 <pre className="bg-black/40 text-[11px] p-3 rounded-lg max-h-[400px] overflow-auto whitespace-pre-wrap text-white/80 leading-relaxed">

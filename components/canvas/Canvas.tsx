@@ -12,7 +12,7 @@ import {
   useNodesState,
   useReactFlow,
 } from '@xyflow/react';
-import { AudioWaveform, ImageIcon, LayoutGrid, Map, PersonStanding, Repeat2, Shirt, Sparkles, Video } from 'lucide-react';
+import { AudioWaveform, ImageIcon, ImageUpscale, LayoutGrid, Map, PersonStanding, Repeat2, Shirt, Video } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -374,7 +374,7 @@ function CanvasContent() {
                 {t('emptySubtitle')}
               </p>
             </div>
-            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:justify-center sm:gap-4">
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-row sm:gap-4">
               {[
                 { type: 'generate-image', icon: ImageIcon, label: t('actions.generateImage') },
                 { type: 'create-influencer', icon: PersonStanding, label: t('actions.createInfluencer') },
@@ -382,12 +382,12 @@ function CanvasContent() {
                 { type: 'motion-control', icon: AudioWaveform, label: t('actions.copyMotion') },
                 { type: 'virtual-try-on', icon: Shirt, label: t('actions.virtualTryOn') },
                 { type: 'face-swap', icon: Repeat2, label: t('actions.faceSwap') },
-                { type: 'upscale', icon: Sparkles, label: 'Upscale' },
-              ].map((item, i) => (
+                { type: 'upscale', icon: ImageUpscale, label: 'Upscale' },
+              ].map((item, i, arr) => (
                 <button
                   key={item.type}
                   onClick={() => handleAddPanel(item.type)}
-                  className="empty-card-animate group flex h-[15dvh] flex-col items-center justify-center gap-2 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4"
+                  className={`empty-card-animate group flex h-[15dvh] flex-col items-center justify-center gap-2 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4 ${i === arr.length - 1 ? 'col-span-2 sm:col-span-1' : ''}`}
                   style={{ animationDelay: `${0.35 + i * 0.08}s` }}
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">

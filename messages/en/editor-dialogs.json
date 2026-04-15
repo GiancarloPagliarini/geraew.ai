@@ -212,6 +212,25 @@
       "confirmation": "Your credits will be added after we verify the post.",
       "follow": "Follow @geraew.ai",
       "gotIt": "Got it"
+    },
+    "imageToPrompt": {
+      "title": "PROMPT CLONE",
+      "description": "Upload an image and get a structured prompt ready to use in Flux, Nano Banana, SDXL or Veo.",
+      "dragOrClick": "Drag an image or click",
+      "fileHint": "JPEG, PNG or WebP — max 5MB",
+      "imageAlt": "preview",
+      "analyzing": "ANALYZING...",
+      "loginToAnalyze": "SIGN IN TO ANALYZE",
+      "analyze": "ANALYZE (5 CREDITS)",
+      "clear": "CLEAR",
+      "tabPrompt": "PROMPT STRING",
+      "tabJson": "JSON",
+      "copyPrompt": "COPY PROMPT",
+      "copyJson": "COPY JSON",
+      "copied": "{label} copied!",
+      "toastInvalidFormat": "Invalid format. Use JPEG, PNG or WebP.",
+      "toastTooLarge": "Image too large (max 5MB).",
+      "toastAnalysisFailed": "Analysis failed"
     }
   }
 }

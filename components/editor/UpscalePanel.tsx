@@ -4,7 +4,7 @@ import {
   Coins,
   Download,
   Image as ImageIcon,
-  Sparkles,
+  ImageUpscale,
   Wand2,
   X,
 } from 'lucide-react';
@@ -22,19 +22,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner';
 import { GenerationErrorBanner, showGenerationError } from './GenerationError';
 import { GenerationPreview } from './GenerationPreview';
+import { useTranslations } from 'next-intl';
 
 type GenState = 'idle' | 'generating' | 'done';
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const MAX_IMAGE_DIMENSION = 1920;
 const IMAGE_QUALITY = 0.9;
-
-const LOADING_MESSAGES = [
-  'Aumentando resolução...',
-  'Reduzindo artefatos de compressão...',
-  'Refinando detalhes finos...',
-  'Aprimorando nitidez...',
-];
 
 async function compressImage(dataUrl: string, mimeType: string): Promise<{ dataUrl: string; mimeType: string }> {
   return new Promise((resolve) => {
@@ -63,9 +57,11 @@ interface UpscalePanelProps {
 }
 
 export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps) {
+  const t = useTranslations('editorPanels.upscale');
   const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating } = useEditor();
   const { accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
+  const loadingMessages = t.raw('loadingMessages') as string[];
 
   const storageKey = `geraew-panel-upscale-${nodeId}`;
   const [stored] = useState(() => {
@@ -113,7 +109,7 @@ export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps
   const [progress, setProgress] = useState(0);
   const [imageVisible, setImageVisible] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
+  const [loadingMsg, setLoadingMsg] = useState('');
   const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   useEffect(() => {
@@ -143,7 +139,7 @@ export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps
   }, [storageKey, sourceImage]);
 
   useEffect(() => {
-    document.title = genState === 'generating' ? 'Upscale em andamento... — Geraew AI' : 'Geraew AI';
+    document.title = genState === 'generating' ? t('documentTitle') : 'Geraew AI';
     return () => { document.title = 'Geraew AI'; };
   }, [genState]);
 
@@ -162,7 +158,7 @@ export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps
     onFailed: (gen) => {
       clearProgressTimer(); clearMsgTimer(); clearPollTimer(); clearSSE();
       setGenState('idle');
-      setErrorMsg(showGenerationError({ errorMessage: gen.errorMessage, fallback: 'Falha no upscale.' }));
+      setErrorMsg(showGenerationError({ errorMessage: gen.errorMessage, fallback: t('errorUpscaleFailed') }));
       refetchCredits();
     },
   });
@@ -174,14 +170,14 @@ export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    if (file.size > MAX_IMAGE_SIZE) { toast.error('Imagem muito grande (máx. 10MB).'); return; }
-    if (!file.type.startsWith('image/')) { toast.error('Formato de imagem inválido.'); return; }
+    if (file.size > MAX_IMAGE_SIZE) { toast.error(t('toastImageTooLarge')); return; }
+    if (!file.type.startsWith('image/')) { toast.error(t('toastInvalidFormat')); return; }
     const reader = new FileReader();
     reader.onload = async (ev) => {
       const rawDataUrl = ev.target?.result as string;
       const { dataUrl, mimeType } = await compressImage(rawDataUrl, file.type);
       setSourceImage({ base64: dataUrl.split(',')[1], mime_type: mimeType, preview: dataUrl });
-      toast.success('Imagem adicionada.');
+      toast.success(t('toastImageAdded'));
     };
     reader.readAsDataURL(file);
   }
@@ -192,13 +188,13 @@ export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps
     e.preventDefault(); e.stopPropagation(); setIsDraggingOver(false);
     const file = Array.from(e.dataTransfer.files).find((f) => f.type.startsWith('image/'));
     if (file) {
-      if (file.size > MAX_IMAGE_SIZE) { toast.error('Imagem muito grande (máx. 10MB).'); return; }
+      if (file.size > MAX_IMAGE_SIZE) { toast.error(t('toastImageTooLarge')); return; }
       const reader = new FileReader();
       reader.onload = async (ev) => {
         const rawDataUrl = ev.target?.result as string;
         const { dataUrl, mimeType } = await compressImage(rawDataUrl, file.type);
         setSourceImage({ base64: dataUrl.split(',')[1], mime_type: mimeType, preview: dataUrl });
-        toast.success('Imagem adicionada.');
+        toast.success(t('toastImageAdded'));
       };
       reader.readAsDataURL(file);
       return;
@@ -233,10 +229,10 @@ export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps
       setProgress(Math.round(current));
     }, 800);
     let msgIndex = 0;
-    setLoadingMsg(LOADING_MESSAGES[0]);
+    setLoadingMsg(loadingMessages[0]);
     msgIntervalRef.current = setInterval(() => {
-      msgIndex = (msgIndex + 1) % LOADING_MESSAGES.length;
-      setLoadingMsg(LOADING_MESSAGES[msgIndex]);
+      msgIndex = (msgIndex + 1) % loadingMessages.length;
+      setLoadingMsg(loadingMessages[msgIndex]);
     }, 5000);
   }
 
@@ -265,13 +261,13 @@ export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps
         if (generation.status === 'FAILED') {
           clearPollTimer(); clearProgressTimer(); clearMsgTimer();
           setGenState('idle');
-          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: 'Falha no upscale.' }));
+          setErrorMsg(showGenerationError({ errorMessage: generation.errorMessage, fallback: t('errorUpscaleFailed') }));
           refetchCredits();
         }
       } catch {
         clearPollTimer(); clearProgressTimer();
         setGenState('idle');
-        setErrorMsg(showGenerationError({ fallback: 'Erro ao verificar status.' }));
+        setErrorMsg(showGenerationError({ fallback: t('errorCheckStatus') }));
       }
     }, 3000);
   }
@@ -308,7 +304,7 @@ export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps
         onFailed: ({ errorMessage, creditsRefunded }) => {
           clearProgressTimer(); clearMsgTimer(); clearPollTimer(); clearSSE();
           setGenState('idle');
-          setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: 'Falha no upscale.' }));
+          setErrorMsg(showGenerationError({ errorMessage, creditsRefunded, fallback: t('errorUpscaleFailed') }));
           refetchCredits();
         },
         onError: () => { /* polling cobre */ },
@@ -316,7 +312,7 @@ export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps
     } catch (err) {
       clearProgressTimer(); clearMsgTimer();
       setGenState('idle');
-      setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: 'Erro ao iniciar upscale.' }));
+      setErrorMsg(showGenerationError({ errorMessage: err instanceof Error ? err.message : null, fallback: t('errorStartFailed') }));
     }
   }
 
@@ -357,8 +353,8 @@ export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps
       >
         <div className="panel-drag-handle flex cursor-grab items-center justify-between border-b border-[#f3f0ed]/[0.07] px-4 py-3 active:cursor-grabbing">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-[#a2dd00]" />
-            <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">UPSCALE</span>
+            <ImageUpscale className="h-4 w-4 text-[#a2dd00]" />
+            <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">{t('header')}</span>
           </div>
           <div className="flex items-center gap-1">
             <PanelDuplicateButton onClick={onDuplicate} />
@@ -398,17 +394,17 @@ export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps
                       className="flex h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/8 bg-[#1e494b]/20 text-xs font-semibold text-[#f3f0ed]/60 transition-all hover:border-[#a2dd00]/30 hover:text-[#a2dd00]"
                     >
                       <Download className="h-3.5 w-3.5" />
-                      Baixar
+                      {t('download')}
                     </a>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={4}>Baixar imagem</TooltipContent>
+                  <TooltipContent side="bottom" sideOffset={4}>{t('downloadTooltip')}</TooltipContent>
                 </Tooltip>
               </div>
               <button
                 onClick={handleDiscard}
                 className="flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/6 text-xs font-semibold text-[#f3f0ed]/40 transition-all hover:border-[#f3f0ed]/15 hover:text-[#f3f0ed]/70"
               >
-                Fazer outro upscale
+                {t('doAnother')}
               </button>
             </div>
           )}
@@ -417,12 +413,12 @@ export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps
             <>
               <div>
                 <label className="mb-1.5 block text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
-                  IMAGEM PARA UPSCALE
+                  {t('imageLabel')}
                 </label>
                 {sourceImage ? (
                   <div className="relative overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={sourceImage.preview} alt="Imagem" className="h-32 w-full object-cover" />
+                    <img src={sourceImage.preview} alt={t('imageAlt')} className="h-32 w-full object-cover" />
                     <button
                       onClick={() => setSourceImage(null)}
                       className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-[#f3f0ed]/70 hover:text-[#f3f0ed]"
@@ -436,7 +432,7 @@ export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/[0.12] bg-[#1e494b]/10 px-3 py-4 text-xs text-[#f3f0ed]/40 transition-all hover:border-[#a2dd00]/30 hover:text-[#a2dd00]/70"
                   >
                     <ImageIcon className="h-4 w-4" />
-                    Anexar imagem
+                    {t('attachImage')}
                   </button>
                 )}
                 <input
@@ -455,14 +451,14 @@ export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps
                   <div className="flex items-center gap-1.5">
                     <Coins className="h-3 w-3 text-[#a2dd00]" />
                     <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">
-                      Custo estimado
+                      {t('estimatedCost')}
                     </span>
                   </div>
                   {estimateLoading ? (
                     <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
                   ) : estimate ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} créditos</span>
+                      <span className="text-xs font-bold text-[#f3f0ed]/70">{t('credits', { count: estimate.creditsRequired })}</span>
                       <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
                     </div>
                   ) : null}
@@ -476,11 +472,11 @@ export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps
                 style={{ background: '#a2dd00', color: '#1a2123' }}
               >
                 <Wand2 className="h-4 w-4" />
-                Fazer upscale
+                {t('generate')}
               </button>
 
               <p className="text-center text-[10px] text-[#f3f0ed]/25">
-                A imagem será aprimorada em 2K mantendo todos os detalhes originais.
+                {t('description')}
               </p>
             </>
           )}

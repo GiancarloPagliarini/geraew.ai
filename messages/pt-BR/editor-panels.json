@@ -227,6 +227,32 @@
       "clear": "LIMPAR",
       "addReference": "Adicionar imagem de referência",
       "simulatedResult": "Este é um resultado simulado para o prompt fornecido. Em produção, este painel enviará o prompt para a API configurada e retornará o resultado real."
+    },
+    "upscale": {
+      "header": "UPSCALE",
+      "imageLabel": "IMAGEM PARA UPSCALE",
+      "attachImage": "Anexar imagem",
+      "imageAlt": "Imagem",
+      "estimatedCost": "Custo estimado",
+      "credits": "{count} créditos",
+      "generate": "Fazer upscale",
+      "download": "Baixar",
+      "downloadTooltip": "Baixar imagem",
+      "doAnother": "Fazer outro upscale",
+      "description": "A imagem será aprimorada em 2K mantendo todos os detalhes originais.",
+      "documentTitle": "Upscale em andamento... — Geraew AI",
+      "toastImageTooLarge": "Imagem muito grande (máx. 10MB).",
+      "toastInvalidFormat": "Formato de imagem inválido.",
+      "toastImageAdded": "Imagem adicionada.",
+      "errorUpscaleFailed": "Falha no upscale.",
+      "errorCheckStatus": "Erro ao verificar status.",
+      "errorStartFailed": "Erro ao iniciar upscale.",
+      "loadingMessages": [
+        "Aumentando resolução...",
+        "Reduzindo artefatos de compressão...",
+        "Refinando detalhes finos...",
+        "Aprimorando nitidez..."
+      ]
     }
   }
 }

@@ -212,6 +212,25 @@
       "confirmation": "Seus créditos serão adicionados após a verificação do post.",
       "follow": "Seguir @geraew.ai",
       "gotIt": "Entendido"
+    },
+    "imageToPrompt": {
+      "title": "CLONE DE PROMPT",
+      "description": "Envie uma imagem e receba o prompt estruturado pronto pra usar em Flux, Nano Banana, SDXL ou Veo.",
+      "dragOrClick": "Arraste uma imagem ou clique",
+      "fileHint": "JPEG, PNG ou WebP — máx 5MB",
+      "imageAlt": "pré-visualização",
+      "analyzing": "ANALISANDO...",
+      "loginToAnalyze": "ENTRAR PARA ANALISAR",
+      "analyze": "ANALISAR (5 CRÉDITOS)",
+      "clear": "LIMPAR",
+      "tabPrompt": "PROMPT STRING",
+      "tabJson": "JSON",
+      "copyPrompt": "COPIAR PROMPT",
+      "copyJson": "COPIAR JSON",
+      "copied": "{label} copiado!",
+      "toastInvalidFormat": "Formato inválido. Use JPEG, PNG ou WebP.",
+      "toastTooLarge": "Imagem muito grande (máx 5MB).",
+      "toastAnalysisFailed": "Falha na análise"
     }
   }
 }

@@ -227,6 +227,32 @@
       "clear": "CLEAR",
       "addReference": "Add reference image",
       "simulatedResult": "This is a simulated result for the provided prompt. In production, this panel will send the prompt to the configured API and return the actual result."
+    },
+    "upscale": {
+      "header": "UPSCALE",
+      "imageLabel": "IMAGE TO UPSCALE",
+      "attachImage": "Attach image",
+      "imageAlt": "Image",
+      "estimatedCost": "Estimated cost",
+      "credits": "{count} credits",
+      "generate": "Upscale image",
+      "download": "Download",
+      "downloadTooltip": "Download image",
+      "doAnother": "Upscale another image",
+      "description": "The image will be enhanced to 2K while preserving all original details.",
+      "documentTitle": "Upscale in progress... — Geraew AI",
+      "toastImageTooLarge": "Image too large (max 10MB).",
+      "toastInvalidFormat": "Invalid image format.",
+      "toastImageAdded": "Image added.",
+      "errorUpscaleFailed": "Upscale failed.",
+      "errorCheckStatus": "Error checking status.",
+      "errorStartFailed": "Error starting upscale.",
+      "loadingMessages": [
+        "Increasing resolution...",
+        "Reducing compression artifacts...",
+        "Refining fine details...",
+        "Enhancing sharpness..."
+      ]
     }
   }
 }
