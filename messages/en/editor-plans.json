@@ -37,19 +37,26 @@
       "gallery90": "90 days gallery",
       "gallery180": "180 days gallery",
       "gallery365": "365 days gallery",
-      "tryNoCommit": "Try with no commitment"
+      "tryNoCommit": "Try with no commitment",
+      "freeVideoGenerations": "Get 2 free video generations"
     },
     "subtitles": {
+      "ultra-basic": "Beginner",
       "starter": "Explorer",
+      "basic": "Essential",
       "creator": "Creator",
       "pro": "Producer",
+      "advanced": "Advanced",
       "studio": "Professional"
     },
     "socialProof": {
       "free": "Test our capabilities!",
+      "ultra-basic": "Take your first step",
       "starter": "Ideal for personal projects",
+      "basic": "For those growing",
       "creator": "Chosen by 68% of creators",
       "pro": "For serious creators",
+      "advanced": "Power and total control",
       "studio": "For teams and agencies"
     },
     "boost": {
@@ -71,7 +78,7 @@
       },
       "ultra": {
         "label": "Ultra",
-        "description": "Almost a plan — great to test"
+        "description": "Almost a plan!"
       }
     },
     "packages": {

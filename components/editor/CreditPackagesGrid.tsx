@@ -4,11 +4,14 @@ import {
   ArrowRight,
   Check,
   Coins,
-  Flame,
-  Loader2,
-  Zap,
   Crown,
+  Flame,
+  Leaf,
+  Loader2,
+  Rocket,
   Shield,
+  Trophy,
+  Zap,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
@@ -87,7 +90,7 @@ export function CreditPackagesGrid({ packages, currency = 'BRL', compact }: Cred
         const originalPrice = getOriginalPrice(pkg.priceCents);
         const discountPct = getDiscountPct(pkg.priceCents);
 
-        const PkgIcon = isBest ? Crown : isPopular ? Flame : Zap;
+        const PkgIcon = boostKey === 'mini' ? Leaf : boostKey === 'mega' ? Rocket : boostKey === 'ultra' ? Trophy : isBest ? Crown : isPopular ? Flame : Zap;
 
         return (
           <div

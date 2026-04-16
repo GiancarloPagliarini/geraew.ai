@@ -1,6 +1,6 @@
 import type { Plan, CreditPackage } from './api';
 import type { LucideIcon } from 'lucide-react';
-import { Flame, Zap, Trophy, Users, TestTubeDiagonal } from 'lucide-react';
+import { Flame, Zap, Trophy, Users, TestTubeDiagonal, Sprout, TrendingUp, Crown } from 'lucide-react';
 
 export const PLAN_ORDER = ['free', 'ultra-basic', 'starter', 'basic', 'creator', 'pro', 'advanced', 'studio'];
 
@@ -9,9 +9,12 @@ export const PLAN_ORDER = ['free', 'ultra-basic', 'starter', 'basic', 'creator',
  * Kept for backward compatibility with non-i18n callers.
  */
 export const PLAN_SUBTITLES: Record<string, string> = {
+  'ultra-basic': 'Iniciante',
   starter: 'Explorador',
+  basic: 'Essencial',
   creator: 'Criador',
   pro: 'Produtor',
+  advanced: 'Avançado',
   studio: 'Profissional',
 };
 
@@ -138,7 +141,7 @@ export const BOOST_META: Record<BoostMetaKey, BoostMeta> = {
   'plus': { label: 'Plus', description: 'Um empurrão extra para o dia a dia' },
   'pro-pack': { label: 'Pro Pack', description: 'Créditos extras para projetos maiores' },
   'mega': { label: 'Mega', description: 'Volume alto para produção intensa' },
-  'ultra': { label: 'Ultra', description: 'Quase um plano — ideal para testar' },
+  'ultra': { label: 'Ultra', description: 'Quase um plano!' },
 };
 
 export function getBoostMetaKey(pkg: CreditPackage): BoostMetaKey | null {
@@ -206,33 +209,43 @@ export function getPackageBadge(
 /* ── Discount / anchor pricing ── */
 
 export const PLAN_ORIGINAL_PRICES: Record<string, number> = {
+  'ultra-basic': 1590,
   starter: 6900,
+  basic: 7990,
   creator: 14900,
   pro: 29900,
+  advanced: 35690,
   studio: 69900,
 };
 
 export const PLAN_DISCOUNT_LABELS: Record<string, string> = {
+  'ultra-basic': '19% OFF',
   starter: '29% OFF',
+  basic: '25% OFF',
   creator: '33% OFF',
   pro: '33% OFF',
+  advanced: '30% OFF',
   studio: '28% OFF',
 };
 
 export const PLAN_SOCIAL_PROOF_ICONS: Record<string, LucideIcon> = {
-  free: TestTubeDiagonal,
+  'ultra-basic': Sprout,
   starter: Users,
+  basic: TrendingUp,
   creator: Flame,
   pro: Zap,
+  advanced: Crown,
   studio: Trophy,
 };
 
 /** @deprecated Use `PLAN_SOCIAL_PROOF_ICONS` + `plans.socialProof.<slug>`. */
 export const PLAN_SOCIAL_PROOF: Record<string, { icon: LucideIcon; text: string }> = {
-  free: { icon: TestTubeDiagonal, text: 'Teste nossa capacidade!' },
+  'ultra-basic': { icon: Sprout, text: 'Dê o primeiro passo' },
   starter: { icon: Users, text: 'Ideal para projetos pessoais' },
+  basic: { icon: TrendingUp, text: 'Para quem está crescendo' },
   creator: { icon: Flame, text: 'Escolha de 68% dos criadores' },
   pro: { icon: Zap, text: 'Para quem leva a sério' },
+  advanced: { icon: Crown, text: 'Poder e controle total' },
   studio: { icon: Trophy, text: 'Para equipes e agências' },
 };
 
@@ -297,12 +310,12 @@ export function getPlanFeatureKeys(plan: Plan): PlanFeatureEntry[] {
 
   features.push({ key: 'features.credits', values: { count: plan.creditsPerMonth } });
 
-  if (plan.slug === 'pro' || plan.slug === 'studio') {
+  if (plan.slug === 'pro' || plan.slug === 'studio' || plan.slug === 'advanced') {
     features.push({ key: 'features.queuePriority' });
     features.push({ key: 'features.fasterGenerations' });
     features.push({ key: 'features.prioritySupport' });
     features.push({ key: 'features.gallery365' });
-  } else if (plan.slug === 'creator') {
+  } else if (plan.slug === 'creator' || plan.slug === 'basic') {
     features.push({ key: 'features.fasterGenerations' });
     features.push({ key: 'features.emailSupport' });
     features.push({ key: 'features.gallery180' });
@@ -310,6 +323,8 @@ export function getPlanFeatureKeys(plan: Plan): PlanFeatureEntry[] {
     features.push({ key: 'features.emailSupport' });
     features.push({ key: 'features.gallery90' });
   }
+
+  features.push({ key: 'features.freeVideoGenerations' });
 
   return features;
 }
@@ -331,12 +346,12 @@ export function getPlanFeatures(plan: Plan): string[] {
 
   features.push(`${plan.creditsPerMonth.toLocaleString('pt-BR')} créditos`);
 
-  if (plan.slug === 'pro' || plan.slug === 'studio') {
+  if (plan.slug === 'pro' || plan.slug === 'studio' || plan.slug === 'advanced') {
     features.push('Prioridade na fila de gerações');
     features.push('Velocidade maior nas gerações');
     features.push('Suporte prioritário');
     features.push('365 dias de galeria');
-  } else if (plan.slug === 'creator') {
+  } else if (plan.slug === 'creator' || plan.slug === 'basic') {
     features.push('Velocidade maior nas gerações');
     features.push('Suporte por e-mail');
     features.push('180 dias de galeria');

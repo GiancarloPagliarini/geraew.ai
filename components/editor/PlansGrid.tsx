@@ -6,7 +6,10 @@ import {
   Coins,
   Crown,
   Flame,
+  Flower2,
+  Gem,
   Loader2,
+  Mountain,
   Pickaxe,
   Users,
   Zap,
@@ -76,17 +79,20 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
   const discountLabel = PLAN_DISCOUNT_LABELS[plan.slug];
   const socialProofIcon = PLAN_SOCIAL_PROOF_ICONS[plan.slug];
 
-  const subtitle = ['starter', 'creator', 'pro', 'studio'].includes(plan.slug)
+  const subtitle = ['ultra-basic', 'starter', 'basic', 'creator', 'pro', 'advanced', 'studio'].includes(plan.slug)
     ? t(`subtitles.${plan.slug}` as 'subtitles.starter')
     : '';
-  const hasSocialProof = ['free', 'starter', 'creator', 'pro', 'studio'].includes(plan.slug);
+  const hasSocialProof = ['free', 'ultra-basic', 'starter', 'basic', 'creator', 'pro', 'advanced', 'studio'].includes(plan.slug);
   const socialProofText = hasSocialProof
     ? t(`socialProof.${plan.slug}` as 'socialProof.free')
     : '';
 
   const actionLabel = t(`actions.${planAction}` as 'actions.upgrade');
 
-  const PlanIcon = isStudio ? Crown : isPro ? Zap : isCreator ? Pickaxe : isFree ? Users : Coins;
+  const isUltraBasic = plan.slug === 'ultra-basic';
+  const isBasic = plan.slug === 'basic';
+  const isAdvanced = plan.slug === 'advanced';
+  const PlanIcon = isStudio ? Crown : isPro ? Zap : isAdvanced ? Gem : isCreator ? Pickaxe : isBasic ? Mountain : isUltraBasic ? Flower2 : isFree ? Users : Coins;
   const SocialProofIcon = socialProofIcon;
   const radius = compact ? 'rounded-[16px]' : 'rounded-[22px]';
 
@@ -148,7 +154,7 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
         <div className={`flex items-center ${compact ? 'gap-1.5' : 'gap-2.5'}`}>
           <div className={`flex items-center justify-center rounded-lg ${compact ? 'h-6 w-6' : 'h-8 w-8'} ${isCreator ? 'bg-[#a2dd00]/15' : isCurrent ? 'bg-[#f3f0ed]/10' : 'bg-[#f3f0ed]/[0.05]'
             }`}>
-            <PlanIcon className={`${compact ? 'h-3 w-3' : 'h-4 w-4'} ${isCreator ? 'text-[#a2dd00]' : isCurrent ? 'text-[#f3f0ed]/70' : 'text-[#f3f0ed]/40'
+            <PlanIcon className={`${compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} ${isCreator ? 'text-[#a2dd00]' : isCurrent ? 'text-[#f3f0ed]/70' : 'text-[#f3f0ed]/40'
               }`} />
           </div>
           <div>
