@@ -82,6 +82,10 @@
     "generationFootnote": "If you spend all credits on a single model",
     "guarantee": "7-Day Guarantee",
     "guaranteeText": "Try risk-free. If you're not satisfied in the first 7 days, we refund 100% of your money. No questions, no hassle.",
+    "sections": {
+      "entry": "Entry plans",
+      "monetizer": "Monetizer plans"
+    },
     "badges": {
       "noCancelFee": "No cancellation fee",
       "securePayment": "Secure payment",
@@ -102,16 +106,22 @@
   },
   "plans": {
     "subtitles": {
+      "ultra-basic": "Beginner",
       "starter": "Explorer",
+      "basic": "Essential",
       "creator": "Creator",
       "pro": "Producer",
+      "advanced": "Advanced",
       "studio": "Professional"
     },
     "socialProof": {
       "free": "Test our capacity!",
+      "ultra-basic": "Take your first step",
       "starter": "Great for personal projects",
+      "basic": "For those growing",
       "creator": "Picked by 68% of creators",
       "pro": "For those who take it seriously",
+      "advanced": "Power and total control",
       "studio": "For teams and agencies"
     }
   },

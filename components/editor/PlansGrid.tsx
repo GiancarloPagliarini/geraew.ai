@@ -325,6 +325,59 @@ function SkeletonCard({ compact }: { compact: boolean }) {
   );
 }
 
+const PLAN_SECTIONS = [
+  { key: 'entry' as const, slugs: ['ultra-basic', 'starter', 'basic', 'creator'] },
+  { key: 'monetizer' as const, slugs: ['pro', 'advanced', 'studio'] },
+];
+
+function PlanSection({
+  sectionKey,
+  plans,
+  currentPlanSlug,
+  hasActiveSub,
+  subscribingSlug,
+  onSubscribe,
+  compact,
+  cols = 3,
+}: {
+  sectionKey: 'entry' | 'creator' | 'monetizer';
+  plans: Plan[];
+  currentPlanSlug: string | null;
+  hasActiveSub: boolean;
+  subscribingSlug: string | null;
+  onSubscribe: (slug: string) => void;
+  compact: boolean;
+  cols?: 2 | 3 | 4;
+}) {
+  const t = useTranslations('editorPlans');
+  const gap = compact ? 'gap-3' : 'gap-4 lg:gap-3';
+  const colClass = cols === 4 ? 'sm:grid-cols-2 lg:grid-cols-4' : cols === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3';
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <div className="h-px flex-1 bg-[#f3f0ed]/[0.08]" />
+        <p className={`font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/50 ${compact ? 'text-[9px]' : 'text-[11px]'}`}>
+          {t(`planSections.${sectionKey}` as 'planSections.entry')}
+        </p>
+        <div className="h-px flex-1 bg-[#f3f0ed]/[0.08]" />
+      </div>
+      <div className={`grid grid-cols-1 items-stretch ${colClass} ${gap}`}>
+        {plans.map((plan) => (
+          <PlanCard
+            key={plan.id}
+            plan={plan}
+            isCurrent={currentPlanSlug === plan.slug}
+            planAction={resolvePlanAction(plan.slug, currentPlanSlug, hasActiveSub)}
+            onSubscribe={onSubscribe}
+            subscribingSlug={subscribingSlug}
+            compact={compact}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function PlansGrid({
   plans,
   currentPlanSlug,
@@ -335,23 +388,16 @@ export function PlansGrid({
   isLoading = false,
 }: PlansGridProps) {
   if (isLoading) {
-    if (compact) {
-      return (
-        <>
-          <div className="grid grid-cols-1 items-stretch gap-3 sm:hidden">
-            {Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} compact />)}
-          </div>
-          <div className="hidden items-stretch gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-5 lg:gap-3">
-            {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} compact />)}
-          </div>
-        </>
-      );
-    }
     return (
-      <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} compact={false} />)}
-        </div>
+      <div className={`flex flex-col ${compact ? 'gap-4' : 'gap-6'}`}>
+        {PLAN_SECTIONS.map((section) => (
+          <div key={section.key} className="flex flex-col gap-2">
+            <div className={`${compact ? 'h-2.5 w-24' : 'h-3 w-32'} rounded bg-[#f3f0ed]/[0.06]`} />
+            <div className={`grid grid-cols-1 items-stretch sm:grid-cols-2 lg:grid-cols-3 ${compact ? 'gap-3' : 'gap-4 lg:gap-3'}`}>
+              {section.slugs.map((_, i) => <SkeletonCard key={i} compact={compact} />)}
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -363,52 +409,35 @@ export function PlansGrid({
 
   if (sorted.length === 0) return null;
 
-  if (compact) {
-    return (
-      <>
-        <div className="grid grid-cols-1 items-stretch gap-3 sm:hidden">
-          {sorted.map((plan) => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-              isCurrent={currentPlanSlug === plan.slug}
-              planAction={resolvePlanAction(plan.slug, currentPlanSlug, hasActiveSub)}
-              onSubscribe={onSubscribe}
-              subscribingSlug={subscribingSlug}
-              compact
-            />
-          ))}
-        </div>
-        <div className="hidden items-stretch gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-5 lg:gap-3">
-          {sorted.map((plan) => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-              isCurrent={currentPlanSlug === plan.slug}
-              planAction={resolvePlanAction(plan.slug, currentPlanSlug, hasActiveSub)}
-              onSubscribe={onSubscribe}
-              subscribingSlug={subscribingSlug}
-              compact
-            />
-          ))}
-        </div>
-      </>
-    );
-  }
+  const entryPlans = sorted.filter((p) => PLAN_SECTIONS[0].slugs.includes(p.slug));
+  const monetizerPlans = sorted.filter((p) => PLAN_SECTIONS[1].slugs.includes(p.slug));
 
   return (
-    <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:gap-3">
-      {sorted.map((plan) => (
-        <PlanCard
-          key={plan.id}
-          plan={plan}
-          isCurrent={currentPlanSlug === plan.slug}
-          planAction={resolvePlanAction(plan.slug, currentPlanSlug, hasActiveSub)}
-          onSubscribe={onSubscribe}
+    <div className={`flex flex-col ${compact ? 'gap-4' : 'gap-6'}`}>
+      {entryPlans.length > 0 && (
+        <PlanSection
+          sectionKey="entry"
+          plans={entryPlans}
+          currentPlanSlug={currentPlanSlug}
+          hasActiveSub={hasActiveSub}
           subscribingSlug={subscribingSlug}
-          compact={false}
+          onSubscribe={onSubscribe}
+          compact={compact}
+          cols={4}
         />
-      ))}
+      )}
+      {monetizerPlans.length > 0 && (
+        <PlanSection
+          sectionKey="monetizer"
+          plans={monetizerPlans}
+          currentPlanSlug={currentPlanSlug}
+          hasActiveSub={hasActiveSub}
+          subscribingSlug={subscribingSlug}
+          onSubscribe={onSubscribe}
+          compact={compact}
+          cols={3}
+        />
+      )}
     </div>
   );
 }

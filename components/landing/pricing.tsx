@@ -36,12 +36,12 @@ function useTranslatedPlanFeatures(plan: Plan): string[] {
     }),
   );
 
-  if (plan.slug === "pro" || plan.slug === "studio") {
+  if (plan.slug === "pro" || plan.slug === "studio" || plan.slug === "advanced") {
     features.push(t("queuePriority"));
     features.push(t("fasterGen"));
     features.push(t("prioritySupport"));
     features.push(t("gallery365"));
-  } else if (plan.slug === "creator") {
+  } else if (plan.slug === "creator" || plan.slug === "basic") {
     features.push(t("fasterGen"));
     features.push(t("emailSupport"));
     features.push(t("gallery180"));
@@ -66,12 +66,12 @@ function PlanCard({ plan, i }: { plan: Plan; i: number; total: number }) {
   const { main, sub } = formatPrice(plan.priceCents, plan.currency, locale);
   const features = useTranslatedPlanFeatures(plan);
   const generationExamples = PLAN_GENERATIONS[plan.slug] ?? [];
-  const hasSubtitle = ["starter", "creator", "pro", "studio"].includes(plan.slug);
+  const hasSubtitle = ["ultra-basic", "starter", "basic", "creator", "pro", "advanced", "studio"].includes(plan.slug);
   const subtitle = hasSubtitle ? tPlans(`subtitles.${plan.slug}`) : undefined;
   const originalPrice = PLAN_ORIGINAL_PRICES[plan.slug];
   const discountLabel = PLAN_DISCOUNT_LABELS[plan.slug];
   const socialProof = PLAN_SOCIAL_PROOF[plan.slug];
-  const hasSocialProof = ["free", "starter", "creator", "pro", "studio"].includes(plan.slug);
+  const hasSocialProof = ["free", "ultra-basic", "starter", "basic", "creator", "pro", "advanced", "studio"].includes(plan.slug);
   const socialProofText = hasSocialProof ? tPlans(`socialProof.${plan.slug}`) : undefined;
 
   return (
@@ -365,54 +365,51 @@ export function Pricing() {
             <Loader2 className="h-6 w-6 animate-spin text-landing-accent" />
           </div>
         ) : (
-          <div className="mt-10 sm:mt-16 lg:mt-20">
-            {/* Mobile / Tablet: grid */}
-            <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 sm:gap-4 lg:hidden">
-              {plans.map((plan, i) => (
-                <PlanCard
-                  key={plan.id}
-                  plan={plan}
-                  i={i}
-                  total={plans.length}
-                />
-              ))}
-            </div>
-
-            {/* Desktop: fan / deck layout */}
-            <div className="hidden lg:flex lg:items-start lg:justify-center lg:pt-16 lg:pb-12">
-              {plans.map((plan, i) => {
-                const center = Math.floor(plans.length / 2);
-                const offset = i - center;
-                const absOffset = Math.abs(offset);
-                const rotation = offset * 5;
-                const yShift = absOffset * absOffset * 14;
-                const scale = 1 - absOffset * 0.05;
-                const z = 10 - absOffset;
-                const brightness = 1 - absOffset * 0.04;
-
-                return (
-                  <div
-                    key={plan.id}
-                    className="w-[256px] shrink-0"
-                    style={{
-                      transform: `rotate(${rotation}deg) translateY(${yShift}px) scale(${scale})`,
-                      transformOrigin: 'bottom center',
-                      zIndex: z,
-                      marginLeft: i === 0 ? 0 : '-14px',
-                      filter: absOffset > 0 ? `brightness(${brightness})` : undefined,
-                    }}
-                  >
-                    <div className="transition-all duration-300 hover:-translate-y-3 hover:scale-[1.03]">
-                      <PlanCard
-                        plan={plan}
-                        i={i}
-                        total={plans.length}
-                      />
-                    </div>
+          <div className="mt-10 flex flex-col gap-8 sm:mt-16 lg:mt-20 lg:gap-10">
+            {/* Entry plans: ultra-basic, starter, basic, creator */}
+            {(() => {
+              const entrySlugs = ['ultra-basic', 'starter', 'basic', 'creator'];
+              const entryPlans = plans.filter((p) => entrySlugs.includes(p.slug));
+              if (entryPlans.length === 0) return null;
+              return (
+                <div className="flex flex-col gap-5">
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-[#f3f0ed]/[0.06]" />
+                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#f3f0ed]/35">
+                      {t("sections.entry")}
+                    </span>
+                    <div className="h-px flex-1 bg-[#f3f0ed]/[0.06]" />
                   </div>
-                );
-              })}
-            </div>
+                  <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+                    {entryPlans.map((plan, i) => (
+                      <PlanCard key={plan.id} plan={plan} i={i} total={entryPlans.length} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+            {/* Monetizer plans: pro, advanced, studio */}
+            {(() => {
+              const monetizerSlugs = ['pro', 'advanced', 'studio'];
+              const monetizerPlans = plans.filter((p) => monetizerSlugs.includes(p.slug));
+              if (monetizerPlans.length === 0) return null;
+              return (
+                <div className="flex flex-col gap-5">
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-[#f3f0ed]/[0.06]" />
+                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#f3f0ed]/35">
+                      {t("sections.monetizer")}
+                    </span>
+                    <div className="h-px flex-1 bg-[#f3f0ed]/[0.06]" />
+                  </div>
+                  <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+                    {monetizerPlans.map((plan, i) => (
+                      <PlanCard key={plan.id} plan={plan} i={i} total={monetizerPlans.length} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 

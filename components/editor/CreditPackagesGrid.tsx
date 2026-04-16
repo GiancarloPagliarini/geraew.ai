@@ -68,10 +68,36 @@ export function CreditPackagesGrid({ packages, currency = 'BRL', compact }: Cred
     return Math.round((1 - priceCents / original) * 100);
   }
 
+  const PACKAGE_SECTIONS = [
+    { key: 'quick' as const, keys: ['mini', 'plus', 'pro-pack'] },
+    { key: 'volume' as const, keys: ['mega', 'ultra'] },
+  ];
+
+  function SectionTitle({ label }: { label: string }) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="h-px flex-1 bg-[#f3f0ed]/[0.08]" />
+        <p className={`font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/50 ${compact ? 'text-[9px]' : 'text-[11px]'}`}>
+          {label}
+        </p>
+        <div className="h-px flex-1 bg-[#f3f0ed]/[0.08]" />
+      </div>
+    );
+  }
+
   return (
-    <div className={`grid grid-cols-1 items-stretch sm:grid-cols-2 lg:grid-cols-3 ${compact ? 'gap-3' : 'gap-4 xl:gap-5'}`}>
-      {activePackages.map((pkg, i) => {
-        const badge = getPackageBadge(i, activePackages.length);
+    <div className={`flex flex-col ${compact ? 'gap-4' : 'gap-6'}`}>
+      {PACKAGE_SECTIONS.map((section) => {
+        const sectionPkgs = activePackages.filter((p) => section.keys.includes(getBoostMetaKey(p) ?? ''));
+        if (sectionPkgs.length === 0) return null;
+        const sectionLabel = section.key === 'quick' ? t('packageSections.quick') : t('packageSections.volume');
+        return (
+          <div key={section.key} className="flex flex-col gap-6">
+            <SectionTitle label={sectionLabel} />
+            <div className={`grid grid-cols-1 items-stretch sm:grid-cols-2 lg:grid-cols-3 ${compact ? 'gap-3' : 'gap-4 xl:gap-5'}`}>
+              {sectionPkgs.map((pkg) => {
+                const globalIndex = activePackages.indexOf(pkg);
+                const badge = getPackageBadge(globalIndex, activePackages.length);
         const isPopular = badge === 'popular';
         const isBest = badge === 'best';
         const boostKey = getBoostMetaKey(pkg);
@@ -249,6 +275,10 @@ export function CreditPackagesGrid({ packages, currency = 'BRL', compact }: Cred
                   {t('packages.trust')}
                 </p>
               )}
+            </div>
+          </div>
+        );
+              })}
             </div>
           </div>
         );

@@ -82,6 +82,10 @@
     "generationFootnote": "Usando todos os créditos em um único modelo",
     "guarantee": "Garantia de 7 Dias",
     "guaranteeText": "Experimente sem risco. Se não ficar satisfeito nos primeiros 7 dias, devolvemos 100% do seu dinheiro. Sem perguntas, sem burocracia.",
+    "sections": {
+      "entry": "Planos de entrada",
+      "monetizer": "Plano para monetizadores"
+    },
     "badges": {
       "noCancelFee": "Sem taxa de cancelamento",
       "securePayment": "Pagamento seguro",
@@ -102,16 +106,22 @@
   },
   "plans": {
     "subtitles": {
+      "ultra-basic": "Iniciante",
       "starter": "Explorador",
+      "basic": "Essencial",
       "creator": "Criador",
       "pro": "Produtor",
+      "advanced": "Avançado",
       "studio": "Profissional"
     },
     "socialProof": {
       "free": "Teste nossa capacidade!",
+      "ultra-basic": "Dê o primeiro passo",
       "starter": "Ideal para projetos pessoais",
+      "basic": "Para quem está crescendo",
       "creator": "Escolha de 68% dos criadores",
       "pro": "Para quem leva a sério",
+      "advanced": "Poder e controle total",
       "studio": "Para equipes e agências"
     }
   },

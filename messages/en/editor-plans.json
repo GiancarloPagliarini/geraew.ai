@@ -90,6 +90,15 @@
       },
       "trust": "One-time payment · No subscription"
     },
+    "packageSections": {
+      "quick": "Quick top-ups",
+      "volume": "High volume"
+    },
+    "planSections": {
+      "entry": "Entry plans",
+      "creator": "Creator plans",
+      "monetizer": "Monetizer plan"
+    },
     "plansModal": {
       "limitedOffer": "Limited-time offer",
       "titlePlans": "Choose your plan and start creating",

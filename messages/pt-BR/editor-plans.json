@@ -90,6 +90,15 @@
       },
       "trust": "Pagamento único · Sem assinatura"
     },
+    "packageSections": {
+      "quick": "Recargas rápidas",
+      "volume": "Alto volume"
+    },
+    "planSections": {
+      "entry": "Planos de entrada",
+      "creator": "Planos de criadores",
+      "monetizer": "Planos para monetizadores"
+    },
     "plansModal": {
       "limitedOffer": "Oferta por tempo limitado",
       "titlePlans": "Escolha seu plano e comece a criar",
