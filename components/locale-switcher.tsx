@@ -94,6 +94,7 @@ export function LocaleSwitcher({ className, compact }: { className?: string; com
     >
       {locales.map((l) => {
         const active = l === locale;
+        const FlagComp = FLAG_SVG[l];
         return (
           <button
             key={l}
@@ -112,11 +113,7 @@ export function LocaleSwitcher({ className, compact }: { className?: string; com
             )}
             aria-pressed={active}
           >
-            {compact ? (
-              (() => { const Flag = FLAG_SVG[l]; return <Flag className="w-4.5  rounded-[2px]" />; })()
-            ) : (
-              <span>{LABELS[l].flag}</span>
-            )}
+            <FlagComp className={cn("rounded-[2px]", compact ? "w-4" : "w-4.5")} />
             {!compact && <span>{LABELS[l].code}</span>}
           </button>
         );
