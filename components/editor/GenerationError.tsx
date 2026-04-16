@@ -27,6 +27,15 @@ function interpolate(template: string, count: number): string {
   return template.replace(/\{count\}/g, String(count));
 }
 
+const KNOWN_ERROR_MESSAGES: Record<string, string> = {
+  'No image returned in response. Try a different prompt.':
+    'Não foi possível gerar a imagem. Tente usar outras fotos.',
+};
+
+function mapErrorMessage(msg: string): string {
+  return KNOWN_ERROR_MESSAGES[msg] ?? msg;
+}
+
 /**
  * Fires a Sonner toast with a rich error message and returns the formatted
  * string to store in the panel's `errorMsg` state.
@@ -37,7 +46,7 @@ export function showGenerationError({
   fallback = 'Erro ao gerar.',
   strings,
 }: ShowGenerationErrorParams): string {
-  const msg = errorMessage ?? fallback;
+  const msg = errorMessage ? mapErrorMessage(errorMessage) : fallback;
   const n = creditsRefunded ?? 0;
 
   const refundedDescTpl =
