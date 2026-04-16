@@ -53,16 +53,24 @@
       "studio": "Para equipes e agências"
     },
     "boost": {
-      "boost-p": {
-        "label": "Emergência",
+      "mini": {
+        "label": "Mini",
         "description": "Recarrega rápida para continuar gerando"
       },
-      "boost-m": {
-        "label": "Fôlego",
+      "plus": {
+        "label": "Plus",
+        "description": "Um empurrão extra para o dia a dia"
+      },
+      "pro-pack": {
+        "label": "Pro Pack",
         "description": "Créditos extras para projetos maiores"
       },
-      "boost-g": {
-        "label": "Pré-upgrade",
+      "mega": {
+        "label": "Mega",
+        "description": "Volume alto para produção intensa"
+      },
+      "ultra": {
+        "label": "Ultra",
         "description": "Quase um plano — ideal para testar"
       }
     },

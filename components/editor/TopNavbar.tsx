@@ -9,7 +9,6 @@ import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
 import { PlansModal } from './PlansModal';
 import { PostAndEarnModal } from './PostAndEarnModal';
-import { usePhoneVerification } from '@/lib/phone-verification-context';
 import { useLoginModal } from '@/lib/login-modal-context';
 import { LocaleSwitcher } from '@/components/locale-switcher';
 
@@ -20,7 +19,6 @@ export function TopNavbar() {
   const router = useRouter();
   const { credits, creditsLoading, creditsBalance } = useEditor();
   const { user, logout, loading: authLoading } = useAuth();
-  const { openModal: openPhoneVerification } = usePhoneVerification();
   const { openLoginModal } = useLoginModal();
   const [menuOpen, setMenuOpen] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -92,17 +90,6 @@ export function TopNavbar() {
                 <Plus className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">{t('buyCredits')}</span>
               </button>
-
-              {/* Verify phone button — red, only when phone not verified */}
-              {user.emailVerified && !user.phoneVerified && (
-                <button
-                  onClick={openPhoneVerification}
-                  className="relative flex items-center gap-1.5 overflow-hidden rounded-full bg-linear-to-r from-orange-500 via-red-500 to-pink-500 p-2 text-xs font-bold text-white shadow-lg shadow-red-500/40 transition-all hover:shadow-red-500/60 animate-pulse sm:px-4 sm:py-1.5"
-                >
-                  <Gift className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">{t('redeemCredits')}</span>
-                </button>
-              )}
 
               {/* Refer button — hidden on mobile */}
               <button

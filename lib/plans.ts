@@ -2,7 +2,7 @@ import type { Plan, CreditPackage } from './api';
 import type { LucideIcon } from 'lucide-react';
 import { Flame, Zap, Trophy, Users, TestTubeDiagonal } from 'lucide-react';
 
-export const PLAN_ORDER = ['free', 'starter', 'creator', 'pro', 'studio'];
+export const PLAN_ORDER = ['free', 'ultra-basic', 'starter', 'basic', 'creator', 'pro', 'advanced', 'studio'];
 
 /**
  * @deprecated Use `editorPlans.subtitles.<slug>` via next-intl.
@@ -130,24 +130,26 @@ export interface BoostMeta {
   description: string;
 }
 
+export type BoostMetaKey = 'mini' | 'plus' | 'pro-pack' | 'mega' | 'ultra';
+
 /** @deprecated Use `getBoostMetaKey` + `editorPlans.boost.<key>.{label,description}`. */
-export const BOOST_META: Record<string, BoostMeta> = {
-  'boost-p': { label: 'Emergência', description: 'Recarrega rápida para continuar gerando' },
-  'boost-m': { label: 'Fôlego', description: 'Créditos extras para projetos maiores' },
-  'boost-g': { label: 'Pré-upgrade', description: 'Quase um plano — ideal para testar' },
+export const BOOST_META: Record<BoostMetaKey, BoostMeta> = {
+  'mini': { label: 'Mini', description: 'Recarrega rápida para continuar gerando' },
+  'plus': { label: 'Plus', description: 'Um empurrão extra para o dia a dia' },
+  'pro-pack': { label: 'Pro Pack', description: 'Créditos extras para projetos maiores' },
+  'mega': { label: 'Mega', description: 'Volume alto para produção intensa' },
+  'ultra': { label: 'Ultra', description: 'Quase um plano — ideal para testar' },
 };
 
-export function getBoostMetaKey(pkg: CreditPackage): 'boost-p' | 'boost-m' | 'boost-g' | null {
-  const normalized = pkg.name.toLowerCase().replace(/\s+/g, '-');
-  if (normalized === 'boost-p' || normalized === 'boost-m' || normalized === 'boost-g') {
-    return normalized;
+export function getBoostMetaKey(pkg: CreditPackage): BoostMetaKey | null {
+  switch (pkg.credits) {
+    case 550: return 'mini';
+    case 1700: return 'plus';
+    case 3200: return 'pro-pack';
+    case 6500: return 'mega';
+    case 14000: return 'ultra';
+    default: return null;
   }
-  const lastChar = pkg.name.toLowerCase().charAt(pkg.name.length - 1);
-  const inferred = `boost-${lastChar}`;
-  if (inferred === 'boost-p' || inferred === 'boost-m' || inferred === 'boost-g') {
-    return inferred;
-  }
-  return null;
 }
 
 /** @deprecated Use `getBoostMetaKey` + translations instead. */

@@ -288,7 +288,6 @@
       "name": "Nome",
       "email": "E-mail",
       "password": "Senha",
-      "phone": "Telefone",
       "submit": "Criar conta grátis",
       "hasAccount": "Já tem conta?",
       "signIn": "Entrar"
@@ -310,16 +309,13 @@
         "name": "NOME",
         "email": "EMAIL",
         "password": "SENHA",
-        "phone": "TELEFONE ",
         "newPassword": "NOVA SENHA",
         "confirmPassword": "CONFIRMAR SENHA"
       },
       "placeholders": {
         "name": "Seu nome",
-        "email": "seu@email.com",
-        "phone": "(11) 99999-8888"
+        "email": "seu@email.com"
       },
-      "phoneHelper": "Usado para contato e recuperação de conta",
       "submitLogin": "Entrar",
       "submitRegister": "Criar conta",
       "genericError": "Ocorreu um erro. Tente novamente.",
@@ -400,26 +396,6 @@
       "successTitle": "Email verificado!",
       "goToLogin": "Ir para o login",
       "backToLogin": "Voltar para o login"
-    },
-    "phoneVerify": {
-      "title": "Confirme seu celular",
-      "description": "Para liberar seus créditos gratuitos, confirme seu número de celular via SMS.",
-      "willSendTo": "Vamos enviar um código SMS para",
-      "sentTo": "Enviamos um SMS para",
-      "sendCode": "Enviar código SMS",
-      "sendError": "Erro ao enviar SMS. Tente novamente.",
-      "invalidCode": "Código inválido ou expirado.",
-      "verifying": "Verificando...",
-      "resend": "Reenviar SMS",
-      "resending": "Reenviando...",
-      "resendSuccess": "SMS reenviado!",
-      "resendError": "Erro ao reenviar.",
-      "changePhone": "Alterar número",
-      "successTitle": "Telefone verificado!",
-      "successBody": "Seus créditos gratuitos foram liberados. Bom uso!",
-      "toastSuccess": "Telefone verificado! Seus créditos gratuitos foram liberados.",
-      "phoneLabel": "TELEFONE",
-      "phonePlaceholder": "(11) 99999-8888"
     }
   },
   "checkout": {

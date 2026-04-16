@@ -288,7 +288,6 @@
       "name": "Name",
       "email": "Email",
       "password": "Password",
-      "phone": "Phone",
       "submit": "Create free account",
       "hasAccount": "Already have an account?",
       "signIn": "Sign in"
@@ -310,16 +309,13 @@
         "name": "NAME",
         "email": "EMAIL",
         "password": "PASSWORD",
-        "phone": "PHONE",
         "newPassword": "NEW PASSWORD",
         "confirmPassword": "CONFIRM PASSWORD"
       },
       "placeholders": {
         "name": "Your name",
-        "email": "you@email.com",
-        "phone": "(11) 99999-8888"
+        "email": "you@email.com"
       },
-      "phoneHelper": "Used for contact and account recovery",
       "submitLogin": "Sign in",
       "submitRegister": "Create account",
       "genericError": "Something went wrong. Please try again.",
@@ -400,26 +396,6 @@
       "successTitle": "Email verified!",
       "goToLogin": "Go to sign in",
       "backToLogin": "Back to sign in"
-    },
-    "phoneVerify": {
-      "title": "Confirm your phone",
-      "description": "To unlock your free credits, confirm your phone number via SMS.",
-      "willSendTo": "We'll send an SMS code to",
-      "sentTo": "We sent an SMS to",
-      "sendCode": "Send SMS code",
-      "sendError": "Couldn't send SMS. Please try again.",
-      "invalidCode": "Invalid or expired code.",
-      "verifying": "Verifying...",
-      "resend": "Resend SMS",
-      "resending": "Resending...",
-      "resendSuccess": "SMS sent again!",
-      "resendError": "Couldn't resend.",
-      "changePhone": "Change number",
-      "successTitle": "Phone verified!",
-      "successBody": "Your free credits have been unlocked. Enjoy!",
-      "toastSuccess": "Phone verified! Your free credits have been unlocked.",
-      "phoneLabel": "PHONE",
-      "phonePlaceholder": "(11) 99999-8888"
     }
   },
   "checkout": {

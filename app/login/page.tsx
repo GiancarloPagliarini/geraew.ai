@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, EyeOff, Mail, ArrowLeft, UserPlus, LogIn, Phone, CheckCircle, XCircle, Loader2, RefreshCw } from 'lucide-react';
+import { Eye, EyeOff, Mail, ArrowLeft, UserPlus, LogIn, CheckCircle, XCircle, Loader2, RefreshCw } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Image from 'next/image';
@@ -74,7 +74,6 @@ function LoginPageContent() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -240,19 +239,6 @@ function LoginPageContent() {
     };
   }, [isPaused, currentSlide, nextSlide]);
 
-  // Format phone as user types: (11) 99999-8888
-  function formatPhoneDisplay(value: string) {
-    const digits = value.replace(/\D/g, '');
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
-  }
-
-  function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
-    setPhone(digits);
-  }
-
   useEffect(() => {
     if (view === 'verify') {
       setTimeout(() => inputsRef.current[0]?.focus(), 50);
@@ -383,7 +369,7 @@ function LoginPageContent() {
       } else {
         // Buscar referral code da URL ou cookie
         const referralCode = refParam || document.cookie.match(/(?:^|; )geraew-ref=([^;]*)/)?.[1];
-        await api.auth.register(email, name, password, phone, referralCode || undefined);
+        await api.auth.register(email, name, password, referralCode || undefined);
         setView('verify');
       }
     } catch (err: unknown) {
@@ -827,31 +813,6 @@ function LoginPageContent() {
                 </div>
               </div>
 
-              {mode === 'register' && (
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">
-                    {tCommon('labels.phone')}
-                  </label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-white/40 text-sm">
-                      <Phone className="h-3.5 w-3.5" />
-                      <span>+55</span>
-                    </div>
-                    <input
-                      type="tel"
-                      required
-                      value={formatPhoneDisplay(phone)}
-                      onChange={handlePhoneChange}
-                      placeholder={tCommon('placeholders.phone')}
-                      className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-[4.5rem] pr-3 text-sm text-white placeholder:text-white/20 outline-none transition-colors focus:border-[#a2dd00]/40 focus:bg-white/[0.06]"
-                    />
-                  </div>
-                  <p className="text-[10px] text-white/25">
-                    {tCommon('phoneHelper')}
-                  </p>
-                </div>
-              )}
-
               {success && (
                 <p className="rounded-xl border border-[#a2dd00]/20 bg-[#a2dd00]/10 px-3 py-2 text-xs text-[#a2dd00]">
                   {success}
@@ -890,7 +851,7 @@ function LoginPageContent() {
 
               <button
                 type="submit"
-                disabled={loading || (mode === 'register' && phone.length < 10)}
+                disabled={loading}
                 className="mt-1 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#a2dd00] font-bold text-[#1a2123] text-sm transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
               >
                 {loading ? (

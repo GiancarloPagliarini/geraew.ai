@@ -7,8 +7,6 @@ export interface AuthUser {
   avatarUrl: string;
   role: string;
   emailVerified: boolean;
-  phone?: string;
-  phoneVerified: boolean;
   hasCompletedOnboarding: boolean;
   createdAt: string;
 }
@@ -1384,10 +1382,10 @@ export const api = {
   },
 
   auth: {
-    checkAvailability(email?: string, phone?: string) {
-      return request<{ emailTaken: boolean; phoneTaken: boolean }>('/api/v1/auth/check-availability', {
+    checkAvailability(email?: string) {
+      return request<{ emailTaken: boolean }>('/api/v1/auth/check-availability', {
         method: 'POST',
-        body: JSON.stringify({ email, phone }),
+        body: JSON.stringify({ email }),
       });
     },
 
@@ -1398,10 +1396,10 @@ export const api = {
       });
     },
 
-    register(email: string, name: string, password: string, phone: string, referralCode?: string) {
+    register(email: string, name: string, password: string, referralCode?: string) {
       return request<AuthResponse>('/api/v1/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email, name, password, phone, ...(referralCode && { referralCode }) }),
+        body: JSON.stringify({ email, name, password, ...(referralCode && { referralCode }) }),
       });
     },
 
@@ -1460,19 +1458,6 @@ export const api = {
       });
     },
 
-    sendPhoneVerification(phone: string) {
-      return request<{ message: string }>('/api/v1/auth/send-verification', {
-        method: 'POST',
-        body: JSON.stringify({ phone }),
-      });
-    },
-
-    verifyPhone(accessToken: string, phone: string, code: string) {
-      return authRequest<AuthResponse>('/api/v1/auth/verify-phone', accessToken, {
-        method: 'POST',
-        body: JSON.stringify({ phone, code }),
-      });
-    },
   },
 
   affiliates: {

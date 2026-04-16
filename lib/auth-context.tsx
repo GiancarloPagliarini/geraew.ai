@@ -13,7 +13,7 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, name: string, password: string, phone: string) => Promise<void>;
+  register: (email: string, name: string, password: string) => Promise<void>;
   googleLogin: (googleToken: string) => Promise<void>;
   logout: () => void;
   updateAuth: (data: { accessToken: string; refreshToken: string; user: AuthUser }) => void;
@@ -68,7 +68,7 @@ function clearAuth() {
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('geraew-') && !key.startsWith('geraew-phone-modal-shown-')) keysToRemove.push(key);
+      if (key && key.startsWith('geraew-')) keysToRemove.push(key);
     }
     keysToRemove.forEach((key) => localStorage.removeItem(key));
   }
@@ -84,8 +84,8 @@ function useLoginMutation(onSuccess: (res: Awaited<ReturnType<typeof api.auth.lo
 
 function useRegisterMutation(onSuccess: (res: Awaited<ReturnType<typeof api.auth.register>>) => void) {
   return useMutation({
-    mutationFn: ({ email, name, password, phone, referralCode }: { email: string; name: string; password: string; phone: string; referralCode?: string }) =>
-      api.auth.register(email, name, password, phone, referralCode),
+    mutationFn: ({ email, name, password, referralCode }: { email: string; name: string; password: string; referralCode?: string }) =>
+      api.auth.register(email, name, password, referralCode),
     onSuccess,
   });
 }
@@ -170,8 +170,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const register = useCallback(
-    async (email: string, name: string, password: string, phone: string) => {
-      await registerMutation.mutateAsync({ email, name, password, phone });
+    async (email: string, name: string, password: string) => {
+      await registerMutation.mutateAsync({ email, name, password });
     },
     [registerMutation]
   );

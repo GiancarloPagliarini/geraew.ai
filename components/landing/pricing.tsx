@@ -309,6 +309,7 @@ export function Pricing() {
       .listPublic(currency)
       .then((data) => {
         const sorted = data
+          .filter((p) => p.slug !== 'free')
           .slice()
           .sort(
             (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),

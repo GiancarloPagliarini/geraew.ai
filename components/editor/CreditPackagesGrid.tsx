@@ -73,10 +73,10 @@ export function CreditPackagesGrid({ packages, currency = 'BRL', compact }: Cred
         const isBest = badge === 'best';
         const boostKey = getBoostMetaKey(pkg);
         const boostLabel = boostKey
-          ? t(`boost.${boostKey}.label` as 'boost.boost-p.label')
+          ? t(`boost.${boostKey}.label` as 'boost.mini.label')
           : pkg.name;
         const boostDescription = boostKey
-          ? t(`boost.${boostKey}.description` as 'boost.boost-p.description')
+          ? t(`boost.${boostKey}.description` as 'boost.mini.description')
           : '';
         const pricePerCredit = pkg.priceCents / pkg.credits;
         const savingsPct =

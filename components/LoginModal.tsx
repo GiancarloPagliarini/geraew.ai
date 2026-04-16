@@ -1,16 +1,14 @@
 'use client';
 
-import { Eye, EyeOff, Mail, ArrowLeft, UserPlus, LogIn, Phone, CheckCircle, XCircle, Loader2, RefreshCw, X } from 'lucide-react';
+import { Eye, EyeOff, Mail, ArrowLeft, UserPlus, LogIn, CheckCircle, XCircle, Loader2, RefreshCw, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { api, ApiError } from '@/lib/api';
 import { useLoginModal } from '@/lib/login-modal-context';
-import PhoneInput, { isValidPhoneNumber, type Country } from 'react-phone-number-input';
-import 'react-phone-number-input/style.css';
 
 const slides = [
   {
@@ -73,9 +71,6 @@ function LoginModalContent() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState<string | undefined>(undefined);
-  const locale = useLocale();
-  const defaultCountry: Country = locale === 'pt-BR' ? 'BR' : 'US';
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -204,7 +199,7 @@ function LoginModalContent() {
     if (isOpen) {
       setView('options');
       setMode('login');
-      setName(''); setEmail(''); setPassword(''); setPhone('');
+      setName(''); setEmail(''); setPassword('');
       setError(''); setSuccess('');
       setForgotEmail(''); setForgotError(''); setForgotSent(false);
       setDigits(['', '', '', '', '', '']);
@@ -309,7 +304,7 @@ function LoginModalContent() {
         handleLoginSuccess();
       } else {
         const referralCode = document.cookie.match(/(?:^|; )geraew-ref=([^;]*)/)?.[1];
-        await api.auth.register(email, name, password, phone ?? '', referralCode || undefined);
+        await api.auth.register(email, name, password, referralCode || undefined);
         setView('verify');
       }
     } catch (err: unknown) {
@@ -544,19 +539,6 @@ function LoginModalContent() {
                     </button>
                   </div>
                 </div>
-                {mode === 'register' && (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold tracking-[0.12em] text-white/40">{tCommon('labels.phone')}</label>
-                    <PhoneInput
-                      international
-                      defaultCountry={defaultCountry}
-                      value={phone}
-                      onChange={setPhone}
-                      placeholder={tCommon('placeholders.phone')}
-                      className="geraew-phone-input"
-                    />
-                  </div>
-                )}
                 {success && <p className="rounded-xl border border-[#a2dd00]/20 bg-[#a2dd00]/10 px-3 py-2 text-xs text-[#a2dd00]">{success}</p>}
                 {error && (
                   <div className="flex flex-col gap-2">
@@ -575,7 +557,7 @@ function LoginModalContent() {
                     </button>
                   </div>
                 )}
-                <button type="submit" disabled={loading || (mode === 'register' && (!phone || !isValidPhoneNumber(phone)))} className="mt-1 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#a2dd00] font-bold text-[#1a2123] text-sm transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60">
+                <button type="submit" disabled={loading} className="mt-1 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#a2dd00] font-bold text-[#1a2123] text-sm transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60">
                   {loading ? (
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#1a2123]/30 border-t-[#1a2123]" />
                   ) : mode === 'register' ? (

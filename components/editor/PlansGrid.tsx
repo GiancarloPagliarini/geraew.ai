@@ -350,21 +350,18 @@ export function PlansGrid({
     );
   }
 
-  const sorted = plans.slice().sort((a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug));
+  const sorted = plans
+    .filter((p) => p.slug !== 'free')
+    .slice()
+    .sort((a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug));
 
   if (sorted.length === 0) return null;
-
-  const mobileSorted = sorted.slice().sort((a, b) => {
-    if (a.slug === 'creator') return -1;
-    if (b.slug === 'creator') return 1;
-    return 0;
-  });
 
   if (compact) {
     return (
       <>
         <div className="grid grid-cols-1 items-stretch gap-3 sm:hidden">
-          {mobileSorted.map((plan) => (
+          {sorted.map((plan) => (
             <PlanCard
               key={plan.id}
               plan={plan}

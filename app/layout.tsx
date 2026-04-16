@@ -32,8 +32,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth-context";
 import { QueryProvider } from "@/lib/query-provider";
 import { GoogleAuthWrapper } from "@/lib/google-auth-wrapper";
-import { PhoneVerificationModal } from "@/components/PhoneVerificationModal";
-import { PhoneVerificationProvider } from "@/lib/phone-verification-context";
 import { LoginModalProvider } from "@/lib/login-modal-context";
 import { LoginModal } from "@/components/LoginModal";
 import { Toaster } from "sonner";
@@ -59,11 +57,9 @@ export default async function RootLayout({
           <GoogleAuthWrapper>
           <AuthProvider>
             <LoginModalProvider>
-            <PhoneVerificationProvider>
             <TooltipProvider delayDuration={0}>
               <Suspense fallback={null}><ReferralCapture /></Suspense>
               {children}
-              <PhoneVerificationModal />
               <LoginModal />
               <Toaster
                 theme="dark"
@@ -92,7 +88,6 @@ export default async function RootLayout({
                 }}
               />
             </TooltipProvider>
-            </PhoneVerificationProvider>
             </LoginModalProvider>
           </AuthProvider>
           </GoogleAuthWrapper>
