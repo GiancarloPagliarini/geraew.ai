@@ -105,6 +105,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(stored?.generatedVideoUrl ?? null);
+  const [videoAspect, setVideoAspect] = useState<string>(stored?.videoAspect ?? '16-9');
 
   const [generationId, setGenerationId] = useState<string | null>(stored?.generationId ?? null);
   const [genState, setGenState] = useState<GenState>(
@@ -158,10 +159,10 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
   useEffect(() => {
     try {
       localStorage.setItem(storageKey, JSON.stringify({
-        resolution, videoDuration, generatedVideoUrl, generationId, genState,
+        resolution, videoDuration, generatedVideoUrl, generationId, genState, videoAspect,
       }));
     } catch { /* ignore */ }
-  }, [storageKey, resolution, videoDuration, generatedVideoUrl, generationId, genState]);
+  }, [storageKey, resolution, videoDuration, generatedVideoUrl, generationId, genState, videoAspect]);
 
   // Save files to IndexedDB (too large for localStorage)
   useEffect(() => {
@@ -481,6 +482,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
     setErrorMsg(null);
     setVideoFile(null);
     setImageFile(null);
+    setVideoAspect('16-9');
   }
 
   useEffect(
@@ -541,19 +543,25 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
         <div className="space-y-4 p-4">
           {/* ── Generation preview (aurora + crossfade) ───────────────── */}
           <GenerationPreview
-            proportion="16-9"
+            proportion={videoAspect}
             genState={genState}
             imageVisible={videoVisible}
             progress={progress}
             renderMedia={generatedVideoUrl ? () => (
               <video
                 src={generatedVideoUrl}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain"
                 controls
                 autoPlay
                 loop
                 muted
                 playsInline
+                onLoadedMetadata={(e) => {
+                  const v = e.currentTarget;
+                  if (v.videoWidth && v.videoHeight) {
+                    setVideoAspect(`${v.videoWidth} / ${v.videoHeight}`);
+                  }
+                }}
                 onLoadedData={() => setVideoVisible(true)}
               />
             ) : undefined}
@@ -565,16 +573,27 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
               <div className="flex gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <a
-                      href={generatedVideoUrl}
-                      download
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={async () => {
+                        if (!generatedVideoUrl) return;
+                        try {
+                          const res = await fetch(generatedVideoUrl);
+                          const blob = await res.blob();
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `geraew-motion-${Date.now()}.mp4`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        } catch {
+                          window.open(generatedVideoUrl, '_blank');
+                        }
+                      }}
                       className="flex h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/8 bg-[#1e494b]/20 text-xs font-semibold text-[#f3f0ed]/60 transition-all hover:border-[#a2dd00]/30 hover:text-[#a2dd00]"
                     >
                       <Download className="h-3.5 w-3.5" />
                       {tCommon('download')}
-                    </a>
+                    </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" sideOffset={4}>{tCommon('downloadVideo')}</TooltipContent>
                 </Tooltip>
