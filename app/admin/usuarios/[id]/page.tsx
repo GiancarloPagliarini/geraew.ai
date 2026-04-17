@@ -2,7 +2,19 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import type { AdminUserGeneration } from '@/lib/api';
+import type { AdminUserGeneration, FreeGenerationType } from '@/lib/api';
+
+const FREE_GEN_TYPES: FreeGenerationType[] = ['NB2', 'NB_PRO', 'FACE_SWAP', 'VIRTUAL_TRY_ON', 'GERAEW_FAST'];
+
+function freeGenLabel(type: FreeGenerationType): string {
+  switch (type) {
+    case 'NB2': return 'Nano Banana 2';
+    case 'NB_PRO': return 'Nano Banana Pro';
+    case 'FACE_SWAP': return 'Face Swap';
+    case 'VIRTUAL_TRY_ON': return 'Try-On';
+    case 'GERAEW_FAST': return 'Vídeo GeraEW Fast';
+  }
+}
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useMemo } from 'react';
@@ -161,6 +173,7 @@ export default function AdminUserDetailPage() {
   const [creditAmount, setCreditAmount] = useState('');
   const [creditDesc, setCreditDesc] = useState('');
   const [freeGenAmount, setFreeGenAmount] = useState('');
+  const [freeGenType, setFreeGenType] = useState<FreeGenerationType>('NB2');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [genPage, setGenPage] = useState(1);
   const [selectedPlan, setSelectedPlan] = useState('');
@@ -204,15 +217,15 @@ export default function AdminUserDetailPage() {
   );
 
   const adjustFreeGenMutation = useMutation({
-    mutationFn: (amount: number) =>
-      api.admin.adjustFreeGenerations(accessToken!, id, amount),
+    mutationFn: ({ type, amount }: { type: FreeGenerationType; amount: number }) =>
+      api.admin.adjustFreeGenerations(accessToken!, id, type, amount),
     onSuccess: () => {
       toast.success('Gerações gratuitas ajustadas com sucesso');
       setFreeGenAmount('');
       queryClient.invalidateQueries({ queryKey: ['admin', 'user', id] });
     },
     onError: () => {
-      toast.error('Erro ao ajustar Gerações gratuitas');
+      toast.error('Erro ao ajustar gerações gratuitas');
     },
   });
 
@@ -483,12 +496,19 @@ export default function AdminUserDetailPage() {
                   {user.credits.planCreditsUsed.toLocaleString('pt-BR')}
                 </span>
               </div>
-              {user.credits.freeVeoGenerationsRemaining != null && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#f3f0ed]/40">Gerações Gratuitos (Vídeos)</span>
-                  <span className="text-sm font-medium tabular-nums text-emerald-400">
-                    {user.credits.freeVeoGenerationsRemaining}
+              {user.credits.freeGenerations && (
+                <div className="mt-2 flex flex-col gap-1 rounded-lg border border-emerald-500/10 bg-emerald-500/5 p-3">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-400/70">
+                    Gerações Gratuitas
                   </span>
+                  {(['NB2', 'NB_PRO', 'FACE_SWAP', 'VIRTUAL_TRY_ON', 'GERAEW_FAST'] as const).map((k) => (
+                    <div key={k} className="flex items-center justify-between">
+                      <span className="text-xs text-[#f3f0ed]/40">{freeGenLabel(k)}</span>
+                      <span className="text-sm font-medium tabular-nums text-emerald-400">
+                        {user.credits!.freeGenerations[k] ?? 0}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -605,13 +625,27 @@ export default function AdminUserDetailPage() {
       {/* Free generations adjustment */}
       <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.03] p-5">
         <div className="mb-4 flex items-center gap-2">
-          <Video className="h-4 w-4 text-emerald-400" />
-          <h3 className="text-sm font-semibold text-[#f3f0ed]">Gerações Gratuitas de Vídeos</h3>
+          <Sparkles className="h-4 w-4 text-emerald-400" />
+          <h3 className="text-sm font-semibold text-[#f3f0ed]">Gerações Gratuitas</h3>
           <Badge variant="outline" className="border-emerald-500/20 bg-emerald-500/5 text-emerald-400 text-[10px]">
-            Atual: {user.credits?.freeVeoGenerationsRemaining ?? 0}
+            Atual ({freeGenLabel(freeGenType)}): {user.credits?.freeGenerations?.[freeGenType] ?? 0}
           </Badge>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
+              Tipo
+            </label>
+            <select
+              value={freeGenType}
+              onChange={(e) => setFreeGenType(e.target.value as FreeGenerationType)}
+              className="h-9 rounded-xl border border-[#f3f0ed]/10 bg-[#f3f0ed]/[0.03] px-3 text-sm text-[#f3f0ed] focus:border-emerald-500/30 focus:outline-none focus:ring-1 focus:ring-emerald-500/10"
+            >
+              {FREE_GEN_TYPES.map((t) => (
+                <option key={t} value={t} className="bg-[#1a2123]">{freeGenLabel(t)}</option>
+              ))}
+            </select>
+          </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
               Nova quantidade
@@ -632,7 +666,7 @@ export default function AdminUserDetailPage() {
                 toast.error('Informe uma quantidade v\u00e1lida (>= 0)');
                 return;
               }
-              adjustFreeGenMutation.mutate(amount);
+              adjustFreeGenMutation.mutate({ type: freeGenType, amount });
             }}
             disabled={adjustFreeGenMutation.isPending}
             className="flex h-9 items-center gap-1.5 rounded-xl bg-emerald-500 px-4 text-xs font-bold text-white transition-all hover:bg-emerald-600 active:scale-[0.97] disabled:opacity-50"

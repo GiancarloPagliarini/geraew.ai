@@ -97,12 +97,16 @@ async function authRequest<T>(path: string, accessToken: string, options: Reques
   }
 }
 
+export type FreeGenerationType = 'NB2' | 'NB_PRO' | 'FACE_SWAP' | 'VIRTUAL_TRY_ON' | 'GERAEW_FAST';
+
+export type FreeGenerationsMap = Record<FreeGenerationType, number>;
+
 export interface CreditsBalance {
   planCreditsRemaining: number;
   bonusCreditsRemaining: number;
   totalCreditsAvailable: number;
   planCreditsUsed: number;
-  freeVeoGenerationsRemaining: number;
+  freeGenerations: FreeGenerationsMap;
   periodStart: string;
   periodEnd: string;
 }
@@ -337,7 +341,8 @@ export interface CreditsEstimateResponse {
   creditsRequired: number;
   hasSufficientBalance: boolean;
   canUseFreeGeneration: boolean;
-  freeVeoGenerationsRemaining: number;
+  freeGenerationType: FreeGenerationType | null;
+  freeGenerationsRemainingForType: number;
 }
 
 export interface GenerateImageRequest {
@@ -598,7 +603,7 @@ export interface AdminUserDetail {
     planCreditsRemaining: number;
     bonusCreditsRemaining: number;
     planCreditsUsed: number;
-    freeVeoGenerationsRemaining: number;
+    freeGenerations: FreeGenerationsMap;
     periodStart: string;
     periodEnd: string;
   } | null;
@@ -1197,13 +1202,18 @@ export const api = {
         },
       );
     },
-    adjustFreeGenerations(accessToken: string, userId: string, amount: number) {
+    adjustFreeGenerations(
+      accessToken: string,
+      userId: string,
+      type: FreeGenerationType,
+      amount: number,
+    ) {
       return authRequest<{ success: boolean; message: string }>(
         `/api/v1/admin/users/${userId}/free-generations`,
         accessToken,
         {
           method: 'PATCH',
-          body: JSON.stringify({ amount }),
+          body: JSON.stringify({ type, amount }),
         },
       );
     },

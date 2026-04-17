@@ -18,7 +18,6 @@ import {
   Zap,
   Shield,
   Flame,
-  Video,
   BadgePercent,
   CircleOff,
 } from 'lucide-react';
@@ -290,25 +289,46 @@ function CreditosPageContent() {
 
       <div className="mx-auto flex w-full max-w-360 flex-col gap-12 px-4 py-10">
 
-        {/* -- Free video generations banner -- */}
-        {balance && balance.freeVeoGenerationsRemaining > 0 && (
-          <div className="flex items-center gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/6 p-5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15">
-              <Video className="h-5 w-5 text-emerald-400" />
+        {/* -- Free generations banner -- */}
+        {balance && (() => {
+          const fg = balance.freeGenerations ?? { NB2: 0, NB_PRO: 0, FACE_SWAP: 0, VIRTUAL_TRY_ON: 0, GERAEW_FAST: 0 };
+          const total = fg.NB2 + fg.NB_PRO + fg.FACE_SWAP + fg.VIRTUAL_TRY_ON + fg.GERAEW_FAST;
+          if (total <= 0) return null;
+          const items: { label: string; count: number }[] = [
+            { label: 'Nano Banana 2', count: fg.NB2 },
+            { label: 'Nano Banana Pro', count: fg.NB_PRO },
+            { label: 'Face Swap', count: fg.FACE_SWAP },
+            { label: 'Try-On', count: fg.VIRTUAL_TRY_ON },
+            { label: 'Vídeo (GeraEW Fast)', count: fg.GERAEW_FAST },
+          ].filter((i) => i.count > 0);
+          return (
+            <div className="flex flex-col gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/6 p-5">
+              <div className="flex items-center gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15">
+                  <Sparkles className="h-5 w-5 text-emerald-400" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-bold text-emerald-400">Gerações grátis disponíveis</span>
+                  <span className="text-xs text-[#f3f0ed]/50">
+                    Você tem {total} {total === 1 ? 'geração' : 'gerações'} grátis pra usar sem gastar créditos.
+                  </span>
+                </div>
+                <span className="ml-auto text-2xl font-bold tabular-nums text-emerald-400">{total}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                {items.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between rounded-lg border border-emerald-500/10 bg-emerald-500/5 px-3 py-2"
+                  >
+                    <span className="text-xs text-[#f3f0ed]/70">{item.label}</span>
+                    <span className="text-sm font-bold text-emerald-400">{item.count}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-sm font-bold text-emerald-400">
-                {t('freeVideoGenerations')}
-              </span>
-              <span className="text-xs text-[#f3f0ed]/50">
-                {t('freeVideoGenerationsDescription', { count: balance.freeVeoGenerationsRemaining })}
-              </span>
-            </div>
-            <span className="ml-auto text-2xl font-bold tabular-nums text-emerald-400">
-              {balance.freeVeoGenerationsRemaining}
-            </span>
-          </div>
-        )}
+          );
+        })()}
 
         {/* -- Balance -- */}
         {balance && (

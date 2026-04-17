@@ -1225,7 +1225,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-2">
                         <Sparkles className="h-3 w-3 text-emerald-400" />
                         <span className="text-[11px] font-bold text-emerald-400">
-                          {t('freeGeneration')} {t('freeGenerationRemaining', { count: estimate.freeVeoGenerationsRemaining, plural: estimate.freeVeoGenerationsRemaining !== 1 ? 's' : '' })}
+                          {t('freeGeneration')} {t('freeGenerationRemaining', { count: estimate.freeGenerationsRemainingForType, plural: estimate.freeGenerationsRemainingForType !== 1 ? 's' : '' })}
                         </span>
                       </div>
                     )}
