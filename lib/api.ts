@@ -573,6 +573,7 @@ export interface AdminUser {
     planSlug: string;
     planName: string;
     status: string;
+    cancelAtPeriodEnd?: boolean;
   } | null;
   credits: {
     planCreditsRemaining: number;
@@ -1146,12 +1147,14 @@ export const api = {
     stats(accessToken: string) {
       return authRequest<AdminStats>('/api/v1/admin/stats', accessToken);
     },
-    users(accessToken: string, page = 1, limit = 20, search?: string) {
+    users(accessToken: string, page = 1, limit = 20, search?: string, subscriptionStatus?: string, excludePlanSlug?: string) {
       const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
       });
       if (search && search.trim()) params.set('search', search.trim());
+      if (subscriptionStatus) params.set('subscriptionStatus', subscriptionStatus);
+      if (excludePlanSlug) params.set('excludePlanSlug', excludePlanSlug);
       return authRequest<AdminPaginatedResponse<AdminUser>>(
         `/api/v1/admin/users?${params.toString()}`,
         accessToken,

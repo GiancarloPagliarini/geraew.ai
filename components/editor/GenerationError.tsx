@@ -32,8 +32,23 @@ const KNOWN_ERROR_MESSAGES: Record<string, string> = {
     'Não foi possível gerar a imagem. Tente usar outras fotos.',
 };
 
+const KNOWN_ERROR_PATTERNS: Array<[RegExp, string]> = [
+  [
+    /violated Google's Generative AI Prohibited Use policy/i,
+    'Conteúdo bloqueado pela IA. Tente com outras imagens ou instruções.',
+  ],
+  [
+    /flagged as sensitive/i,
+    'Conteúdo sensível detectado. Tente com outras imagens ou instruções.',
+  ],
+];
+
 function mapErrorMessage(msg: string): string {
-  return KNOWN_ERROR_MESSAGES[msg] ?? msg;
+  if (KNOWN_ERROR_MESSAGES[msg]) return KNOWN_ERROR_MESSAGES[msg];
+  for (const [pattern, friendly] of KNOWN_ERROR_PATTERNS) {
+    if (pattern.test(msg)) return friendly;
+  }
+  return msg;
 }
 
 /**

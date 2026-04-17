@@ -59,10 +59,10 @@ export function AdminDonutChart({ data, height = 220 }: DonutChartProps) {
           </ResponsiveContainer>
         </div>
         <div className="flex flex-col gap-2">
-          {data.map((entry) => {
+          {data.map((entry, i) => {
             const pct = total > 0 ? ((entry.value / total) * 100).toFixed(1) : '0.0';
             return (
-              <div key={entry.name} className="flex items-center gap-2">
+              <div key={`${entry.name}-${i}`} className="flex items-center gap-2">
                 <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
                 <div className="flex flex-col">
                   <span className="text-[10px] text-[#f3f0ed]/50">{entry.name}</span>
