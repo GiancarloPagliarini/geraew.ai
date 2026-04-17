@@ -5,6 +5,7 @@ import { LeftSidebar } from '@/components/editor/LeftSidebar';
 import dynamic from 'next/dynamic';
 const OnboardingTour = dynamic(() => import('@/components/editor/OnboardingTour').then(m => m.OnboardingTour), { ssr: false });
 import { RightSidebar } from '@/components/editor/RightSidebar';
+import { SupportButton } from '@/components/editor/SupportButton';
 import { TopNavbar } from '@/components/editor/TopNavbar';
 import { EditorProvider } from '@/lib/editor-context';
 import { InfluencerBuilderProvider } from '@/lib/influencer-builder-context';
@@ -45,6 +46,7 @@ export default function Home() {
           </div>
         </div>
         <OnboardingTour />
+        <SupportButton />
         <Suspense><RegisterModalTrigger /></Suspense>
       </InfluencerBuilderProvider>
     </EditorProvider>
