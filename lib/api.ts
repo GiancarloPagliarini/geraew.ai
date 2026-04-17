@@ -97,7 +97,7 @@ async function authRequest<T>(path: string, accessToken: string, options: Reques
   }
 }
 
-export type FreeGenerationType = 'NB2' | 'NB_PRO' | 'FACE_SWAP' | 'VIRTUAL_TRY_ON' | 'GERAEW_FAST';
+export type FreeGenerationType = 'NB2' | 'NB_PRO' | 'FACE_SWAP' | 'VIRTUAL_TRY_ON' | 'GERAEW_FAST' | 'UPSCALE';
 
 export type FreeGenerationsMap = Record<FreeGenerationType, number>;
 

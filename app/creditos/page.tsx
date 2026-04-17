@@ -291,8 +291,8 @@ function CreditosPageContent() {
 
         {/* -- Free generations banner -- */}
         {balance && (() => {
-          const fg = balance.freeGenerations ?? { NB2: 0, NB_PRO: 0, FACE_SWAP: 0, VIRTUAL_TRY_ON: 0, GERAEW_FAST: 0 };
-          const total = fg.NB2 + fg.NB_PRO + fg.FACE_SWAP + fg.VIRTUAL_TRY_ON + fg.GERAEW_FAST;
+          const fg = balance.freeGenerations ?? { NB2: 0, NB_PRO: 0, FACE_SWAP: 0, VIRTUAL_TRY_ON: 0, GERAEW_FAST: 0, UPSCALE: 0 };
+          const total = fg.NB2 + fg.NB_PRO + fg.FACE_SWAP + fg.VIRTUAL_TRY_ON + fg.GERAEW_FAST + (fg.UPSCALE ?? 0);
           if (total <= 0) return null;
           const items: { label: string; count: number }[] = [
             { label: 'Nano Banana 2', count: fg.NB2 },
@@ -300,6 +300,7 @@ function CreditosPageContent() {
             { label: 'Face Swap', count: fg.FACE_SWAP },
             { label: 'Try-On', count: fg.VIRTUAL_TRY_ON },
             { label: 'Vídeo (GeraEW Fast)', count: fg.GERAEW_FAST },
+            { label: 'Upscale', count: fg.UPSCALE ?? 0 },
           ].filter((i) => i.count > 0);
           return (
             <div className="flex flex-col gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/6 p-5">

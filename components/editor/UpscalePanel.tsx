@@ -98,11 +98,12 @@ export function UpscalePanel({ nodeId, onClose, onDuplicate }: UpscalePanelProps
 
   const imageModelVariant = model === 'gemini-3-pro-image-preview' ? 'NBP' : 'NB2';
   const { data: estimate, isLoading: estimateLoading } = useQuery({
-    queryKey: ['credits', 'estimate', 'IMAGE_TO_IMAGE', 'RES_2K', imageModelVariant],
+    queryKey: ['credits', 'estimate', 'IMAGE_TO_IMAGE', 'RES_2K', imageModelVariant, 'UPSCALE'],
     queryFn: () => api.credits.estimate(accessToken!, {
       type: 'IMAGE_TO_IMAGE',
       resolution: 'RES_2K',
       modelVariant: imageModelVariant,
+      freeGenerationType: 'UPSCALE',
     }),
     enabled: !!accessToken && genState !== 'generating',
     staleTime: 60_000,

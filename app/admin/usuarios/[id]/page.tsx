@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { AdminUserGeneration, FreeGenerationType } from '@/lib/api';
 
-const FREE_GEN_TYPES: FreeGenerationType[] = ['NB2', 'NB_PRO', 'FACE_SWAP', 'VIRTUAL_TRY_ON', 'GERAEW_FAST'];
+const FREE_GEN_TYPES: FreeGenerationType[] = ['NB2', 'NB_PRO', 'FACE_SWAP', 'VIRTUAL_TRY_ON', 'GERAEW_FAST', 'UPSCALE'];
 
 function freeGenLabel(type: FreeGenerationType): string {
   switch (type) {
@@ -13,6 +13,7 @@ function freeGenLabel(type: FreeGenerationType): string {
     case 'FACE_SWAP': return 'Face Swap';
     case 'VIRTUAL_TRY_ON': return 'Try-On';
     case 'GERAEW_FAST': return 'Vídeo GeraEW Fast';
+    case 'UPSCALE': return 'Upscale';
   }
 }
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -501,7 +502,7 @@ export default function AdminUserDetailPage() {
                   <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-400/70">
                     Gerações Gratuitas
                   </span>
-                  {(['NB2', 'NB_PRO', 'FACE_SWAP', 'VIRTUAL_TRY_ON', 'GERAEW_FAST'] as const).map((k) => (
+                  {(['NB2', 'NB_PRO', 'FACE_SWAP', 'VIRTUAL_TRY_ON', 'GERAEW_FAST', 'UPSCALE'] as const).map((k) => (
                     <div key={k} className="flex items-center justify-between">
                       <span className="text-xs text-[#f3f0ed]/40">{freeGenLabel(k)}</span>
                       <span className="text-sm font-medium tabular-nums text-emerald-400">
