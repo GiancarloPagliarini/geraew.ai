@@ -20,6 +20,9 @@
       "cost": "Cost",
       "credits": "credits",
       "optional": "optional",
+      "free": "Free",
+      "freeGeneration": "Free generation!",
+      "freeGenerationRemaining": "({count} remaining)",
       "errors": {
         "generateImage": "Failed to generate image.",
         "generateVideo": "Failed to generate video.",

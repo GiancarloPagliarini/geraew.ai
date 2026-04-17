@@ -12,6 +12,7 @@ import {
   Download,
   Image,
   Shirt,
+  Sparkles,
   User,
   Wand2,
   X,
@@ -134,11 +135,12 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
   }, [genState, nodeId, setNodeGenerating]);
 
   const { data: estimate, isLoading: estimateLoading } = useQuery({
-    queryKey: ['credits', 'estimate', 'IMAGE_TO_IMAGE', resolution],
+    queryKey: ['credits', 'estimate', 'IMAGE_TO_IMAGE', resolution, 'VIRTUAL_TRY_ON'],
     queryFn: () => api.credits.estimate(accessToken!, {
       type: 'IMAGE_TO_IMAGE',
       resolution,
       hasAudio: false,
+      freeGenerationType: 'VIRTUAL_TRY_ON',
     }),
     enabled: !!accessToken && genState !== 'generating',
     staleTime: 60_000,
@@ -683,22 +685,36 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
               <GenerationErrorBanner msg={errorMsg} />
 
               {/* Credit estimate */}
-              <div className="flex flex-col gap-1.5 rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Coins className="h-3 w-3 text-[#a2dd00]" />
-                    <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">
-                      {tCommon('estimatedCost')}
+              <div className="flex flex-col gap-1.5">
+                {estimate?.canUseFreeGeneration && (
+                  <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-2">
+                    <Sparkles className="h-3 w-3 text-emerald-400" />
+                    <span className="text-[11px] font-bold text-emerald-400">
+                      {tCommon('freeGeneration')} {tCommon('freeGenerationRemaining', { count: estimate.freeGenerationsRemainingForType, plural: estimate.freeGenerationsRemainingForType !== 1 ? 's' : '' })}
                     </span>
                   </div>
-                  {estimateLoading ? (
-                    <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
-                  ) : estimate ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} {tCommon('credits')}</span>
-                      <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
+                )}
+                <div className="flex flex-col gap-1.5 rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Coins className="h-3 w-3 text-[#a2dd00]" />
+                      <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">
+                        {tCommon('estimatedCost')}
+                      </span>
                     </div>
-                  ) : null}
+                    {estimateLoading ? (
+                      <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
+                    ) : estimate ? (
+                      <div className="flex items-center gap-2">
+                        {estimate.canUseFreeGeneration ? (
+                          <span className="text-xs font-bold text-emerald-400">{tCommon('free')}</span>
+                        ) : (
+                          <span className="text-xs font-bold text-[#f3f0ed]/70">{estimate.creditsRequired} {tCommon('credits')}</span>
+                        )}
+                        <div className={`h-1.5 w-1.5 rounded-full ${estimate.hasSufficientBalance ? 'bg-[#a2dd00]' : 'bg-red-400'}`} />
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 

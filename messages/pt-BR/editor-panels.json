@@ -20,6 +20,9 @@
       "cost": "Custo",
       "credits": "créditos",
       "optional": "opcional",
+      "free": "Grátis",
+      "freeGeneration": "Geração gratuita!",
+      "freeGenerationRemaining": "({count} restante{plural})",
       "errors": {
         "generateImage": "Erro ao gerar imagem.",
         "generateVideo": "Erro ao gerar vídeo.",

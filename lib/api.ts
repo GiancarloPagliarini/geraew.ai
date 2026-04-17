@@ -335,6 +335,7 @@ export interface CreditsEstimateRequest {
   hasAudio?: boolean;
   sampleCount?: number;
   modelVariant?: string;
+  freeGenerationType?: FreeGenerationType;
 }
 
 export interface CreditsEstimateResponse {
