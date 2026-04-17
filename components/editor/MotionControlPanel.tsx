@@ -652,7 +652,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
                 {imageFile ? (
                   <div className="relative overflow-hidden rounded-xl border border-[#f3f0ed]/[0.08]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={imageFile.preview} alt="Preview" className="h-32 w-full object-cover" />
+                    <img src={imageFile.preview} alt="Preview" className="w-full object-contain" />
                     <button
                       onClick={() => setImageFile(null)}
                       className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-[#f3f0ed]/70 hover:text-[#f3f0ed]"
