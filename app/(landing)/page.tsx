@@ -11,6 +11,7 @@ import { Pricing } from "@/components/landing/pricing";
 import { Faq } from "@/components/landing/faq";
 import { FinalCta } from "@/components/landing/final-cta";
 import { Footer } from "@/components/landing/footer";
+import { SupportButton } from "@/components/editor/SupportButton";
 
 export default function LandingPage() {
   return (
@@ -28,6 +29,7 @@ export default function LandingPage() {
       <Faq />
       <FinalCta />
       <Footer />
+      <SupportButton />
     </main>
   );
 }
