@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, AuthUser, setRefreshHandler } from './api';
 
@@ -107,7 +107,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading: true,
   });
 
+  // Invalidates any in-flight hydration refresh when a fresh login/logout happens,
+  // preventing a stale refresh failure from wiping a just-established session.
+  const hydrationIdRef = useRef(0);
+
   const handleAuthSuccess = useCallback((res: { accessToken: string; refreshToken: string; user: AuthUser }) => {
+    hydrationIdRef.current++;
     saveAuth(res);
     setState({ user: res.user, accessToken: res.accessToken, refreshToken: res.refreshToken, loading: false });
   }, []);
@@ -140,11 +145,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Hydrate from cookies on mount
   useEffect(() => {
+    const myHydrationId = ++hydrationIdRef.current;
     const stored = loadAuth();
     if (stored) {
+      // Optimistic: trust stored session immediately so UI isn't blocked by a slow refresh.
+      setState({
+        user: stored.user,
+        accessToken: stored.accessToken,
+        refreshToken: stored.refreshToken,
+        loading: false,
+      });
+
       api.auth
         .refresh(stored.refreshToken)
         .then((res) => {
+          // Skip if a fresh login/logout superseded this hydrate
+          if (hydrationIdRef.current !== myHydrationId) return;
           saveAuth(res);
           setState({
             user: res.user,
@@ -154,6 +170,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         })
         .catch(() => {
+          // Do not wipe a fresh session that was established after this hydrate started
+          if (hydrationIdRef.current !== myHydrationId) return;
           clearAuth();
           setState({ user: null, accessToken: null, refreshToken: null, loading: false });
         });
@@ -189,6 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    hydrationIdRef.current++;
     if (state.refreshToken) {
       api.auth.logout(state.refreshToken).catch(() => {});
     }
