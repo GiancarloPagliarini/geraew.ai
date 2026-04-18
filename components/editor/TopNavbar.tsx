@@ -149,6 +149,8 @@ export function TopNavbar() {
             </div>
           )}
 
+          <LocaleSwitcher />
+
           {/* Settings dropdown — only for logged-in users */}
           {user && <div ref={menuRef} className="relative">
             <button
