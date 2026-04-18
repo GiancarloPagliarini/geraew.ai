@@ -65,6 +65,7 @@ export function GenericPanel({ nodeId, onClose, onDuplicate }: GenericPanelProps
 
   function handleGenerate() {
     if (!prompt.trim()) return;
+    if (model === 'sem-censura' && attachedImages.length === 0) return;
     consumeCredits(5);
     setGenState('generating');
     setResult('');
@@ -111,7 +112,14 @@ export function GenericPanel({ nodeId, onClose, onDuplicate }: GenericPanelProps
   const MODEL_LABELS: Record<string, string> = {
     'gemini-3.1-flash-image-preview': 'Nano Banana 2',
     'gemini-3-pro-image-preview': 'Nano Banana Pro',
+    'sem-censura': 'Sem censura',
   };
+
+  useEffect(() => {
+    if (model === 'sem-censura' && quality === 'sd') {
+      setQuality('hd');
+    }
+  }, [model, quality]);
 
   return (
     <div ref={panelRef} className="panel-drag-handle cursor-grab active:cursor-grabbing flex flex-col items-center gap-2">
@@ -233,6 +241,7 @@ export function GenericPanel({ nodeId, onClose, onDuplicate }: GenericPanelProps
               options={[
                 { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2' },
                 { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
+                { value: 'sem-censura', label: 'Sem censura' },
               ]}
             />
 
@@ -250,11 +259,18 @@ export function GenericPanel({ nodeId, onClose, onDuplicate }: GenericPanelProps
             <BarSelect
               value={quality}
               onValueChange={setQuality}
-              options={[
-                { value: '4k', label: '4K' },
-                { value: 'hd', label: '2K' },
-                { value: 'sd', label: '1K' },
-              ]}
+              options={
+                model === 'sem-censura'
+                  ? [
+                      { value: '4k', label: '4K' },
+                      { value: 'hd', label: '2K' },
+                    ]
+                  : [
+                      { value: '4k', label: '4K' },
+                      { value: 'hd', label: '2K' },
+                      { value: 'sd', label: '1K' },
+                    ]
+              }
             />
 
             <div className="h-3 w-px shrink-0 bg-[#f3f0ed]/10" />

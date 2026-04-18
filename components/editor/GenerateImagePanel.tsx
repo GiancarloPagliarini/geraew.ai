@@ -417,6 +417,11 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   async function handleGenerate() {
     if (!accessToken) { openLoginModal(); return; }
 
+    if (model === 'sem-censura' && attachedImages.length === 0) {
+      setErrorMsg('Este modelo exige pelo menos uma imagem de referência.');
+      return;
+    }
+
     setOptionsOpen(false);
     await new Promise<void>((resolve) => setTimeout(resolve, 320));
 
@@ -586,7 +591,18 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   }, []);
 
   const imageType = attachedImages.length > 0 ? 'IMAGE_TO_IMAGE' as const : 'TEXT_TO_IMAGE' as const;
-  const imageModelVariant = model === 'gemini-3-pro-image-preview' ? 'NBP' : 'NB2';
+  const imageModelVariant =
+    model === 'gemini-3-pro-image-preview'
+      ? 'NBP'
+      : model === 'sem-censura'
+        ? 'SEM_CENSURA'
+        : 'NB2';
+
+  useEffect(() => {
+    if (model === 'sem-censura' && quality === 'sd') {
+      setQuality('hd');
+    }
+  }, [model, quality]);
 
   const { data: estimate, isLoading: estimateLoading } = useQuery({
     queryKey: ['credits', 'estimate', imageType, qualityToResolution(quality), imageModelVariant],
@@ -683,12 +699,14 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
             />
 
             {/* Enhance prompt toggle */}
-            <EnhancePromptToggle
-              enabled={enhancePrompt}
-              onToggle={setEnhancePrompt}
-              isEnhancing={isEnhancing}
-              disabled={isGenerating}
-            />
+            {model !== 'sem-censura' && (
+              <EnhancePromptToggle
+                enabled={enhancePrompt}
+                onToggle={setEnhancePrompt}
+                isEnhancing={isEnhancing}
+                disabled={isGenerating}
+              />
+            )}
 
             {/* ── Error message ────────────────────────────────────────────── */}
             <GenerationErrorBanner msg={errorMsg} />
@@ -787,6 +805,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                     options={[
                       { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2' },
                       { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
+                      { value: 'sem-censura', label: 'Sem censura' },
                     ]}
                   />
                 </div>
@@ -814,11 +833,18 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                     <PanelSelect
                       value={quality}
                       onValueChange={setQuality}
-                      options={[
-                        { value: '4k', label: '4K' },
-                        { value: 'hd', label: '2K' },
-                        { value: 'sd', label: '1K' },
-                      ]}
+                      options={
+                        model === 'sem-censura'
+                          ? [
+                              { value: '4k', label: '4K' },
+                              { value: 'hd', label: '2K' },
+                            ]
+                          : [
+                              { value: '4k', label: '4K' },
+                              { value: 'hd', label: '2K' },
+                              { value: 'sd', label: '1K' },
+                            ]
+                      }
                     />
                   </div>
                 </div>
