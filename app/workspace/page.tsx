@@ -9,7 +9,7 @@ import { SupportButton } from '@/components/editor/SupportButton';
 import { TopNavbar } from '@/components/editor/TopNavbar';
 import { EditorProvider } from '@/lib/editor-context';
 import { InfluencerBuilderProvider } from '@/lib/influencer-builder-context';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
@@ -32,23 +32,6 @@ function RegisterModalTrigger() {
 }
 
 export default function Home() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
-    }
-  }, [loading, user, router]);
-
-  if (loading || !user) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#1a2123]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-      </div>
-    );
-  }
-
   return (
     <EditorProvider>
       <InfluencerBuilderProvider>
