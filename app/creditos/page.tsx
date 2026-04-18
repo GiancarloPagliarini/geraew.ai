@@ -28,6 +28,7 @@ import { PLAN_ORDER, getPlanFeatures } from '@/lib/plans';
 import { CreditPackagesGrid } from '@/components/editor/CreditPackagesGrid';
 import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 import { PlansGrid } from '@/components/editor/PlansGrid';
+import { LocaleSwitcher } from '@/components/locale-switcher';
 import { useLocale, useTranslations } from 'next-intl';
 
 function CreditosPageContent() {
@@ -243,7 +244,7 @@ function CreditosPageContent() {
       )}
 
       {/* Header */}
-      <header className="flex h-12 shrink-0 items-center border-b border-[#f3f0ed]/7 px-4">
+      <header className="flex h-12 shrink-0 items-center justify-between border-b border-[#f3f0ed]/7 px-4">
         <button
           onClick={() => router.push('/workspace')}
           className="flex items-center gap-2 text-sm text-[#f3f0ed]/60 transition-colors hover:text-[#f3f0ed]"
@@ -251,6 +252,7 @@ function CreditosPageContent() {
           <ArrowLeft className="h-4 w-4" />
           {tCommon('backToEditor')}
         </button>
+        <LocaleSwitcher compact />
       </header>
 
       {/* Low credits banner */}
