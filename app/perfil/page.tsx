@@ -70,20 +70,6 @@ export default function PerfilPage() {
     enabled: !!accessToken,
   });
 
-  const createAffiliateMutation = useMutation({
-    mutationFn: () => api.affiliates.createMe(accessToken!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['affiliate', 'me'] });
-      toast.success(t('affiliateCreateSuccessTitle'), {
-        description: t('affiliateCreateSuccessDescription'),
-      });
-      router.push('/painel-afiliado');
-    },
-    onError: () =>
-      toast.error(t('affiliateCreateErrorTitle'), {
-        description: t('affiliateCreateErrorDescription'),
-      }),
-  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -357,21 +343,11 @@ export default function PerfilPage() {
                 <p className="text-xs leading-relaxed text-[#f3f0ed]/45">{t('affiliateDescription')}</p>
               </div>
               <button
-                onClick={() => createAffiliateMutation.mutate()}
-                disabled={createAffiliateMutation.isPending}
-                className="flex h-9 w-fit items-center gap-2 rounded-xl bg-[#a2dd00] px-4 text-xs font-bold text-[#1a2123] transition-colors hover:bg-[#b5e82d] disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => router.push('/painel-afiliado')}
+                className="flex h-9 w-fit items-center gap-2 rounded-xl bg-[#a2dd00] px-4 text-xs font-bold text-[#1a2123] transition-colors hover:bg-[#b5e82d]"
               >
-                {createAffiliateMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    {t('becomeAffiliateLoading')}
-                  </>
-                ) : (
-                  <>
-                    <LinkIcon className="h-3.5 w-3.5" />
-                    {t('becomeAffiliate')}
-                  </>
-                )}
+                <LinkIcon className="h-3.5 w-3.5" />
+                {t('becomeAffiliate')}
               </button>
             </div>
           )}
