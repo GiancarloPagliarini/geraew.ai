@@ -10,6 +10,7 @@ import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { PlansModal } from './PlansModal';
+import { AffiliateProgramModal } from './AffiliateProgramModal';
 import { useLoginModal } from '@/lib/login-modal-context';
 import { LocaleSwitcher } from '@/components/locale-switcher';
 
@@ -32,6 +33,7 @@ export function TopNavbar() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [plansModalOpen, setPlansModalOpen] = useState(false);
   const [affiliateMenuOpen, setAffiliateMenuOpen] = useState(false);
+  const [affiliateModalOpen, setAffiliateModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const asideRef = useRef<HTMLElement>(null);
   const affiliateMenuRef = useRef<HTMLDivElement>(null);
@@ -121,7 +123,15 @@ export function TopNavbar() {
               {/* Affiliate button — hidden on mobile */}
               <div ref={affiliateMenuRef} className="relative hidden sm:block">
                 <button
-                  onClick={() => setAffiliateMenuOpen((v) => !v)}
+                  onClick={() => {
+                    if (!affiliateFetched || affiliateLoading) {
+                      setAffiliateMenuOpen((v) => !v);
+                    } else if (affiliateData) {
+                      setAffiliateMenuOpen((v) => !v);
+                    } else {
+                      setAffiliateModalOpen(true);
+                    }
+                  }}
                   className="flex items-center gap-1.5 rounded-full border border-[#1e494b] px-4 py-1.5 text-xs font-semibold text-[#f3f0ed]/80 transition-all hover:border-[#a2dd00]/50 hover:text-[#f3f0ed]"
                 >
                   <Users className="h-3.5 w-3.5" />
@@ -183,26 +193,7 @@ export function TopNavbar() {
                           <ArrowRight className="h-3 w-3" />
                         </button>
                       </>
-                    ) : (
-                      <>
-                        <div className="border-b border-[#f3f0ed]/6 px-4 py-3">
-                          <p className="text-xs font-semibold text-[#f3f0ed]">{t('affiliateMenuTitle')}</p>
-                        </div>
-                        <div className="px-4 py-4">
-                          <p className="text-xs leading-relaxed text-[#f3f0ed]/60">{t('affiliatePitch')}</p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setAffiliateMenuOpen(false);
-                            router.push('/painel-afiliado');
-                          }}
-                          className="flex w-full items-center justify-center gap-1.5 border-t border-[#f3f0ed]/6 bg-[#a2dd00]/5 px-4 py-2.5 text-xs font-semibold text-[#a2dd00] transition-colors hover:bg-[#a2dd00]/10"
-                        >
-                          {t('affiliateJoinCta')}
-                          <ArrowRight className="h-3 w-3" />
-                        </button>
-                      </>
-                    )}
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -395,6 +386,7 @@ export function TopNavbar() {
       )}
 
       {plansModalOpen && <PlansModal onClose={() => setPlansModalOpen(false)} />}
+      {affiliateModalOpen && <AffiliateProgramModal onClose={() => setAffiliateModalOpen(false)} />}
     </>
   );
 }

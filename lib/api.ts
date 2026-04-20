@@ -1281,6 +1281,13 @@ export const api = {
         method: 'PATCH',
       });
     },
+    deleteAffiliate(accessToken: string, id: string) {
+      return authRequest<{ id: string; code: string; deletedEarnings: number }>(
+        `/api/v1/admin/affiliates/${id}`,
+        accessToken,
+        { method: 'DELETE' },
+      );
+    },
     markEarningsPaid(accessToken: string, earningIds: string[]) {
       return authRequest<{ updated: number }>('/api/v1/admin/affiliates/earnings/mark-paid', accessToken, {
         method: 'POST',

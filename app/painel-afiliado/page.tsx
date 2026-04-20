@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { api, type PixKeyType } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -31,16 +32,22 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { LocaleSwitcher } from '@/components/locale-switcher';
 import { toast } from 'sonner';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://geraew.com.br';
+const PIX_TYPE_VALUES: PixKeyType[] = ['CPF', 'CNPJ', 'EMAIL', 'PHONE', 'RANDOM'];
 
-function formatCents(cents: number) {
-  return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+function intlLocale(locale: string) {
+  return locale === 'pt-BR' ? 'pt-BR' : 'en-US';
 }
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('pt-BR');
+function formatCents(cents: number, locale: string) {
+  return (cents / 100).toLocaleString(intlLocale(locale), { style: 'currency', currency: 'BRL' });
+}
+
+function formatDate(date: string, locale: string) {
+  return new Date(date).toLocaleDateString(intlLocale(locale));
 }
 
 function getAvailableDate(createdAt: string, maturationDays: number) {
@@ -54,14 +61,6 @@ function daysUntil(date: Date) {
   const diff = date.getTime() - now.getTime();
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
-
-const PIX_TYPES: { value: PixKeyType; label: string; placeholder: string }[] = [
-  { value: 'CPF', label: 'CPF', placeholder: '000.000.000-00' },
-  { value: 'CNPJ', label: 'CNPJ', placeholder: '00.000.000/0000-00' },
-  { value: 'EMAIL', label: 'E-mail', placeholder: 'seu@email.com' },
-  { value: 'PHONE', label: 'Telefone', placeholder: '+55 11 9xxxx-xxxx' },
-  { value: 'RANDOM', label: 'Aleatória', placeholder: 'xxxxxxxx-xxxx-...' },
-];
 
 function PixKeyForm({
   initialType,
@@ -78,9 +77,9 @@ function PixKeyForm({
   onSubmit: (data: { pixKeyType: PixKeyType; pixKey: string }) => void;
   onCancel?: () => void;
 }) {
+  const t = useTranslations('affiliate.pix');
   const [pixKeyType, setPixKeyType] = useState<PixKeyType>(initialType ?? 'CPF');
   const [pixKey, setPixKey] = useState(initialKey ?? '');
-  const selected = PIX_TYPES.find((t) => t.value === pixKeyType);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -91,30 +90,30 @@ function PixKeyForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-left">
       <div className="flex flex-col gap-1.5">
-        <label className="text-[10px] font-bold uppercase tracking-wide text-[#f3f0ed]/40">Tipo de chave</label>
+        <label className="text-[10px] font-bold uppercase tracking-wide text-[#f3f0ed]/40">{t('typeLabel')}</label>
         <div className="grid grid-cols-5 gap-1">
-          {PIX_TYPES.map((type) => (
+          {PIX_TYPE_VALUES.map((value) => (
             <button
-              key={type.value}
+              key={value}
               type="button"
-              onClick={() => setPixKeyType(type.value)}
-              className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${pixKeyType === type.value
+              onClick={() => setPixKeyType(value)}
+              className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${pixKeyType === value
                 ? 'border-[#a2dd00]/50 bg-[#a2dd00]/10 text-[#a2dd00]'
                 : 'border-[#f3f0ed]/8 text-[#f3f0ed]/50 hover:border-[#f3f0ed]/20 hover:text-[#f3f0ed]/80'
                 }`}
             >
-              {type.label}
+              {t(`types.${value}`)}
             </button>
           ))}
         </div>
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="text-[10px] font-bold uppercase tracking-wide text-[#f3f0ed]/40">Chave Pix</label>
+        <label className="text-[10px] font-bold uppercase tracking-wide text-[#f3f0ed]/40">{t('keyLabel')}</label>
         <input
           type="text"
           value={pixKey}
           onChange={(e) => setPixKey(e.target.value)}
-          placeholder={selected?.placeholder}
+          placeholder={t(`placeholders.${pixKeyType}`)}
           required
           className="h-10 rounded-lg border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 px-3 text-sm text-[#f3f0ed] placeholder:text-[#f3f0ed]/20 focus:border-[#a2dd00]/30 focus:outline-none"
         />
@@ -126,7 +125,7 @@ function PixKeyForm({
             onClick={onCancel}
             className="flex-1 rounded-xl border border-[#f3f0ed]/8 px-4 py-2.5 text-sm font-medium text-[#f3f0ed]/60 transition-colors hover:bg-[#f3f0ed]/5"
           >
-            Cancelar
+            {t('cancel')}
           </button>
         )}
         <button
@@ -137,7 +136,7 @@ function PixKeyForm({
           {submitting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Salvando...
+              {t('saving')}
             </>
           ) : (
             submitLabel
@@ -149,12 +148,13 @@ function PixKeyForm({
 }
 
 function CopyButton({ text, label }: { text: string; label?: string }) {
+  const t = useTranslations('affiliate');
   const [copied, setCopied] = useState(false);
 
   function handleCopy() {
     navigator.clipboard.writeText(text);
     setCopied(true);
-    toast.success('Copiado!');
+    toast.success(t('copied'));
     setTimeout(() => setCopied(false), 2000);
   }
 
@@ -167,12 +167,14 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
         }`}
     >
       {copied ? <Check className="h-3.5 w-3.5" /> : label ? <Link className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-      {label ? (copied ? 'Copiado!' : label) : (copied ? 'Copiado!' : 'Copiar')}
+      {label ? (copied ? t('copied') : label) : (copied ? t('copied') : t('copy'))}
     </button>
   );
 }
 
 export default function PainelAfiliadoPage() {
+  const t = useTranslations('affiliate');
+  const locale = useLocale();
   const { accessToken, user, loading } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -196,15 +198,15 @@ export default function PainelAfiliadoPage() {
   const createMutation = useMutation({
     mutationFn: (input: { pixKey: string; pixKeyType: PixKeyType }) =>
       api.affiliates.createMe(accessToken!, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['affiliate', 'me'] });
-      toast.success('Link de afiliado criado!', {
-        description: 'Seu código já está disponível no painel.',
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['affiliate', 'me'] });
+      toast.success(t('toasts.createdTitle'), {
+        description: t('toasts.createdDesc'),
       });
     },
     onError: () =>
-      toast.error('Não foi possível criar', {
-        description: 'Tente novamente em instantes.',
+      toast.error(t('toasts.createFailedTitle'), {
+        description: t('toasts.createFailedDesc'),
       }),
   });
 
@@ -213,12 +215,12 @@ export default function PainelAfiliadoPage() {
       api.affiliates.updateMyPixKey(accessToken!, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['affiliate', 'me'] });
-      toast.success('Chave Pix atualizada!');
+      toast.success(t('toasts.pixUpdated'));
       setEditingPix(false);
     },
     onError: () =>
-      toast.error('Não foi possível atualizar', {
-        description: 'Tente novamente em instantes.',
+      toast.error(t('toasts.pixFailedTitle'), {
+        description: t('toasts.pixFailedDesc'),
       }),
   });
 
@@ -245,19 +247,21 @@ export default function PainelAfiliadoPage() {
   // Not an affiliate
   if (!data || error) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#111618] px-4 py-10">
+      <div className="relative flex min-h-screen flex-col items-center justify-center gap-4 bg-[#111618] px-4 py-10">
+        <div className="absolute right-4 top-4">
+          <LocaleSwitcher />
+        </div>
         <div className="w-full max-w-md rounded-2xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/2 p-8">
           <div className="text-center">
             <Users className="mx-auto h-10 w-10 text-[#a2dd00]/50" />
-            <h1 className="mt-4 text-lg font-bold text-[#f3f0ed]">Torne-se afiliado da Geraew</h1>
+            <h1 className="mt-4 text-lg font-bold text-[#f3f0ed]">{t('signup.title')}</h1>
             <p className="mt-2 text-sm leading-relaxed text-[#f3f0ed]/50">
-              Ganhe 20% de comissão recorrente sobre cada pagamento dos seus indicados.
-              Pagamento via Pix em até 30 dias.
+              {t('signup.description')}
             </p>
           </div>
           <div className="mt-6">
             <PixKeyForm
-              submitLabel="Tornar-se afiliado"
+              submitLabel={t('signup.cta')}
               submitting={createMutation.isPending}
               onSubmit={(input) => createMutation.mutate(input)}
             />
@@ -267,7 +271,7 @@ export default function PainelAfiliadoPage() {
             className="mt-4 flex items-center justify-center gap-2 text-xs text-[#f3f0ed]/40 transition-colors hover:text-[#f3f0ed]/70"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Voltar ao Workspace
+            {t('signup.backToWorkspace')}
           </a>
         </div>
       </div>
@@ -279,10 +283,10 @@ export default function PainelAfiliadoPage() {
   const referralLink = `${SITE_URL}/?ref=${affiliate.code}`;
 
   const statCards = [
-    { label: 'Usuários Indicados', value: summary.referredUsers.toLocaleString('pt-BR'), icon: Users, color: 'text-blue-400' },
-    { label: 'A Receber', value: formatCents(summary.availableCommissionCents ?? 0), icon: Wallet, color: 'text-emerald-400' },
-    { label: 'Em Maturação', value: formatCents(summary.maturingCommissionCents ?? 0), icon: Timer, color: 'text-yellow-400' },
-    { label: 'Pago', value: formatCents(summary.paidCommissionCents ?? 0), icon: CheckCircle2, color: 'text-green-400' },
+    { label: t('stats.referredUsers'), value: summary.referredUsers.toLocaleString(intlLocale(locale)), icon: Users, color: 'text-blue-400' },
+    { label: t('stats.available'), value: formatCents(summary.availableCommissionCents ?? 0, locale), icon: Wallet, color: 'text-emerald-400' },
+    { label: t('stats.maturing'), value: formatCents(summary.maturingCommissionCents ?? 0, locale), icon: Timer, color: 'text-yellow-400' },
+    { label: t('stats.paid'), value: formatCents(summary.paidCommissionCents ?? 0, locale), icon: CheckCircle2, color: 'text-green-400' },
   ];
 
   return (
@@ -295,14 +299,15 @@ export default function PainelAfiliadoPage() {
               <div className="flex items-center gap-3">
                 <a
                   href="/workspace"
+                  title={t('back')}
                   className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#f3f0ed]/8 text-[#f3f0ed]/40 transition-colors hover:bg-[#f3f0ed]/5"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </a>
                 <div>
-                  <h1 className="text-xl font-bold text-[#f3f0ed] md:text-2xl">Painel de Afiliado</h1>
+                  <h1 className="text-xl font-bold text-[#f3f0ed] md:text-2xl">{t('panelTitle')}</h1>
                   <p className="mt-0.5 text-sm text-[#f3f0ed]/40">
-                    {affiliate.name} · Comissão: {affiliate.commissionPercent}%
+                    {t('subtitle', { name: affiliate.name, percent: affiliate.commissionPercent })}
                   </p>
                 </div>
               </div>
@@ -310,19 +315,20 @@ export default function PainelAfiliadoPage() {
 
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-2 rounded-lg border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 px-3 py-1.5">
-                <span className="text-xs text-[#f3f0ed]/40">Código:</span>
+                <span className="text-xs text-[#f3f0ed]/40">{t('codeLabel')}</span>
                 <span className="font-mono text-sm font-medium text-[#a2dd00]">{affiliate.code}</span>
               </div>
               <CopyButton text={affiliate.code} />
-              <CopyButton text={referralLink} label="Copiar Link" />
+              <CopyButton text={referralLink} label={t('copyLink')} />
               <button
                 onClick={() => refetch()}
                 disabled={isFetching}
-                title="Atualizar"
+                title={t('refresh')}
                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#f3f0ed]/8 text-[#f3f0ed]/40 transition-colors hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70 disabled:opacity-40"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
               </button>
+              <LocaleSwitcher />
             </div>
           </div>
 
@@ -351,8 +357,10 @@ export default function PainelAfiliadoPage() {
           <div className="flex items-start gap-3 rounded-xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/2 px-4 py-3">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#f3f0ed]/30" />
             <p className="text-xs leading-relaxed text-[#f3f0ed]/40">
-              As comissões ficam em maturação por <span className="font-medium text-[#f3f0ed]/60">{maturationDays} dias</span> após
-              o pagamento. Após esse período, ficam disponíveis para saque.
+              {t.rich('maturationInfo', {
+                days: maturationDays,
+                b: (chunks) => <span className="font-medium text-[#f3f0ed]/60">{chunks}</span>,
+              })}
             </p>
           </div>
 
@@ -368,13 +376,13 @@ export default function PainelAfiliadoPage() {
                 <div className="flex items-center gap-2">
                   <KeyRound className="h-4 w-4 text-[#a2dd00]" />
                   <span className="text-sm font-semibold text-[#f3f0ed]">
-                    {affiliate.pixKey ? 'Editar chave Pix' : 'Cadastrar chave Pix'}
+                    {affiliate.pixKey ? t('pix.editTitle') : t('pix.registerTitle')}
                   </span>
                 </div>
                 <PixKeyForm
                   initialType={affiliate.pixKeyType}
                   initialKey={affiliate.pixKey}
-                  submitLabel="Salvar"
+                  submitLabel={t('pix.save')}
                   submitting={updatePixMutation.isPending}
                   onSubmit={(input) => updatePixMutation.mutate(input)}
                   onCancel={() => setEditingPix(false)}
@@ -388,7 +396,7 @@ export default function PainelAfiliadoPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#f3f0ed]/30">
-                      Chave Pix ({affiliate.pixKeyType})
+                      {t('pix.label', { type: t(`pix.types.${affiliate.pixKeyType}`) })}
                     </p>
                     <p className="mt-0.5 truncate font-mono text-sm text-[#f3f0ed]">{affiliate.pixKey}</p>
                   </div>
@@ -398,7 +406,7 @@ export default function PainelAfiliadoPage() {
                   className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[#f3f0ed]/8 px-2.5 text-xs font-medium text-[#f3f0ed]/50 transition-colors hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70"
                 >
                   <Pencil className="h-3.5 w-3.5" />
-                  Editar
+                  {t('pix.edit')}
                 </button>
               </div>
             ) : (
@@ -408,9 +416,9 @@ export default function PainelAfiliadoPage() {
                     <AlertTriangle className="h-4 w-4 text-yellow-400" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[#f3f0ed]">Cadastre sua chave Pix</p>
+                    <p className="text-sm font-semibold text-[#f3f0ed]">{t('pix.missingTitle')}</p>
                     <p className="mt-0.5 text-xs text-[#f3f0ed]/50">
-                      Sem chave cadastrada não é possível receber as comissões.
+                      {t('pix.missingDesc')}
                     </p>
                   </div>
                 </div>
@@ -419,7 +427,7 @@ export default function PainelAfiliadoPage() {
                   className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-[#a2dd00] px-3 text-xs font-semibold text-[#1c1917] transition-colors hover:bg-[#a2dd00]/90"
                 >
                   <KeyRound className="h-3.5 w-3.5" />
-                  Cadastrar
+                  {t('pix.register')}
                 </button>
               </div>
             )}
@@ -429,13 +437,13 @@ export default function PainelAfiliadoPage() {
           <div className="overflow-hidden rounded-2xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/2">
             <div className="border-b border-[#f3f0ed]/6 px-4 py-3">
               <span className="text-sm font-medium text-[#f3f0ed]">
-                Comissões ({earnings.length})
+                {t('earnings.title', { count: earnings.length })}
               </span>
             </div>
 
             {earnings.length === 0 ? (
               <p className="py-10 text-center text-sm text-[#f3f0ed]/30">
-                Nenhuma comissão registrada ainda
+                {t('earnings.empty')}
               </p>
             ) : (
               <>
@@ -452,29 +460,29 @@ export default function PainelAfiliadoPage() {
                         </p>
                         <p className="text-xs text-[#f3f0ed]/40">
                           {earning.payment.type === 'SUBSCRIPTION'
-                            ? `Assinatura ${earning.payment.subscription?.plan.name ?? ''}`
-                            : `Créditos ${earning.payment.creditPackage?.name ?? ''}`}
-                          {' · '}{formatDate(earning.createdAt)}
+                            ? `${t('earnings.subscription')} ${earning.payment.subscription?.plan.name ?? ''}`
+                            : `${t('earnings.credits')} ${earning.payment.creditPackage?.name ?? ''}`}
+                          {' · '}{formatDate(earning.createdAt, locale)}
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         <span className="text-sm font-bold tabular-nums text-[#a2dd00]">
-                          {formatCents(earning.commissionCents)}
+                          {formatCents(earning.commissionCents, locale)}
                         </span>
                         {earning.status === 'PAID' ? (
                           <Badge variant="outline" className="border-green-500/30 bg-green-500/10 text-green-400">
-                            Pago
+                            {t('earnings.statusPaid')}
                           </Badge>
                         ) : (() => {
                           const availDate = getAvailableDate(earning.createdAt, maturationDays);
                           const days = daysUntil(availDate);
                           return days > 0 ? (
                             <span className="text-[10px] tabular-nums text-yellow-400">
-                              Disponível em {formatDate(availDate.toISOString())}
+                              {t('earnings.availableOn', { date: formatDate(availDate.toISOString(), locale) })}
                             </span>
                           ) : (
                             <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
-                              Disponível
+                              {t('earnings.statusAvailable')}
                             </Badge>
                           );
                         })()}
@@ -489,22 +497,22 @@ export default function PainelAfiliadoPage() {
                     <TableHeader>
                       <TableRow className="border-[#f3f0ed]/6 hover:bg-transparent">
                         <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
-                          Usuário
+                          {t('earnings.headers.user')}
                         </TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
-                          Tipo
+                          {t('earnings.headers.type')}
                         </TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
-                          Valor Líquido
+                          {t('earnings.headers.netAmount')}
                         </TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
-                          Comissão
+                          {t('earnings.headers.commission')}
                         </TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
-                          Status
+                          {t('earnings.headers.status')}
                         </TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
-                          Data
+                          {t('earnings.headers.date')}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -523,7 +531,7 @@ export default function PainelAfiliadoPage() {
                           <TableCell>
                             <div className="flex flex-col">
                               <span className="text-sm text-[#f3f0ed]/60">
-                                {earning.payment.type === 'SUBSCRIPTION' ? 'Assinatura' : 'Créditos'}
+                                {earning.payment.type === 'SUBSCRIPTION' ? t('earnings.subscription') : t('earnings.credits')}
                               </span>
                               <span className="text-xs text-[#f3f0ed]/30">
                                 {earning.payment.subscription?.plan.name ?? earning.payment.creditPackage?.name ?? ''}
@@ -532,18 +540,18 @@ export default function PainelAfiliadoPage() {
                           </TableCell>
                           <TableCell>
                             <span className="text-sm tabular-nums text-[#f3f0ed]/60">
-                              {formatCents(earning.amountCents)}
+                              {formatCents(earning.amountCents, locale)}
                             </span>
                           </TableCell>
                           <TableCell>
                             <span className="text-sm font-bold tabular-nums text-[#a2dd00]">
-                              {formatCents(earning.commissionCents)}
+                              {formatCents(earning.commissionCents, locale)}
                             </span>
                           </TableCell>
                           <TableCell>
                             {earning.status === 'PAID' ? (
                               <Badge variant="outline" className="border-green-500/30 bg-green-500/10 text-green-400">
-                                Pago
+                                {t('earnings.statusPaid')}
                               </Badge>
                             ) : (() => {
                               const availDate = getAvailableDate(earning.createdAt, maturationDays);
@@ -551,22 +559,22 @@ export default function PainelAfiliadoPage() {
                               return days > 0 ? (
                                 <div className="flex flex-col">
                                   <Badge variant="outline" className="w-fit border-yellow-500/30 bg-yellow-500/10 text-yellow-400">
-                                    Em maturação
+                                    {t('earnings.statusMaturing')}
                                   </Badge>
                                   <span className="mt-1 text-[10px] tabular-nums text-[#f3f0ed]/30">
-                                    Disponível em {formatDate(availDate.toISOString())}
+                                    {t('earnings.availableOn', { date: formatDate(availDate.toISOString(), locale) })}
                                   </span>
                                 </div>
                               ) : (
                                 <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
-                                  Disponível
+                                  {t('earnings.statusAvailable')}
                                 </Badge>
                               );
                             })()}
                           </TableCell>
                           <TableCell>
                             <span className="text-xs tabular-nums text-[#f3f0ed]/40">
-                              {formatDate(earning.createdAt)}
+                              {formatDate(earning.createdAt, locale)}
                             </span>
                           </TableCell>
                         </TableRow>
