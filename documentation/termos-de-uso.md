@@ -1,6 +1,6 @@
 # Termos de Uso — Geraew AI
 
-**Última atualização:** 26 de março de 2026
+**Última atualização:** 20 de abril de 2026
 
 ---
 
@@ -58,9 +58,23 @@ A Plataforma, incluindo seu design, código-fonte, algoritmos, modelos de IA, lo
 
 ## 6. Planos e Pagamentos
 
-A Geraew AI pode oferecer planos gratuitos e pagos. Ao contratar um plano pago, o usuário concorda com os preços e condições vigentes no momento da contratação. As condições específicas de cada plano, incluindo limites de geração, funcionalidades disponíveis e políticas de reembolso, estarão descritas na página de preços da Plataforma.
+A Geraew AI pode oferecer planos gratuitos e pagos, bem como pacotes avulsos de créditos. Ao contratar um plano pago ou pacote de créditos, o usuário concorda com os preços e condições vigentes no momento da contratação. As condições específicas de cada plano, incluindo limites de geração e funcionalidades disponíveis, estarão descritas na página de preços da Plataforma.
 
 O não pagamento poderá resultar na suspensão do acesso às funcionalidades do plano contratado.
+
+### 6.1. Política de Reembolso e Cancelamento
+
+A Geraew AI é um serviço digital em que o valor contratado dá acesso imediato a créditos e funcionalidades de geração por inteligência artificial. Dessa forma, aplicam-se as seguintes regras:
+
+- **Direito de arrependimento (art. 49 do Código de Defesa do Consumidor):** o usuário poderá solicitar o reembolso integral no prazo de 7 (sete) dias corridos contados a partir da contratação, **desde que não tenha utilizado nenhum crédito** disponibilizado pelo plano ou pacote adquirido.
+
+- **Após a utilização de qualquer crédito:** o usuário perde o direito ao reembolso, ainda que dentro do prazo de 7 dias, uma vez que o serviço digital já terá sido parcialmente consumido. Nesse caso, o usuário poderá, a qualquer momento, **cancelar a renovação automática da assinatura**, mantendo o acesso até o fim do período já pago, sem cobrança de novos ciclos.
+
+- **Cancelamento da assinatura:** o cancelamento pode ser solicitado diretamente pelo painel do usuário na Plataforma ou por meio do e-mail de suporte. O cancelamento encerra a renovação, mas não gera reembolso proporcional do período em curso quando houve uso de créditos.
+
+- **Pacotes avulsos de créditos:** não possuem renovação automática. Uma vez utilizado qualquer crédito do pacote, não será concedido reembolso do valor pago.
+
+- **Exceções:** em caso de cobrança indevida, falha técnica imputável à Plataforma que impeça o uso dos créditos, ou descumprimento do serviço contratado, o usuário poderá solicitar reembolso mediante análise, independentemente das regras acima.
 
 ## 7. Limitação de Responsabilidade
 
