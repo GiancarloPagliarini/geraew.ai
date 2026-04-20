@@ -995,7 +995,10 @@ export default function AdminAffiliatosPage() {
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <span className="text-sm font-bold tabular-nums text-[#a2dd00]">{formatCents(aff.pendingEarningsCents)}</span>
-                  <span className="text-[11px] text-[#f3f0ed]/30">pendente</span>
+                  <span className="flex items-center gap-1 text-[11px] text-[#f3f0ed]/30">
+                    <Users className="h-3 w-3" />
+                    {aff.referredUsersCount.toLocaleString('pt-BR')}
+                  </span>
                 </div>
               </div>
             ))}
@@ -1009,6 +1012,7 @@ export default function AdminAffiliatosPage() {
                   <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Afiliado</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Código</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Comissão</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Indicados</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Total Ganho</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Pendente</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Pix</TableHead>
@@ -1039,6 +1043,14 @@ export default function AdminAffiliatosPage() {
                     </TableCell>
                     <TableCell>
                       <span className="text-sm tabular-nums text-[#f3f0ed]">{aff.commissionPercent}%</span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <Users className="h-3.5 w-3.5 text-[#f3f0ed]/30" />
+                        <span className={`text-sm font-medium tabular-nums ${aff.referredUsersCount > 0 ? 'text-[#f3f0ed]' : 'text-[#f3f0ed]/30'}`}>
+                          {aff.referredUsersCount.toLocaleString('pt-BR')}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm tabular-nums text-[#f3f0ed]">{formatCents(aff.totalEarningsCents)}</span>

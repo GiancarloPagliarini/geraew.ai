@@ -486,6 +486,7 @@ export interface Affiliate {
   totalEarningsCents: number;
   pendingEarningsCents: number;
   referralsCount: number;
+  referredUsersCount: number;
 }
 
 export interface AffiliateEarning {
