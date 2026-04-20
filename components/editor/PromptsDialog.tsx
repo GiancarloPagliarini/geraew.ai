@@ -292,22 +292,25 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
   const [deletePromptId, setDeletePromptId] = useState<string | null>(null);
 
   const [promptSections, setPromptSections] = useState<Section[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const fetchRef = useRef(0);
+  const hasFetchedRef = useRef(false);
 
   const isAdmin = user?.role === 'ADMIN';
 
   async function fetchPrompts() {
+    if (!user || !accessToken) return;
     const id = ++fetchRef.current;
     try {
       setLoading(true);
       setError(false);
-      const data = await api.prompts.getAll();
+      const data = await api.prompts.getAll(accessToken);
       if (id === fetchRef.current) {
         const sections = mapApiSectionsToSections(data.sections);
         setPromptSections(sections);
         if (!activeSection && sections.length > 0) setActiveSection(sections[0].id);
+        hasFetchedRef.current = true;
       }
     } catch {
       if (id === fetchRef.current) setError(true);
@@ -316,7 +319,24 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
     }
   }
 
-  useEffect(() => { fetchPrompts(); }, []);
+  // Só busca prompts quando o diálogo estiver aberto e o usuário autenticado.
+  // Reavaliar também quando a auth mudar — assim, após login, refaz o fetch.
+  useEffect(() => {
+    if (!open) return;
+    if (!user || !accessToken) return;
+    if (hasFetchedRef.current) return;
+    fetchPrompts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user, accessToken]);
+
+  // Ao deslogar, limpa o cache para refetch no próximo login.
+  useEffect(() => {
+    if (!user) {
+      hasFetchedRef.current = false;
+      setPromptSections([]);
+      setError(false);
+    }
+  }, [user]);
 
   // Flatten all prompts for the active section, with optional search filter
   const visiblePrompts = useMemo(() => {

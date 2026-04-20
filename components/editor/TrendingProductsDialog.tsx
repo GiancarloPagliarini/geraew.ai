@@ -257,9 +257,11 @@ export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsD
   }, []);
 
   useEffect(() => {
-    if (open) fetchProducts(activeTab);
+    if (!open) return;
+    if (!user || !accessToken) return;
+    fetchProducts(activeTab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, activeTab]);
+  }, [open, activeTab, user, accessToken]);
 
   useEffect(() => {
     if (open) { setMounted(true); setClosing(false); }
