@@ -4,7 +4,14 @@
       "logoAlt": "Geraew AI",
       "brand": "Geraew.AI",
       "buyCredits": "Comprar Créditos",
-      "postAndEarn": "Poste e ganhe",
+      "becomeAffiliate": "Torne-se Afiliado",
+      "affiliateMenuTitle": "Programa de Afiliados",
+      "affiliateAvailable": "A receber",
+      "affiliateReferrals": "Afiliados",
+      "affiliateViewPanel": "Ver painel completo",
+      "affiliatePitch": "Ganhe 20% de comissão recorrente indicando a Geraew.",
+      "affiliateJoinCta": "Quero ser afiliado",
+      "affiliateLoading": "Carregando…",
       "signIn": "Entrar",
       "loginTitle": "Faça login para gerar",
       "loginSubtitle": "Acesso gratuito com créditos iniciais",
@@ -17,6 +24,7 @@
         "credits": "Créditos",
         "plans": "Planos",
         "usage": "Uso",
+        "affiliate": "Afiliados",
         "logout": "Sair",
         "support": "Suporte"
       }

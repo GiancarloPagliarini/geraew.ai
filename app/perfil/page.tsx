@@ -23,6 +23,8 @@ import {
   User,
   Coins,
   Settings,
+  Link as LinkIcon,
+  Users as UsersIcon,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLoginModal } from '@/lib/login-modal-context';
@@ -60,6 +62,27 @@ export default function PerfilPage() {
     queryKey: ['credits', 'balance'],
     queryFn: () => api.credits.balance(accessToken!),
     enabled: !!accessToken,
+  });
+
+  const { data: affiliateData, isLoading: affiliateLoading } = useQuery({
+    queryKey: ['affiliate', 'me'],
+    queryFn: () => api.affiliates.me(accessToken!),
+    enabled: !!accessToken,
+  });
+
+  const createAffiliateMutation = useMutation({
+    mutationFn: () => api.affiliates.createMe(accessToken!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['affiliate', 'me'] });
+      toast.success(t('affiliateCreateSuccessTitle'), {
+        description: t('affiliateCreateSuccessDescription'),
+      });
+      router.push('/painel-afiliado');
+    },
+    onError: () =>
+      toast.error(t('affiliateCreateErrorTitle'), {
+        description: t('affiliateCreateErrorDescription'),
+      }),
   });
 
   useEffect(() => {
@@ -301,6 +324,56 @@ export default function PerfilPage() {
             </div>
           ) : (
             <EmptyState icon={Zap} text={t('creditsUnavailable')} />
+          )}
+        </div>
+
+        {/* ── Programa de Afiliados ── */}
+        <div>
+          <SectionHeader icon={UsersIcon} title={t('affiliate')} />
+          {affiliateLoading ? (
+            <div className="mt-3 flex items-center justify-center rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 py-6">
+              <Loader2 className="h-4 w-4 animate-spin text-[#a2dd00]/60" />
+            </div>
+          ) : affiliateData?.affiliate ? (
+            <button
+              onClick={() => router.push('/painel-afiliado')}
+              className="mt-3 flex w-full items-center gap-3 rounded-xl border border-[#a2dd00]/20 bg-[#a2dd00]/[0.06] px-4 py-3.5 text-left transition-colors hover:border-[#a2dd00]/30 hover:bg-[#a2dd00]/[0.09]"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#a2dd00]/15">
+                <LinkIcon className="h-4 w-4 text-[#a2dd00]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-[#f3f0ed]">{t('affiliateDashboard')}</p>
+                <p className="mt-0.5 text-[11px] text-[#f3f0ed]/40">
+                  {t('affiliateCodeLabel')}: <span className="font-mono text-[#a2dd00]/80">{affiliateData.affiliate.code}</span>
+                </p>
+              </div>
+              <ExternalLink className="h-3.5 w-3.5 shrink-0 text-[#f3f0ed]/30" />
+            </button>
+          ) : (
+            <div className="mt-3 flex flex-col gap-3 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 p-4">
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-medium text-[#f3f0ed]">{t('affiliateTagline')}</p>
+                <p className="text-xs leading-relaxed text-[#f3f0ed]/45">{t('affiliateDescription')}</p>
+              </div>
+              <button
+                onClick={() => createAffiliateMutation.mutate()}
+                disabled={createAffiliateMutation.isPending}
+                className="flex h-9 w-fit items-center gap-2 rounded-xl bg-[#a2dd00] px-4 text-xs font-bold text-[#1a2123] transition-colors hover:bg-[#b5e82d] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {createAffiliateMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    {t('becomeAffiliateLoading')}
+                  </>
+                ) : (
+                  <>
+                    <LinkIcon className="h-3.5 w-3.5" />
+                    {t('becomeAffiliate')}
+                  </>
+                )}
+              </button>
+            </div>
           )}
         </div>
 

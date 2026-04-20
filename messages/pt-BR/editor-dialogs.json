@@ -194,25 +194,6 @@
         }
       }
     },
-    "postAndEarn": {
-      "title": "Poste e Ganhe",
-      "subtitle": "Compartilhe suas criações em <green>collab</green> com <green>@geraew.ai</green> e dobre suas gerações!",
-      "postImage": "Poste uma imagem",
-      "postVideo": "Poste um vídeo",
-      "inCollab": "Em collab com @geraew.ai",
-      "generations": "gerações",
-      "imageType": "de imagem",
-      "videoType": "de vídeo",
-      "howItWorks": "Como funciona",
-      "steps": {
-        "s1": "Crie sua imagem ou vídeo na geraew.ai",
-        "s2": "Poste em collab com @geraew.ai no Instagram",
-        "s3": "Envie seu e-mail de cadastro na DM do nosso Instagram"
-      },
-      "confirmation": "Seus créditos serão adicionados após a verificação do post.",
-      "follow": "Seguir @geraew.ai",
-      "gotIt": "Entendido"
-    },
     "imageToPrompt": {
       "title": "CLONE DE PROMPT",
       "description": "Envie uma imagem e receba o prompt estruturado pronto pra usar em Flux, Nano Banana, SDXL ou Veo.",

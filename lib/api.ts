@@ -469,6 +469,8 @@ export interface Folder {
 
 // ─── Affiliates (Admin) ─────────────────────────────────────────────────────
 
+export type PixKeyType = 'CPF' | 'CNPJ' | 'EMAIL' | 'PHONE' | 'RANDOM';
+
 export interface Affiliate {
   id: string;
   userId: string | null;
@@ -476,6 +478,8 @@ export interface Affiliate {
   name: string;
   commissionPercent: number;
   isActive: boolean;
+  pixKey: string | null;
+  pixKeyType: PixKeyType | null;
   createdAt: string;
   user: { id: string; email: string; name: string } | null;
   _count: { earnings: number };
@@ -1475,14 +1479,16 @@ export const api = {
   },
 
   affiliates: {
-    me(accessToken: string) {
-      return authRequest<{
+    async me(accessToken: string) {
+      const result = await authRequest<{
         affiliate: {
           id: string;
           code: string;
           name: string;
           commissionPercent: number;
           isActive: boolean;
+          pixKey: string | null;
+          pixKeyType: PixKeyType | null;
           createdAt: string;
         };
         summary: {
@@ -1511,7 +1517,35 @@ export const api = {
             creditPackage: { name: string; credits: number } | null;
           };
         }[];
-      } | null>('/api/v1/affiliates/me', accessToken);
+      } | null | undefined>('/api/v1/affiliates/me', accessToken);
+      return result ?? null;
+    },
+
+    createMe(accessToken: string, data: { pixKey: string; pixKeyType: PixKeyType }) {
+      return authRequest<{
+        id: string;
+        code: string;
+        name: string;
+        commissionPercent: number;
+        isActive: boolean;
+        pixKey: string | null;
+        pixKeyType: PixKeyType | null;
+        createdAt: string;
+      }>('/api/v1/affiliates/me', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    updateMyPixKey(accessToken: string, data: { pixKey: string; pixKeyType: PixKeyType }) {
+      return authRequest<{
+        id: string;
+        pixKey: string;
+        pixKeyType: PixKeyType;
+      }>('/api/v1/affiliates/me/pix-key', accessToken, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
     },
   },
 };
