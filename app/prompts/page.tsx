@@ -2,6 +2,7 @@
 
 import { api } from '@/lib/api';
 import type { ApiPromptSection } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Search, Copy, Check } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -81,9 +82,11 @@ function PromptCard({
 }
 
 export default function PromptsPage() {
+  const { accessToken } = useAuth();
   const { data, isLoading, error } = useQuery({
     queryKey: ['public', 'prompts'],
-    queryFn: () => api.prompts.getAll(),
+    queryFn: () => api.prompts.getAll(accessToken!),
+    enabled: !!accessToken,
   });
 
   const [search, setSearch] = useState('');
