@@ -1548,4 +1548,349 @@ export const api = {
       });
     },
   },
+
+  adminStripe: {
+    overview(accessToken: string) {
+      return authRequest<StripeOverview>('/api/v1/admin/stripe/overview', accessToken);
+    },
+
+    listCharges(accessToken: string, params: StripeListParams & { customer?: string } = {}) {
+      const qs = buildStripeQuery(params);
+      return authRequest<StripeList<StripeCharge>>(`/api/v1/admin/stripe/charges${qs}`, accessToken);
+    },
+    getCharge(accessToken: string, id: string) {
+      return authRequest<StripeCharge>(`/api/v1/admin/stripe/charges/${id}`, accessToken);
+    },
+    refundCharge(accessToken: string, id: string, body: { amount?: number; reason?: 'duplicate' | 'fraudulent' | 'requested_by_customer' } = {}) {
+      return authRequest<StripeRefund>(`/api/v1/admin/stripe/charges/${id}/refund`, accessToken, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+
+    listCustomers(accessToken: string, params: StripeListParams & { email?: string; search?: string } = {}) {
+      const qs = buildStripeQuery(params);
+      return authRequest<StripeList<StripeCustomer>>(`/api/v1/admin/stripe/customers${qs}`, accessToken);
+    },
+    getCustomer(accessToken: string, id: string) {
+      return authRequest<StripeCustomerDetail>(`/api/v1/admin/stripe/customers/${id}`, accessToken);
+    },
+
+    listProducts(accessToken: string, params: StripeListParams & { active?: boolean } = {}) {
+      const qs = buildStripeQuery(params);
+      return authRequest<StripeList<StripeProduct>>(`/api/v1/admin/stripe/products${qs}`, accessToken);
+    },
+    getProduct(accessToken: string, id: string) {
+      return authRequest<StripeProduct>(`/api/v1/admin/stripe/products/${id}`, accessToken);
+    },
+    createProduct(accessToken: string, body: { name: string; description?: string; active?: boolean; metadata?: Record<string, string> }) {
+      return authRequest<StripeProduct>('/api/v1/admin/stripe/products', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+    updateProduct(accessToken: string, id: string, body: { name?: string; description?: string; active?: boolean; metadata?: Record<string, string> }) {
+      return authRequest<StripeProduct>(`/api/v1/admin/stripe/products/${id}`, accessToken, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+    },
+    deleteProduct(accessToken: string, id: string) {
+      return authRequest<StripeProduct | { deleted: true; id: string }>(`/api/v1/admin/stripe/products/${id}`, accessToken, {
+        method: 'DELETE',
+      });
+    },
+
+    listPrices(accessToken: string, params: StripeListParams & { product?: string; active?: boolean } = {}) {
+      const qs = buildStripeQuery(params);
+      return authRequest<StripeList<StripePrice>>(`/api/v1/admin/stripe/prices${qs}`, accessToken);
+    },
+    getPrice(accessToken: string, id: string) {
+      return authRequest<StripePrice>(`/api/v1/admin/stripe/prices/${id}`, accessToken);
+    },
+    createPrice(accessToken: string, body: {
+      product: string;
+      unitAmount: number;
+      currency: string;
+      nickname?: string;
+      recurring?: { interval: 'day' | 'week' | 'month' | 'year'; intervalCount?: number };
+      metadata?: Record<string, string>;
+    }) {
+      return authRequest<StripePrice>('/api/v1/admin/stripe/prices', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+    archivePrice(accessToken: string, id: string) {
+      return authRequest<StripePrice>(`/api/v1/admin/stripe/prices/${id}/archive`, accessToken, { method: 'PATCH' });
+    },
+    activatePrice(accessToken: string, id: string) {
+      return authRequest<StripePrice>(`/api/v1/admin/stripe/prices/${id}/activate`, accessToken, { method: 'PATCH' });
+    },
+
+    listCoupons(accessToken: string, params: StripeListParams = {}) {
+      const qs = buildStripeQuery(params);
+      return authRequest<StripeList<StripeCoupon>>(`/api/v1/admin/stripe/coupons${qs}`, accessToken);
+    },
+    createCoupon(accessToken: string, body: {
+      id?: string;
+      name?: string;
+      percentOff?: number;
+      amountOff?: number;
+      currency?: string;
+      duration: 'once' | 'repeating' | 'forever';
+      durationInMonths?: number;
+      maxRedemptions?: number;
+      redeemBy?: number;
+      metadata?: Record<string, string>;
+    }) {
+      return authRequest<StripeCoupon>('/api/v1/admin/stripe/coupons', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+    deleteCoupon(accessToken: string, id: string) {
+      return authRequest<{ id: string; deleted: true }>(`/api/v1/admin/stripe/coupons/${id}`, accessToken, { method: 'DELETE' });
+    },
+
+    listPromotionCodes(accessToken: string, params: StripeListParams & { code?: string; active?: boolean; coupon?: string } = {}) {
+      const qs = buildStripeQuery(params);
+      return authRequest<StripeList<StripePromotionCode>>(`/api/v1/admin/stripe/promotion-codes${qs}`, accessToken);
+    },
+    createPromotionCode(accessToken: string, body: {
+      coupon: string;
+      code?: string;
+      active?: boolean;
+      maxRedemptions?: number;
+      expiresAt?: number;
+      firstTimeTransaction?: boolean;
+      minimumAmount?: number;
+      minimumAmountCurrency?: string;
+      metadata?: Record<string, string>;
+    }) {
+      return authRequest<StripePromotionCode>('/api/v1/admin/stripe/promotion-codes', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+    togglePromotionCode(accessToken: string, id: string, active: boolean) {
+      return authRequest<StripePromotionCode>(`/api/v1/admin/stripe/promotion-codes/${id}`, accessToken, {
+        method: 'PATCH',
+        body: JSON.stringify({ active }),
+      });
+    },
+
+    listSubscriptions(accessToken: string, params: StripeListParams & { status?: string; customer?: string; priceId?: string } = {}) {
+      const qs = buildStripeQuery(params);
+      return authRequest<StripeList<StripeSubscription>>(`/api/v1/admin/stripe/subscriptions${qs}`, accessToken);
+    },
+    getSubscription(accessToken: string, id: string) {
+      return authRequest<StripeSubscription>(`/api/v1/admin/stripe/subscriptions/${id}`, accessToken);
+    },
+    cancelSubscription(accessToken: string, id: string, atPeriodEnd = true) {
+      return authRequest<StripeSubscription>(`/api/v1/admin/stripe/subscriptions/${id}/cancel`, accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ atPeriodEnd }),
+      });
+    },
+    reactivateSubscription(accessToken: string, id: string) {
+      return authRequest<StripeSubscription>(`/api/v1/admin/stripe/subscriptions/${id}/reactivate`, accessToken, { method: 'POST' });
+    },
+
+    listInvoices(accessToken: string, params: StripeListParams & { customer?: string; status?: string } = {}) {
+      const qs = buildStripeQuery(params);
+      return authRequest<StripeList<StripeInvoice>>(`/api/v1/admin/stripe/invoices${qs}`, accessToken);
+    },
+    getInvoice(accessToken: string, id: string) {
+      return authRequest<StripeInvoice>(`/api/v1/admin/stripe/invoices/${id}`, accessToken);
+    },
+  },
 };
+
+// ============= Stripe admin types =============
+
+function buildStripeQuery(params: object): string {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params as Record<string, unknown>)) {
+    if (v === undefined || v === null || v === '') continue;
+    qs.set(k, String(v));
+  }
+  const s = qs.toString();
+  return s ? `?${s}` : '';
+}
+
+export interface StripeListParams {
+  limit?: number;
+  starting_after?: string;
+  ending_before?: string;
+}
+
+export interface StripeList<T> {
+  object: 'list' | 'search_result';
+  data: T[];
+  has_more: boolean;
+  url?: string;
+  next_page?: string | null;
+}
+
+export interface StripeCharge {
+  id: string;
+  amount: number;
+  amount_refunded: number;
+  currency: string;
+  status: string;
+  paid: boolean;
+  refunded: boolean;
+  created: number;
+  description: string | null;
+  receipt_url: string | null;
+  customer: string | null;
+  payment_method_details?: { type: string; card?: { brand: string; last4: string } } | null;
+  metadata: Record<string, string>;
+  failure_code: string | null;
+  failure_message: string | null;
+  outcome: {
+    network_status?: string | null;
+    reason?: string | null;
+    risk_level?: string | null;
+    seller_message?: string | null;
+    type?: string | null;
+  } | null;
+}
+
+export interface StripeRefund {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  charge: string;
+  reason: string | null;
+  created: number;
+}
+
+export interface StripeCustomer {
+  id: string;
+  email: string | null;
+  name: string | null;
+  phone: string | null;
+  created: number;
+  currency: string | null;
+  balance: number;
+  delinquent: boolean;
+  metadata: Record<string, string>;
+}
+
+export interface StripeCustomerDetail {
+  customer: StripeCustomer;
+  subscriptions: StripeSubscription[];
+  charges: StripeCharge[];
+  invoices: StripeInvoice[];
+  paymentMethods: StripePaymentMethod[];
+}
+
+export interface StripePaymentMethod {
+  id: string;
+  type: string;
+  card?: { brand: string; last4: string; exp_month: number; exp_year: number } | null;
+  created: number;
+}
+
+export interface StripeProduct {
+  id: string;
+  name: string;
+  description: string | null;
+  active: boolean;
+  created: number;
+  updated: number;
+  metadata: Record<string, string>;
+  default_price?: string | null;
+}
+
+export interface StripePrice {
+  id: string;
+  product: string | StripeProduct;
+  active: boolean;
+  currency: string;
+  unit_amount: number | null;
+  nickname: string | null;
+  type: 'one_time' | 'recurring';
+  recurring: { interval: string; interval_count: number } | null;
+  created: number;
+  metadata: Record<string, string>;
+}
+
+export interface StripeCoupon {
+  id: string;
+  name: string | null;
+  percent_off: number | null;
+  amount_off: number | null;
+  currency: string | null;
+  duration: 'once' | 'repeating' | 'forever';
+  duration_in_months: number | null;
+  max_redemptions: number | null;
+  times_redeemed: number;
+  redeem_by: number | null;
+  valid: boolean;
+  created: number;
+}
+
+export interface StripePromotionCode {
+  id: string;
+  code: string;
+  active: boolean;
+  coupon: StripeCoupon;
+  max_redemptions: number | null;
+  times_redeemed: number;
+  expires_at: number | null;
+  created: number;
+  restrictions: {
+    first_time_transaction: boolean;
+    minimum_amount: number | null;
+    minimum_amount_currency: string | null;
+  };
+}
+
+export interface StripeSubscription {
+  id: string;
+  status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'paused' | 'unpaid' | 'incomplete' | 'incomplete_expired';
+  customer: string | StripeCustomer;
+  current_period_start?: number;
+  current_period_end?: number;
+  cancel_at_period_end: boolean;
+  canceled_at: number | null;
+  created: number;
+  items: {
+    data: { id: string; price: StripePrice; quantity: number }[];
+  };
+  discounts?: unknown[];
+  metadata: Record<string, string>;
+}
+
+export interface StripeInvoice {
+  id: string;
+  number: string | null;
+  status: string;
+  amount_due: number;
+  amount_paid: number;
+  amount_remaining: number;
+  currency: string;
+  customer: string | StripeCustomer;
+  hosted_invoice_url: string | null;
+  invoice_pdf: string | null;
+  created: number;
+  period_start: number;
+  period_end: number;
+}
+
+export interface StripeOverview {
+  balance: {
+    available: { amount: number; currency: string }[];
+    pending: { amount: number; currency: string }[];
+  };
+  subscriptions: {
+    active: { count: number; hasMore: boolean };
+    pastDue: { count: number; hasMore: boolean };
+    canceled: { count: number; hasMore: boolean };
+    trialing: { count: number; hasMore: boolean };
+  };
+}
