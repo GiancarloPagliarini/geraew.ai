@@ -15,6 +15,7 @@ import {
   Handshake,
   Sparkles,
   FileText,
+  Banknote,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { href: '/admin/modelos', label: 'Modelos', icon: Sparkles },
   { href: '/admin/prompts', label: 'Prompts', icon: FileText },
   { href: '/admin/assinaturas', label: 'Assinaturas', icon: CreditCard },
+  { href: '/admin/stripe', label: 'Stripe', icon: Banknote },
   { href: '/admin/afiliados', label: 'Afiliados', icon: Handshake },
   { href: '/admin/uploads', label: 'Uploads', icon: Upload },
 ];
