@@ -21,6 +21,9 @@ import {
   Check,
   Link,
   Pencil,
+  Trash2,
+  KeyRound,
+  AlertTriangle,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -381,6 +384,7 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
   const queryClient = useQueryClient();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showEdit, setShowEdit] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'affiliates', affiliateId, 'earnings'],
@@ -401,6 +405,20 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
       queryClient.invalidateQueries({ queryKey: ['admin', 'affiliates'] });
     },
     onError: () => toast.error('Erro ao alterar status'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => api.admin.deleteAffiliate(accessToken!, affiliateId),
+    onSuccess: (result) => {
+      toast.success('Afiliado deletado', {
+        description: result.deletedEarnings > 0
+          ? `${result.deletedEarnings} comissão(ões) removidas em cascata.`
+          : undefined,
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'affiliates'] });
+      onBack();
+    },
+    onError: () => toast.error('Erro ao deletar afiliado'),
   });
 
   const markPaidMutation = useMutation({
@@ -497,7 +515,52 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
             <Power className="h-3.5 w-3.5" />
             {affiliate.isActive ? 'Desativar' : 'Ativar'}
           </button>
+          <button
+            onClick={() => setShowDelete(true)}
+            disabled={deleteMutation.isPending}
+            className="flex h-9 items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-3 text-sm text-red-400 transition-colors hover:border-red-500/40 hover:bg-red-500/10 disabled:opacity-50"
+          >
+            {deleteMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+            Deletar
+          </button>
         </div>
+      </div>
+
+      {/* Pix key card */}
+      <div
+        className={`rounded-2xl border p-4 ${affiliate.pixKey
+          ? 'border-[#f3f0ed]/6 bg-[#f3f0ed]/2'
+          : 'border-yellow-500/30 bg-yellow-500/5'
+          }`}
+      >
+        {affiliate.pixKey ? (
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#a2dd00]/10">
+                <KeyRound className="h-4 w-4 text-[#a2dd00]" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#f3f0ed]/30">
+                  Chave Pix ({affiliate.pixKeyType})
+                </p>
+                <p className="mt-0.5 truncate font-mono text-sm text-[#f3f0ed]">{affiliate.pixKey}</p>
+              </div>
+            </div>
+            <CopyButton text={affiliate.pixKey} />
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-500/10">
+              <AlertTriangle className="h-4 w-4 text-yellow-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-[#f3f0ed]">Sem chave Pix cadastrada</p>
+              <p className="mt-0.5 text-xs text-[#f3f0ed]/50">
+                O afiliado ainda não cadastrou a chave — não é possível processar saques.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Summary cards */}
@@ -748,6 +811,124 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
           onClose={() => setShowEdit(false)}
         />
       )}
+
+      {/* Delete confirmation modal */}
+      {showDelete && (
+        <DeleteAffiliateModal
+          affiliateName={affiliate.name}
+          affiliateCode={affiliate.code}
+          earningsCount={earnings.length}
+          pendingCents={summary.pendingCommissionCents ?? 0}
+          isPending={deleteMutation.isPending}
+          onConfirm={() => deleteMutation.mutate()}
+          onClose={() => setShowDelete(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Delete Affiliate Modal ─────────────────────────────────────────────────
+
+function DeleteAffiliateModal({
+  affiliateName,
+  affiliateCode,
+  earningsCount,
+  pendingCents,
+  isPending,
+  onConfirm,
+  onClose,
+}: {
+  affiliateName: string;
+  affiliateCode: string;
+  earningsCount: number;
+  pendingCents: number;
+  isPending: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  const [confirmCode, setConfirmCode] = useState('');
+  const codeMatches = confirmCode.trim().toUpperCase() === affiliateCode.toUpperCase();
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="mx-4 w-full max-w-md overflow-hidden rounded-2xl border border-red-500/20 bg-[#1a2123]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-3 border-b border-[#f3f0ed]/6 px-6 py-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10">
+            <Trash2 className="h-4 w-4 text-red-400" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base font-bold text-[#f3f0ed]">Deletar afiliado</h2>
+            <p className="mt-0.5 text-xs text-[#f3f0ed]/50">
+              Esta ação é irreversível e cascata nos dados associados.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4 px-6 py-5">
+          <div className="rounded-xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/2 px-4 py-3">
+            <p className="text-xs text-[#f3f0ed]/40">Afiliado</p>
+            <p className="mt-1 text-sm font-medium text-[#f3f0ed]">{affiliateName}</p>
+            <p className="mt-0.5 font-mono text-xs text-[#a2dd00]">{affiliateCode}</p>
+          </div>
+
+          <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-red-400">Impacto</p>
+            <ul className="mt-2 flex flex-col gap-1 text-xs text-[#f3f0ed]/60">
+              <li>• {earningsCount} comissão(ões) serão apagadas em cascata</li>
+              {pendingCents > 0 && (
+                <li className="text-red-300">
+                  • {formatCents(pendingCents)} em comissões <strong>PENDENTES</strong> serão perdidas
+                </li>
+              )}
+              <li>• Usuários indicados permanecem, mas perdem a origem</li>
+            </ul>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-[#f3f0ed]/40">
+              Digite <span className="font-mono text-[#a2dd00]">{affiliateCode}</span> para confirmar
+            </label>
+            <Input
+              value={confirmCode}
+              onChange={(e) => setConfirmCode(e.target.value)}
+              placeholder={affiliateCode}
+              autoFocus
+              className="h-10 border-[#f3f0ed]/8 bg-[#f3f0ed]/3 font-mono text-sm text-[#f3f0ed] placeholder:text-[#f3f0ed]/20 focus-visible:border-red-500/30 focus-visible:ring-red-500/10"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 border-t border-[#f3f0ed]/6 bg-[#f3f0ed]/[0.02] px-6 py-4">
+          <button
+            onClick={onClose}
+            disabled={isPending}
+            className="flex-1 rounded-xl border border-[#f3f0ed]/8 px-4 py-2.5 text-sm font-medium text-[#f3f0ed]/60 transition-colors hover:bg-[#f3f0ed]/5 disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={!codeMatches || isPending}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-500/90 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Deletando...
+              </>
+            ) : (
+              <>
+                <Trash2 className="h-4 w-4" />
+                Deletar afiliado
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -869,10 +1050,18 @@ export default function AdminAffiliatosPage() {
           {/* Mobile cards */}
           <div className="flex flex-col gap-2 md:hidden">
             {affiliates.map((aff) => (
-              <button
+              <div
                 key={aff.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => setSelectedAffiliate(aff.id)}
-                className="flex w-full items-center gap-3 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 px-3 py-3 text-left active:bg-[#f3f0ed]/6"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelectedAffiliate(aff.id);
+                  }
+                }}
+                className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 px-3 py-3 text-left outline-none transition-colors active:bg-[#f3f0ed]/6 focus-visible:border-[#a2dd00]/40"
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -887,6 +1076,14 @@ export default function AdminAffiliatosPage() {
                     >
                       {aff.isActive ? 'Ativo' : 'Inativo'}
                     </Badge>
+                    {!aff.pixKey && (
+                      <span
+                        title="Sem chave Pix cadastrada"
+                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-yellow-500/10"
+                      >
+                        <AlertTriangle className="h-3 w-3 text-yellow-400" />
+                      </span>
+                    )}
                   </div>
                   <div className="mt-0.5 flex items-center gap-2">
                     <span className="font-mono text-xs text-[#a2dd00]">{aff.code}</span>
@@ -896,9 +1093,12 @@ export default function AdminAffiliatosPage() {
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <span className="text-sm font-bold tabular-nums text-[#a2dd00]">{formatCents(aff.pendingEarningsCents)}</span>
-                  <span className="text-[11px] text-[#f3f0ed]/30">pendente</span>
+                  <span className="flex items-center gap-1 text-[11px] text-[#f3f0ed]/30">
+                    <Users className="h-3 w-3" />
+                    {aff.referredUsersCount.toLocaleString('pt-BR')}
+                  </span>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
 
@@ -910,8 +1110,10 @@ export default function AdminAffiliatosPage() {
                   <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Afiliado</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Código</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Comissão</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Indicados</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Total Ganho</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Pendente</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Pix</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Status</TableHead>
                   <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Criado em</TableHead>
                   <TableHead className="w-10" />
@@ -941,12 +1143,37 @@ export default function AdminAffiliatosPage() {
                       <span className="text-sm tabular-nums text-[#f3f0ed]">{aff.commissionPercent}%</span>
                     </TableCell>
                     <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <Users className="h-3.5 w-3.5 text-[#f3f0ed]/30" />
+                        <span className={`text-sm font-medium tabular-nums ${aff.referredUsersCount > 0 ? 'text-[#f3f0ed]' : 'text-[#f3f0ed]/30'}`}>
+                          {aff.referredUsersCount.toLocaleString('pt-BR')}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <span className="text-sm tabular-nums text-[#f3f0ed]">{formatCents(aff.totalEarningsCents)}</span>
                     </TableCell>
                     <TableCell>
                       <span className={`text-sm font-bold tabular-nums ${aff.pendingEarningsCents > 0 ? 'text-yellow-400' : 'text-[#f3f0ed]/40'}`}>
                         {formatCents(aff.pendingEarningsCents)}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      {aff.pixKey ? (
+                        <div className="flex min-w-0 flex-col">
+                          <span className="text-[10px] font-bold uppercase tracking-wide text-[#f3f0ed]/30">
+                            {aff.pixKeyType}
+                          </span>
+                          <span className="max-w-[180px] truncate font-mono text-xs text-[#f3f0ed]/70">
+                            {aff.pixKey}
+                          </span>
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="border-yellow-500/30 bg-yellow-500/10 text-yellow-400">
+                          <AlertTriangle className="h-3 w-3" />
+                          Sem Pix
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge

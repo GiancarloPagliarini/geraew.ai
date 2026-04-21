@@ -1,16 +1,25 @@
 'use client';
 
-import { BadgePercent, BatteryCharging, Coins, CreditCard, Gift, Loader2, LogIn, LogOut, Plus, Settings, User, X } from 'lucide-react';
+import { ArrowRight, BadgePercent, BatteryCharging, Coins, CreditCard, Loader2, LogIn, LogOut, Plus, Settings, User, Users, Wallet, X } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { useQuery } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
 import { PlansModal } from './PlansModal';
-import { PostAndEarnModal } from './PostAndEarnModal';
+import { AffiliateProgramModal } from './AffiliateProgramModal';
 import { useLoginModal } from '@/lib/login-modal-context';
 import { LocaleSwitcher } from '@/components/locale-switcher';
+
+function formatCents(cents: number, locale: string) {
+  return (cents / 100).toLocaleString(locale === 'pt-BR' ? 'pt-BR' : 'en-US', {
+    style: 'currency',
+    currency: 'BRL',
+  });
+}
 
 export function TopNavbar() {
   const t = useTranslations('editorChrome.navbar');
@@ -18,14 +27,23 @@ export function TopNavbar() {
   const locale = useLocale();
   const router = useRouter();
   const { credits, creditsLoading, creditsBalance } = useEditor();
-  const { user, logout, loading: authLoading } = useAuth();
+  const { user, logout, loading: authLoading, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
   const [menuOpen, setMenuOpen] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [plansModalOpen, setPlansModalOpen] = useState(false);
-  const [postAndEarnOpen, setPostAndEarnOpen] = useState(false);
+  const [affiliateMenuOpen, setAffiliateMenuOpen] = useState(false);
+  const [affiliateModalOpen, setAffiliateModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const asideRef = useRef<HTMLElement>(null);
+  const affiliateMenuRef = useRef<HTMLDivElement>(null);
+
+  const { data: affiliateData, isLoading: affiliateLoading, isFetched: affiliateFetched } = useQuery({
+    queryKey: ['affiliate', 'me'],
+    queryFn: () => api.affiliates.me(accessToken!),
+    enabled: !!user && !!accessToken,
+    staleTime: 30_000,
+  });
 
   // Fecha o menu ao clicar fora (ignora cliques dentro do aside mobile)
   useEffect(() => {
@@ -38,6 +56,17 @@ export function TopNavbar() {
     document.addEventListener('mousedown', handleClick, true);
     return () => document.removeEventListener('mousedown', handleClick, true);
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (!affiliateMenuOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (!affiliateMenuRef.current?.contains(e.target as Node)) {
+        setAffiliateMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick, true);
+    return () => document.removeEventListener('mousedown', handleClick, true);
+  }, [affiliateMenuOpen]);
 
   function handleLogout() {
     logout();
@@ -91,14 +120,83 @@ export function TopNavbar() {
                 <span className="hidden sm:inline">{t('buyCredits')}</span>
               </button>
 
-              {/* Refer button — hidden on mobile */}
-              <button
-                onClick={() => setPostAndEarnOpen(true)}
-                className="hidden items-center gap-1.5 rounded-full border border-[#1e494b] px-4 py-1.5 text-xs font-semibold text-[#f3f0ed]/80 transition-all hover:border-[#a2dd00]/50 hover:text-[#f3f0ed] sm:flex"
-              >
-                <Gift className="h-3.5 w-3.5" />
-                {t('postAndEarn')}
-              </button>
+              {/* Affiliate button — hidden on mobile */}
+              <div ref={affiliateMenuRef} className="relative hidden sm:block">
+                <button
+                  onClick={() => {
+                    if (!affiliateFetched || affiliateLoading) {
+                      setAffiliateMenuOpen((v) => !v);
+                    } else if (affiliateData) {
+                      setAffiliateMenuOpen((v) => !v);
+                    } else {
+                      setAffiliateModalOpen(true);
+                    }
+                  }}
+                  className="flex items-center gap-1.5 rounded-full border border-[#1e494b] px-4 py-1.5 text-xs font-semibold text-[#f3f0ed]/80 transition-all hover:border-[#a2dd00]/50 hover:text-[#f3f0ed]"
+                >
+                  <Users className="h-3.5 w-3.5" />
+                  {t('becomeAffiliate')}
+                </button>
+
+                {affiliateMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-72 overflow-hidden rounded-xl border border-[#f3f0ed]/8 bg-[#1a2123] shadow-2xl">
+                    {!affiliateFetched || affiliateLoading ? (
+                      <div className="flex items-center justify-center gap-2 px-4 py-8">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-[#a2dd00]" />
+                        <span className="text-xs text-[#f3f0ed]/50">{t('affiliateLoading')}</span>
+                      </div>
+                    ) : affiliateData ? (
+                      <>
+                        <div className="flex items-center justify-between border-b border-[#f3f0ed]/6 px-4 py-3">
+                          <div>
+                            <p className="text-xs font-semibold text-[#f3f0ed]">{t('affiliateMenuTitle')}</p>
+                            <p className="mt-0.5 font-mono text-[10px] tracking-wide text-[#a2dd00]">
+                              {affiliateData.affiliate.code}
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-[#a2dd00]/30 bg-[#a2dd00]/10 px-2 py-0.5 text-[10px] font-semibold text-[#a2dd00]">
+                            {affiliateData.affiliate.commissionPercent}%
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 p-3">
+                          <div className="flex flex-col gap-1 rounded-lg border border-[#f3f0ed]/6 bg-[#f3f0ed]/3 p-3">
+                            <div className="flex items-center gap-1.5">
+                              <Wallet className="h-3 w-3 text-emerald-400" />
+                              <span className="text-[9px] font-bold uppercase tracking-wide text-[#f3f0ed]/40">
+                                {t('affiliateAvailable')}
+                              </span>
+                            </div>
+                            <p className="text-sm font-bold tabular-nums text-[#f3f0ed]">
+                              {formatCents(affiliateData.summary.availableCommissionCents ?? 0, locale)}
+                            </p>
+                          </div>
+                          <div className="flex flex-col gap-1 rounded-lg border border-[#f3f0ed]/6 bg-[#f3f0ed]/3 p-3">
+                            <div className="flex items-center gap-1.5">
+                              <Users className="h-3 w-3 text-blue-400" />
+                              <span className="text-[9px] font-bold uppercase tracking-wide text-[#f3f0ed]/40">
+                                {t('affiliateReferrals')}
+                              </span>
+                            </div>
+                            <p className="text-sm font-bold tabular-nums text-[#f3f0ed]">
+                              {(affiliateData.summary.referredUsers ?? 0).toLocaleString(locale)}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setAffiliateMenuOpen(false);
+                            router.push('/painel-afiliado');
+                          }}
+                          className="flex w-full items-center justify-center gap-1.5 border-t border-[#f3f0ed]/6 px-4 py-2.5 text-xs font-semibold text-[#a2dd00] transition-colors hover:bg-[#a2dd00]/5"
+                        >
+                          {t('affiliateViewPanel')}
+                          <ArrowRight className="h-3 w-3" />
+                        </button>
+                      </>
+                    ) : null}
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             /* Login dropdown for unauthenticated users */
@@ -197,6 +295,7 @@ export function TopNavbar() {
                   <DropdownItem icon={CreditCard} label={tMenu('credits')} onClick={() => { setMenuOpen(false); router.push('/creditos'); }} />
                   <DropdownItem icon={BadgePercent} label={tMenu('plans')} onClick={() => { setMenuOpen(false); setPlansModalOpen(true); }} />
                   <DropdownItem icon={BatteryCharging} label={tMenu('usage')} onClick={() => { setMenuOpen(false); router.push('/uso'); }} />
+                  <DropdownItem icon={Users} label={tMenu('affiliate')} onClick={() => { setMenuOpen(false); router.push('/painel-afiliado'); }} />
                 </div>
                 <div className="border-t border-landing-text/6 flex items-center pr-3">
                   <div className="flex-1 min-w-0">
@@ -274,6 +373,7 @@ export function TopNavbar() {
               <DropdownItem icon={CreditCard} label={tMenu('credits')} onClick={() => { setMenuOpen(false); router.push('/creditos'); }} />
               <DropdownItem icon={BadgePercent} label={tMenu('plans')} onClick={() => { setMenuOpen(false); setPlansModalOpen(true); }} />
               <DropdownItem icon={BatteryCharging} label={tMenu('usage')} onClick={() => { setMenuOpen(false); router.push('/uso'); }} />
+              <DropdownItem icon={Users} label={tMenu('affiliate')} onClick={() => { setMenuOpen(false); router.push('/painel-afiliado'); }} />
             </div>
             <div className="border-t border-landing-text/6 flex items-center pr-4 py-1">
               <div className="flex-1 min-w-0">
@@ -286,7 +386,7 @@ export function TopNavbar() {
       )}
 
       {plansModalOpen && <PlansModal onClose={() => setPlansModalOpen(false)} />}
-      {postAndEarnOpen && <PostAndEarnModal onClose={() => setPostAndEarnOpen(false)} />}
+      {affiliateModalOpen && <AffiliateProgramModal onClose={() => setAffiliateModalOpen(false)} />}
     </>
   );
 }

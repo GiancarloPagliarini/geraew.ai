@@ -1,0 +1,80 @@
+{
+  "affiliate": {
+    "panelTitle": "Affiliate Dashboard",
+    "subtitle": "{name} · Commission: {percent}%",
+    "back": "Back",
+    "codeLabel": "Code:",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "copyLink": "Copy Link",
+    "refresh": "Refresh",
+    "stats": {
+      "referredUsers": "Referred Users",
+      "available": "To Receive",
+      "maturing": "Maturing",
+      "paid": "Paid"
+    },
+    "maturationInfo": "Commissions mature for <b>{days} days</b> after payment. After this period, they become available for withdrawal.",
+    "pix": {
+      "label": "Pix Key ({type})",
+      "edit": "Edit",
+      "editTitle": "Edit Pix key",
+      "registerTitle": "Register Pix key",
+      "missingTitle": "Register your Pix key",
+      "missingDesc": "Without a registered key, commissions cannot be paid out.",
+      "register": "Register",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "typeLabel": "Key type",
+      "keyLabel": "Pix key",
+      "types": {
+        "CPF": "CPF",
+        "CNPJ": "CNPJ",
+        "EMAIL": "Email",
+        "PHONE": "Phone",
+        "RANDOM": "Random"
+      },
+      "placeholders": {
+        "CPF": "000.000.000-00",
+        "CNPJ": "00.000.000/0000-00",
+        "EMAIL": "your@email.com",
+        "PHONE": "+55 11 9xxxx-xxxx",
+        "RANDOM": "xxxxxxxx-xxxx-..."
+      }
+    },
+    "earnings": {
+      "title": "Commissions ({count})",
+      "empty": "No commissions recorded yet",
+      "headers": {
+        "user": "User",
+        "type": "Type",
+        "netAmount": "Net Amount",
+        "commission": "Commission",
+        "status": "Status",
+        "date": "Date"
+      },
+      "subscription": "Subscription",
+      "credits": "Credits",
+      "statusPaid": "Paid",
+      "statusMaturing": "Maturing",
+      "statusAvailable": "Available",
+      "availableOn": "Available on {date}"
+    },
+    "signup": {
+      "title": "Become a Geraew affiliate",
+      "description": "Earn 20% recurring commission on every payment from your referrals. Payouts via Pix within 30 days.",
+      "cta": "Become an affiliate",
+      "backToWorkspace": "Back to Workspace"
+    },
+    "toasts": {
+      "createdTitle": "Affiliate link created!",
+      "createdDesc": "Your code is now available in the dashboard.",
+      "createFailedTitle": "Could not create",
+      "createFailedDesc": "Please try again shortly.",
+      "pixUpdated": "Pix key updated!",
+      "pixFailedTitle": "Could not update",
+      "pixFailedDesc": "Please try again shortly."
+    }
+  }
+}

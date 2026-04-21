@@ -45,6 +45,20 @@ const messages = {
     'Juntando todas as provas de uso...',
     'Auditando sua conta sem julgamentos...',
   ],
+  afiliado: [
+    'Contando seu império de indicados...',
+    'Somando as comissões que vão pingar no Pix...',
+    'Acordando o Pix, ele também dormiu tarde...',
+    'Convocando seus recrutas da Geraew...',
+    'Calculando quantos cafés você vai poder pagar...',
+    'Puxando a régua dos 20% sagrados...',
+    'Checando se o Banco Central liberou sua grana...',
+    'Polindo seu link antes de entregar...',
+    'Investigando quem você trouxe pra festa...',
+    'Verificando a saúde financeira do seu reino...',
+    'Seus indicados estão se comportando? Já te conto...',
+    'Preparando o tapete vermelho pro seu painel...',
+  ],
 };
 
 type PageKey = keyof typeof messages;

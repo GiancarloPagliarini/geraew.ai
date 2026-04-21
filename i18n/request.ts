@@ -37,6 +37,7 @@ async function loadPartials(locale: Locale): Promise<Record<string, unknown>> {
   const names = [
     'workspace',
     'account',
+    'affiliate',
     'editor',
     'editor-plans',
     'editor-panels',

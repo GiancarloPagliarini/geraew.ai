@@ -194,25 +194,6 @@
         }
       }
     },
-    "postAndEarn": {
-      "title": "Post and Earn",
-      "subtitle": "Share your creations in <green>collab</green> with <green>@geraew.ai</green> and double your generations!",
-      "postImage": "Post an image",
-      "postVideo": "Post a video",
-      "inCollab": "In collab with @geraew.ai",
-      "generations": "generations",
-      "imageType": "image",
-      "videoType": "video",
-      "howItWorks": "How it works",
-      "steps": {
-        "s1": "Create your image or video on geraew.ai",
-        "s2": "Post it in collab with @geraew.ai on Instagram",
-        "s3": "DM us your signup email on our Instagram"
-      },
-      "confirmation": "Your credits will be added after we verify the post.",
-      "follow": "Follow @geraew.ai",
-      "gotIt": "Got it"
-    },
     "imageToPrompt": {
       "title": "PROMPT CLONE",
       "description": "Upload an image and get a structured prompt ready to use in Flux, Nano Banana, SDXL or Veo.",
