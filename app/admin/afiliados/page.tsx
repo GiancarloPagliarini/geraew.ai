@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import type { Affiliate, AffiliateEarning, AffiliateDashboard, AffiliateEarningsResponse, AffiliateReferredUser } from '@/lib/api';
+import type { Affiliate, AffiliateEarning, AffiliateDashboard, AffiliateEarningsResponse, AffiliateReferredUser, AffiliateDiscountScope } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import {
@@ -94,15 +94,20 @@ function CreateAffiliateForm({ onClose }: { onClose: () => void }) {
   const [code, setCode] = useState('');
   const [commission, setCommission] = useState('30');
   const [userId, setUserId] = useState('');
+  const [discount, setDiscount] = useState('');
+  const [discountScope, setDiscountScope] = useState<AffiliateDiscountScope>('FIRST_PURCHASE');
 
   const mutation = useMutation({
-    mutationFn: () =>
-      api.admin.createAffiliate(accessToken!, {
+    mutationFn: () => {
+      const discountNum = discount.trim() ? Number(discount) : undefined;
+      return api.admin.createAffiliate(accessToken!, {
         name,
         code,
         commissionPercent: Number(commission),
         ...(userId && { userId }),
-      }),
+        ...(discountNum && discountNum > 0 ? { discountPercent: discountNum, discountAppliesTo: discountScope } : {}),
+      });
+    },
     onSuccess: () => {
       toast.success('Afiliado criado com sucesso');
       queryClient.invalidateQueries({ queryKey: ['admin', 'affiliates'] });
@@ -162,6 +167,42 @@ function CreateAffiliateForm({ onClose }: { onClose: () => void }) {
               className="h-10 border-[#f3f0ed]/8 bg-[#f3f0ed]/3 text-sm font-mono text-[#f3f0ed] placeholder:text-[#f3f0ed]/25 focus-visible:border-[#a2dd00]/30 focus-visible:ring-[#a2dd00]/10"
             />
           </div>
+
+          <div className="rounded-xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/2 p-3">
+            <label className="mb-1 block text-xs font-medium text-[#f3f0ed]/50">Desconto para o indicado (%) — opcional</label>
+            <Input
+              type="number"
+              value={discount}
+              onChange={(e) => setDiscount(e.target.value)}
+              placeholder="Ex: 10 (deixe vazio para não dar desconto)"
+              className="h-10 border-[#f3f0ed]/8 bg-[#f3f0ed]/3 text-sm text-[#f3f0ed] placeholder:text-[#f3f0ed]/25 focus-visible:border-[#a2dd00]/30 focus-visible:ring-[#a2dd00]/10"
+            />
+            {discount.trim() && Number(discount) > 0 && (
+              <div className="mt-3 flex flex-col gap-1.5">
+                <span className="text-[11px] text-[#f3f0ed]/40">Aplica em:</span>
+                <div className="flex gap-2">
+                  <label className={`flex flex-1 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs ${discountScope === 'FIRST_PURCHASE' ? 'border-[#a2dd00]/40 bg-[#a2dd00]/8 text-[#f3f0ed]' : 'border-[#f3f0ed]/8 text-[#f3f0ed]/50'}`}>
+                    <input
+                      type="radio"
+                      checked={discountScope === 'FIRST_PURCHASE'}
+                      onChange={() => setDiscountScope('FIRST_PURCHASE')}
+                      className="sr-only"
+                    />
+                    Primeira compra
+                  </label>
+                  <label className={`flex flex-1 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs ${discountScope === 'ALL_PURCHASES' ? 'border-[#a2dd00]/40 bg-[#a2dd00]/8 text-[#f3f0ed]' : 'border-[#f3f0ed]/8 text-[#f3f0ed]/50'}`}>
+                    <input
+                      type="radio"
+                      checked={discountScope === 'ALL_PURCHASES'}
+                      onChange={() => setDiscountScope('ALL_PURCHASES')}
+                      className="sr-only"
+                    />
+                    Todas as compras
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="mt-5 flex gap-3">
@@ -191,7 +232,15 @@ function EditAffiliateForm({
   affiliate,
   onClose,
 }: {
-  affiliate: { id: string; name: string; commissionPercent: number; userId: string | null; user: { id: string; email: string; name: string } | null };
+  affiliate: {
+    id: string;
+    name: string;
+    commissionPercent: number;
+    userId: string | null;
+    user: { id: string; email: string; name: string } | null;
+    discountPercent: number | null;
+    discountAppliesTo: AffiliateDiscountScope;
+  };
   onClose: () => void;
 }) {
   const { accessToken } = useAuth();
@@ -199,14 +248,21 @@ function EditAffiliateForm({
   const [name, setName] = useState(affiliate.name);
   const [commission, setCommission] = useState(String(affiliate.commissionPercent));
   const [userId, setUserId] = useState(affiliate.userId ?? '');
+  const [discount, setDiscount] = useState(affiliate.discountPercent ? String(affiliate.discountPercent) : '');
+  const [discountScope, setDiscountScope] = useState<AffiliateDiscountScope>(affiliate.discountAppliesTo);
 
   const mutation = useMutation({
-    mutationFn: () =>
-      api.admin.updateAffiliate(accessToken!, affiliate.id, {
+    mutationFn: () => {
+      const trimmed = discount.trim();
+      const discountPercent = trimmed === '' ? null : Number(trimmed);
+      return api.admin.updateAffiliate(accessToken!, affiliate.id, {
         name,
         commissionPercent: Number(commission),
         userId: userId || null,
-      }),
+        discountPercent: discountPercent && discountPercent > 0 ? discountPercent : null,
+        discountAppliesTo: discountScope,
+      });
+    },
     onSuccess: () => {
       toast.success('Afiliado atualizado');
       queryClient.invalidateQueries({ queryKey: ['admin', 'affiliates'] });
@@ -257,6 +313,42 @@ function EditAffiliateForm({
               <p className="mt-1 text-xs text-[#f3f0ed]/30">
                 Atual: {affiliate.user.email}
               </p>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/2 p-3">
+            <label className="mb-1 block text-xs font-medium text-[#f3f0ed]/50">Desconto para o indicado (%) — vazio = sem desconto</label>
+            <Input
+              type="number"
+              value={discount}
+              onChange={(e) => setDiscount(e.target.value)}
+              placeholder="Ex: 10"
+              className="h-10 border-[#f3f0ed]/8 bg-[#f3f0ed]/3 text-sm text-[#f3f0ed] placeholder:text-[#f3f0ed]/25 focus-visible:border-[#a2dd00]/30 focus-visible:ring-[#a2dd00]/10"
+            />
+            {discount.trim() && Number(discount) > 0 && (
+              <div className="mt-3 flex flex-col gap-1.5">
+                <span className="text-[11px] text-[#f3f0ed]/40">Aplica em:</span>
+                <div className="flex gap-2">
+                  <label className={`flex flex-1 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs ${discountScope === 'FIRST_PURCHASE' ? 'border-[#a2dd00]/40 bg-[#a2dd00]/8 text-[#f3f0ed]' : 'border-[#f3f0ed]/8 text-[#f3f0ed]/50'}`}>
+                    <input
+                      type="radio"
+                      checked={discountScope === 'FIRST_PURCHASE'}
+                      onChange={() => setDiscountScope('FIRST_PURCHASE')}
+                      className="sr-only"
+                    />
+                    Primeira compra
+                  </label>
+                  <label className={`flex flex-1 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs ${discountScope === 'ALL_PURCHASES' ? 'border-[#a2dd00]/40 bg-[#a2dd00]/8 text-[#f3f0ed]' : 'border-[#f3f0ed]/8 text-[#f3f0ed]/50'}`}>
+                    <input
+                      type="radio"
+                      checked={discountScope === 'ALL_PURCHASES'}
+                      onChange={() => setDiscountScope('ALL_PURCHASES')}
+                      className="sr-only"
+                    />
+                    Todas as compras
+                  </label>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -379,6 +471,12 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
           <p className="text-sm text-[#f3f0ed]/40">
             Código: <span className="font-mono text-[#a2dd00]">{affiliate.code}</span>
             {' · '}Comissão: {affiliate.commissionPercent}%
+            {affiliate.discountPercent ? (
+              <>
+                {' · '}Desconto p/ indicado: <span className="text-[#a2dd00]">{affiliate.discountPercent}%</span>
+                {' '}({affiliate.discountAppliesTo === 'FIRST_PURCHASE' ? '1ª compra' : 'todas'})
+              </>
+            ) : null}
             {affiliate.user && <>{' · '}{affiliate.user.email}</>}
           </p>
         </div>

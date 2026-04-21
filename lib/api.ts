@@ -469,6 +469,8 @@ export interface Folder {
 
 // ─── Affiliates (Admin) ─────────────────────────────────────────────────────
 
+export type AffiliateDiscountScope = 'FIRST_PURCHASE' | 'ALL_PURCHASES';
+
 export interface Affiliate {
   id: string;
   userId: string | null;
@@ -476,6 +478,8 @@ export interface Affiliate {
   name: string;
   commissionPercent: number;
   isActive: boolean;
+  discountPercent: number | null;
+  discountAppliesTo: AffiliateDiscountScope;
   createdAt: string;
   user: { id: string; email: string; name: string } | null;
   _count: { earnings: number };
@@ -1260,13 +1264,33 @@ export const api = {
     affiliateReferredUsers(accessToken: string, id: string) {
       return authRequest<AffiliateReferredUser[]>(`/api/v1/admin/affiliates/${id}/referred-users`, accessToken);
     },
-    createAffiliate(accessToken: string, data: { name: string; code: string; commissionPercent?: number; userId?: string }) {
+    createAffiliate(
+      accessToken: string,
+      data: {
+        name: string;
+        code: string;
+        commissionPercent?: number;
+        userId?: string;
+        discountPercent?: number;
+        discountAppliesTo?: AffiliateDiscountScope;
+      },
+    ) {
       return authRequest<Affiliate>('/api/v1/admin/affiliates', accessToken, {
         method: 'POST',
         body: JSON.stringify(data),
       });
     },
-    updateAffiliate(accessToken: string, id: string, data: { name?: string; commissionPercent?: number; userId?: string | null }) {
+    updateAffiliate(
+      accessToken: string,
+      id: string,
+      data: {
+        name?: string;
+        commissionPercent?: number;
+        userId?: string | null;
+        discountPercent?: number | null;
+        discountAppliesTo?: AffiliateDiscountScope;
+      },
+    ) {
       return authRequest<Affiliate>(`/api/v1/admin/affiliates/${id}`, accessToken, {
         method: 'PATCH',
         body: JSON.stringify(data),
