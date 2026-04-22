@@ -33,6 +33,7 @@ import { useGenerationRecovery } from '@/lib/use-generation-recovery';
 import { toast } from 'sonner';
 import { GenerationErrorBanner, showGenerationError } from './GenerationError';
 import { GenerationPreview } from './GenerationPreview';
+import { containsNsfwContent } from '@/lib/nsfw-blocklist';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -168,7 +169,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
     const base: { value: string; label: string; disabled?: boolean }[] = [
       { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2' },
       { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
-      { value: 'sem-censura', label: 'Sem censura' },
+      { value: 'sem-censura', label: 'Geraew Unlocked' },
     ];
     return base.map((opt) => {
       const dbModel = dbBySlug.get(opt.value);
@@ -451,6 +452,11 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
 
     if (model === 'sem-censura' && attachedImages.length === 0) {
       setErrorMsg('Este modelo exige pelo menos uma imagem de referência.');
+      return;
+    }
+
+    if (model === 'sem-censura' && containsNsfwContent(prompt)) {
+      setErrorMsg('Seu prompt contém termos não permitidos neste modelo. Remova-os e tente novamente.');
       return;
     }
 

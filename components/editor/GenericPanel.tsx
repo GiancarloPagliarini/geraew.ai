@@ -112,7 +112,7 @@ export function GenericPanel({ nodeId, onClose, onDuplicate }: GenericPanelProps
   const MODEL_LABELS: Record<string, string> = {
     'gemini-3.1-flash-image-preview': 'Nano Banana 2',
     'gemini-3-pro-image-preview': 'Nano Banana Pro',
-    'sem-censura': 'Sem censura',
+    'sem-censura': 'Geraew Unlocked',
   };
 
   useEffect(() => {
@@ -241,7 +241,7 @@ export function GenericPanel({ nodeId, onClose, onDuplicate }: GenericPanelProps
               options={[
                 { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2' },
                 { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
-                { value: 'sem-censura', label: 'Sem censura' },
+                { value: 'sem-censura', label: 'Geraew Unlocked' },
               ]}
             />
 
