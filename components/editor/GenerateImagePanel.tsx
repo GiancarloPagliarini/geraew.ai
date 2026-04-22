@@ -836,14 +836,14 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                       options={
                         model === 'sem-censura'
                           ? [
-                              { value: '4k', label: '4K' },
-                              { value: 'hd', label: '2K' },
-                            ]
+                            { value: '4k', label: '4K' },
+                            { value: 'hd', label: '2K' },
+                          ]
                           : [
-                              { value: '4k', label: '4K' },
-                              { value: 'hd', label: '2K' },
-                              { value: 'sd', label: '1K' },
-                            ]
+                            { value: '4k', label: '4K' },
+                            { value: 'hd', label: '2K' },
+                            { value: 'sd', label: '1K' },
+                          ]
                       }
                     />
                   </div>
