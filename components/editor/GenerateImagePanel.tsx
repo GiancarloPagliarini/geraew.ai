@@ -450,10 +450,6 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   async function handleGenerate() {
     if (!accessToken) { openLoginModal(); return; }
 
-    if (model === 'sem-censura' && attachedImages.length === 0) {
-      setErrorMsg('Este modelo exige pelo menos uma imagem de referência.');
-      return;
-    }
 
     if (model === 'sem-censura' && containsNsfwContent(prompt)) {
       setErrorMsg('Seu prompt contém termos não permitidos neste modelo. Remova-os e tente novamente.');
