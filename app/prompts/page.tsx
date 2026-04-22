@@ -108,7 +108,12 @@ export default function PromptsPage() {
       for (const category of section.categories) {
         for (const p of category.prompts) {
           items.push({
-            ...p,
+            id: p.id,
+            title: p.title,
+            type: p.type,
+            prompt: p.prompt,
+            imageUrl: p.thumbnailUrl ?? p.imageUrl,
+            aiModel: p.aiModel,
             sectionTitle: section.title,
             categoryTitle: category.title,
           });

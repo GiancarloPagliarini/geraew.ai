@@ -215,6 +215,7 @@ export interface ApiPromptSection {
       type: string;
       prompt: string;
       imageUrl: string | null;
+      thumbnailUrl: string | null;
       aiModel: string | null;
     }[];
   }[];
@@ -1104,6 +1105,9 @@ export const api = {
   models: {
     listVideos() {
       return request<AiModelPublic[]>('/api/v1/models/videos');
+    },
+    listImages() {
+      return request<AiModelPublic[]>('/api/v1/models/images');
     },
   },
 

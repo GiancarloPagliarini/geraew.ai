@@ -97,14 +97,20 @@ function ModelCard({ model, onToggle, isPending }: CardProps) {
         <button
           onClick={handleToggle}
           disabled={isPending}
-          className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
-            model.isActive ? 'bg-[#a2dd00]' : 'bg-[#f3f0ed]/15'
+          role="switch"
+          aria-checked={model.isActive}
+          className={`group relative h-7 w-12 shrink-0 rounded-full border transition-all duration-300 ease-out disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0f10] ${
+            model.isActive
+              ? 'border-[#a2dd00]/40 bg-[#a2dd00] shadow-[0_0_0_1px_rgba(162,221,0,0.15),0_0_20px_-4px_rgba(162,221,0,0.6),inset_0_1px_0_rgba(255,255,255,0.25)] focus-visible:ring-[#a2dd00]/60'
+              : 'border-[#f3f0ed]/10 bg-[#f3f0ed]/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] hover:bg-[#f3f0ed]/15 focus-visible:ring-[#f3f0ed]/30'
           }`}
           title={model.isActive ? 'Desativar modelo' : 'Ativar modelo'}
         >
           <span
-            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-              model.isActive ? 'translate-x-[22px]' : 'translate-x-0.5'
+            className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.3),0_2px_6px_rgba(0,0,0,0.2)] transition-all duration-300 ease-out group-active:w-6 ${
+              model.isActive
+                ? 'left-[22px] group-active:left-[18px]'
+                : 'left-1 group-active:left-1'
             }`}
           />
         </button>
@@ -154,6 +160,7 @@ export default function AdminModelsPage() {
       toast.success(res.message);
       queryClient.invalidateQueries({ queryKey: ['admin', 'models'] });
       queryClient.invalidateQueries({ queryKey: ['models', 'video'] });
+      queryClient.invalidateQueries({ queryKey: ['models', 'image'] });
     },
     onError: (err: Error) => {
       toast.error(err.message || 'Erro ao atualizar modelo');

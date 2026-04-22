@@ -81,7 +81,8 @@
         "ADDING A DASH OF MAGIC..."
       ],
       "queueWaiting": "WAITING FOR A SPOT IN THE QUEUE...",
-      "concurrentLimit": "Concurrent generation limit reached. Please try again in a moment."
+      "concurrentLimit": "Concurrent generation limit reached. Please try again in a moment.",
+      "modelMaintenance": "Under maintenance"
     },
     "video": {
       "header": "GENERATE VIDEO",

@@ -81,7 +81,8 @@
         "ADICIONANDO UM TOQUE DE MAGIA..."
       ],
       "queueWaiting": "AGUARDANDO VAGA NA FILA...",
-      "concurrentLimit": "Limite de gerações simultâneas atingido. Tente novamente em instantes."
+      "concurrentLimit": "Limite de gerações simultâneas atingido. Tente novamente em instantes.",
+      "modelMaintenance": "Em manutenção"
     },
     "video": {
       "header": "GERAR VÍDEO",
