@@ -1106,6 +1106,9 @@ export const api = {
     listVideos() {
       return request<AiModelPublic[]>('/api/v1/models/videos');
     },
+    listImages() {
+      return request<AiModelPublic[]>('/api/v1/models/images');
+    },
   },
 
   promptEnhancer: {

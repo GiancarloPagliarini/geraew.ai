@@ -15,10 +15,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ArrowBigUp, ArrowUpRight, ChevronDown, Coins, Download, FolderOpen, FolderPlus, Image, ImagePlus, Loader2, Plus, Settings, Sparkles, Wand2, X } from 'lucide-react';
+import { ArrowBigUp, ArrowUpRight, ChevronDown, Coins, Download, FolderOpen, FolderPlus, Image, ImagePlus, Loader2, Plus, Settings, Sparkles, TriangleAlert, Wand2, X } from 'lucide-react';
 import { EnhancePromptToggle } from './EnhancePromptToggle';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { createPortal } from 'react-dom';
 import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
@@ -153,6 +153,38 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   const [enhancePrompt, setEnhancePrompt] = useState(stored?.enhancePrompt ?? false);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(true);
+
+  // ─── Image models (DB-backed with fallback for hardcoded models) ──────────
+  const imageModelsQuery = useQuery({
+    queryKey: ['models', 'image'],
+    queryFn: () => api.models.listImages(),
+    staleTime: 60_000,
+  });
+
+  const imageModelOptions = useMemo(() => {
+    const dbBySlug = new Map(
+      (imageModelsQuery.data ?? []).map((m) => [m.slug, m]),
+    );
+    const base: { value: string; label: string; disabled?: boolean }[] = [
+      { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2' },
+      { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
+      { value: 'sem-censura', label: 'Sem censura' },
+    ];
+    return base.map((opt) => {
+      const dbModel = dbBySlug.get(opt.value);
+      return dbModel ? { ...opt, label: dbModel.label, disabled: !dbModel.isActive } : opt;
+    });
+  }, [imageModelsQuery.data]);
+
+  // Se o modelo selecionado ficou indisponível, troca automaticamente pro primeiro ativo
+  useEffect(() => {
+    if (!imageModelsQuery.data) return;
+    const current = imageModelsQuery.data.find((m) => m.slug === model);
+    if (current && !current.isActive) {
+      const firstActive = imageModelOptions.find((o) => !o.disabled);
+      if (firstActive) setModel(firstActive.value);
+    }
+  }, [imageModelsQuery.data, model, imageModelOptions]);
 
 
   // Restore image display on mount
@@ -802,11 +834,8 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                   <PanelSelect
                     value={model}
                     onValueChange={setModel}
-                    options={[
-                      { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2' },
-                      { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
-                      { value: 'sem-censura', label: 'Sem censura' },
-                    ]}
+                    options={imageModelOptions}
+                    maintenanceLabel={t('modelMaintenance')}
                   />
                 </div>
 
@@ -1108,10 +1137,12 @@ function PanelSelect({
   value,
   onValueChange,
   options,
+  maintenanceLabel,
 }: {
   value: string;
   onValueChange: (v: string) => void;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; disabled?: boolean }[];
+  maintenanceLabel?: string;
 }) {
   return (
     <Select value={value} onValueChange={onValueChange}>
@@ -1123,9 +1154,17 @@ function PanelSelect({
           <SelectItem
             key={opt.value}
             value={opt.value}
-            className="cursor-pointer rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/70 transition-all focus:bg-[#1e494b]/40 focus:text-[#f3f0ed] data-[state=checked]:text-[#a2dd00] [&>span:last-child>svg]:text-[#a2dd00]"
+            disabled={opt.disabled}
+            className="cursor-pointer rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/70 transition-all focus:bg-[#1e494b]/40 focus:text-[#f3f0ed] data-[state=checked]:text-[#a2dd00] data-disabled:cursor-not-allowed data-disabled:opacity-50 [&>span:last-child>svg]:text-[#a2dd00]"
           >
-            {opt.label}
+            <span className="flex items-center gap-1.5">
+              {opt.label}
+              {opt.disabled && (
+                <span title={maintenanceLabel}>
+                  <TriangleAlert className="h-3 w-3 text-amber-400" />
+                </span>
+              )}
+            </span>
           </SelectItem>
         ))}
       </SelectContent>
