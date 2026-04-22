@@ -215,6 +215,7 @@ export interface ApiPromptSection {
       type: string;
       prompt: string;
       imageUrl: string | null;
+      thumbnailUrl: string | null;
       aiModel: string | null;
     }[];
   }[];

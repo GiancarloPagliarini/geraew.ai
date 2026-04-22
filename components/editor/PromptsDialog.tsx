@@ -47,6 +47,8 @@ const iconMap: Record<string, LucideIcon> = {
   Image: ImageIcon,
 };
 
+const PAGE_SIZE = 16;
+
 function mapApiSectionsToSections(apiSections: ApiPromptSection[]): Section[] {
   return apiSections.map((s) => ({
     id: s.id,
@@ -60,7 +62,7 @@ function mapApiSectionsToSections(apiSections: ApiPromptSection[]): Section[] {
         id: p.id,
         type: p.type,
         prompt: p.prompt,
-        image: p.imageUrl || undefined,
+        image: p.thumbnailUrl || p.imageUrl || undefined,
       })),
     })),
   }));
@@ -294,8 +296,11 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
   const [promptSections, setPromptSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const fetchRef = useRef(0);
   const hasFetchedRef = useRef(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = user?.role === 'ADMIN';
 
@@ -352,6 +357,42 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
       (p) => p.prompt.toLowerCase().includes(q) || p.type.toLowerCase().includes(q),
     );
   }, [promptSections, activeSection, searchQuery]);
+
+  const renderedPrompts = useMemo(
+    () => visiblePrompts.slice(0, visibleCount),
+    [visiblePrompts, visibleCount],
+  );
+  const hasMore = visibleCount < visiblePrompts.length;
+
+  // Reset pagination + scroll on section/search change
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [activeSection, searchQuery]);
+
+  // IntersectionObserver — load next page when sentinel hits viewport
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    const scroller = scrollRef.current;
+    if (!sentinel || !scroller || !hasMore) return;
+
+    const loadMore = () =>
+      setVisibleCount((c) => Math.min(c + PAGE_SIZE, visiblePrompts.length));
+
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMore(); },
+      { root: scroller, threshold: 0, rootMargin: '300px' },
+    );
+    observer.observe(sentinel);
+
+    // If sentinel is already in range on (re)attach, the observer won't fire
+    // a new intersection event — trigger manually.
+    const rect = sentinel.getBoundingClientRect();
+    const rootRect = scroller.getBoundingClientRect();
+    if (rect.top <= rootRect.bottom + 300) loadMore();
+
+    return () => observer.disconnect();
+  }, [hasMore, visiblePrompts.length]);
 
   // Get categoryId for the active section (for adding prompts)
   const activeCategoryId = useMemo(() => {
@@ -493,7 +534,7 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
 
         {/* Content */}
         <div className="relative flex-1 min-h-0 flex flex-col">
-        <div className="flex-1 overflow-y-auto sidebar-scroll">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto sidebar-scroll">
           {loading && (
             <div className="flex items-center justify-center py-24">
               <Loader2 className="h-5 w-5 animate-spin text-white/15" />
@@ -513,18 +554,21 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
           )}
 
           {!loading && !error && visiblePrompts.length > 0 && (
-            <div className={`grid grid-cols-2 gap-2 p-3 ${!user ? 'blur-sm pointer-events-none select-none' : ''}`}>
-              {visiblePrompts.map((promptItem) => (
-                <PromptCard
-                  key={promptItem.id}
-                  item={promptItem}
-                  isCopied={copiedId === promptItem.id}
-                  isAdmin={isAdmin}
-                  onCopy={() => handleCopy(promptItem.prompt, promptItem.id)}
-                  onDelete={() => handleDelete(promptItem.id)}
-                />
-              ))}
-            </div>
+            <>
+              <div className={`grid grid-cols-2 gap-2 p-3 ${!user ? 'blur-sm pointer-events-none select-none' : ''}`}>
+                {renderedPrompts.map((promptItem) => (
+                  <PromptCard
+                    key={promptItem.id}
+                    item={promptItem}
+                    isCopied={copiedId === promptItem.id}
+                    isAdmin={isAdmin}
+                    onCopy={() => handleCopy(promptItem.prompt, promptItem.id)}
+                    onDelete={() => handleDelete(promptItem.id)}
+                  />
+                ))}
+              </div>
+              {hasMore && <div ref={sentinelRef} className="h-4" />}
+            </>
           )}
 
           {!loading && !error && visiblePrompts.length === 0 && searchQuery && (
