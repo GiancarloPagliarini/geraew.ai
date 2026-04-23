@@ -192,7 +192,7 @@
           "description": "Build a complete digital influencer with a visual identity, personality, and consistent looks across generations.",
           "steps": [
             "Open the \"Create Influencer\" panel.",
-            "Set the name, personality, and visual style of your influencer.",
+            "Set the personality and visual style of your influencer.",
             "Generate the base model of your influencer with AI.",
             "Use the influencer you created to generate consistent images and videos."
           ]
