@@ -157,7 +157,7 @@
     "tutorial": {
       "title": "Tutorials",
       "subtitle": "Learn how to use every feature",
-      "back": "← Back to tutorials",
+      "back": "Back to tutorials",
       "comingSoon": "Video coming soon",
       "stepByStep": "Step by step",
       "availableCount": "{count} tutorials available",
@@ -195,6 +195,16 @@
             "Set the name, personality, and visual style of your influencer.",
             "Generate the base model of your influencer with AI.",
             "Use the influencer you created to generate consistent images and videos."
+          ]
+        },
+        "virtualTryOn": {
+          "title": "Use the Virtual Try-On",
+          "description": "Dress your AI influencer in any outfit in seconds and generate content ready for ads and reviews.",
+          "steps": [
+            "Open the \"Virtual Try-On\" panel.",
+            "Upload the image of the person or influencer who will wear the outfit.",
+            "Upload the photo of the clothing you want to apply.",
+            "Click \"Generate\" and use the result to create posts and ad creatives."
           ]
         }
       }
