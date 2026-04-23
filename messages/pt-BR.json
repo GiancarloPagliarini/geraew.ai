@@ -5,15 +5,15 @@
     "pricing": "Preços",
     "faq": "FAQ",
     "login": "Entrar",
-    "tryFree": "Testar Grátis",
+    "tryFree": "Começar Agora",
     "accessPlatform": "Acessar Plataforma"
   },
   "hero": {
     "badge": "Plataforma de criação com Inteligência Artificial",
     "title": "Crie influencers digitais com IA e domine qualquer plataforma.",
     "subtitle": "Gere imagens, vídeos ultra-realistas e movimentos com poucos cliques. Sem estúdio, sem modelos, sem aparecer. Tudo que você precisa para criar conteúdo profissional está aqui.",
-    "cta": "Começar Grátis",
-    "microcopy": "Sem cartão de crédito · Pronto em menos de 2 minutos"
+    "cta": "Começar Agora",
+    "microcopy": "Pronto em menos de 2 minutos"
   },
   "howItWorks": {
     "tag": "SIMPLES ASSIM",
@@ -68,14 +68,14 @@
   "pricing": {
     "tag": "Preços",
     "title": "Planos simples. Sem surpresas.",
-    "subtitle": "Comece grátis e escale quando quiser. Cancele a qualquer momento.",
+    "subtitle": "Escolha um plano e escale quando quiser. Cancele a qualquer momento.",
     "mostPopular": "Mais Popular",
     "perMonth": "/mês",
     "creditsPerMonth": "{credits} créditos por mês",
     "creditsForTesting": "créditos para testar",
     "creditsMonthly": "créditos por mês",
     "subscribe": "Assinar {plan}",
-    "startFree": "Começar Grátis",
+    "startFree": "Começar Agora",
     "accessPlatform": "Acessar Plataforma",
     "generationEstimate": "Estimativa de gerações",
     "blocked": "bloqueado",
@@ -171,7 +171,7 @@
     "withoutTitle": "Sem Geraew",
     "withTitle": "Com Geraew",
     "withoutTotal": "Total: R$1.600+ por sessão",
-    "withTotal": "A partir de R$0/mês",
+    "withTotal": "A partir de R$12,90/mês",
     "cta": "Economize agora",
     "ctaLoggedIn": "Acessar Plataforma",
     "without": [
@@ -223,8 +223,8 @@
     "subtitle": "Tudo que você precisa saber antes de começar.",
     "items": [
       {
-        "question": "Como funciona o teste grátis?",
-        "answer": "Você cria sua conta em menos de 2 minutos e recebe créditos gratuitos para testar a plataforma. Sem cartão de crédito, sem compromisso. Se gostar, é só escolher um plano."
+        "question": "Como faço para começar?",
+        "answer": "Você cria sua conta em menos de 2 minutos, escolhe um plano a partir de R$12,90/mês e já recebe seus créditos para gerar imagens e vídeos. Cancele a qualquer momento, sem multa e sem burocracia."
       },
       {
         "question": "Preciso instalar alguma coisa?",
@@ -259,9 +259,9 @@
   "ctaFinal": {
     "title": "Pronto para criar seu primeiro influencer digital?",
     "subtitle": "Junte-se a milhares de criadores que já estão transformando ideias em conteúdo profissional com inteligência artificial.",
-    "cta": "Começar Grátis",
+    "cta": "Começar Agora",
     "ctaLoggedIn": "Acessar Plataforma",
-    "microcopy": "Sem cartão de crédito · Setup em 2 minutos · Cancele quando quiser",
+    "microcopy": "Setup em 2 minutos · Cancele quando quiser",
     "microcopyShort": "Setup em 2 minutos · Cancele quando quiser",
     "creatorsUsing": "+2.000 criadores já estão usando"
   },

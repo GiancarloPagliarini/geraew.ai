@@ -46,6 +46,14 @@ export const PLAN_GENERATION_ENTRIES: Record<string, PlanGenerationEntry[]> = {
     { label: 'Geraew Quality', countNumber: 2, unit: 'video' },
     { label: 'Veo 3.1', countNumber: 0, unit: 'video', blocked: true },
   ],
+  'ultra-basic': [
+    { label: 'Nano Banana 2', countNumber: 7, unit: 'image' },
+    { label: 'Motion Control', countNumber: 1, unit: 'generation' },
+    { label: 'Geraew Fast', countNumber: 0, unit: 'video', blocked: true },
+    { label: 'Geraew Quality', countNumber: 0, unit: 'video', blocked: true },
+    { label: 'Veo 3.1 Fast', countNumber: 0, unit: 'video', blocked: true },
+    { label: 'Veo 3.1 Quality', countNumber: 0, unit: 'video', blocked: true },
+  ],
   starter: [
     { label: 'Nano Banana 2', countNumber: 44, unit: 'image' },
     { label: 'Motion Control', countNumber: 5, unit: 'generation' },
@@ -53,6 +61,14 @@ export const PLAN_GENERATION_ENTRIES: Record<string, PlanGenerationEntry[]> = {
     { label: 'Geraew Quality', countNumber: 2, unit: 'video' },
     { label: 'Veo 3.1 Fast', countNumber: 3, unit: 'video' },
     { label: 'Veo 3.1 Quality', countNumber: 1, unit: 'video' },
+  ],
+  basic: [
+    { label: 'Nano Banana 2', countNumber: 77, unit: 'image' },
+    { label: 'Motion Control', countNumber: 10, unit: 'generation' },
+    { label: 'Geraew Fast', countNumber: 7, unit: 'video' },
+    { label: 'Geraew Quality', countNumber: 3, unit: 'video' },
+    { label: 'Veo 3.1 Fast', countNumber: 5, unit: 'video' },
+    { label: 'Veo 3.1 Quality', countNumber: 2, unit: 'video' },
   ],
   creator: [
     { label: 'Nano Banana 2', countNumber: 133, unit: 'image' },
@@ -69,6 +85,14 @@ export const PLAN_GENERATION_ENTRIES: Record<string, PlanGenerationEntry[]> = {
     { label: 'Geraew Quality', countNumber: 15, unit: 'video' },
     { label: 'Veo 3.1 Fast', countNumber: 23, unit: 'video' },
     { label: 'Veo 3.1 Quality', countNumber: 10, unit: 'video' },
+  ],
+  advanced: [
+    { label: 'Nano Banana 2', countNumber: 555, unit: 'image' },
+    { label: 'Motion Control', countNumber: 71, unit: 'generation' },
+    { label: 'Geraew Fast', countNumber: 55, unit: 'video' },
+    { label: 'Geraew Quality', countNumber: 25, unit: 'video' },
+    { label: 'Veo 3.1 Fast', countNumber: 38, unit: 'video' },
+    { label: 'Veo 3.1 Quality', countNumber: 17, unit: 'video' },
   ],
   studio: [
     { label: 'Nano Banana 2', countNumber: 888, unit: 'image' },
@@ -92,6 +116,14 @@ export const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
     { label: 'Geraew Quality', count: '2 Vídeos Grátis' },
     { label: 'Veo 3.1', count: 'Bloqueado', blocked: true },
   ],
+  'ultra-basic': [
+    { label: 'Nano Banana 2', count: '7 Imagens' },
+    { label: 'Motion Control', count: '1 Geração' },
+    { label: 'Geraew Fast', count: 'Bloqueado', blocked: true },
+    { label: 'Geraew Quality', count: 'Bloqueado', blocked: true },
+    { label: 'Veo 3.1 Fast', count: 'Bloqueado', blocked: true },
+    { label: 'Veo 3.1 Quality', count: 'Bloqueado', blocked: true },
+  ],
   starter: [
     { label: 'Nano Banana 2', count: '44 Imagens' },
     { label: 'Motion Control', count: '5 Gerações' },
@@ -99,6 +131,14 @@ export const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
     { label: 'Geraew Quality', count: '2 Vídeos' },
     { label: 'Veo 3.1 Fast', count: '3 Vídeos' },
     { label: 'Veo 3.1 Quality', count: '1 Vídeo' },
+  ],
+  basic: [
+    { label: 'Nano Banana 2', count: '77 Imagens' },
+    { label: 'Motion Control', count: '10 Gerações' },
+    { label: 'Geraew Fast', count: '7 Vídeos' },
+    { label: 'Geraew Quality', count: '3 Vídeos' },
+    { label: 'Veo 3.1 Fast', count: '5 Vídeos' },
+    { label: 'Veo 3.1 Quality', count: '2 Vídeos' },
   ],
   creator: [
     { label: 'Nano Banana 2', count: '133 Imagens' },
@@ -115,6 +155,14 @@ export const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
     { label: 'Geraew Quality', count: '15 Vídeos' },
     { label: 'Veo 3.1 Fast', count: '23 Vídeos' },
     { label: 'Veo 3.1 Quality', count: '10 Vídeos' },
+  ],
+  advanced: [
+    { label: 'Nano Banana 2', count: '555 Imagens' },
+    { label: 'Motion Control', count: '71 Gerações' },
+    { label: 'Geraew Fast', count: '55 Vídeos' },
+    { label: 'Geraew Quality', count: '25 Vídeos' },
+    { label: 'Veo 3.1 Fast', count: '38 Vídeos' },
+    { label: 'Veo 3.1 Quality', count: '17 Vídeos' },
   ],
   studio: [
     { label: 'Nano Banana 2', count: '888 Imagens' },
