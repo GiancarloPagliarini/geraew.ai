@@ -161,6 +161,11 @@
       "comingSoon": "Video coming soon",
       "stepByStep": "Step by step",
       "availableCount": "{count} tutorials available",
+      "maintenance": {
+        "title": "Section under maintenance",
+        "description": "We're preparing new tutorial videos with the updated step-by-step. Check back soon.",
+        "badge": "Under maintenance"
+      },
       "items": {
         "image": {
           "title": "Generate your first image",

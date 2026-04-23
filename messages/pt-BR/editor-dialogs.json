@@ -161,6 +161,11 @@
       "comingSoon": "Vídeo em breve",
       "stepByStep": "Passo a passo",
       "availableCount": "{count} tutoriais disponíveis",
+      "maintenance": {
+        "title": "Seção em manutenção",
+        "description": "Estamos preparando novos vídeos de tutorial com o passo a passo atualizado. Volte em breve para conferir.",
+        "badge": "Em manutenção"
+      },
       "items": {
         "image": {
           "title": "Gerar sua primeira imagem",

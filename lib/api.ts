@@ -730,7 +730,7 @@ export interface HealthStats {
   stuckCount: number;
   recentFailuresByModel: { modelUsed: string; failedCount: number; errorCodes: string[] }[];
   failingPayments: number;
-  recentErrors: { id: string; userId: string; type: string; modelUsed: string; errorMessage: string | null; errorCode: string | null; createdAt: string }[];
+  recentErrors: { id: string; userId: string; type: string; modelUsed: string; errorMessage: string | null; errorCode: string | null; createdAt: string; safetyFallback?: boolean }[];
   alerts: { level: 'warning' | 'critical'; message: string }[];
 }
 

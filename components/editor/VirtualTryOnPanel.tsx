@@ -486,7 +486,7 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
   }, []);
 
   // Map aspect ratio to proportion key for GenerationPreview
-  const proportionMap: Record<string, string> = { '16:9': '16-9', '9:16': '9-16', '1:1': '1-1', '4:3': '4-3', '3:4': '3-4' };
+  const proportionMap: Record<string, string> = { '16:9': '16-9', '9:16': '9-16', '1:1': '1-1', '4:3': '4-3', '3:4': '3-4', '4:5': '4-5' };
   const proportion = proportionMap[aspectRatio] ?? '3-4';
 
   return (

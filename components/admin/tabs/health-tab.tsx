@@ -111,7 +111,7 @@ export function HealthTab({ active }: { active: boolean }) {
             {(data.recentErrors ?? []).length === 0 ? (
               <p className="py-6 text-center text-sm text-[#a2dd00]">Nenhum erro recente</p>
             ) : (
-              <div className="flex max-h-[400px] flex-col gap-2 overflow-y-auto">
+              <div className="sidebar-scroll flex max-h-[400px] flex-col gap-2 overflow-y-auto">
                 {data.recentErrors.map((e) => (
                   <div key={e.id} className="rounded-lg border border-[#f3f0ed]/5 bg-[#f3f0ed]/[0.02] p-3">
                     <div className="flex items-center justify-between">
@@ -121,7 +121,15 @@ export function HealthTab({ active }: { active: boolean }) {
                       </span>
                     </div>
                     {e.errorCode && (
-                      <span className="mt-1 inline-block rounded bg-[#f87171]/10 px-1.5 py-0.5 text-[9px] text-[#f87171]">{e.errorCode}</span>
+                      <span
+                        className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[9px] ${
+                          e.safetyFallback
+                            ? 'bg-[#a2dd00]/10 text-[#a2dd00]'
+                            : 'bg-[#f87171]/10 text-[#f87171]'
+                        }`}
+                      >
+                        {e.safetyFallback ? 'FALLBACK' : e.errorCode}
+                      </span>
                     )}
                     {e.errorMessage && (
                       <p className="mt-1 text-xs text-[#f3f0ed]/40 line-clamp-2">{e.errorMessage}</p>
