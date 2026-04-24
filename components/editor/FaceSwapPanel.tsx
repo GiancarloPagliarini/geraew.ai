@@ -8,8 +8,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  ArrowUpRight,
   Coins,
   Download,
+  FolderPlus,
+  Plus,
   Repeat2,
   Sparkles,
   User,
@@ -21,11 +31,11 @@ import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { idbSave, idbLoad, idbDelete } from '@/lib/panel-idb';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
-import { api } from '@/lib/api';
+import { api, Folder } from '@/lib/api';
 import { listenGeneration } from '@/lib/sse';
 import { useGenerationRecovery } from '@/lib/use-generation-recovery';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -82,6 +92,7 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
   const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating } = useEditor();
   const { accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
+  const queryClient = useQueryClient();
 
   // ── Persistent state ──────────────────────────────────────────────────────
   const storageKey = `geraew-panel-face-swap-${nodeId}`;
@@ -95,6 +106,7 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
   const [resolution, setResolution] = useState<string>(stored?.resolution ?? '2K');
   const [sourceImage, setSourceImage] = useState<{ base64: string; mime_type: string; preview: string } | null>(null);
   const [targetImage, setTargetImage] = useState<{ base64: string; mime_type: string; preview: string } | null>(null);
+  const [targetAspectRatio, setTargetAspectRatio] = useState<string | null>(null);
 
   // Load files from IndexedDB on mount
   useEffect(() => {
@@ -110,6 +122,21 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
       .catch(() => { });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Detect target image aspect ratio (output preserves target proportions)
+  useEffect(() => {
+    if (!targetImage?.preview) {
+      setTargetAspectRatio(null);
+      return;
+    }
+    const img = new window.Image();
+    img.onload = () => {
+      if (img.naturalWidth && img.naturalHeight) {
+        setTargetAspectRatio(`${img.naturalWidth} / ${img.naturalHeight}`);
+      }
+    };
+    img.src = targetImage.preview;
+  }, [targetImage?.preview]);
 
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(stored?.generatedImageUrl ?? null);
   const [generationId, setGenerationId] = useState<string | null>(stored?.generationId ?? null);
@@ -141,6 +168,51 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [generatedAspectRatio, setGeneratedAspectRatio] = useState<string | null>(stored?.generatedAspectRatio ?? null);
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false);
+
+  // ── Folder state ──────────────────────────────────────────────────────────
+  const { data: folders = [] } = useQuery({
+    queryKey: ['folders'],
+    queryFn: () => api.folders.list(accessToken!),
+    enabled: !!accessToken,
+    staleTime: 30_000,
+  });
+
+  const { data: generationFolders = [] } = useQuery<Folder[]>({
+    queryKey: ['generation-folders', generationId],
+    queryFn: () => api.generations.getFolders(accessToken!, generationId!),
+    enabled: !!accessToken && !!generationId,
+    staleTime: 60_000,
+  });
+
+  const addToFolderMutation = useMutation({
+    mutationFn: ({ folderId }: { folderId: string }) =>
+      api.folders.addGenerations(accessToken!, folderId, [generationId!]),
+    onSuccess: (_data, { folderId }) => {
+      queryClient.invalidateQueries({ queryKey: ['folders'] });
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      queryClient.invalidateQueries({ queryKey: ['generation-folders', generationId] });
+      const folder = folders.find((f) => f.id === folderId);
+      toast.success(t('actions.addedToFolder'), { description: folder ? `"${folder.name}"` : undefined });
+    },
+    onError: () => toast.error(t('actions.errorAddToFolder'), { description: t('actions.tryAgain') }),
+  });
+
+  const createFolderAndAddMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const folder = await api.folders.create(accessToken!, name);
+      await api.folders.addGenerations(accessToken!, folder.id, [generationId!]);
+      return folder;
+    },
+    onSuccess: (folder) => {
+      queryClient.invalidateQueries({ queryKey: ['folders'] });
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      queryClient.invalidateQueries({ queryKey: ['generation-folders', generationId] });
+      toast.success(t('actions.folderCreatedAndAdded'), { description: `"${folder.name}"` });
+    },
+    onError: () => toast.error(t('actions.errorCreateFolder'), { description: t('actions.tryAgain') }),
+  });
 
   // Restore image display on mount
   useEffect(() => {
@@ -164,10 +236,10 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
   useEffect(() => {
     try {
       localStorage.setItem(storageKey, JSON.stringify({
-        resolution, generatedImageUrl, generationId, genState,
+        resolution, generatedImageUrl, generationId, genState, generatedAspectRatio,
       }));
     } catch { /* ignore */ }
-  }, [storageKey, resolution, generatedImageUrl, generationId, genState]);
+  }, [storageKey, resolution, generatedImageUrl, generationId, genState, generatedAspectRatio]);
 
   // Save files to IndexedDB
   useEffect(() => {
@@ -211,6 +283,15 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
   const panelRef = useRef<HTMLDivElement | null>(null);
   const sourceInputRef = useRef<HTMLInputElement | null>(null);
   const targetInputRef = useRef<HTMLInputElement | null>(null);
+  const generatedImageRef = useRef<HTMLImageElement | null>(null);
+
+  function handleGeneratedImageLoad() {
+    const img = generatedImageRef.current;
+    if (img?.naturalWidth && img?.naturalHeight) {
+      setGeneratedAspectRatio(`${img.naturalWidth} / ${img.naturalHeight}`);
+    }
+    setImageVisible(true);
+  }
 
   function handleImageSelect(
     e: React.ChangeEvent<HTMLInputElement>,
@@ -440,6 +521,7 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
     setImageVisible(false);
     setGeneratedImageUrl(null);
     setGenerationId(null);
+    setGeneratedAspectRatio(null);
     setErrorMsg(null);
     setSourceImage(null);
     setTargetImage(null);
@@ -500,42 +582,58 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
 
         <div className="space-y-4 p-4">
           {/* ── Generation preview ───────────────── */}
-          <GenerationPreview
-            proportion="1-1"
-            genState={genState}
-            imageVisible={imageVisible}
-            progress={progress}
-            generatedImageUrl={generatedImageUrl}
-            onImageLoad={() => setImageVisible(true)}
-          />
-
-          {/* ── Actions (download + discard) ── */}
-          {genState === 'done' && generatedImageUrl && imageVisible && (
-            <div className="space-y-2">
-              <div className="flex gap-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <a
-                      href={generatedImageUrl}
-                      download
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/8 bg-[#1e494b]/20 text-xs font-semibold text-[#f3f0ed]/60 transition-all hover:border-[#a2dd00]/30 hover:text-[#a2dd00]"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      {tCommon('download')}
-                    </a>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={4}>{tCommon('downloadImage')}</TooltipContent>
-                </Tooltip>
-              </div>
-              <button
-                onClick={handleDiscard}
-                className="flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/6 text-xs font-semibold text-[#f3f0ed]/40 transition-all hover:border-[#f3f0ed]/15 hover:text-[#f3f0ed]/70"
+          {(genState !== 'idle' || generatedImageUrl) && (
+            <>
+              <GenerationPreview
+                proportion={generatedAspectRatio ?? targetAspectRatio ?? '1-1'}
+                genState={genState}
+                imageVisible={imageVisible}
+                progress={progress}
+                generatedImageUrl={generatedImageUrl}
+                imageRef={generatedImageRef}
+                onImageLoad={handleGeneratedImageLoad}
+                onImageClick={() => generatedImageUrl && window.open(generatedImageUrl, '_blank')}
+                onImageDragStart={(e) => {
+                  e.stopPropagation();
+                  e.dataTransfer.setData('text/geraew-image-url', generatedImageUrl!);
+                  e.dataTransfer.effectAllowed = 'copy';
+                }}
               >
-                {tCommon('generateAnother')}
-              </button>
-            </div>
+                {genState === 'done' && generatedImageUrl && imageVisible && (
+                  <>
+                    <ActionButton title={tCommon('expand')} onClick={() => window.open(generatedImageUrl, '_blank')}>
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    </ActionButton>
+                    <ActionButton title={tCommon('download')} onClick={() => handleDownload(generatedImageUrl)}>
+                      <Download className="h-3.5 w-3.5" />
+                    </ActionButton>
+                    {generationId && (
+                      <ActionButton title={t('actions.addToFolder')} onClick={() => setFolderDialogOpen(true)}>
+                        <FolderPlus className="h-3.5 w-3.5" />
+                      </ActionButton>
+                    )}
+                    <ActionButton title={tCommon('discard')} onClick={handleDiscard}>
+                      <X className="h-3.5 w-3.5" />
+                    </ActionButton>
+                  </>
+                )}
+              </GenerationPreview>
+
+              {/* ── Folder dialog ──────────────────────────────────── */}
+              {generationId && (
+                <FolderAddDialog
+                  open={folderDialogOpen}
+                  onOpenChange={setFolderDialogOpen}
+                  folders={folders}
+                  activeFolderIds={generationFolders.map((f) => f.id)}
+                  onAddToFolder={(folderId) => addToFolderMutation.mutate({ folderId })}
+                  onCreateAndAdd={(name) => createFolderAndAddMutation.mutate(name)}
+                  title={t('folderDialog.title')}
+                  description={t('folderDialog.description')}
+                  newFolderPlaceholder={t('folderDialog.newFolderPlaceholder')}
+                />
+              )}
+            </>
           )}
 
           {/* ── IDLE STATE (form) ────────────────────────────── */}
@@ -687,5 +785,132 @@ export function FaceSwapPanel({ nodeId, onClose, onDuplicate }: FaceSwapPanelPro
         </div>
       </div>
     </TooltipProvider>
+  );
+}
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
+
+async function handleDownload(url: string) {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = 'geraew-ai.jpg';
+    a.click();
+    URL.revokeObjectURL(objectUrl);
+  } catch {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'geraew-ai.jpg';
+    a.click();
+  }
+}
+
+function ActionButton({
+  children,
+  title,
+  onClick,
+}: {
+  children: React.ReactNode;
+  title: string;
+  onClick?: () => void;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={onClick}
+          className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1a2123]/80 text-[#f3f0ed]/70 backdrop-blur-sm transition-all hover:bg-[#1e494b] hover:text-[#a2dd00]"
+        >
+          {children}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" sideOffset={6}>{title}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function FolderAddDialog({
+  open,
+  onOpenChange,
+  folders,
+  activeFolderIds,
+  onAddToFolder,
+  onCreateAndAdd,
+  title,
+  description,
+  newFolderPlaceholder,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  folders: Folder[];
+  activeFolderIds: string[];
+  onAddToFolder: (folderId: string) => void;
+  onCreateAndAdd: (name: string) => void;
+  title: string;
+  description: string;
+  newFolderPlaceholder: string;
+}) {
+  const [newName, setNewName] = useState('');
+
+  function handleCreate() {
+    const name = newName.trim();
+    if (!name) return;
+    onCreateAndAdd(name);
+    setNewName('');
+    onOpenChange(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setNewName(''); }}>
+      <DialogContent className="max-w-xs rounded-2xl border border-[#f3f0ed]/10 bg-[#1a2123] p-5 shadow-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-sm font-bold text-[#f3f0ed]">{title}</DialogTitle>
+          <DialogDescription className="text-xs text-[#f3f0ed]/40">
+            {description}
+          </DialogDescription>
+        </DialogHeader>
+
+        {folders.length > 0 && (
+          <div className="max-h-44 overflow-y-auto sidebar-scroll -mx-1 mt-1">
+            {folders.map((f) => {
+              const isActive = activeFolderIds.includes(f.id);
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => { onAddToFolder(f.id); onOpenChange(false); }}
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs transition-all hover:bg-[#f3f0ed]/5"
+                >
+                  <div className="flex items-center gap-2">
+                    <FolderPlus className="h-3.5 w-3.5 text-[#a2dd00]/60" />
+                    <span className="text-[#f3f0ed]/80">{f.name}</span>
+                  </div>
+                  {isActive && <span className="text-[10px] text-[#a2dd00]">✓</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="flex gap-2 mt-2">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }}
+            placeholder={newFolderPlaceholder}
+            className="flex-1 rounded-lg border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 px-3 py-2 text-xs text-[#f3f0ed]/80 placeholder-[#f3f0ed]/25 outline-none focus:border-[#a2dd00]/40"
+          />
+          <button
+            onClick={handleCreate}
+            disabled={!newName.trim()}
+            className="flex items-center justify-center rounded-lg bg-[#a2dd00] px-3 py-2 transition-all hover:bg-[#b5f000] disabled:opacity-40"
+          >
+            <Plus className="h-3.5 w-3.5 text-[#1a2123]" />
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
