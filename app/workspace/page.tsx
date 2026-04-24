@@ -10,9 +10,12 @@ import { TopNavbar } from '@/components/editor/TopNavbar';
 import { EditorProvider } from '@/lib/editor-context';
 import { InfluencerBuilderProvider } from '@/lib/influencer-builder-context';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import { FeedbackRewardModal } from '@/components/FeedbackRewardModal';
 
 function RegisterModalTrigger() {
   const searchParams = useSearchParams();
@@ -29,6 +32,42 @@ function RegisterModalTrigger() {
   }, [loading, user, searchParams, openLoginModal]);
 
   return null;
+}
+
+function FeedbackRewardTrigger() {
+  const { user, accessToken } = useAuth();
+  const [open, setOpen] = useState(false);
+  const triggered = useRef(false);
+
+  const { data: profile } = useQuery({
+    queryKey: ['user', 'me'],
+    queryFn: () => api.users.me(accessToken!),
+    enabled: !!accessToken && !!user,
+    staleTime: 60_000,
+  });
+
+  useEffect(() => {
+    if (triggered.current || !profile || !user) return;
+    if (profile.feedbackSubmitted) return;
+
+    const sub = profile.subscription as Record<string, unknown> | null;
+    const plan = profile.plan as Record<string, unknown> | null;
+    const status = (sub?.status as string | undefined)?.toLowerCase();
+    const isActivePaid = status === 'active' && (plan?.slug as string | undefined) !== 'free';
+    if (!isActivePaid) return;
+
+    const sessionKey = `geraew-feedback-shown-${user.id}`;
+    if (typeof window === 'undefined') return;
+    if (sessionStorage.getItem(sessionKey) === '1') return;
+
+    triggered.current = true;
+    sessionStorage.setItem(sessionKey, '1');
+    setOpen(true);
+  }, [profile, user]);
+
+  const handleClose = () => setOpen(false);
+
+  return <FeedbackRewardModal open={open} onClose={handleClose} />;
 }
 
 export default function Home() {
@@ -48,6 +87,7 @@ export default function Home() {
         <OnboardingTour />
         <SupportButton />
         <Suspense><RegisterModalTrigger /></Suspense>
+        <FeedbackRewardTrigger />
       </InfluencerBuilderProvider>
     </EditorProvider>
   );

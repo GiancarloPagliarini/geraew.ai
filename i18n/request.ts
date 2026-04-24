@@ -44,6 +44,7 @@ async function loadPartials(locale: Locale): Promise<Record<string, unknown>> {
     'editor-chrome',
     'editor-dialogs',
     'editor-misc',
+    'feedback',
   ] as const;
   const partials: Record<string, unknown> = {};
   for (const name of names) {
