@@ -19,6 +19,9 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Geraew AI",
   description: "Gerador de imagens com inteligência artificial",
+  other: {
+    google: "notranslate",
+  },
 };
 
 export const viewport = {
@@ -48,7 +51,7 @@ export default async function RootLayout({
   const locale = await getLocale();
   const messages = await getMessages();
   return (
-    <html lang={locale}>
+    <html lang={locale} translate="no" className="notranslate">
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
