@@ -1,0 +1,232 @@
+{
+  "editorDialogs": {
+    "gallery": {
+      "title": "Galería",
+      "subtitle": "Tus imágenes y videos generados con IA",
+      "pickerBanner": "Selecciona imágenes o arrastra al nodo",
+      "cancel": "CANCELAR",
+      "add": "AGREGAR",
+      "selectedSingular": "{count} seleccionada",
+      "selectedPlural": "{count} seleccionadas",
+      "itemsCountSingular": "{shown} de {total} ítem",
+      "itemsCountPlural": "{shown} de {total} ítems",
+      "tabs": {
+        "all": "Todo",
+        "photos": "Fotos",
+        "videos": "Videos",
+        "favorites": "Favoritos"
+      },
+      "stats": {
+        "generations": "Generaciones",
+        "credits": "Créditos",
+        "favorites": "Favoritos",
+        "images": "Imágenes",
+        "videos": "Videos",
+        "folders": "Carpetas"
+      },
+      "refresh": "Actualizar galería",
+      "refreshed": "Galería actualizada",
+      "refreshedDescription": "Las imágenes fueron recargadas.",
+      "folders": {
+        "myFolders": "Mis Carpetas",
+        "newFolderPlaceholder": "Nueva carpeta...",
+        "noFolders": "No hay carpetas",
+        "noFoldersHint": "Crea una carpeta para organizar tus generaciones",
+        "itemSingular": "ítem",
+        "itemPlural": "ítems",
+        "rename": "Renombrar",
+        "delete": "Eliminar",
+        "cancel": "Cancelar",
+        "deleteTitle": "Eliminar carpeta",
+        "deleteDescription": "¿Seguro que deseas eliminar \"{name}\"? Las generaciones dentro de ella no serán borradas.",
+        "addToFolder": "Agregar a carpeta",
+        "addToFolderDescription": "Selecciona una carpeta o crea una nueva.",
+        "folderButton": "Carpeta",
+        "created": "Carpeta creada",
+        "createdDescription": "\"{name}\" fue creada con éxito.",
+        "createError": "Error al crear carpeta",
+        "tryAgain": "Intenta de nuevo.",
+        "renamed": "Carpeta renombrada",
+        "renamedDescription": "El nombre fue actualizado con éxito.",
+        "renameError": "Error al renombrar carpeta",
+        "deleted": "Carpeta eliminada",
+        "deletedDescription": "La carpeta fue removida con éxito.",
+        "deleteError": "Error al eliminar carpeta",
+        "addedToFolder": "Agregada a la carpeta",
+        "addedToFolderDescription": "La imagen fue movida con éxito.",
+        "addToFolderError": "Error al agregar a la carpeta",
+        "removedFromFolder": "Removida de la carpeta",
+        "removedFromFolderDescription": "La imagen fue removida con éxito.",
+        "removeFromFolderError": "Error al remover de la carpeta"
+      },
+      "detail": {
+        "back": "Volver a la galería",
+        "favorited": "Favorito",
+        "favorite": "Marcar favorito",
+        "download": "Descargar",
+        "deleteVersion": "Eliminar versión",
+        "delete": "Eliminar",
+        "confirm": "Confirmar",
+        "cancel": "Cancelar",
+        "copyPrompt": "Copiar prompt",
+        "copied": "¡Copiado!",
+        "versionsGenerated": "{count} versiones generadas",
+        "referencesUsed": "Referencias usadas",
+        "referenceAlt": "Referencia {n}",
+        "versionAlt": "Versión {n}",
+        "imageAlt": "Imagen generada"
+      },
+      "empty": "Aún no hay imágenes generadas.",
+      "loadDetailsError": "Error al cargar detalles",
+      "favorited": "Agregada a favoritos",
+      "unfavorited": "Removida de favoritos",
+      "favoriteError": "Error al actualizar favorito",
+      "versionDeleted": "Versión eliminada",
+      "versionDeletedDescription": "La versión fue removida con éxito.",
+      "deleteVersionError": "Error al eliminar versión",
+      "generationDeleted": "Generación eliminada",
+      "generationDeletedDescription": "La generación fue removida con éxito.",
+      "deleteError": "Error al eliminar"
+    },
+    "prompts": {
+      "title": "Prompts",
+      "searchPlaceholder": "Buscar prompts...",
+      "add": "Agregar",
+      "noneFound": "No se encontraron prompts",
+      "clearSearch": "Limpiar búsqueda",
+      "loadError": "Error al cargar prompts",
+      "tryAgain": "Intentar de nuevo",
+      "loginTitle": "Inicia sesión para acceder",
+      "loginDescription": "Ingresa a tu cuenta para ver y usar los prompts disponibles.",
+      "signIn": "Ingresar",
+      "loginRequired": "Inicia sesión para usar los prompts",
+      "copied": "¡Prompt copiado!",
+      "delete": {
+        "title": "Eliminar prompt",
+        "description": "¿Seguro que deseas eliminar este prompt? Esta acción no se puede deshacer.",
+        "cancel": "Cancelar",
+        "confirm": "Eliminar",
+        "success": "¡Prompt eliminado!",
+        "error": "Error al eliminar prompt"
+      },
+      "addModal": {
+        "title": "Agregar Prompt",
+        "titlePlaceholder": "Título",
+        "promptPlaceholder": "Prompt",
+        "imageUrlPlaceholder": "URL de la imagen (opcional)",
+        "submit": "Agregar",
+        "saving": "Guardando...",
+        "validationError": "Completa el título y el prompt",
+        "success": "¡Prompt agregado!",
+        "error": "Error al agregar prompt"
+      }
+    },
+    "trendingProducts": {
+      "title": "Ranking TikTok Shop",
+      "top10": "TOP 10",
+      "tabs": {
+        "salesLabel": "Productos con más ventas",
+        "salesShort": "Más ventas",
+        "salesSubtitle": "TOP 10 Productos con más ventas en TikTok BR",
+        "recommendedLabel": "Productos más populares",
+        "recommendedShort": "Populares",
+        "recommendedSubtitle": "TOP 10 Productos más populares de TikTok BR",
+        "newLabel": "Nuevos productos",
+        "newShort": "Nuevos",
+        "newSubtitle": "TOP 10 Lanzamientos en tendencia en TikTok BR"
+      },
+      "loading": "Ranqueando productos...",
+      "loadErrorTitle": "No fue posible cargar",
+      "loadErrorHint": "Verifica tu conexión e intenta de nuevo",
+      "retry": "Intentar de nuevo",
+      "noProducts": "No se encontraron productos",
+      "paywallTitle": "Recurso exclusivo para suscriptores",
+      "paywallDescription": "Suscríbete al plan Starter o superior para visualizar los productos en tendencia en TikTok Shop.",
+      "viewPlans": "Ver planes",
+      "card": {
+        "salesToday": "Ventas hoy",
+        "revenue": "Facturación",
+        "affiliates": "Afiliados",
+        "lives": "Lives",
+        "commission": "Comisión",
+        "totalAccumulated": "Total acumulado",
+        "salesSuffix": "ventas",
+        "useProductSoon": "Usar producto (próximamente)"
+      }
+    },
+    "tutorial": {
+      "title": "Tutoriales",
+      "subtitle": "Aprende a usar todas las funcionalidades",
+      "back": "Volver a tutoriales",
+      "comingSoon": "Video próximamente",
+      "stepByStep": "Paso a paso",
+      "availableCount": "{count} tutoriales disponibles",
+      "maintenance": {
+        "title": "Sección en mantenimiento",
+        "description": "Estamos preparando nuevos videos de tutorial con el paso a paso actualizado. Vuelve pronto para verlos.",
+        "badge": "En mantenimiento"
+      },
+      "items": {
+        "image": {
+          "title": "Generar tu primera imagen",
+          "description": "Aprende a usar el panel de generación de imágenes para crear artes increíbles con IA en pocos clics.",
+          "steps": [
+            "Abre el panel \"Generar Imagen\".",
+            "Describe la imagen que deseas crear en el campo del prompt.",
+            "Elige el estilo y las configuraciones deseadas.",
+            "Haz clic en \"Generar\" y espera el resultado."
+          ]
+        },
+        "video": {
+          "title": "Generar un video",
+          "description": "Transforma imágenes o prompts en videos animados de alta calidad usando modelos de IA de última generación.",
+          "steps": [
+            "Abre el panel \"Generar Video\".",
+            "Selecciona una imagen base o escribe un prompt de video.",
+            "Ajusta la duración y el estilo del video.",
+            "Haz clic en \"Generar Video\" y espera el procesamiento."
+          ]
+        },
+        "influencer": {
+          "title": "Crear tu IA Influencer",
+          "description": "Crea una influencer digital completa con identidad visual, personalidad y consistencia visual entre generaciones.",
+          "steps": [
+            "Accede al panel \"Crear Influencer\".",
+            "Define la personalidad y estilo visual de tu influencer.",
+            "Genera el modelo base de tu influencer con IA.",
+            "Usa la influencer creada para generar imágenes y videos consistentes."
+          ]
+        },
+        "virtualTryOn": {
+          "title": "Usar el Probador Virtual",
+          "description": "Viste cualquier prenda en tu influencer de IA en segundos y genera contenido listo para anuncios y reviews.",
+          "steps": [
+            "Abre el panel \"Probador Virtual\".",
+            "Sube la imagen de la persona o influencer que va a vestir la prenda.",
+            "Sube la foto de la prenda que deseas aplicar.",
+            "Haz clic en \"Generar\" y usa el resultado para crear tus publicaciones y creativos."
+          ]
+        }
+      }
+    },
+    "imageToPrompt": {
+      "title": "CLON DE PROMPT",
+      "description": "Sube una imagen y recibe el prompt estructurado listo para usar en Flux, Nano Banana, SDXL o Veo.",
+      "dragOrClick": "Arrastra una imagen o haz clic",
+      "fileHint": "JPEG, PNG o WebP — máx 5MB",
+      "imageAlt": "previsualización",
+      "analyzing": "ANALIZANDO...",
+      "loginToAnalyze": "INGRESAR PARA ANALIZAR",
+      "analyze": "ANALIZAR (5 CRÉDITOS)",
+      "clear": "LIMPIAR",
+      "tabPrompt": "PROMPT STRING",
+      "tabJson": "JSON",
+      "copyPrompt": "COPIAR PROMPT",
+      "copyJson": "COPIAR JSON",
+      "copied": "¡{label} copiado!",
+      "toastInvalidFormat": "Formato inválido. Usa JPEG, PNG o WebP.",
+      "toastTooLarge": "Imagen demasiado grande (máx 5MB).",
+      "toastAnalysisFailed": "Falló el análisis"
+    }
+  }
+}

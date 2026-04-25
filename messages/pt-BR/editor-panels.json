@@ -210,6 +210,19 @@
         "faceLabel": "Foto do rosto",
         "sceneLabel": "Foto da cena"
       },
+      "actions": {
+        "addToFolder": "Adicionar à pasta",
+        "addedToFolder": "Adicionada à pasta",
+        "errorAddToFolder": "Erro ao adicionar à pasta",
+        "tryAgain": "Tente novamente.",
+        "folderCreatedAndAdded": "Pasta criada e imagem adicionada",
+        "errorCreateFolder": "Erro ao criar pasta"
+      },
+      "folderDialog": {
+        "title": "Adicionar à pasta",
+        "description": "Escolha uma pasta existente ou crie uma nova.",
+        "newFolderPlaceholder": "Nova pasta..."
+      },
       "button": "TROCAR ROSTO",
       "footnote": "Substitui o rosto e corpo na cena com a pessoa da primeira imagem",
       "loadingMessages": [

@@ -5,15 +5,15 @@
     "pricing": "Pricing",
     "faq": "FAQ",
     "login": "Sign in",
-    "tryFree": "Try Free",
+    "tryFree": "Start Now",
     "accessPlatform": "Open Platform"
   },
   "hero": {
     "badge": "AI-powered content creation platform",
     "title": "Create AI influencers and dominate any platform.",
     "subtitle": "Generate ultra-realistic images, videos, and motion with just a few clicks. No studio, no models, no showing your face. Everything you need to create professional content is here.",
-    "cta": "Start Free",
-    "microcopy": "No credit card · Ready in under 2 minutes"
+    "cta": "Start Now",
+    "microcopy": "Ready in under 2 minutes"
   },
   "howItWorks": {
     "tag": "IT'S THAT SIMPLE",
@@ -68,14 +68,14 @@
   "pricing": {
     "tag": "Pricing",
     "title": "Simple plans. No surprises.",
-    "subtitle": "Start free and scale whenever you want. Cancel anytime.",
+    "subtitle": "Pick a plan and scale whenever you want. Cancel anytime.",
     "mostPopular": "Most Popular",
     "perMonth": "/mo",
     "creditsPerMonth": "{credits} credits per month",
     "creditsForTesting": "credits to try it out",
     "creditsMonthly": "credits per month",
     "subscribe": "Subscribe to {plan}",
-    "startFree": "Start Free",
+    "startFree": "Start Now",
     "accessPlatform": "Open Platform",
     "generationEstimate": "Generation estimates",
     "blocked": "locked",
@@ -171,7 +171,7 @@
     "withoutTitle": "Without Geraew",
     "withTitle": "With Geraew",
     "withoutTotal": "Total: $300+ per session",
-    "withTotal": "Starting at $0/mo",
+    "withTotal": "Starting at $2.90/mo",
     "cta": "Start saving now",
     "ctaLoggedIn": "Open Platform",
     "without": [
@@ -223,8 +223,8 @@
     "subtitle": "Everything you need to know before getting started.",
     "items": [
       {
-        "question": "How does the free trial work?",
-        "answer": "You create your account in under 2 minutes and get free credits to test the platform. No credit card, no commitment. If you like it, just pick a plan."
+        "question": "How do I get started?",
+        "answer": "Create your account in under 2 minutes, pick a plan starting at $2.90/mo, and you'll get your credits right away to generate images and videos. Cancel anytime — no fees, no hassle."
       },
       {
         "question": "Do I need to install anything?",
@@ -259,9 +259,9 @@
   "ctaFinal": {
     "title": "Ready to create your first AI influencer?",
     "subtitle": "Join thousands of creators turning ideas into professional content with AI.",
-    "cta": "Start Free",
+    "cta": "Start Now",
     "ctaLoggedIn": "Open Platform",
-    "microcopy": "No credit card · 2-minute setup · Cancel anytime",
+    "microcopy": "2-minute setup · Cancel anytime",
     "microcopyShort": "2-minute setup · Cancel anytime",
     "creatorsUsing": "+2,000 creators already using it"
   },

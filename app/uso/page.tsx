@@ -195,7 +195,7 @@ export default function UsoPage() {
   const t = useTranslations('account.usage');
   const tCommon = useTranslations('account.common');
   const locale = useLocale();
-  const dateLocale = locale === 'pt-BR' ? 'pt-BR' : 'en-US';
+  const dateLocale = locale === 'pt-BR' ? 'pt-BR' : locale === 'es' ? 'es' : 'en-US';
   const numFmt = new Intl.NumberFormat(dateLocale);
 
   useEffect(() => {

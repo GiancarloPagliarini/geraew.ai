@@ -1,0 +1,25 @@
+{
+  "editorMisc": {
+    "onboarding": {
+      "actions": {
+        "skip": "Omitir",
+        "next": "Siguiente →",
+        "finish": "Comenzar a crear"
+      },
+      "steps": {
+        "welcome": {
+          "heading": "Bienvenido a Geraew AI",
+          "body": "Crea imágenes increíbles, videos cinematográficos e influencers digitales con IA — todo en un solo lugar. Déjanos guiarte rapidito."
+        },
+        "tutorials": {
+          "heading": "Tutoriales de la plataforma",
+          "body": "Este botón abre los tutoriales de la plataforma. Aprende a generar imágenes, videos y crear tu IA Influencer."
+        },
+        "finish": {
+          "heading": "Todo listo. ¡A crear!",
+          "body": "Usa el panel \"Generar imagen\" para agregar un panel, escribe tu prompt y genera tu primera imagen con IA :D"
+        }
+      }
+    }
+  }
+}

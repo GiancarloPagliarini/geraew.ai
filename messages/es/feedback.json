@@ -1,0 +1,102 @@
+{
+  "feedback": {
+    "modal": {
+      "badge": "Exclusivo para suscriptores",
+      "title": "Tenemos un regalo para ti",
+      "description": "Tu opinión vale mucho para nosotros. Responde algunas preguntas rápidas sobre tu experiencia y gana <highlight>créditos gratis</highlight> directo en tu cuenta.",
+      "cardTitle": "Créditos bono garantizados",
+      "cardSubtitle": "Toma menos de 2 minutos",
+      "cta": "Quiero ganar mis créditos",
+      "dismiss": "Ahora no"
+    },
+    "page": {
+      "back": "Volver al editor",
+      "badge": "Exclusivo para suscriptores",
+      "title": "Tu opinión vale créditos",
+      "description": "Eres uno de los primeros suscriptores de Geraew y tu feedback moldea lo que vamos a construir. Responde en menos de 3 minutos y recibe créditos bono en tu cuenta.",
+      "submit": "Enviar y ganar créditos",
+      "submitting": "Enviando...",
+      "submitReady": "¡Todo listo! Haz clic para enviar y recibir tus créditos.",
+      "submitPending": "Completa las preguntas obligatorias para continuar.",
+      "alreadySubmittedTitle": "Ya enviaste tu feedback",
+      "alreadySubmittedDesc": "¡Gracias nuevamente por tu colaboración!",
+      "accessDeniedTitle": "Acceso exclusivo",
+      "accessDeniedDesc": "Esta página es exclusiva para suscriptores activos.",
+      "submitErrorTitle": "No fue posible enviar",
+      "submitErrorFallback": "Error al enviar el feedback",
+      "submitSuccessTitle": "¡+{amount} créditos acreditados!",
+      "submitSuccessDesc": "Gracias por el feedback. Los créditos ya están en tu cuenta.",
+      "success": {
+        "title": "Recibido. Gracias de verdad.",
+        "description": "Tu feedback fue registrado y cada respuesta nos ayuda a dejar Geraew aún mejor para ti.",
+        "creditsLabel": "Créditos acreditados en tu cuenta",
+        "creditsSuffix": "créditos",
+        "creditsNote": "Ya disponibles. Úsalos cuando quieras.",
+        "backCta": "Volver al editor"
+      },
+      "q1": {
+        "title": "¿Qué tanto recomendarías Geraew a un amigo creador?",
+        "scaleLow": "No recomendaría",
+        "scaleHigh": "Recomendaría mucho"
+      },
+      "q2": {
+        "title": "¿Cómo calificas la calidad de los resultados?",
+        "subtitle": "Imágenes, videos y movimientos generados en la plataforma",
+        "label1": "Malo",
+        "label2": "Regular",
+        "label3": "Bueno",
+        "label4": "Muy bueno",
+        "label5": "Excelente",
+        "aria": "{n, plural, =1 {1 estrella} other {# estrellas}}"
+      },
+      "q3": {
+        "title": "¿Cuál es tu principal objetivo con Geraew?",
+        "subtitle": "Elige la opción que más se aproxime",
+        "otherLabel": "Cuéntanos cuál es tu objetivo",
+        "otherPlaceholder": "Ej: probar para un proyecto personal, investigación académica, hobby..."
+      },
+      "q4": {
+        "title": "¿Qué funcionalidades usas más?",
+        "subtitle": "Selecciona hasta 3 · {count}/3 elegidas"
+      },
+      "q5": {
+        "title": "¿Qué fue lo que más te impresionó positivamente?",
+        "placeholder": "Ej: la calidad de los rostros, la velocidad para generar video, la biblioteca de prompts..."
+      },
+      "q6": {
+        "title": "¿Qué podría mejorarse o qué está faltando?",
+        "subtitle": "El feedback más valioso para nosotros. Sé franco.",
+        "placeholder": "Ej: los créditos se acaban rápido, la calidad del video baja en movimiento, falta exportar en vertical..."
+      },
+      "q7": {
+        "title": "¿Qué feature nueva te gustaría ver?",
+        "subtitle": "Suelta la imaginación",
+        "placeholder": "Ej: clonar voz, generar carrusel entero, integración directa con TikTok..."
+      },
+      "validation": {
+        "minChars": "Mínimo {min} caracteres",
+        "minCharsShort": "Cuéntanos un poco más (mín. {min} caracteres)",
+        "minGoalOther": "Cuéntanos un poco sobre tu objetivo",
+        "featuresMin": "Selecciona al menos una",
+        "featuresMax": "Máximo de 3"
+      },
+      "goals": {
+        "tiktok-shop": "Vender en TikTok Shop",
+        "canal": "Hacer crecer mi propio canal",
+        "ads": "Creativos para anuncios",
+        "agencia": "Agencia o UGC para clientes",
+        "outro": "Otro"
+      },
+      "features": {
+        "imagens": "Imágenes",
+        "videos": "Videos",
+        "movimento": "Control de movimiento",
+        "face-swap": "Face Swap",
+        "try-on": "Try On",
+        "upscale": "Upscale",
+        "ranking-tiktok": "Ranking TikTok Shop",
+        "prompts": "Biblioteca de prompts"
+      }
+    }
+  }
+}

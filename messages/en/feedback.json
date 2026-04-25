@@ -1,0 +1,102 @@
+{
+  "feedback": {
+    "modal": {
+      "badge": "Exclusive for subscribers",
+      "title": "We have a gift for you",
+      "description": "Your opinion means a lot to us. Answer a few quick questions about your experience and earn <highlight>free credits</highlight> directly in your account.",
+      "cardTitle": "Guaranteed bonus credits",
+      "cardSubtitle": "Takes less than 2 minutes",
+      "cta": "I want to claim my credits",
+      "dismiss": "Not now"
+    },
+    "page": {
+      "back": "Back to editor",
+      "badge": "Exclusive for subscribers",
+      "title": "Your opinion is worth credits",
+      "description": "You're one of Geraew's first subscribers and your feedback shapes what we'll build. Answer in under 3 minutes and get bonus credits in your account.",
+      "submit": "Submit and earn credits",
+      "submitting": "Submitting...",
+      "submitReady": "All set! Click to submit and receive your credits.",
+      "submitPending": "Fill in the required questions to continue.",
+      "alreadySubmittedTitle": "You already submitted your feedback",
+      "alreadySubmittedDesc": "Thanks again for your help!",
+      "accessDeniedTitle": "Exclusive access",
+      "accessDeniedDesc": "This page is exclusive to active subscribers.",
+      "submitErrorTitle": "Couldn't submit",
+      "submitErrorFallback": "Error submitting feedback",
+      "submitSuccessTitle": "+{amount} credits added!",
+      "submitSuccessDesc": "Thanks for your feedback. The credits are already in your account.",
+      "success": {
+        "title": "Got it. Thanks a lot.",
+        "description": "Your feedback has been recorded and every answer helps us make Geraew even better for you.",
+        "creditsLabel": "Credits added to your account",
+        "creditsSuffix": "credits",
+        "creditsNote": "Already available. Use them whenever you want.",
+        "backCta": "Back to editor"
+      },
+      "q1": {
+        "title": "How likely are you to recommend Geraew to a creator friend?",
+        "scaleLow": "Wouldn't recommend",
+        "scaleHigh": "Would totally recommend"
+      },
+      "q2": {
+        "title": "How do you rate the quality of the results?",
+        "subtitle": "Images, videos and motion generated on the platform",
+        "label1": "Poor",
+        "label2": "Fair",
+        "label3": "Good",
+        "label4": "Very good",
+        "label5": "Excellent",
+        "aria": "{n, plural, =1 {1 star} other {# stars}}"
+      },
+      "q3": {
+        "title": "What's your main goal with Geraew?",
+        "subtitle": "Pick the option that fits best",
+        "otherLabel": "Tell us your goal",
+        "otherPlaceholder": "Ex: testing for a personal project, academic research, hobby..."
+      },
+      "q4": {
+        "title": "Which features do you use most?",
+        "subtitle": "Select up to 3 · {count}/3 selected"
+      },
+      "q5": {
+        "title": "What impressed you positively?",
+        "placeholder": "Ex: face quality, how fast videos generate, the prompt library..."
+      },
+      "q6": {
+        "title": "What could be improved or is missing?",
+        "subtitle": "The most valuable feedback for us. Be honest.",
+        "placeholder": "Ex: credits run out fast, video quality drops with motion, can't export vertical..."
+      },
+      "q7": {
+        "title": "What new feature would you like to see?",
+        "subtitle": "Dream big",
+        "placeholder": "Ex: voice cloning, full carousel generation, direct TikTok integration..."
+      },
+      "validation": {
+        "minChars": "Minimum {min} characters",
+        "minCharsShort": "Tell us a bit more (min. {min} characters)",
+        "minGoalOther": "Tell us a bit about your goal",
+        "featuresMin": "Select at least one",
+        "featuresMax": "Maximum of 3"
+      },
+      "goals": {
+        "tiktok-shop": "Sell on TikTok Shop",
+        "canal": "Grow my own channel",
+        "ads": "Ad creatives",
+        "agencia": "Agency or UGC for clients",
+        "outro": "Other"
+      },
+      "features": {
+        "imagens": "Images",
+        "videos": "Videos",
+        "movimento": "Motion control",
+        "face-swap": "Face Swap",
+        "try-on": "Try On",
+        "upscale": "Upscale",
+        "ranking-tiktok": "TikTok Shop Ranking",
+        "prompts": "Prompt library"
+      }
+    }
+  }
+}

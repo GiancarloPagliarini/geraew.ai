@@ -7,6 +7,7 @@ function parseAcceptLanguage(header: string | null): Locale | null {
   const preferred = header.split(',')[0]?.trim().toLowerCase();
   if (!preferred) return null;
   if (preferred.startsWith('pt')) return 'pt-BR';
+  if (preferred.startsWith('es')) return 'es';
   if (preferred.startsWith('en')) return 'en';
   return null;
 }
@@ -44,6 +45,7 @@ async function loadPartials(locale: Locale): Promise<Record<string, unknown>> {
     'editor-chrome',
     'editor-dialogs',
     'editor-misc',
+    'feedback',
   ] as const;
   const partials: Record<string, unknown> = {};
   for (const name of names) {

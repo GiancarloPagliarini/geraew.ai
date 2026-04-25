@@ -210,6 +210,19 @@
         "faceLabel": "Face photo",
         "sceneLabel": "Scene photo"
       },
+      "actions": {
+        "addToFolder": "Add to folder",
+        "addedToFolder": "Added to folder",
+        "errorAddToFolder": "Error adding to folder",
+        "tryAgain": "Please try again.",
+        "folderCreatedAndAdded": "Folder created and image added",
+        "errorCreateFolder": "Error creating folder"
+      },
+      "folderDialog": {
+        "title": "Add to folder",
+        "description": "Choose an existing folder or create a new one.",
+        "newFolderPlaceholder": "New folder..."
+      },
       "button": "SWAP FACE",
       "footnote": "Replaces the face and body in the scene with the person from the first image",
       "loadingMessages": [

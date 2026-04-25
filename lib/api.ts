@@ -17,6 +17,7 @@ export interface UserProfile extends AuthUser {
   plan: Record<string, unknown> | null;
   credits: Record<string, unknown> | null;
   subscription: Record<string, unknown> | null;
+  feedbackSubmitted: boolean;
 }
 
 export interface AuthResponse {
@@ -647,6 +648,37 @@ export interface AdminUser {
   } | null;
 }
 
+export interface AdminFeedback {
+  id: string;
+  userId: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    avatarUrl: string | null;
+    plan: { slug: string; name: string } | null;
+  };
+  nps: number;
+  rating: number;
+  goal: string;
+  goalOther: string | null;
+  features: string[];
+  highlight: string;
+  improve: string;
+  wishlist: string;
+  creditsAwarded: number;
+  createdAt: string;
+}
+
+export interface AdminFeedbackStats {
+  total: number;
+  avgNps: number | null;
+  avgRating: number | null;
+  npsScore?: number;
+  npsPromoters: number;
+  npsDetractors: number;
+}
+
 export interface AdminUserDetail {
   id: string;
   email: string;
@@ -787,7 +819,7 @@ export interface HealthStats {
   stuckCount: number;
   recentFailuresByModel: { modelUsed: string; failedCount: number; errorCodes: string[] }[];
   failingPayments: number;
-  recentErrors: { id: string; userId: string; type: string; modelUsed: string; errorMessage: string | null; errorCode: string | null; createdAt: string }[];
+  recentErrors: { id: string; userId: string; type: string; modelUsed: string; errorMessage: string | null; errorCode: string | null; createdAt: string; safetyFallback?: boolean }[];
   alerts: { level: 'warning' | 'critical'; message: string }[];
 }
 
@@ -1002,6 +1034,28 @@ export const api = {
       return authRequest<{ status: PixStatus; paid: boolean }>(
         `/api/v1/payments/pix/${encodeURIComponent(abacatepayId)}/status`,
         accessToken,
+      );
+    },
+  },
+
+  feedback: {
+    submit(
+      accessToken: string,
+      body: {
+        nps: number;
+        rating: number;
+        goal: string;
+        goalOther?: string;
+        features: string[];
+        highlight: string;
+        improve: string;
+        wishlist: string;
+      },
+    ) {
+      return authRequest<{ submitted: true; creditsAwarded: number }>(
+        '/api/v1/feedback',
+        accessToken,
+        { method: 'POST', body: JSON.stringify(body) },
       );
     },
   },
@@ -1328,6 +1382,13 @@ export const api = {
     },
     healthStats(accessToken: string) {
       return authRequest<HealthStats>('/api/v1/admin/stats/health', accessToken);
+    },
+    feedbackList(accessToken: string, page = 1, limit = 20) {
+      return authRequest<{
+        data: AdminFeedback[];
+        meta: { page: number; limit: number; total: number };
+        stats: AdminFeedbackStats;
+      }>(`/api/v1/admin/feedback?page=${page}&limit=${limit}`, accessToken);
     },
     affiliatesDashboard(accessToken: string) {
       return authRequest<AffiliateDashboard>('/api/v1/admin/affiliates/dashboard', accessToken);

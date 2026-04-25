@@ -157,10 +157,15 @@
     "tutorial": {
       "title": "Tutoriais",
       "subtitle": "Aprenda a usar todas as funcionalidades",
-      "back": "← Voltar para tutoriais",
+      "back": "Voltar para tutoriais",
       "comingSoon": "Vídeo em breve",
       "stepByStep": "Passo a passo",
       "availableCount": "{count} tutoriais disponíveis",
+      "maintenance": {
+        "title": "Seção em manutenção",
+        "description": "Estamos preparando novos vídeos de tutorial com o passo a passo atualizado. Volte em breve para conferir.",
+        "badge": "Em manutenção"
+      },
       "items": {
         "image": {
           "title": "Gerar sua primeira imagem",
@@ -187,9 +192,19 @@
           "description": "Crie uma influencer digital completa com identidade visual, personalidade e consistência visual entre gerações.",
           "steps": [
             "Acesse o painel \"Criar Influencer\".",
-            "Defina o nome, personalidade e estilo visual da sua influencer.",
+            "Defina a personalidade e estilo visual da sua influencer.",
             "Gere o modelo base da sua influencer com IA.",
             "Use a influencer criada para gerar imagens e vídeos consistentes."
+          ]
+        },
+        "virtualTryOn": {
+          "title": "Usar o Provador Virtual",
+          "description": "Vista qualquer roupa na sua influencer de IA em segundos e gere conteúdo pronto para anúncios e reviews.",
+          "steps": [
+            "Abra o painel \"Provador Virtual\".",
+            "Envie a imagem da pessoa ou influencer que vai vestir a peça.",
+            "Envie a foto da roupa que deseja aplicar.",
+            "Clique em \"Gerar\" e use o resultado para criar suas postagens e criativos."
           ]
         }
       }

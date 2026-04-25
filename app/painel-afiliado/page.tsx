@@ -39,7 +39,9 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://geraew.com.br';
 const PIX_TYPE_VALUES: PixKeyType[] = ['CPF', 'CNPJ', 'EMAIL', 'PHONE', 'RANDOM'];
 
 function intlLocale(locale: string) {
-  return locale === 'pt-BR' ? 'pt-BR' : 'en-US';
+  if (locale === 'pt-BR') return 'pt-BR';
+  if (locale === 'es') return 'es';
+  return 'en-US';
 }
 
 function formatCents(cents: number, locale: string) {

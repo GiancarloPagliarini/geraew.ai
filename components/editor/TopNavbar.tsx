@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, BadgePercent, BatteryCharging, Coins, CreditCard, Loader2, LogIn, LogOut, Plus, Settings, User, Users, Wallet, X } from 'lucide-react';
+import { ArrowRight, BadgePercent, BatteryCharging, Coins, CreditCard, Gift, Loader2, LogIn, LogOut, Plus, Settings, User, Users, Wallet, X } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -15,7 +15,8 @@ import { useLoginModal } from '@/lib/login-modal-context';
 import { LocaleSwitcher } from '@/components/locale-switcher';
 
 function formatCents(cents: number, locale: string) {
-  return (cents / 100).toLocaleString(locale === 'pt-BR' ? 'pt-BR' : 'en-US', {
+  const intlLocale = locale === 'pt-BR' ? 'pt-BR' : locale === 'es' ? 'es' : 'en-US';
+  return (cents / 100).toLocaleString(intlLocale, {
     style: 'currency',
     currency: 'BRL',
   });
@@ -44,6 +45,22 @@ export function TopNavbar() {
     enabled: !!user && !!accessToken,
     staleTime: 30_000,
   });
+
+  const { data: userProfile } = useQuery({
+    queryKey: ['user', 'me'],
+    queryFn: () => api.users.me(accessToken!),
+    enabled: !!user && !!accessToken,
+    staleTime: 60_000,
+  });
+
+  const showFeedbackReward = (() => {
+    if (!userProfile) return false;
+    if (userProfile.feedbackSubmitted) return false;
+    const sub = userProfile.subscription as Record<string, unknown> | null;
+    const plan = userProfile.plan as Record<string, unknown> | null;
+    const status = (sub?.status as string | undefined)?.toLowerCase();
+    return status === 'active' && (plan?.slug as string | undefined) !== 'free';
+  })();
 
   // Fecha o menu ao clicar fora (ignora cliques dentro do aside mobile)
   useEffect(() => {
@@ -197,6 +214,24 @@ export function TopNavbar() {
                   </div>
                 )}
               </div>
+
+              {/* Feedback reward — only for paid users who haven't submitted yet */}
+              {showFeedbackReward && (
+                <button
+                  onClick={() => router.push('/feedback')}
+                  className="group relative hidden items-center gap-1.5 overflow-hidden rounded-full border border-[#a2dd00]/40 bg-[#a2dd00]/10 px-3 py-1.5 text-xs font-semibold text-[#a2dd00] transition-all hover:border-[#a2dd00]/70 hover:bg-[#a2dd00]/15 sm:flex"
+                >
+                  <span className="pointer-events-none absolute -inset-x-6 -inset-y-2 bg-[radial-gradient(ellipse_at_center,rgba(162,221,0,0.25),transparent_70%)] opacity-60 blur-md transition-opacity group-hover:opacity-100" />
+                  <span className="relative flex h-2 w-2 shrink-0 items-center justify-center">
+                    <span className="absolute h-full w-full animate-ping rounded-full bg-[#a2dd00]/60" />
+                    <span className="relative h-1.5 w-1.5 rounded-full bg-[#a2dd00]" />
+                  </span>
+                  <Gift className="relative h-3.5 w-3.5" />
+                  <span className="relative tabular-nums">
+                    {t('feedbackReward', { amount: (2500).toLocaleString(locale) })}
+                  </span>
+                </button>
+              )}
             </div>
           ) : (
             /* Login dropdown for unauthenticated users */
