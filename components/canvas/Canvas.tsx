@@ -163,10 +163,13 @@ function CanvasContent() {
   );
 
   // When a pending prompt is requested (from PromptsDialog), create the panel
+  const lastPendingPromptRef = useRef<unknown>(null);
   useEffect(() => {
-    if (pendingPromptRef.current) {
-      handleAddPanel(pendingPromptRef.current.panelType);
-    }
+    const pending = pendingPromptRef.current;
+    if (!pending) return;
+    if (lastPendingPromptRef.current === pending) return;
+    lastPendingPromptRef.current = pending;
+    handleAddPanel(pending.panelType);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingPromptRef.current]);
 

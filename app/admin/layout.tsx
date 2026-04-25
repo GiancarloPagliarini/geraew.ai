@@ -25,6 +25,7 @@ const NAV_ITEMS = [
   { href: '/admin/geracoes', label: 'Gerações', icon: Image },
   { href: '/admin/modelos', label: 'Modelos', icon: Sparkles },
   { href: '/admin/prompts', label: 'Prompts', icon: FileText },
+  { href: '/admin/prompt-posts', label: 'Posts Públicos', icon: Sparkles },
   { href: '/admin/assinaturas', label: 'Assinaturas', icon: CreditCard },
   { href: '/admin/stripe', label: 'Stripe', icon: Banknote },
   { href: '/admin/afiliados', label: 'Afiliados', icon: Handshake },

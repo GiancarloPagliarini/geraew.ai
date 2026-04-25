@@ -7,9 +7,9 @@ const OnboardingTour = dynamic(() => import('@/components/editor/OnboardingTour'
 import { RightSidebar } from '@/components/editor/RightSidebar';
 import { SupportButton } from '@/components/editor/SupportButton';
 import { TopNavbar } from '@/components/editor/TopNavbar';
-import { EditorProvider } from '@/lib/editor-context';
+import { EditorProvider, useEditor } from '@/lib/editor-context';
 import { InfluencerBuilderProvider } from '@/lib/influencer-builder-context';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
@@ -31,6 +31,33 @@ function RegisterModalTrigger() {
   return null;
 }
 
+function PromptFromQueryTrigger() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { requestPanelWithPrompt } = useEditor();
+  const triggered = useRef(false);
+
+  useEffect(() => {
+    if (triggered.current) return;
+    const prompt = searchParams.get('prompt');
+    if (!prompt) return;
+    const panel = searchParams.get('panel') === 'generate-video'
+      ? 'generate-video'
+      : 'generate-image';
+
+    triggered.current = true;
+    requestPanelWithPrompt({ panelType: panel, prompt });
+
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete('prompt');
+    next.delete('panel');
+    const qs = next.toString();
+    router.replace(qs ? `/workspace?${qs}` : '/workspace');
+  }, [searchParams, requestPanelWithPrompt, router]);
+
+  return null;
+}
+
 export default function Home() {
   return (
     <EditorProvider>
@@ -48,6 +75,7 @@ export default function Home() {
         <OnboardingTour />
         <SupportButton />
         <Suspense><RegisterModalTrigger /></Suspense>
+        <Suspense><PromptFromQueryTrigger /></Suspense>
       </InfluencerBuilderProvider>
     </EditorProvider>
   );

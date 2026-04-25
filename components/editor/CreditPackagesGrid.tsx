@@ -19,6 +19,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { CreditPackage } from '@/lib/api';
 import { formatCurrency, getBoostMetaKey, getPackageBadge } from '@/lib/plans';
+import { PixCheckoutModal } from './PixCheckoutModal';
 
 interface CreditPackagesGridProps {
   packages: CreditPackage[];
@@ -35,6 +36,8 @@ export function CreditPackagesGrid({ packages, currency = 'BRL', compact }: Cred
   const locale = useLocale();
   const { accessToken } = useAuth();
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
+  const [pixPkg, setPixPkg] = useState<CreditPackage | null>(null);
+  const isBRL = currency === 'BRL';
 
   const activePackages = packages
     .filter((p) => p.isActive)
@@ -268,6 +271,19 @@ export function CreditPackagesGrid({ packages, currency = 'BRL', compact }: Cred
                 )}
               </button>
 
+              {/* PIX option (BRL only) */}
+              {isBRL && (
+                <button
+                  type="button"
+                  onClick={() => setPixPkg(pkg)}
+                  disabled={!!purchasingId}
+                  className={`mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg text-[#f3f0ed]/55 transition-colors hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40 ${compact ? 'h-8 text-[11px]' : 'h-9 text-[12px]'}`}
+                >
+                  <Zap className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
+                  Pagar com PIX
+                </button>
+              )}
+
               {/* Trust micro-copy */}
               {!compact && (
                 <p className="mt-2.5 flex items-center justify-center gap-1.5 text-[10px] text-[#f3f0ed]/20">
@@ -283,6 +299,10 @@ export function CreditPackagesGrid({ packages, currency = 'BRL', compact }: Cred
           </div>
         );
       })}
+
+      {pixPkg && (
+        <PixCheckoutModal pkg={pixPkg} onClose={() => setPixPkg(null)} />
+      )}
     </div>
   );
 }

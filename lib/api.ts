@@ -121,6 +121,18 @@ export interface CreditPackage {
   createdAt: string;
 }
 
+export type PixStatus = 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED' | 'REFUNDED';
+
+export interface PixCharge {
+  abacatepayId: string;
+  amountCents: number;
+  status: PixStatus;
+  brCode: string;
+  brCodeBase64: string;
+  expiresAt: string;
+  devMode: boolean;
+}
+
 export interface Plan {
   id: string;
   slug: string;
@@ -219,6 +231,51 @@ export interface ApiPromptSection {
       aiModel: string | null;
     }[];
   }[];
+}
+
+// ─── Prompt Posts (Instagram-style shareable pages) ──────────────────────────
+
+export interface PromptPostSlide {
+  id: string;
+  order: number;
+  prompt: string;
+  imageUrl: string;
+  thumbnailUrl: string | null;
+  aspectRatio: string | null;
+  generationType: string;
+  aiModel: string | null;
+  copyCount: number;
+  useCount: number;
+}
+
+export interface PromptPost {
+  id: string;
+  slug: string;
+  caption: string | null;
+  isPublished: boolean;
+  viewCount: number;
+  copyCount: number;
+  useCount: number;
+  createdById: string | null;
+  createdAt: string;
+  updatedAt: string;
+  slides: PromptPostSlide[];
+}
+
+export interface PromptPostSlideInput {
+  prompt: string;
+  imageUrl: string;
+  thumbnailUrl?: string;
+  aspectRatio?: string;
+  generationType?: string;
+  aiModel?: string;
+}
+
+export interface PromptPostInput {
+  slides: PromptPostSlideInput[];
+  slug?: string;
+  caption?: string;
+  isPublished?: boolean;
 }
 
 // ─── Generations ──────────────────────────────────────────────────────────────
@@ -934,6 +991,21 @@ export const api = {
     },
   },
 
+  payments: {
+    createBoostPix(accessToken: string, packageId: string, taxId?: string) {
+      return authRequest<PixCharge>('/api/v1/payments/pix/boost', accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ packageId, ...(taxId ? { taxId } : {}) }),
+      });
+    },
+    getPixStatus(accessToken: string, abacatepayId: string) {
+      return authRequest<{ status: PixStatus; paid: boolean }>(
+        `/api/v1/payments/pix/${encodeURIComponent(abacatepayId)}/status`,
+        accessToken,
+      );
+    },
+  },
+
   users: {
     me(accessToken: string) {
       return authRequest<UserProfile>('/api/v1/users/me', accessToken);
@@ -1431,6 +1503,51 @@ export const api = {
           method: 'DELETE',
         });
       },
+    },
+    promptPosts: {
+      list(accessToken: string, params: { page?: number; limit?: number; published?: boolean } = {}) {
+        const qs = new URLSearchParams();
+        if (params.page) qs.set('page', String(params.page));
+        if (params.limit) qs.set('limit', String(params.limit));
+        if (params.published !== undefined) qs.set('published', String(params.published));
+        const suffix = qs.toString() ? `?${qs.toString()}` : '';
+        return authRequest<{
+          data: PromptPost[];
+          meta: { page: number; limit: number; total: number; totalPages: number };
+        }>(`/api/v1/admin/prompt-posts${suffix}`, accessToken);
+      },
+      get(accessToken: string, id: string) {
+        return authRequest<PromptPost>(`/api/v1/admin/prompt-posts/${id}`, accessToken);
+      },
+      create(accessToken: string, data: PromptPostInput) {
+        return authRequest<PromptPost>('/api/v1/admin/prompt-posts', accessToken, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      update(accessToken: string, id: string, data: Partial<PromptPostInput>) {
+        return authRequest<PromptPost>(`/api/v1/admin/prompt-posts/${id}`, accessToken, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        });
+      },
+      remove(accessToken: string, id: string) {
+        return authRequest<{ success: boolean }>(`/api/v1/admin/prompt-posts/${id}`, accessToken, {
+          method: 'DELETE',
+        });
+      },
+    },
+  },
+
+  promptPosts: {
+    getBySlug(slug: string) {
+      return request<PromptPost>(`/api/v1/prompt-posts/${slug}`);
+    },
+    track(slug: string, event: 'view' | 'copy' | 'use', slideIndex?: number) {
+      return request<void>(`/api/v1/prompt-posts/${slug}/track`, {
+        method: 'POST',
+        body: JSON.stringify({ event, slideIndex }),
+      });
     },
   },
 
