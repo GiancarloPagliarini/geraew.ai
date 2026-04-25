@@ -1696,9 +1696,9 @@ function StatCard({
         : 'border-[#f3f0ed]/7 bg-[#f3f0ed]/3'
         } ${onClick ? 'cursor-pointer hover:border-[#a2dd00]/20 hover:bg-[#f3f0ed]/5' : ''}`}
     >
-      <div className="flex items-center gap-1.5">
-        <Icon className="h-4 w-4 text-[#a2dd00]" />
-        <span className="text-[9px] font-bold tracking-[0.15em] text-[#f3f0ed]/30 uppercase">
+      <div className="flex items-start gap-1.5 min-w-0">
+        <Icon className="h-4 w-4 shrink-0 text-[#a2dd00]" />
+        <span className="min-w-0 break-words text-[9px] font-bold leading-[1.15] tracking-wider text-[#f3f0ed]/30 uppercase">
           {label}
         </span>
       </div>

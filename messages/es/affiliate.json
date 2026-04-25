@@ -1,0 +1,80 @@
+{
+  "affiliate": {
+    "panelTitle": "Panel de Afiliado",
+    "subtitle": "{name} · Comisión: {percent}%",
+    "back": "Volver",
+    "codeLabel": "Código:",
+    "copy": "Copiar",
+    "copied": "¡Copiado!",
+    "copyLink": "Copiar Enlace",
+    "refresh": "Actualizar",
+    "stats": {
+      "referredUsers": "Usuarios Referidos",
+      "available": "Por Cobrar",
+      "maturing": "En Maduración",
+      "paid": "Pagado"
+    },
+    "maturationInfo": "Las comisiones permanecen en maduración por <b>{days} días</b> después del pago. Tras ese período, quedan disponibles para retirar.",
+    "pix": {
+      "label": "Clave Pix ({type})",
+      "edit": "Editar",
+      "editTitle": "Editar clave Pix",
+      "registerTitle": "Registrar clave Pix",
+      "missingTitle": "Registra tu clave Pix",
+      "missingDesc": "Sin una clave registrada no es posible recibir las comisiones.",
+      "register": "Registrar",
+      "save": "Guardar",
+      "saving": "Guardando...",
+      "cancel": "Cancelar",
+      "typeLabel": "Tipo de clave",
+      "keyLabel": "Clave Pix",
+      "types": {
+        "CPF": "CPF",
+        "CNPJ": "CNPJ",
+        "EMAIL": "Correo",
+        "PHONE": "Teléfono",
+        "RANDOM": "Aleatoria"
+      },
+      "placeholders": {
+        "CPF": "000.000.000-00",
+        "CNPJ": "00.000.000/0000-00",
+        "EMAIL": "tu@correo.com",
+        "PHONE": "+55 11 9xxxx-xxxx",
+        "RANDOM": "xxxxxxxx-xxxx-..."
+      }
+    },
+    "earnings": {
+      "title": "Comisiones ({count})",
+      "empty": "Aún no hay comisiones registradas",
+      "headers": {
+        "user": "Usuario",
+        "type": "Tipo",
+        "netAmount": "Valor Neto",
+        "commission": "Comisión",
+        "status": "Estado",
+        "date": "Fecha"
+      },
+      "subscription": "Suscripción",
+      "credits": "Créditos",
+      "statusPaid": "Pagado",
+      "statusMaturing": "En maduración",
+      "statusAvailable": "Disponible",
+      "availableOn": "Disponible el {date}"
+    },
+    "signup": {
+      "title": "Conviértete en afiliado de Geraew",
+      "description": "Gana 20% de comisión recurrente sobre cada pago de tus referidos. Pago vía Pix en hasta 30 días.",
+      "cta": "Convertirme en afiliado",
+      "backToWorkspace": "Volver al Workspace"
+    },
+    "toasts": {
+      "createdTitle": "¡Enlace de afiliado creado!",
+      "createdDesc": "Tu código ya está disponible en el panel.",
+      "createFailedTitle": "No fue posible crear",
+      "createFailedDesc": "Intenta de nuevo en unos instantes.",
+      "pixUpdated": "¡Clave Pix actualizada!",
+      "pixFailedTitle": "No fue posible actualizar",
+      "pixFailedDesc": "Intenta de nuevo en unos instantes."
+    }
+  }
+}

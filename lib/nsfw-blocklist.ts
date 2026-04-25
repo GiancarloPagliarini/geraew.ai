@@ -89,6 +89,77 @@ const RAW_BLOCKLIST: readonly string[] = [
   'no bikini', 'no bra', 'no panties', 'no underwear',
   'without a bikini', 'without bra', 'without panties', 'without underwear',
   'bikini off', 'bra off', 'panties off',
+
+  // Seios / peitos — palavras-chave (PT/EN)
+  'breast', 'breasts',
+  'boob', 'boobs',
+  'tit', 'tits', 'titty', 'titties',
+  'seio', 'seios',
+  'peitos', // "peito" singular fora — false-positive em "peito de frango", "abrir o peito"
+  'tetas', 'teta',
+  'mama', 'mamas',
+
+  // Exposição corporal — English (frases que driblam blocklist nominal)
+  'bare breasts', 'bare chest', 'bare body', 'bare skin',
+  'exposed breasts', 'exposed chest', 'exposed body',
+  'breasts exposed', 'chest exposed', 'body exposed',
+  'upper body exposed', 'lower body exposed',
+  'showing breasts', 'showing her breasts', 'showing his chest',
+  'displaying breasts', 'displaying her breasts',
+  'exposing breasts', 'exposing her breasts', 'exposing body',
+  'nude body', 'nude pose', 'nude photo', 'nude photoshoot',
+  'fully nude', 'completely nude', 'fully naked', 'completely naked',
+  'nudity', 'nudism', 'naturist',
+  'wearing nothing', 'in the buff', 'birthday suit', 'au naturel',
+
+  // Exposição corporal — PT
+  'seios expostos', 'peitos expostos', 'corpo exposto',
+  'mostrando os seios', 'mostrando os peitos', 'mostrando o corpo',
+  'mostrando a bunda', 'mostrando o bumbum',
+  'expondo os seios', 'expondo os peitos', 'expondo o corpo',
+  'exibindo os seios', 'exibindo os peitos',
+  'corpo nu', 'corpo nua',
+  'totalmente nu', 'totalmente nua',
+  'completamente nu', 'completamente nua',
+  'nudez', 'nudismo',
+  'vestindo nada', 'vestindo apenas a pele',
+
+  // Espanhol — nudez direta
+  'desnudo', 'desnuda', 'desnudos', 'desnudas',
+  'desnudez', 'desnudismo', 'al desnudo',
+  'en cueros', 'en pelotas',
+  'sin ropa',
+
+  // Espanhol — partes do corpo / atos
+  'senos', 'pechos',
+  'pezón', 'pezones',
+  'culo', 'coño', 'polla', 'verga',
+  'sexo', 'sexual',
+  'follar', 'follando', 'cojer', 'cojiendo',
+  'pornografía', 'porno',
+  'erótico', 'erótica',
+  'fetiche',
+  'orgasmo',
+  'masturbación', 'masturbarse',
+  'mamada',
+
+  // Espanhol — comandos de remoção de roupa
+  'quítate la ropa', 'quitate la ropa', 'quitarse la ropa',
+  'quítate el bikini', 'quitate el bikini',
+  'quítate el sostén', 'quitate el sosten', 'quítate las bragas', 'quitate las bragas',
+  'quítate los calzones', 'quitate los calzones',
+  'sin sostén', 'sin sosten', 'sin bragas', 'sin calzones', 'sin bikini',
+
+  // Espanhol — exposição corporal
+  'senos expuestos', 'pechos expuestos', 'cuerpo expuesto',
+  'mostrando los senos', 'mostrando los pechos', 'mostrando el cuerpo',
+  'enseñando los senos', 'enseñando los pechos',
+  'enseñando las tetas',
+
+  // Adjetivos sensuais explícitos (cuidado com falso-positivo: "seductive" só em frase)
+  'seductive pose', 'provocative pose', 'suggestive pose', 'lascivious pose',
+  'pose sensual provocante', 'pose provocante',
+  'pose seductora', 'pose provocativa',
 ];
 
 function normalize(s: string): string {

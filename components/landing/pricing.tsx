@@ -299,7 +299,7 @@ function PlanCard({ plan, i }: { plan: Plan; i: number; total: number }) {
 export function Pricing() {
   const t = useTranslations("pricing");
   const locale = useLocale();
-  const currency = locale === 'en' ? 'USD' : 'BRL';
+  const currency = locale === 'pt-BR' ? 'BRL' : 'USD';
   const { ref, isVisible } = useScrollReveal();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);

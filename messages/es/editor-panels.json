@@ -1,0 +1,275 @@
+{
+  "editorPanels": {
+    "common": {
+      "download": "Descargar",
+      "downloadImage": "Descargar imagen",
+      "downloadVideo": "Descargar video",
+      "generateAnother": "Generar otro",
+      "generate": "GENERAR",
+      "generating": "GENERANDO...",
+      "generateAgain": "GENERAR DE NUEVO",
+      "expand": "Expandir",
+      "discard": "Descartar",
+      "open": "Abrir",
+      "uploadFromDevice": "Subir desde el dispositivo",
+      "pickFromGallery": "Elegir de la galería",
+      "imageAddedAsReference": "¡Imagen agregada como referencia!",
+      "hideOptions": "Ocultar opciones",
+      "showOptions": "Mostrar opciones",
+      "estimatedCost": "Costo estimado",
+      "cost": "Costo",
+      "credits": "créditos",
+      "optional": "opcional",
+      "free": "Gratis",
+      "freeGeneration": "¡Generación gratuita!",
+      "freeGenerationRemaining": "({count} restante{plural})",
+      "errors": {
+        "generateImage": "Error al generar imagen.",
+        "generateVideo": "Error al generar video.",
+        "startGeneration": "Error al iniciar la generación.",
+        "checkStatus": "Error al verificar el estado de la generación.",
+        "imageMax10MB": "La imagen debe tener máximo 10MB.",
+        "invalidImageFormat": "Formato de imagen inválido.",
+        "videoMax10MB": "El video debe tener máximo 10MB.",
+        "invalidVideoFormat": "Formato de video inválido."
+      }
+    },
+    "image": {
+      "header": "GENERAR IMAGEN",
+      "docTitleGenerating": "Geraew AI - Generando imagen",
+      "promptPlaceholder": "Describe lo que deseas generar...",
+      "labels": {
+        "model": "MODELO",
+        "proportion": "PROPORCIÓN",
+        "quality": "CALIDAD",
+        "references": "REFERENCIAS (OPCIONAL)"
+      },
+      "proportionOptions": {
+        "landscape": "16:9 Horizontal",
+        "portrait": "9:16 Vertical",
+        "square": "1:1 Cuadrado",
+        "43": "4:3"
+      },
+      "actions": {
+        "addToFolder": "Agregar a carpeta",
+        "addedToFolder": "Agregada a la carpeta",
+        "errorAddToFolder": "Error al agregar a la carpeta",
+        "tryAgain": "Intenta de nuevo.",
+        "folderCreatedAndAdded": "Carpeta creada e imagen agregada",
+        "errorCreateFolder": "Error al crear carpeta"
+      },
+      "folderDialog": {
+        "title": "Agregar a carpeta",
+        "description": "Elige una carpeta existente o crea una nueva.",
+        "newFolderPlaceholder": "Nueva carpeta..."
+      },
+      "loadingMessages": [
+        "CONSULTANDO LOS PÍXELES...",
+        "ENSEÑANDO A LA IA A PINTAR...",
+        "MEZCLANDO COLORES DIGITALES...",
+        "PIDIENDO INSPIRACIÓN AL UNIVERSO...",
+        "CALENTANDO LAS NEURONAS...",
+        "INVOCANDO AL ARTISTA INTERIOR...",
+        "CALCULANDO CREATIVIDAD...",
+        "SOÑANDO EN ALTA RESOLUCIÓN...",
+        "ENTRENANDO EL OJO ARTÍSTICO...",
+        "APLICANDO CAPAS DE GENIALIDAD...",
+        "BUSCANDO REFERENCIAS EN EL MUSEO...",
+        "CONVERSANDO CON LOS PÍXELES...",
+        "CONVENCIENDO A LA IA DE ESMERARSE...",
+        "PROCESANDO BUENAS VIBES...",
+        "AGREGANDO UN TOQUE DE MAGIA..."
+      ],
+      "queueWaiting": "ESPERANDO LUGAR EN LA FILA...",
+      "concurrentLimit": "Límite de generaciones simultáneas alcanzado. Intenta de nuevo en unos instantes.",
+      "modelMaintenance": "En mantenimiento"
+    },
+    "video": {
+      "header": "GENERAR VIDEO",
+      "docTitleGenerating": "Geraew AI - Generando Video",
+      "promptPlaceholder": "Describe la escena que imaginas, con detalles.",
+      "modes": {
+        "text": "Texto → Video",
+        "image": "Imagen → Video"
+      },
+      "labels": {
+        "firstFrame": "PRIMER FRAME",
+        "lastFrame": "ÚLTIMO FRAME",
+        "lastFrameOptional": "(opcional)",
+        "model": "MODELO",
+        "resolution": "RESOLUCIÓN",
+        "duration": "DURACIÓN",
+        "proportion": "PROPORCIÓN",
+        "quantity": "CANTIDAD",
+        "referenceImages": "IMÁGENES DE REFERENCIA (opcional)",
+        "audio": "Audio",
+        "audioAlwaysOn": "(siempre activo)"
+      },
+      "buttons": {
+        "upload": "SUBIR"
+      },
+      "only8s": "Solo 8s disponible con referencias",
+      "freeGeneration": "¡Generación gratuita!",
+      "freeGenerationRemaining": "({count} restante{plural})",
+      "free": "Gratis",
+      "modelMaintenance": "En mantenimiento",
+      "partialResultWarning": "{actual} de {requested} videos fueron generados. Los créditos excedentes fueron reembolsados.",
+      "partialResultRefund": "{actual} de {requested} videos fueron generados. {credits} crédito{plural} reembolsado{plural}.",
+      "loadingMessages": [
+        "RENDERIZANDO FRAMES...",
+        "PROCESANDO ESCENAS...",
+        "CALCULANDO MOVIMIENTOS...",
+        "SINCRONIZANDO AUDIO...",
+        "APLICANDO FÍSICA A LOS PÍXELES...",
+        "SOÑANDO EN 60FPS...",
+        "PIDIENDO INSPIRACIÓN AL UNIVERSO...",
+        "ANIMANDO CADA DETALLE...",
+        "CONVIRTIENDO TEXTO EN MOVIMIENTO...",
+        "CALENTANDO LAS NEURONAS VISUALES..."
+      ]
+    },
+    "motionControl": {
+      "header": "COPIAR MOVIMIENTOS",
+      "docTitleGenerating": "Geraew AI - Copiando movimientos",
+      "labels": {
+        "referenceVideo": "VIDEO DE REFERENCIA",
+        "replacementImage": "IMAGEN DE REEMPLAZO",
+        "resolution": "RESOLUCIÓN"
+      },
+      "uploads": {
+        "video": "Haz clic o arrastra un video (max 10MB)",
+        "image": "Haz clic o arrastra una imagen (max 10MB)"
+      },
+      "toasts": {
+        "videoAdded": "¡Video agregado!",
+        "imageAdded": "¡Imagen agregada!"
+      },
+      "creditsPerSecond": "{duration}s × {rate} créditos/s",
+      "footnote": "Copia los movimientos del video a la imagen proporcionada",
+      "loadingMessages": [
+        "ANALIZANDO MOVIMIENTO...",
+        "REEMPLAZANDO SUJETO...",
+        "RENDERIZANDO FRAMES...",
+        "APLICANDO MOTION CONTROL...",
+        "SINCRONIZANDO ANIMACIÓN...",
+        "PROCESANDO VIDEO...",
+        "CALENTANDO LAS NEURONAS...",
+        "CASI LISTO..."
+      ]
+    },
+    "virtualTryOn": {
+      "header": "PROBADOR VIRTUAL",
+      "docTitleGenerating": "Geraew AI - Probador Virtual",
+      "labels": {
+        "influencerPhoto": "FOTO DE LA INFLUENCER",
+        "clothingPhoto": "FOTO DE LA ROPA",
+        "additionalInstructions": "INSTRUCCIONES ADICIONALES",
+        "optional": "(opcional)",
+        "resolution": "RESOLUCIÓN",
+        "proportion": "PROPORCIÓN"
+      },
+      "uploads": {
+        "influencer": "Haz clic o arrastra la foto de la influencer",
+        "clothing": "Haz clic o arrastra la foto de la ropa"
+      },
+      "instructionsPlaceholder": "Ej: fondo blanco, iluminación natural, foto de cuerpo entero...",
+      "toasts": {
+        "influencerAdded": "¡Foto de la influencer agregada!",
+        "clothingAdded": "¡Foto de la ropa agregada!",
+        "influencerLabel": "Foto de la influencer",
+        "clothingLabel": "Foto de la ropa"
+      },
+      "button": "PROBAR ROPA",
+      "footnote": "Viste la ropa en tu influencer de IA automáticamente",
+      "loadingMessages": [
+        "ANALIZANDO INFLUENCER...",
+        "IDENTIFICANDO ROPA...",
+        "AJUSTANDO CAÍDA...",
+        "APLICANDO TEXTURA...",
+        "COMBINANDO ILUMINACIÓN...",
+        "RENDERIZANDO RESULTADO...",
+        "CALENTANDO LAS NEURONAS...",
+        "CASI LISTO..."
+      ]
+    },
+    "faceSwap": {
+      "header": "FACE SWAP",
+      "docTitleGenerating": "Geraew AI - Face Swap",
+      "labels": {
+        "facePhoto": "FOTO DEL ROSTRO (IMAGEN 1)",
+        "scenePhoto": "FOTO DE LA ESCENA (IMAGEN 2)",
+        "resolution": "RESOLUCIÓN"
+      },
+      "uploads": {
+        "face": "Haz clic o arrastra la foto del rostro",
+        "scene": "Haz clic o arrastra la foto de la escena"
+      },
+      "toasts": {
+        "faceAdded": "¡Foto del rostro agregada!",
+        "sceneAdded": "¡Foto de la escena agregada!",
+        "faceLabel": "Foto del rostro",
+        "sceneLabel": "Foto de la escena"
+      },
+      "actions": {
+        "addToFolder": "Agregar a carpeta",
+        "addedToFolder": "Agregada a la carpeta",
+        "errorAddToFolder": "Error al agregar a la carpeta",
+        "tryAgain": "Intenta de nuevo.",
+        "folderCreatedAndAdded": "Carpeta creada e imagen agregada",
+        "errorCreateFolder": "Error al crear carpeta"
+      },
+      "folderDialog": {
+        "title": "Agregar a carpeta",
+        "description": "Elige una carpeta existente o crea una nueva.",
+        "newFolderPlaceholder": "Nueva carpeta..."
+      },
+      "button": "CAMBIAR ROSTRO",
+      "footnote": "Reemplaza el rostro y cuerpo en la escena con la persona de la primera imagen",
+      "loadingMessages": [
+        "ANALIZANDO ROSTRO...",
+        "MAPEANDO EXPRESIONES...",
+        "AJUSTANDO TONO DE PIEL...",
+        "COMBINANDO ILUMINACIÓN...",
+        "INTEGRANDO EN LA ESCENA...",
+        "REFINANDO DETALLES...",
+        "RENDERIZANDO RESULTADO...",
+        "CASI LISTO..."
+      ]
+    },
+    "generic": {
+      "header": "Imagen",
+      "emptyState": "Tu generación aparecerá aquí",
+      "promptPlaceholder": "Escribe tu prompt aquí...",
+      "resultLabel": "RESULTADO",
+      "clear": "LIMPIAR",
+      "addReference": "Agregar imagen de referencia",
+      "simulatedResult": "Este es un resultado simulado para el prompt proporcionado. En producción, este panel enviará el prompt a la API configurada y retornará el resultado real."
+    },
+    "upscale": {
+      "header": "UPSCALE",
+      "imageLabel": "IMAGEN PARA UPSCALE",
+      "attachImage": "Adjuntar imagen",
+      "imageAlt": "Imagen",
+      "estimatedCost": "Costo estimado",
+      "credits": "{count} créditos",
+      "generate": "Hacer upscale",
+      "download": "Descargar",
+      "downloadTooltip": "Descargar imagen",
+      "doAnother": "Hacer otro upscale",
+      "description": "La imagen será mejorada a 2K manteniendo todos los detalles originales.",
+      "documentTitle": "Upscale en curso... — Geraew AI",
+      "toastImageTooLarge": "Imagen demasiado grande (máx. 10MB).",
+      "toastInvalidFormat": "Formato de imagen inválido.",
+      "toastImageAdded": "Imagen agregada.",
+      "errorUpscaleFailed": "Falló el upscale.",
+      "errorCheckStatus": "Error al verificar el estado.",
+      "errorStartFailed": "Error al iniciar el upscale.",
+      "loadingMessages": [
+        "Aumentando resolución...",
+        "Reduciendo artefactos de compresión...",
+        "Refinando detalles finos...",
+        "Mejorando nitidez..."
+      ]
+    }
+  }
+}

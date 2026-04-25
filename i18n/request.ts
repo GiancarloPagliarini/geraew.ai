@@ -7,6 +7,7 @@ function parseAcceptLanguage(header: string | null): Locale | null {
   const preferred = header.split(',')[0]?.trim().toLowerCase();
   if (!preferred) return null;
   if (preferred.startsWith('pt')) return 'pt-BR';
+  if (preferred.startsWith('es')) return 'es';
   if (preferred.startsWith('en')) return 'en';
   return null;
 }

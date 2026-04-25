@@ -46,7 +46,7 @@ function CreditosPageContent() {
   const t = useTranslations('account.credits');
   const tCommon = useTranslations('account.common');
   const locale = useLocale();
-  const dateLocale = locale === 'pt-BR' ? 'pt-BR' : 'en-US';
+  const dateLocale = locale === 'pt-BR' ? 'pt-BR' : locale === 'es' ? 'es' : 'en-US';
   const numFmt = new Intl.NumberFormat(dateLocale);
 
   async function executeDowngrade(planSlug: string) {
@@ -111,7 +111,7 @@ function CreditosPageContent() {
     enabled: !!accessToken,
   });
 
-  const uiCurrency = locale === 'en' ? 'USD' : 'BRL';
+  const uiCurrency = locale === 'pt-BR' ? 'BRL' : 'USD';
 
   const { data: plans, isLoading: plansLoading } = useQuery({
     queryKey: ['plans', uiCurrency],

@@ -15,7 +15,8 @@ import { useLoginModal } from '@/lib/login-modal-context';
 import { LocaleSwitcher } from '@/components/locale-switcher';
 
 function formatCents(cents: number, locale: string) {
-  return (cents / 100).toLocaleString(locale === 'pt-BR' ? 'pt-BR' : 'en-US', {
+  const intlLocale = locale === 'pt-BR' ? 'pt-BR' : locale === 'es' ? 'es' : 'en-US';
+  return (cents / 100).toLocaleString(intlLocale, {
     style: 'currency',
     currency: 'BRL',
   });

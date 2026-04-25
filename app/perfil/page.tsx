@@ -106,7 +106,7 @@ export default function PerfilPage() {
 
   if (!profile) return null;
 
-  const dateLocale = locale === 'pt-BR' ? 'pt-BR' : 'en-US';
+  const dateLocale = locale === 'pt-BR' ? 'pt-BR' : locale === 'es' ? 'es' : 'en-US';
   const createdAt = new Date(profile.createdAt).toLocaleDateString(dateLocale, {
     day: '2-digit',
     month: 'long',

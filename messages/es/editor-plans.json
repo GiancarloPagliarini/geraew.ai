@@ -1,0 +1,178 @@
+{
+  "editorPlans": {
+    "free": "Gratis",
+    "perMonth": "/mes",
+    "credits": "créditos",
+    "creditsPerMonth": "créditos/mes",
+    "creditsCount": "{count, number} créditos",
+    "units": {
+      "image": "{count, plural, one {# Imagen} other {# Imágenes}}",
+      "generation": "{count, plural, one {# Generación} other {# Generaciones}}",
+      "video": "{count, plural, one {# Video} other {# Videos}}",
+      "videoFree": "{count, plural, one {# Video Gratis} other {# Videos Gratis}}",
+      "blocked": "Bloqueado"
+    },
+    "badges": {
+      "yourPlan": "Tu Plan",
+      "mostPopular": "Más Popular",
+      "bestValue": "Mejor Valor",
+      "discountOff": "{pct}% OFF",
+      "upgrade": "UPGRADE"
+    },
+    "actions": {
+      "upgrade": "Hacer upgrade",
+      "downgrade": "Hacer downgrade",
+      "create": "Comenzar ahora",
+      "current": "Plan activo",
+      "buyNow": "Comprar ahora"
+    },
+    "whatYouCanCreate": "Lo que puedes crear",
+    "features": {
+      "credits": "{count, number} créditos",
+      "emailSupport": "Soporte por correo",
+      "prioritySupport": "Soporte prioritario",
+      "queuePriority": "Prioridad en la fila de generaciones",
+      "fasterGenerations": "Mayor velocidad en las generaciones",
+      "gallery7": "7 días de galería",
+      "gallery90": "90 días de galería",
+      "gallery180": "180 días de galería",
+      "gallery365": "365 días de galería",
+      "tryNoCommit": "Prueba sin compromiso",
+      "freeVideoGenerations": "Recibe 2 generaciones de video gratuitas"
+    },
+    "subtitles": {
+      "ultra-basic": "Principiante",
+      "starter": "Explorador",
+      "basic": "Esencial",
+      "creator": "Creador",
+      "pro": "Productor",
+      "advanced": "Avanzado",
+      "studio": "Profesional"
+    },
+    "socialProof": {
+      "free": "¡Prueba nuestra capacidad!",
+      "ultra-basic": "Da el primer paso",
+      "starter": "Ideal para proyectos personales",
+      "basic": "Para quien está creciendo",
+      "creator": "Elección del 68% de los creadores",
+      "pro": "Para quien se lo toma en serio",
+      "advanced": "Poder y control total",
+      "studio": "Para equipos y agencias"
+    },
+    "boost": {
+      "mini": {
+        "label": "Mini",
+        "description": "Recarga rápida para seguir generando"
+      },
+      "plus": {
+        "label": "Plus",
+        "description": "Un empujón extra para el día a día"
+      },
+      "pro-pack": {
+        "label": "Pro Pack",
+        "description": "Créditos extras para proyectos más grandes"
+      },
+      "mega": {
+        "label": "Mega",
+        "description": "Alto volumen para producción intensa"
+      },
+      "ultra": {
+        "label": "Ultra",
+        "description": "¡Casi un plan!"
+      }
+    },
+    "packages": {
+      "saveByCredit": "Ahorra {pct}% por crédito",
+      "perks": {
+        "instant": "Los créditos entran al instante",
+        "neverExpire": "Nunca expiran",
+        "stackWithPlan": "Se acumulan con los del plan"
+      },
+      "trust": "Pago único · Sin suscripción"
+    },
+    "packageSections": {
+      "quick": "Recargas rápidas",
+      "volume": "Alto volumen"
+    },
+    "planSections": {
+      "entry": "Planes de entrada",
+      "creator": "Planes de creadores",
+      "monetizer": "Planes para monetizadores"
+    },
+    "plansModal": {
+      "limitedOffer": "Oferta por tiempo limitado",
+      "titlePlans": "Elige tu plan y comienza a crear",
+      "titleCredits": "Paquetes de créditos adicionales",
+      "plansSubtitle": "Más de {count} creadores ya están generando contenido.",
+      "creatorsCount": "2.400 creadores",
+      "creditsSubtitle": "Compra única · Sin suscripción · Los créditos nunca expiran",
+      "cancelAnytime": "Cancela cuando quieras",
+      "stackWithPlan": "Se acumulan con los créditos del plan",
+      "instant": "Entran al instante",
+      "tabPlans": "Planes",
+      "tabCredits": "Paquetes de Créditos",
+      "noCancelFee": "Sin tarifa de cancelación",
+      "creditsRenew": "Los créditos se renuevan mensualmente"
+    },
+    "manage": {
+      "title": "Gestionar suscripción",
+      "subtitle": "Detalles de tu plan y pago",
+      "plan": "Plan",
+      "noPlan": "Sin plan",
+      "active": "Activo",
+      "canceling": "Cancelando",
+      "scheduledChange": "Cambia a <name>{planName}</name> ({price}/mes) en la próxima renovación",
+      "undo": "Deshacer",
+      "undoing": "Cancelando...",
+      "remainingCredits": "Créditos restantes",
+      "planCost": "Costo del plan",
+      "nextPayment": "Próximo pago",
+      "canceled": "Cancelado",
+      "onDate": "el {date}",
+      "accessUntil": "acceso hasta el {date}",
+      "amountOff": "- {amount}",
+      "discountMonths": " ({m}m)",
+      "manageBillingPortal": "Gestionar tarjetas y facturas",
+      "changePlan": "Cambiar plan",
+      "willCancelOn": "La suscripción será cancelada el {date}.",
+      "reactivate": "Reactivar suscripción",
+      "reactivating": "Reactivando...",
+      "needToCancel": "¿Necesitas cancelar? Haz clic aquí",
+      "freeUserMessage": "Estás en el plan gratuito. Haz upgrade para tener más créditos y funcionalidades.",
+      "perMonthShort": "/mes",
+      "toasts": {
+        "downgradeScheduled": "Downgrade programado",
+        "downgradeScheduledDesc": "Tu plan será modificado en la próxima renovación.",
+        "downgradeError": "Error al hacer downgrade",
+        "tryAgain": "Intenta de nuevo.",
+        "upgradeError": "Error al hacer upgrade",
+        "portalError": "Error al abrir el portal",
+        "subscriptionCanceled": "Suscripción cancelada",
+        "subscriptionCanceledDesc": "Tendrás acceso hasta el final del período actual.",
+        "cancelError": "Error al cancelar",
+        "offerDiscountTitle": "¡Descuento aplicado!",
+        "offerBonusTitle": "¡Créditos bono agregados!",
+        "offerPauseTitle": "¡Suscripción pausada!",
+        "offerPauseDesc": "Sin cargos por 30 días.",
+        "offerAcceptedTitle": "¡Oferta aceptada!",
+        "offerApplyError": "Error al aplicar la oferta",
+        "downgradeUndone": "Downgrade cancelado",
+        "downgradeUndoneDesc": "Tu plan actual será mantenido.",
+        "downgradeUndoError": "Error al cancelar el downgrade",
+        "reactivated": "Suscripción reactivada",
+        "reactivatedDesc": "Tu suscripción continuará con normalidad.",
+        "reactivateError": "Error al reactivar",
+        "changePlanError": "Error al cambiar de plan"
+      },
+      "retentionLostBenefits": {
+        "allCredits": "Todos los créditos del plan {plan}",
+        "speedPriority": "Velocidad y prioridad en las generaciones",
+        "extendedGallery": "Acceso a la galería extendida",
+        "prioritySupport": "Soporte prioritario",
+        "noWatermark": "Generaciones sin marca de agua",
+        "currentPlanBenefits": "Créditos y funcionalidades del plan actual",
+        "creditsLess": "{count, number} créditos mensuales menos"
+      }
+    }
+  }
+}

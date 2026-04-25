@@ -27,7 +27,7 @@ interface PlansModalProps {
 export function PlansModal({ onClose }: PlansModalProps) {
   const t = useTranslations('editorPlans');
   const locale = useLocale();
-  const uiCurrency = locale === 'en' ? 'USD' : 'BRL';
+  const uiCurrency = locale === 'pt-BR' ? 'BRL' : 'USD';
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'plans' | 'credits'>('plans');
