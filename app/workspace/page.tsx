@@ -16,6 +16,7 @@ import { useLoginModal } from '@/lib/login-modal-context';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { FeedbackRewardModal } from '@/components/FeedbackRewardModal';
+import { AnnouncementsManager } from '@/components/editor/AnnouncementsManager';
 
 function RegisterModalTrigger() {
   const searchParams = useSearchParams();
@@ -116,6 +117,7 @@ export default function Home() {
         <Suspense><RegisterModalTrigger /></Suspense>
         <Suspense><PromptFromQueryTrigger /></Suspense>
         <FeedbackRewardTrigger />
+        <AnnouncementsManager />
       </InfluencerBuilderProvider>
     </EditorProvider>
   );

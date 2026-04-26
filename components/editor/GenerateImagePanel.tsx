@@ -122,7 +122,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   });
 
   const [prompt, setPrompt] = useState<string>(initialPendingPrompt ?? stored?.prompt ?? '');
-  const [model, setModel] = useState<string>(stored?.model ?? 'gemini-3.1-flash-image-preview');
+  const [model, setModel] = useState<string>(stored?.model ?? 'gpt-image-2');
   const [proportion, setProportion] = useState<string>(stored?.proportion ?? '9-16');
   const [quality, setQuality] = useState<string>(stored?.quality ?? 'hd');
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(stored?.generatedImageUrl ?? null);
@@ -166,7 +166,8 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
     const dbBySlug = new Map(
       (imageModelsQuery.data ?? []).map((m) => [m.slug, m]),
     );
-    const base: { value: string; label: string; disabled?: boolean }[] = [
+    const base: { value: string; label: string; disabled?: boolean; badge?: string }[] = [
+      { value: 'gpt-image-2', label: 'GPT Image 2', badge: 'Novo' },
       { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2' },
       { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
       { value: 'sem-censura', label: 'Geraew Unlocked' },
@@ -630,13 +631,22 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
       ? 'NBP'
       : model === 'sem-censura'
         ? 'SEM_CENSURA'
-        : 'NB2';
+        : model === 'gpt-image-2'
+          ? 'GPT_IMAGE_2'
+          : 'NB2';
 
   useEffect(() => {
     if (model === 'sem-censura' && quality === 'sd') {
       setQuality('hd');
     }
   }, [model, quality]);
+
+  // GPT Image 2 não suporta 4K com proporção 1:1 — força 2K nesse caso
+  useEffect(() => {
+    if (model === 'gpt-image-2' && proportion === '1-1' && quality === '4k') {
+      setQuality('hd');
+    }
+  }, [model, proportion, quality]);
 
   const { data: estimate, isLoading: estimateLoading } = useQuery({
     queryKey: ['credits', 'estimate', imageType, qualityToResolution(quality), imageModelVariant],
@@ -802,7 +812,13 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
 
 
             {/* ── Bottom section (model + proportion + quality + refs) ──── */}
-            <div className="flex justify-end m-0">
+            <div className="flex items-center gap-3 m-0">
+              <div className="h-px flex-1 overflow-hidden">
+                <div
+                  className="h-full w-full origin-right bg-[#f3f0ed]/[0.07] transition-transform duration-500 ease-out"
+                  style={{ transform: optionsOpen ? 'scaleX(1)' : 'scaleX(0)' }}
+                />
+              </div>
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
                   <button
@@ -870,11 +886,16 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                             { value: '4k', label: '4K' },
                             { value: 'hd', label: '2K' },
                           ]
-                          : [
-                            { value: '4k', label: '4K' },
-                            { value: 'hd', label: '2K' },
-                            { value: 'sd', label: '1K' },
-                          ]
+                          : model === 'gpt-image-2' && proportion === '1-1'
+                            ? [
+                              { value: 'hd', label: '2K' },
+                              { value: 'sd', label: '1K' },
+                            ]
+                            : [
+                              { value: '4k', label: '4K' },
+                              { value: 'hd', label: '2K' },
+                              { value: 'sd', label: '1K' },
+                            ]
                       }
                     />
                   </div>
@@ -1143,7 +1164,7 @@ function PanelSelect({
 }: {
   value: string;
   onValueChange: (v: string) => void;
-  options: { value: string; label: string; disabled?: boolean }[];
+  options: { value: string; label: string; disabled?: boolean; badge?: string }[];
   maintenanceLabel?: string;
 }) {
   return (
@@ -1161,6 +1182,11 @@ function PanelSelect({
           >
             <span className="flex items-center gap-1.5">
               {opt.label}
+              {opt.badge && (
+                <span className="ml-2 rounded-full border border-[#a2dd00]/40 bg-[#a2dd00]/15 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-[#a2dd00]">
+                  {opt.badge}
+                </span>
+              )}
               {opt.disabled && (
                 <span title={maintenanceLabel}>
                   <TriangleAlert className="h-3 w-3 text-amber-400" />

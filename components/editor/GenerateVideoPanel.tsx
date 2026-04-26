@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/select';
 import {
   ArrowUpRight,
+  Ban,
   Coins,
   Download,
   FolderOpen,
@@ -118,6 +119,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   });
 
   const [prompt, setPrompt] = useState<string>(initialPendingPrompt ?? stored?.prompt ?? '');
+  const [negativePrompt, setNegativePrompt] = useState<string>('');
+  const [editingNegative, setEditingNegative] = useState<boolean>(false);
   const [audio, setAudio] = useState<boolean>(stored?.audio ?? true);
   const [model, setModel] = useState<string>(stored?.model ?? 'geraew-quality');
   const [duration, setDuration] = useState<string>(stored?.duration ?? '8s');
@@ -213,6 +216,11 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   // KIE always has audio and sampleCount=1
   const effectiveAudio = isKieModel ? true : audio;
   const effectiveSampleCount = isKieModel ? 1 : sampleCount;
+
+  // Negative prompt is only supported on geraew models — exit negative mode if user switches to KIE
+  useEffect(() => {
+    if (isKieModel && editingNegative) setEditingNegative(false);
+  }, [isKieModel, editingNegative]);
 
   const { data: estimate, isLoading: estimateLoading } = useQuery({
     queryKey: ['credits', 'estimate', videoType, resolution, effectiveAudio, effectiveSampleCount, videoModelVariant],
@@ -609,7 +617,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           aspect_ratio: proportionToAspectRatio(proportion),
           generate_audio: audio,
           sample_count: sampleCount,
-          negative_prompt: 'blurry, low quality',
+          ...(negativePrompt.trim() && { negative_prompt: negativePrompt.trim() }),
         };
 
         if (videoMode === 'image' && firstFrame) {
@@ -791,14 +799,50 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
               })}
             </div>
 
-            {/* Prompt */}
+            {/* Prompt / Negative prompt toggle */}
             <div className="space-y-1.5">
+              {!isKieModel && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setEditingNegative((v) => !v)}
+                    disabled={isGenerating}
+                    className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-[0.1em] uppercase transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                    style={{
+                      background: editingNegative ? 'rgba(239,68,68,0.12)' : 'rgba(243,240,237,0.05)',
+                      color: editingNegative ? '#ef4444' : 'rgba(243,240,237,0.5)',
+                      border: `1px solid ${editingNegative ? 'rgba(239,68,68,0.35)' : 'rgba(243,240,237,0.08)'}`,
+                    }}
+                    title={editingNegative ? 'Voltar para o prompt' : 'Editar prompt negativo'}
+                  >
+                    <Ban className="h-3 w-3" />
+                    Prompt negativo
+                    {!editingNegative && negativePrompt.trim() && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                    )}
+                  </button>
+                </div>
+              )}
+
               <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
+                value={editingNegative && !isKieModel ? negativePrompt : prompt}
+                onChange={(e) =>
+                  editingNegative && !isKieModel
+                    ? setNegativePrompt(e.target.value)
+                    : setPrompt(e.target.value)
+                }
                 rows={3}
-                placeholder={t('promptPlaceholder')}
-                className="w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30"
+                placeholder={
+                  editingNegative && !isKieModel
+                    ? 'O que você NÃO quer no vídeo (ex: blurry, distortion, low quality)'
+                    : t('promptPlaceholder')
+                }
+                className={
+                  editingNegative && !isKieModel
+                    ? 'w-full resize-none rounded-xl border border-red-500/35 bg-red-500/8 px-3 py-2.5 text-sm text-red-100/95 placeholder-red-300/35 outline-none transition-all focus:border-red-500/60 focus:bg-red-500/10'
+                    : 'w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30'
+                }
+                style={editingNegative && !isKieModel ? { caretColor: '#ef4444' } : undefined}
               />
 
               {/* Enhance prompt toggle */}
@@ -806,7 +850,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 enabled={enhancePrompt}
                 onToggle={setEnhancePrompt}
                 isEnhancing={isEnhancing}
-                disabled={isGenerating}
+                disabled={isGenerating || editingNegative}
                 icon={<Wand2 className="h-3 w-3" />}
               />
             </div>
@@ -1002,7 +1046,13 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
             )}
 
             {/* ── Options toggle ─────────────────────────────────────── */}
-            <div className="flex justify-end">
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 overflow-hidden">
+                <div
+                  className="h-full w-full origin-right bg-[#f3f0ed]/[0.07] transition-transform duration-700 ease-out"
+                  style={{ transform: optionsOpen ? 'scaleX(1)' : 'scaleX(0)' }}
+                />
+              </div>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
