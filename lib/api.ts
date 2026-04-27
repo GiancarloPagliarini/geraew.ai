@@ -836,6 +836,7 @@ export interface AdminGeneration {
   resolution: string;
   durationSeconds: number | null;
   hasAudio: boolean;
+  modelUsed: string | null;
   creditsConsumed: number;
   outputUrls: string[];
   errorMessage: string | null;

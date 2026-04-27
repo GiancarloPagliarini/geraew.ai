@@ -44,6 +44,20 @@ function genTypeLabel(type: string) {
   return map[type] ?? type;
 }
 
+function modelLabel(model: string | null) {
+  if (!model) return '—';
+  const map: Record<string, string> = {
+    'nano-banana-2': 'Nano Banana 2',
+    'nano-banana-pro': 'Nano Banana Pro',
+    'nbpro': 'Nano Banana Pro',
+    'kling-2.6': 'Kling 2.6',
+    'veo-3.1': 'Veo 3.1',
+    'veo-fast': 'Veo Fast',
+    'veo-max': 'Veo Max',
+  };
+  return map[model] ?? model;
+}
+
 function statusBadge(status: string) {
   const upper = status.toUpperCase();
   const config: Record<string, { color: string; icon: React.ElementType; label: string }> = {
@@ -116,6 +130,7 @@ export default function AdminGenerationsPage() {
               <TableRow className="border-[#f3f0ed]/6 hover:bg-transparent">
                 <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Usuário</TableHead>
                 <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Tipo</TableHead>
+                <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Modelo</TableHead>
                 <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Status</TableHead>
                 <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Prompt</TableHead>
                 <TableHead className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">Resolução</TableHead>
@@ -144,6 +159,9 @@ export default function AdminGenerationsPage() {
                       <Image className="h-3.5 w-3.5 text-[#f3f0ed]/30" />
                       <span className="text-xs text-[#f3f0ed]/60">{genTypeLabel(gen.type)}</span>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-xs text-[#f3f0ed]/50">{modelLabel(gen.modelUsed)}</span>
                   </TableCell>
                   <TableCell>{statusBadge(gen.status)}</TableCell>
                   <TableCell>
@@ -174,7 +192,7 @@ export default function AdminGenerationsPage() {
               ))}
               {generations.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-32 text-center text-sm text-[#f3f0ed]/30">
+                  <TableCell colSpan={9} className="h-32 text-center text-sm text-[#f3f0ed]/30">
                     Nenhuma geração encontrada
                   </TableCell>
                 </TableRow>

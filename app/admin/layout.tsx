@@ -17,6 +17,7 @@ import {
   FileText,
   Banknote,
   MessageSquareHeart,
+  ThumbsUp,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -26,7 +27,7 @@ const NAV_ITEMS = [
   { href: '/admin/geracoes', label: 'Gerações', icon: Image },
   { href: '/admin/modelos', label: 'Modelos', icon: Sparkles },
   { href: '/admin/prompts', label: 'Prompts', icon: FileText },
-  { href: '/admin/prompt-posts', label: 'Posts Públicos', icon: Sparkles },
+  { href: '/admin/prompt-posts', label: 'Posts Públicos', icon: ThumbsUp },
   { href: '/admin/assinaturas', label: 'Assinaturas', icon: CreditCard },
   { href: '/admin/stripe', label: 'Stripe', icon: Banknote },
   { href: '/admin/afiliados', label: 'Afiliados', icon: Handshake },
@@ -80,11 +81,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 key={item.href}
                 href={item.href}
                 title={item.label}
-                className={`flex items-center justify-center rounded-xl p-2.5 transition-all md:justify-start md:gap-2.5 md:px-3 md:py-2.5 md:text-[13px] md:font-medium ${
-                  isActive
-                    ? 'bg-[#a2dd00]/10 text-[#a2dd00]'
-                    : 'text-[#f3f0ed]/50 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/80'
-                }`}
+                className={`flex items-center justify-center rounded-xl p-2.5 transition-all md:justify-start md:gap-2.5 md:px-3 md:py-2.5 md:text-[13px] md:font-medium ${isActive
+                  ? 'bg-[#a2dd00]/10 text-[#a2dd00]'
+                  : 'text-[#f3f0ed]/50 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/80'
+                  }`}
               >
                 <Icon className="h-5 w-5 shrink-0 md:h-4 md:w-4" />
                 <span className="hidden md:block">{item.label}</span>
