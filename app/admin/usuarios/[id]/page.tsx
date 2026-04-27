@@ -68,6 +68,26 @@ function genTypeLabel(type: string) {
   return map[type] ?? type;
 }
 
+function modelLabel(modelUsed: string | null): string | null {
+  if (!modelUsed) return null;
+  const map: Record<string, string> = {
+    'nano-banana-2': 'Nano Banana 2',
+    'nano-banana-pro': 'Nano Banana Pro',
+    'gemini-3.1-flash-image-preview': 'Nano Banana 2',
+    'gemini-3-pro-image-preview': 'Nano Banana Pro',
+    'gpt-image-2': 'GPT Image 2',
+    'gpt-image-2-text-to-image': 'GPT Image 2',
+    'sem-censura': 'GeraEW Unlocked',
+    'sem-censura-fallback': 'GeraEW Unlocked (fallback)',
+    'kling-2.6/motion-control': 'Kling 2.6 Motion Control',
+    'geraew-fast': 'GeraEW Fast',
+    'geraew-quality': 'GeraEW Quality',
+    'veo-3.1-fast-generate-001': 'GeraEW Fast',
+    'veo-3.1-generate-001': 'GeraEW Quality',
+  };
+  return map[modelUsed] ?? modelUsed;
+}
+
 function statusBadge(status: string) {
   const config: Record<string, { color: string; icon: React.ElementType }> = {
     COMPLETED: { color: 'border-green-500/30 bg-green-500/10 text-green-400', icon: CheckCircle2 },
@@ -733,6 +753,14 @@ export default function AdminUserDetailPage() {
                       </span>
                       {statusBadge(gen.status)}
                     </div>
+                    {modelLabel(gen.modelUsed) && (
+                      <Badge
+                        variant="outline"
+                        className="w-fit border-[#a2dd00]/20 bg-[#a2dd00]/5 text-[9px] font-medium text-[#a2dd00]/80"
+                      >
+                        {modelLabel(gen.modelUsed)}
+                      </Badge>
+                    )}
                     {gen.prompt && (
                       <p className="line-clamp-2 text-[11px] leading-tight text-[#f3f0ed]/40">
                         {gen.prompt}

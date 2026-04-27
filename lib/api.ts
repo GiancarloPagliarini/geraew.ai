@@ -823,6 +823,57 @@ export interface HealthStats {
   alerts: { level: 'warning' | 'critical'; message: string }[];
 }
 
+export type AnnouncementVariant = 'feature' | 'maintenance' | 'promo' | 'openai' | 'gift';
+
+export type AnnouncementAction =
+  | { type: 'open-image-panel' }
+  | { type: 'open-video-panel' }
+  | { type: 'open-weekly-claim' }
+  | { type: 'href'; url: string };
+
+export interface Announcement {
+  id: string;
+  slug: string;
+  variant: AnnouncementVariant | null;
+  badge: string | null;
+  title: string;
+  description: string;
+  imageUrl: string | null;
+  ctaLabel: string | null;
+  ctaAction: AnnouncementAction | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateAnnouncementInput {
+  slug: string;
+  variant?: AnnouncementVariant;
+  badge?: string;
+  title: string;
+  description: string;
+  imageUrl?: string;
+  ctaLabel?: string;
+  ctaAction?: AnnouncementAction;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
+export type UpdateAnnouncementInput = Partial<Omit<CreateAnnouncementInput, 'slug'>>;
+
+export interface WeeklyClaimStatus {
+  canClaim: boolean;
+  alreadyClaimedThisWeek: boolean;
+  isPaying: boolean;
+  amount: number;
+  weekKey: string;
+  isWindowOpen: boolean;
+  windowOpensAt: string;
+  windowClosesAt: string;
+  nextWindowOpensAt: string;
+}
+
 export interface AdminGeneration {
   id: string;
   user: {
@@ -1282,6 +1333,23 @@ export const api = {
     },
   },
 
+  rewards: {
+    weeklyClaimStatus(accessToken: string) {
+      return authRequest<WeeklyClaimStatus>('/api/v1/rewards/weekly-claim', accessToken);
+    },
+    claimWeekly(accessToken: string) {
+      return authRequest<WeeklyClaimStatus>('/api/v1/rewards/weekly-claim', accessToken, {
+        method: 'POST',
+      });
+    },
+  },
+
+  announcements: {
+    active(accessToken: string) {
+      return authRequest<Announcement[]>('/api/v1/announcements/active', accessToken);
+    },
+  },
+
   admin: {
     stats(accessToken: string) {
       return authRequest<AdminStats>('/api/v1/admin/stats', accessToken);
@@ -1595,6 +1663,36 @@ export const api = {
       },
       remove(accessToken: string, id: string) {
         return authRequest<{ success: boolean }>(`/api/v1/admin/prompt-posts/${id}`, accessToken, {
+          method: 'DELETE',
+        });
+      },
+    },
+    announcements: {
+      list(accessToken: string) {
+        return authRequest<Announcement[]>('/api/v1/admin/announcements', accessToken);
+      },
+      get(accessToken: string, id: string) {
+        return authRequest<Announcement>(`/api/v1/admin/announcements/${id}`, accessToken);
+      },
+      create(accessToken: string, data: CreateAnnouncementInput) {
+        return authRequest<Announcement>('/api/v1/admin/announcements', accessToken, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      update(accessToken: string, id: string, data: UpdateAnnouncementInput) {
+        return authRequest<Announcement>(`/api/v1/admin/announcements/${id}`, accessToken, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        });
+      },
+      toggle(accessToken: string, id: string) {
+        return authRequest<Announcement>(`/api/v1/admin/announcements/${id}/toggle`, accessToken, {
+          method: 'PATCH',
+        });
+      },
+      delete(accessToken: string, id: string) {
+        return authRequest<{ success: boolean }>(`/api/v1/admin/announcements/${id}`, accessToken, {
           method: 'DELETE',
         });
       },

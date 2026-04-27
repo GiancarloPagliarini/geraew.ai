@@ -1,0 +1,35 @@
+{
+  "editorRewards": {
+    "weeklyWidget": {
+      "premiumLocked": "Bono Premium",
+      "claim": "Reclamar bono",
+      "countdown": "Bono en {countdown}"
+    },
+    "weeklyModal": {
+      "videosLabel": "videos",
+      "modelName": "Geraew Fast",
+      "headline": "<accent>¡Es miércoles en Geraew!</accent> Cada miércoles, los suscriptores tienen la exclusividad de reclamar <accent>{amount} videos gratis</accent>.",
+      "howItWorks": "Cómo funciona",
+      "step1Title": "Todos los miércoles",
+      "step1Desc": "Ventana abierta todo el día, 00:00 a 23:59 (hora de Brasilia).",
+      "step2Title": "Reclamación manual",
+      "step2Desc": "Tienes que hacer clic en reclamar para recibirlo. No se acumula entre semanas.",
+      "step3Title": "Directo a tu saldo",
+      "step3Desc": "Las generaciones quedan disponibles al instante en Geraew Fast.",
+      "nextClaimIn": "Próxima reclamación en",
+      "unitDays": "DÍAS",
+      "unitHours": "HORAS",
+      "unitMinutes": "MIN",
+      "unitSeconds": "SEG",
+      "subscribeCta": "Suscríbete para reclamar",
+      "claimCta": "Reclamar {amount} generaciones",
+      "successToast": "¡+{amount} generaciones Geraew Fast reclamadas!",
+      "errorToast": "No se pudo reclamar ahora."
+    },
+    "announcementModal": {
+      "nextAnnouncement": "Próximo aviso",
+      "close": "Cerrar",
+      "defaultCta": "Entendido"
+    }
+  }
+}

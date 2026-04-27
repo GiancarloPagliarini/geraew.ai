@@ -22,15 +22,15 @@ export default function TransacoesPage() {
     enabled: !!accessToken,
   });
 
+  const [pendingRefund, setPendingRefund] = useState<StripeCharge | null>(null);
+
   const refundMut = useMutation({
     mutationFn: (chargeId: string) => api.adminStripe.refundCharge(accessToken!, chargeId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-stripe', 'charges'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-stripe', 'charges'] });
+      setPendingRefund(null);
+    },
   });
-
-  const handleRefund = (charge: StripeCharge) => {
-    if (!confirm(`Reembolsar ${fmtCurrency(charge.amount, charge.currency)}?`)) return;
-    refundMut.mutate(charge.id);
-  };
 
   const charges = data?.data ?? [];
 
@@ -115,7 +115,7 @@ export default function TransacoesPage() {
                           )}
                           {c.paid && !c.refunded && c.amount_refunded < c.amount && (
                             <button
-                              onClick={() => handleRefund(c)}
+                              onClick={() => setPendingRefund(c)}
                               disabled={refundMut.isPending}
                               className="flex h-7 w-7 items-center justify-center rounded-lg text-amber-400/70 hover:bg-amber-500/10 hover:text-amber-400 disabled:opacity-40"
                               title="Reembolsar"
@@ -153,6 +153,70 @@ export default function TransacoesPage() {
               })}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {pendingRefund && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => !refundMut.isPending && setPendingRefund(null)}
+        >
+          <div
+            className="flex w-full max-w-md flex-col gap-5 rounded-2xl border border-amber-500/20 bg-[#1a2123] p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10">
+                <AlertTriangle className="h-5 w-5 text-amber-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-[#f3f0ed]">Confirmar reembolso</h3>
+                <p className="text-xs text-[#f3f0ed]/40">Esta ação é irreversível</p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/[0.02] p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#f3f0ed]/40">Valor</span>
+                <span className="text-base font-bold tabular-nums text-amber-400">
+                  {fmtCurrency(pendingRefund.amount, pendingRefund.currency)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#f3f0ed]/40">Charge</span>
+                <span className="font-mono text-[10px] text-[#f3f0ed]/50">{pendingRefund.id}</span>
+              </div>
+              {typeof pendingRefund.customer === 'string' && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#f3f0ed]/40">Cliente</span>
+                  <span className="font-mono text-[10px] text-[#f3f0ed]/50">{pendingRefund.customer}</span>
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-[#f3f0ed]/60">
+              Tem certeza que deseja reembolsar este pagamento? O valor será devolvido ao cliente via Stripe.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setPendingRefund(null)}
+                disabled={refundMut.isPending}
+                className="flex h-9 items-center rounded-xl border border-[#f3f0ed]/10 px-4 text-xs font-bold text-[#f3f0ed]/60 transition-colors hover:bg-[#f3f0ed]/5 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => refundMut.mutate(pendingRefund.id)}
+                disabled={refundMut.isPending}
+                className="flex h-9 items-center gap-1.5 rounded-xl bg-amber-500 px-4 text-xs font-bold text-[#1a2123] transition-all hover:bg-amber-400 active:scale-[0.97] disabled:opacity-50"
+              >
+                {refundMut.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-3.5 w-3.5" />
+                )}
+                Confirmar reembolso
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

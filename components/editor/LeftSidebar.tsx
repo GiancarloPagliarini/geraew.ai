@@ -128,11 +128,10 @@ export function LeftSidebar() {
                 setMobileMenuOpen((v) => !v);
               }
             }}
-            className={`flex h-10 w-full items-center gap-2 px-3 transition-colors ${
-              anyOpen || mobileMenuOpen
-                ? 'text-[#a2dd00]'
-                : 'text-[#f3f0ed]/50 hover:text-[#f3f0ed]/80'
-            }`}
+            className={`flex h-10 w-full items-center gap-2 px-3 transition-colors ${anyOpen || mobileMenuOpen
+              ? 'text-[#a2dd00]'
+              : 'text-[#f3f0ed]/50 hover:text-[#f3f0ed]/80'
+              }`}
           >
             {activeItem ? (
               <>
@@ -165,11 +164,10 @@ export function LeftSidebar() {
                     key={id}
                     id={id === 'tutorial' ? 'tour-tutorial-btn' : undefined}
                     onClick={() => handleNavClick(id)}
-                    className={`relative flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${
-                      isActive
-                        ? 'bg-[#a2dd00]/10 text-[#a2dd00]'
-                        : 'text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/[0.04] hover:text-[#f3f0ed]'
-                    }`}
+                    className={`relative flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${isActive
+                      ? 'bg-[#a2dd00]/10 text-[#a2dd00]'
+                      : 'text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/[0.04] hover:text-[#f3f0ed]'
+                      }`}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
                     <span className="text-xs font-semibold">{label}</span>
@@ -211,11 +209,10 @@ export function LeftSidebar() {
                   <button
                     id={id === 'tutorial' ? 'tour-tutorial-btn' : undefined}
                     onClick={() => handleNavClick(id)}
-                    className={`group relative flex w-full flex-col items-center gap-0.5 rounded-md py-1.5 px-1 transition-all ${
-                      isActive
-                        ? 'bg-[#a2dd00]/15 text-[#a2dd00]'
-                        : 'text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70'
-                    }`}
+                    className={`group relative flex w-full flex-col items-center gap-0.5 rounded-md py-1.5 px-1 transition-all ${isActive
+                      ? 'bg-[#a2dd00]/15 text-[#a2dd00]'
+                      : 'text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70'
+                      }`}
                   >
                     <Icon className="h-4.5 w-4.5 shrink-0" />
                     <span className="text-[10px] font-bold tracking-wide text-center leading-tight">{label}</span>

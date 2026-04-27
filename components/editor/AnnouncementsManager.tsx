@@ -1,55 +1,84 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { ANNOUNCEMENTS, type AnnouncementAction } from '@/lib/announcements';
-import { AnnouncementModal } from './AnnouncementModal';
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import type { Announcement, AnnouncementAction } from '@/lib/announcements';
+import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import { useEditor } from '@/lib/editor-context';
+import { AnnouncementModal } from './AnnouncementModal';
 
 const STORAGE_PREFIX = 'geraew-announcement-';
 
-function isSeen(id: string): boolean {
+function isSeen(slug: string): boolean {
   if (typeof window === 'undefined') return true;
-  return localStorage.getItem(STORAGE_PREFIX + id) === '1';
+  return localStorage.getItem(STORAGE_PREFIX + slug) === '1';
 }
 
-function markSeen(id: string): void {
-  localStorage.setItem(STORAGE_PREFIX + id, '1');
+function markSeen(slug: string): void {
+  localStorage.setItem(STORAGE_PREFIX + slug, '1');
 }
 
-/** Remove flags do localStorage cujos ids não existem mais no array. */
-function cleanupOrphanedFlags(): void {
+/** Remove flags do localStorage cujos slugs não existem mais nos avisos atuais. */
+function cleanupOrphanedFlags(validSlugs: Set<string>): void {
   if (typeof window === 'undefined') return;
-  const validIds = new Set(ANNOUNCEMENTS.map((a) => a.id));
   const toRemove: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (!key?.startsWith(STORAGE_PREFIX)) continue;
-    const id = key.slice(STORAGE_PREFIX.length);
-    if (!validIds.has(id)) toRemove.push(key);
+    const slug = key.slice(STORAGE_PREFIX.length);
+    if (!validSlugs.has(slug)) toRemove.push(key);
   }
   toRemove.forEach((key) => localStorage.removeItem(key));
 }
 
 export function AnnouncementsManager() {
-  const [currentId, setCurrentId] = useState<string | null>(null);
-  const { requestPanelWithPrompt } = useEditor();
+  const { user, accessToken } = useAuth();
+  const { requestPanelWithPrompt, requestWeeklyClaim } = useEditor();
+  /** Snapshot dos avisos não-vistos no momento que abriu o carousel. Não muda durante a navegação. */
+  const [carousel, setCarousel] = useState<Announcement[] | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const { data: announcements } = useQuery({
+    queryKey: ['announcements', 'active'],
+    queryFn: () => api.announcements.active(accessToken!),
+    enabled: !!user && !!accessToken,
+    staleTime: 5 * 60_000,
+  });
+
+  const list = useMemo(() => announcements ?? [], [announcements]);
 
   useEffect(() => {
-    cleanupOrphanedFlags();
-    const first = ANNOUNCEMENTS.find((a) => !isSeen(a.id));
-    if (first) setCurrentId(first.id);
-  }, []);
+    if (!list.length) return;
+    cleanupOrphanedFlags(new Set(list.map((a) => a.slug)));
+    if (carousel) return; // already showing
+    const unseen = list.filter((a) => !isSeen(a.slug));
+    if (unseen.length) {
+      setCarousel(unseen);
+      setCurrentIndex(0);
+      markSeen(unseen[0].slug);
+    }
+  }, [list, carousel]);
 
-  const current = ANNOUNCEMENTS.find((a) => a.id === currentId);
-  if (!current) return null;
+  if (!carousel || carousel.length === 0) return null;
 
-  function handleDismiss() {
-    if (!current) return;
-    markSeen(current.id);
-    const next = ANNOUNCEMENTS.find(
-      (a) => a.id !== current.id && !isSeen(a.id),
-    );
-    setCurrentId(next?.id ?? null);
+  const current = carousel[currentIndex];
+  const total = carousel.length;
+
+  function close() {
+    setCarousel(null);
+    setCurrentIndex(0);
+  }
+
+  function jumpTo(index: number) {
+    if (index < 0 || index >= total) return;
+    if (!carousel) return;
+    markSeen(carousel[index].slug);
+    setCurrentIndex(index);
+  }
+
+  function next() {
+    jumpTo(currentIndex + 1);
   }
 
   function dispatchAction(action: AnnouncementAction) {
@@ -59,6 +88,9 @@ export function AnnouncementsManager() {
         break;
       case 'open-video-panel':
         requestPanelWithPrompt({ panelType: 'generate-video', prompt: '' });
+        break;
+      case 'open-weekly-claim':
+        requestWeeklyClaim();
         break;
       case 'href':
         window.open(action.url, '_blank', 'noopener,noreferrer');
@@ -70,8 +102,12 @@ export function AnnouncementsManager() {
     <AnnouncementModal
       announcement={current}
       open={true}
-      onClose={handleDismiss}
+      onClose={close}
       onCta={current.ctaAction ? () => dispatchAction(current.ctaAction!) : undefined}
+      currentIndex={currentIndex}
+      total={total}
+      onJumpTo={jumpTo}
+      onNext={next}
     />
   );
 }

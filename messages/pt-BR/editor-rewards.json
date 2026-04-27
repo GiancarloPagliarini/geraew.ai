@@ -1,0 +1,35 @@
+{
+  "editorRewards": {
+    "weeklyWidget": {
+      "premiumLocked": "Bônus Premium",
+      "claim": "Resgatar bônus",
+      "countdown": "Bônus em {countdown}"
+    },
+    "weeklyModal": {
+      "videosLabel": "vídeos",
+      "modelName": "Geraew Fast",
+      "headline": "<accent>Quartou com Geraew!</accent> Agora, toda quarta-feira o assinante tem a exclusividade de resgatar <accent>{amount} vídeos grátis</accent>.",
+      "howItWorks": "Como funciona",
+      "step1Title": "Toda quarta-feira",
+      "step1Desc": "Janela aberta o dia inteiro, 00h às 23h59 (Brasília).",
+      "step2Title": "Resgate manual",
+      "step2Desc": "Clique em resgatar para receber. Não acumula entre semanas.",
+      "step3Title": "Direto no seu saldo",
+      "step3Desc": "Gerações ficam disponíveis na hora no Geraew Fast.",
+      "nextClaimIn": "Próximo resgate em",
+      "unitDays": "DIAS",
+      "unitHours": "HORAS",
+      "unitMinutes": "MIN",
+      "unitSeconds": "SEG",
+      "subscribeCta": "Assinar para resgatar",
+      "claimCta": "Resgatar {amount} gerações",
+      "successToast": "+{amount} gerações Geraew Fast resgatadas!",
+      "errorToast": "Não foi possível resgatar agora."
+    },
+    "announcementModal": {
+      "nextAnnouncement": "Próximo aviso",
+      "close": "Fechar",
+      "defaultCta": "Entendi"
+    }
+  }
+}

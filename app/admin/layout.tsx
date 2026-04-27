@@ -18,6 +18,8 @@ import {
   Banknote,
   MessageSquareHeart,
   ThumbsUp,
+  BrainCircuit,
+  Megaphone,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -25,9 +27,10 @@ const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/usuarios', label: 'Usuários', icon: Users },
   { href: '/admin/geracoes', label: 'Gerações', icon: Image },
-  { href: '/admin/modelos', label: 'Modelos', icon: Sparkles },
+  { href: '/admin/modelos', label: 'Modelos', icon: BrainCircuit },
   { href: '/admin/prompts', label: 'Prompts', icon: FileText },
   { href: '/admin/prompt-posts', label: 'Posts Públicos', icon: ThumbsUp },
+  { href: '/admin/avisos', label: 'Avisos', icon: Megaphone },
   { href: '/admin/assinaturas', label: 'Assinaturas', icon: CreditCard },
   { href: '/admin/stripe', label: 'Stripe', icon: Banknote },
   { href: '/admin/afiliados', label: 'Afiliados', icon: Handshake },

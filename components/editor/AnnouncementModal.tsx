@@ -1,7 +1,8 @@
 'use client';
 
-import { Sparkles, Wrench, Tag, ArrowRight } from 'lucide-react';
+import { Sparkles, Wrench, Tag, ArrowRight, Gift } from 'lucide-react';
 import type { ComponentType, SVGProps } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,14 @@ interface AnnouncementModalProps {
   onClose: () => void;
   /** Invocado quando o usuário clica no CTA (antes do close). */
   onCta?: () => void;
+  /** Posição atual no carousel (0-based). Omitir = aviso único. */
+  currentIndex?: number;
+  /** Total de avisos no carousel. Omitir = aviso único. */
+  total?: number;
+  /** Pula pra um aviso específico (clicando nos dots). */
+  onJumpTo?: (index: number) => void;
+  /** Avança pro próximo. Se não houver, comporta como Fechar. */
+  onNext?: () => void;
 }
 
 function OpenAILogo({ className }: { className?: string }) {
@@ -40,6 +49,7 @@ const VARIANT_ICON: Record<AnnouncementVariant, IconComponent> = {
   maintenance: Wrench,
   promo: Tag,
   openai: OpenAILogo,
+  gift: Gift,
 };
 
 export function AnnouncementModal({
@@ -47,12 +57,26 @@ export function AnnouncementModal({
   open,
   onClose,
   onCta,
+  currentIndex,
+  total,
+  onJumpTo,
+  onNext,
 }: AnnouncementModalProps) {
+  const t = useTranslations('editorRewards.announcementModal');
   const Icon = VARIANT_ICON[announcement.variant ?? 'feature'];
+
+  const isCarousel = typeof total === 'number' && total > 1 && typeof currentIndex === 'number';
+  const isLast = isCarousel && currentIndex === total - 1;
+  const hasNext = isCarousel && !isLast;
 
   function handleCta() {
     onCta?.();
     onClose();
+  }
+
+  function handleSecondary() {
+    if (hasNext && onNext) onNext();
+    else onClose();
   }
 
   return (
@@ -108,17 +132,37 @@ export function AnnouncementModal({
                 onClick={handleCta}
                 className="group h-11 w-full bg-[#a2dd00] font-semibold text-[#1c1917] shadow-[0_0_24px_rgba(162,221,0,0.35)] hover:bg-[#b8f000] hover:shadow-[0_0_32px_rgba(162,221,0,0.5)]"
               >
-                {announcement.ctaLabel ?? 'Entendi'}
+                {announcement.ctaLabel ?? t('defaultCta')}
                 <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Button>
               <Button
-                onClick={onClose}
+                onClick={handleSecondary}
                 variant="ghost"
                 className="h-10 w-full text-sm text-[#f3f0ed]/50 hover:bg-transparent hover:text-[#f3f0ed]/80"
               >
-                Fechar
+                {hasNext ? t('nextAnnouncement') : t('close')}
               </Button>
             </div>
+
+            {isCarousel && (
+              <div className="mt-5 flex items-center justify-center gap-1.5">
+                {Array.from({ length: total ?? 0 }).map((_, i) => {
+                  const active = i === currentIndex;
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => onJumpTo?.(i)}
+                      aria-label={`Ir para aviso ${i + 1}`}
+                      className={`h-1.5 rounded-full transition-all ${active
+                        ? 'w-6 bg-[#a2dd00]'
+                        : 'w-1.5 bg-[#f3f0ed]/15 hover:bg-[#f3f0ed]/30'
+                        }`}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>

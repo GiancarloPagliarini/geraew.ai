@@ -43,6 +43,8 @@ interface EditorContextValue {
   setLeftPanelOpen: (open: boolean) => void;
   generatingNodeIds: Set<string>;
   setNodeGenerating: (nodeId: string, generating: boolean) => void;
+  weeklyClaimRequest: number;
+  requestWeeklyClaim: () => void;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
@@ -55,6 +57,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [nodeUpscaleStates, setNodeUpscaleStates] = useState<Record<string, UpscaleState>>({});
   const [nodePanelTypes, setNodePanelTypes] = useState<Record<string, string>>({});
   const [galleryPickerRequest, setGalleryPickerRequest] = useState<GalleryPickerRequest | null>(null);
+  const [weeklyClaimRequest, setWeeklyClaimRequest] = useState(0);
   const [leftPanelOpen, setLeftPanelOpen] = useState(false);
   const [generatingNodeIds, setGeneratingNodeIds] = useState<Set<string>>(new Set());
   const setNodeGenerating = useCallback((nodeId: string, generating: boolean) => {
@@ -182,6 +185,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
           pendingPromptRef.current = null;
           return current;
         },
+        weeklyClaimRequest,
+        requestWeeklyClaim: () => setWeeklyClaimRequest((n) => n + 1),
       }}
     >
       {children}

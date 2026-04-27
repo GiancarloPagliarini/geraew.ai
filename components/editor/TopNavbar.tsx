@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { PlansModal } from './PlansModal';
 import { AffiliateProgramModal } from './AffiliateProgramModal';
+import { WeeklyClaimWidget } from './WeeklyClaimWidget';
 import { useLoginModal } from '@/lib/login-modal-context';
 import { LocaleSwitcher } from '@/components/locale-switcher';
 
@@ -232,6 +233,9 @@ export function TopNavbar() {
                   </span>
                 </button>
               )}
+
+              {/* Weekly claim — opens explanation modal */}
+              <WeeklyClaimWidget />
             </div>
           ) : (
             /* Login dropdown for unauthenticated users */
