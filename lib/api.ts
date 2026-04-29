@@ -1249,6 +1249,9 @@ export const api = {
     getAll(accessToken: string) {
       return authRequest<{ sections: ApiPromptSection[] }>('/api/v1/prompts', accessToken);
     },
+    getAllPublic() {
+      return request<{ sections: ApiPromptSection[] }>('/api/v1/prompts');
+    },
     deleteTemplate(accessToken: string, id: string) {
       return authRequest<void>(`/api/v1/admin/prompts/templates/${id}`, accessToken, {
         method: 'DELETE',
