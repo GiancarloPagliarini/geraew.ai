@@ -99,7 +99,7 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="sidebar-scroll flex-1 overflow-y-auto p-4 space-y-4">
         <p className="text-xs text-white/50 leading-relaxed">
           {t('description')}
         </p>
@@ -175,7 +175,7 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
                     <Copy className="h-3 w-3" /> {t('copyPrompt')}
                   </button>
                 </div>
-                <div className="bg-black/40 text-xs p-3 rounded-lg max-h-[400px] overflow-auto whitespace-pre-wrap text-white/80 leading-relaxed">
+                <div className="sidebar-scroll bg-black/40 text-xs p-3 rounded-lg max-h-[400px] overflow-auto whitespace-pre-wrap text-white/80 leading-relaxed">
                   {result.compiledPrompt}
                 </div>
               </div>
@@ -189,7 +189,7 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
                     <Copy className="h-3 w-3" /> {t('copyJson')}
                   </button>
                 </div>
-                <pre className="bg-black/40 text-[11px] p-3 rounded-lg max-h-[400px] overflow-auto whitespace-pre-wrap text-white/80 leading-relaxed">
+                <pre className="sidebar-scroll bg-black/40 text-[11px] p-3 rounded-lg max-h-[400px] overflow-auto whitespace-pre-wrap text-white/80 leading-relaxed">
                   {JSON.stringify(result.json, null, 2)}
                 </pre>
               </div>
