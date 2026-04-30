@@ -113,6 +113,28 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       for (const key of keys) {
         queryClient.setQueryData<InfiniteData<PaginatedResponse<GalleryItem>>>(key, (old) => {
           if (!old?.pages.length) return old;
+
+          // Dedupe: if the generation is already cached, replace it in place
+          // (covers race between SSE + polling fallback both calling prependToGallery)
+          const existsInPageIndex = old.pages.findIndex((p) =>
+            p.data.some((g) => g.id === galleryItem.id),
+          );
+          if (existsInPageIndex !== -1) {
+            return {
+              ...old,
+              pages: old.pages.map((p, i) =>
+                i === existsInPageIndex
+                  ? {
+                      ...p,
+                      data: p.data.map((g) =>
+                        g.id === galleryItem.id ? galleryItem : g,
+                      ),
+                    }
+                  : p,
+              ),
+            };
+          }
+
           const [firstPage, ...rest] = old.pages;
           return {
             ...old,

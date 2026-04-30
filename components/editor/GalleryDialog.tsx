@@ -27,7 +27,9 @@ import {
   ImageIcon,
   ImagePlus,
   Layers,
-  Loader2, Pencil,
+  Loader2,
+  Music,
+  Pencil,
   Play,
   Plus,
   RefreshCw,
@@ -41,19 +43,24 @@ import { useAuth } from '@/lib/auth-context';
 import { useEditor } from '@/lib/editor-context';
 import { api, Folder, Generation, GenerationInputImage, GalleryItem as GalleryItemType, PaginatedResponse } from '@/lib/api';
 
-type GalleryTab = 'all' | 'photos' | 'videos' | 'favorites';
+type GalleryTab = 'all' | 'photos' | 'videos' | 'audios' | 'favorites';
 
 const TABS: { key: GalleryTab }[] = [
   { key: 'all' },
   { key: 'photos' },
   { key: 'videos' },
+  { key: 'audios' },
   { key: 'favorites' },
 ];
+
+const AUDIO_TYPES = ['VOICE_CLONE'];
+const VIDEO_TYPES = ['TEXT_TO_VIDEO', 'IMAGE_TO_VIDEO', 'REFERENCE_VIDEO', 'MOTION_CONTROL'];
 
 function tabToFilters(tab: GalleryTab): { type?: string; favorited?: boolean } | undefined {
   switch (tab) {
     case 'photos': return { type: 'TEXT_TO_IMAGE,IMAGE_TO_IMAGE' };
     case 'videos': return { type: 'TEXT_TO_VIDEO,IMAGE_TO_VIDEO,REFERENCE_VIDEO' };
+    case 'audios': return { type: AUDIO_TYPES.join(',') };
     case 'favorites': return { favorited: true };
     default: return undefined;
   }
@@ -581,12 +588,22 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-1">
                 {items.map((item, index) => {
                   const itemUrl = item.outputUrl;
+                  const itemIsAudio = AUDIO_TYPES.includes(item.type);
+                  const isLimitReached =
+                    !!galleryPickerRequest &&
+                    !!itemUrl &&
+                    !pickerSelectedUrls.has(itemUrl) &&
+                    pickerSelectedUrls.size >= galleryPickerRequest.remaining;
                   return (
                     <GalleryItem
                       key={item.id}
                       item={item}
                       priority={index < 6}
                       onClick={() => {
+                        if (galleryPickerRequest && itemIsAudio) {
+                          toast.error(t('audioPickerBlocked'));
+                          return;
+                        }
                         if (galleryPickerRequest && itemUrl && !item.durationSeconds) {
                           setPickerSelectedUrls((prev) => {
                             const next = new Set(prev);
@@ -610,7 +627,10 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
                       onCreateFolderAndAdd={(name) => handleCreateFolderAndAdd(name, item.id)}
                       pickerMode={!!galleryPickerRequest}
                       pickerSelected={!!itemUrl && pickerSelectedUrls.has(itemUrl)}
-                      pickerDisabled={!!galleryPickerRequest && !!itemUrl && !pickerSelectedUrls.has(itemUrl) && pickerSelectedUrls.size >= galleryPickerRequest.remaining}
+                      pickerDisabled={
+                        !!galleryPickerRequest &&
+                        (itemIsAudio || isLimitReached)
+                      }
                     />
                   );
                 })}
@@ -701,7 +721,8 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
 
   const activeOutput = outputs[activeIndex];
   const url = activeOutput?.url;
-  const isVideo = !!item.durationSeconds || ['TEXT_TO_VIDEO', 'IMAGE_TO_VIDEO', 'REFERENCE_VIDEO', 'MOTION_CONTROL'].includes(item.type);
+  const isAudio = AUDIO_TYPES.includes(item.type);
+  const isVideo = !isAudio && (!!item.durationSeconds || VIDEO_TYPES.includes(item.type));
   const hasRefs = (item.inputImages?.length ?? 0) > 0;
   const multipleOutputs = outputs.length > 1;
 
@@ -723,10 +744,24 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
       </button>
 
       {/* Main player */}
-      <div className={`relative w-full rounded-xl overflow-hidden max-h-[50vh] ${!loaded ? 'bg-[#f3f0ed]/3 min-h-[40vh]' : ''}`}>
-        {!loaded && <div className="absolute inset-0 animate-pulse bg-[#f3f0ed]/6 rounded-xl" />}
+      <div className={`relative w-full rounded-xl overflow-hidden ${isAudio ? '' : 'max-h-[50vh]'} ${!loaded && !isAudio ? 'bg-[#f3f0ed]/3 min-h-[40vh]' : ''}`}>
+        {!loaded && !isAudio && <div className="absolute inset-0 animate-pulse bg-[#f3f0ed]/6 rounded-xl" />}
 
-        {isVideo ? (
+        {isAudio ? (
+          <div className="flex flex-col items-center gap-4 rounded-xl bg-linear-to-br from-[#1e494b]/40 to-[#1a2123] py-10 px-6">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#a2dd00]/15 ring-1 ring-[#a2dd00]/30">
+              <Music className="h-9 w-9 text-[#a2dd00]" />
+            </div>
+            <audio
+              key={url}
+              src={url}
+              controls
+              preload="metadata"
+              className="w-full max-w-md"
+              onLoadedMetadata={() => setLoaded(true)}
+            />
+          </div>
+        ) : isVideo ? (
           <video
             key={url}
             src={url}
@@ -772,6 +807,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
                 url={output.url}
                 index={i}
                 isVideo={isVideo}
+                isAudio={isAudio}
                 isActive={i === activeIndex}
                 onClick={() => handleSelect(i)}
               />
@@ -801,7 +837,7 @@ function DetailView({ item, onBack, toggleFavorite, folders, onAddToFolder, onRe
           <button
             onClick={async () => {
               if (!url) return;
-              const ext = isVideo ? 'mp4' : 'jpg';
+              const ext = isAudio ? 'mp3' : isVideo ? 'mp4' : 'jpg';
               const filename = `geraew-ai.${ext}`;
               try {
                 const res = await fetch(url);
@@ -980,12 +1016,14 @@ function OutputThumb({
   url,
   index,
   isVideo,
+  isAudio,
   isActive,
   onClick,
 }: {
   url: string;
   index: number;
   isVideo: boolean;
+  isAudio?: boolean;
   isActive: boolean;
   onClick: () => void;
 }) {
@@ -1000,9 +1038,13 @@ function OutputThumb({
         : 'ring-[#f3f0ed]/10 opacity-50 hover:opacity-80 hover:ring-[#f3f0ed]/30'
         }`}
     >
-      {!loaded && <div className="absolute inset-0 animate-pulse bg-[#f3f0ed]/6" />}
+      {!loaded && !isAudio && <div className="absolute inset-0 animate-pulse bg-[#f3f0ed]/6" />}
 
-      {isVideo ? (
+      {isAudio ? (
+        <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-[#1e494b]/40 to-[#1a2123]">
+          <Music className="h-6 w-6 text-[#a2dd00]" />
+        </div>
+      ) : isVideo ? (
         <video
           key={url}
           src={url}
@@ -1024,6 +1066,7 @@ function OutputThumb({
       {/* Version label */}
       <div className="absolute bottom-1 left-1 flex items-center gap-0.5 rounded bg-black/60 px-1 py-0.5">
         {isVideo && <Play className="h-2 w-2 fill-white text-white" />}
+        {isAudio && <Music className="h-2 w-2 text-[#a2dd00]" />}
         <span className="text-[9px] font-bold text-white">{index + 1}</span>
       </div>
 
@@ -1067,7 +1110,8 @@ const GalleryItem = memo(function GalleryItem({
   const [folderDropdownOpen, setFolderDropdownOpen] = useState(false);
   const displayUrl = item.thumbnailUrl ?? item.outputUrl;
   const fullUrl = item.outputUrl;
-  const isVideo = !!item.durationSeconds || ['TEXT_TO_VIDEO', 'IMAGE_TO_VIDEO', 'REFERENCE_VIDEO', 'MOTION_CONTROL'].includes(item.type);
+  const isAudio = AUDIO_TYPES.includes(item.type);
+  const isVideo = !isAudio && (!!item.durationSeconds || VIDEO_TYPES.includes(item.type));
   const outputCount = item.outputCount ?? 0;
   const itemFolderIds = item.folder ? [item.folder.id] : [];
 
@@ -1075,9 +1119,9 @@ const GalleryItem = memo(function GalleryItem({
     <div
       role="button"
       tabIndex={0}
-      draggable={!isVideo && !!fullUrl}
+      draggable={!isVideo && !isAudio && !!fullUrl}
       onDragStart={(e) => {
-        if (!fullUrl || isVideo) return;
+        if (!fullUrl || isVideo || isAudio) return;
         e.dataTransfer.setData('text/geraew-image-url', fullUrl);
         e.dataTransfer.effectAllowed = 'copy';
       }}
@@ -1094,9 +1138,15 @@ const GalleryItem = memo(function GalleryItem({
       style={{ contain: 'layout paint' }}
     >
       {/* Static placeholder until media loads */}
-      {!loaded && <div className="absolute inset-0 bg-[#f3f0ed]/6" />}
+      {!loaded && !isAudio && <div className="absolute inset-0 bg-[#f3f0ed]/6" />}
 
-      {displayUrl ? (
+      {isAudio ? (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-linear-to-br from-[#1e494b]/40 to-[#1a2123]" ref={() => setLoaded(true)}>
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#a2dd00]/15 ring-1 ring-[#a2dd00]/30">
+            <Music className="h-6 w-6 text-[#a2dd00]" />
+          </div>
+        </div>
+      ) : displayUrl ? (
         <Image
           src={displayUrl}
           alt={item.prompt ?? t('detail.imageAlt')}
@@ -1151,6 +1201,12 @@ const GalleryItem = memo(function GalleryItem({
           <div className="flex items-center gap-1 rounded-md bg-black/70 px-1.5 py-0.5">
             <Play className="h-3 w-3 fill-white text-white" />
             <span className="text-[9px] font-bold text-white">{item.durationSeconds}s</span>
+          </div>
+        )}
+        {isAudio && (
+          <div className="flex items-center gap-1 rounded-md bg-black/70 px-1.5 py-0.5">
+            <Music className="h-3 w-3 text-[#a2dd00]" />
+            <span className="text-[9px] font-bold text-[#a2dd00]">ÁUDIO</span>
           </div>
         )}
         {outputCount > 1 && (

@@ -12,7 +12,19 @@
         "generateVideo": "Generate video",
         "copyMotion": "Copy motion",
         "virtualTryOn": "Virtual Try-On",
-        "faceSwap": "Face Swap"
+        "faceSwap": "Face Swap",
+        "upscale": "Upscale",
+        "generateAudio": "Generate Audio"
+      },
+      "groups": {
+        "image": "Image",
+        "video": "Video",
+        "edit": "Edit",
+        "audio": "Audio",
+        "imageHint": "Generate images and influencers",
+        "videoHint": "Create and animate videos",
+        "editHint": "Transform existing media",
+        "audioHint": "AI voice and narration"
       }
     },
     "contextMenu": {
@@ -26,7 +38,14 @@
         "motionControl": { "label": "Copy motion", "description": "Copy motion from one video to another" },
         "virtualTryOn": { "label": "Virtual Try-On", "description": "Dress your AI influencer" },
         "faceSwap": { "label": "Face Swap", "description": "Swap faces in images with AI" },
+        "upscale": { "label": "Upscale", "description": "Enhance image quality up to 2K" },
         "generateVoice": { "label": "Generate Voice", "description": "Text to audio with AI" }
+      },
+      "groups": {
+        "image": "Image",
+        "video": "Video",
+        "edit": "Edit",
+        "audio": "Audio"
       }
     },
     "bottomToolbar": {
@@ -38,6 +57,12 @@
       "copyMotion": "Copy motion",
       "virtualTryOn": "Virtual Try-On",
       "faceSwap": "Face Swap",
+      "upscale": "Upscale",
+      "generateAudio": "Generate Audio",
+      "groupImage": "Image",
+      "groupVideo": "Video",
+      "groupEdit": "Edit",
+      "groupAudio": "Audio",
       "zoomOut": "Zoom out",
       "zoomIn": "Zoom in",
       "resetZoom": "Reset zoom",

@@ -12,7 +12,14 @@ import {
   useNodesState,
   useReactFlow,
 } from '@xyflow/react';
-import { AudioWaveform, ImageIcon, ImageUpscale, LayoutGrid, Map, PersonStanding, Repeat2, Shirt, Video } from 'lucide-react';
+import { ChevronDown, ChevronRight, LayoutGrid, Map } from 'lucide-react';
+import { PANEL_GROUPS } from '@/lib/panel-groups';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -70,6 +77,7 @@ function CanvasContent() {
   const [isMobile, setIsMobile] = useState(false);
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [minimapOpen, setMinimapOpen] = useState(false);
+  const [openCardId, setOpenCardId] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -107,7 +115,7 @@ function CanvasContent() {
 
   const handleAddPanel = useCallback(
     (type: string) => {
-      if (type !== 'generate-image' && type !== 'create-influencer' && type !== 'generate-video' && type !== 'motion-control' && type !== 'virtual-try-on' && type !== 'face-swap' && type !== 'upscale' && type !== 'generic') return;
+      if (type !== 'generate-image' && type !== 'create-influencer' && type !== 'generate-video' && type !== 'motion-control' && type !== 'virtual-try-on' && type !== 'face-swap' && type !== 'upscale' && type !== 'generate-audio' && type !== 'generic') return;
 
       if (nodes.length >= MAX_NODES) {
         setShowMaxNodesWarning(false);
@@ -345,14 +353,7 @@ function CanvasContent() {
           setViewport({ x: 0, y: 0, zoom: 1 }, { duration: 300 });
           setZoom(1);
         }}
-        onAdd={() => handleAddPanel('generic')}
-        onAddImage={() => handleAddPanel('generate-image')}
-        onAddInfluencer={() => handleAddPanel('create-influencer')}
-        onAddVideo={() => handleAddPanel('generate-video')}
-        onAddMotionControl={() => handleAddPanel('motion-control')}
-        onAddVirtualTryOn={() => handleAddPanel('virtual-try-on')}
-        onAddFaceSwap={() => handleAddPanel('face-swap')}
-        onAddUpscale={() => handleAddPanel('upscale')}
+        onAddPanel={handleAddPanel}
         onDelete={handleDelete}
         onFitView={() => fitView({ duration: 300, padding: 0.2 })}
       />
@@ -377,28 +378,183 @@ function CanvasContent() {
                 {t('emptySubtitle')}
               </p>
             </div>
-            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-row sm:gap-4">
-              {[
-                { type: 'generate-image', icon: ImageIcon, label: t('actions.generateImage') },
-                { type: 'create-influencer', icon: PersonStanding, label: t('actions.createInfluencer') },
-                { type: 'generate-video', icon: Video, label: t('actions.generateVideo') },
-                { type: 'motion-control', icon: AudioWaveform, label: t('actions.copyMotion') },
-                { type: 'virtual-try-on', icon: Shirt, label: t('actions.virtualTryOn') },
-                { type: 'face-swap', icon: Repeat2, label: t('actions.faceSwap') },
-                { type: 'upscale', icon: ImageUpscale, label: 'Upscale' },
-              ].map((item, i, arr) => (
-                <button
-                  key={item.type}
-                  onClick={() => handleAddPanel(item.type)}
-                  className={`empty-card-animate group flex h-[15dvh] flex-col items-center justify-center gap-2 rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/20 transition-all hover:border-[#a2dd00]/30 hover:bg-[#1e494b]/40 active:scale-95 sm:h-40 sm:w-40 sm:gap-4 ${i === arr.length - 1 ? 'col-span-2 sm:col-span-1' : ''}`}
-                  style={{ animationDelay: `${0.35 + i * 0.08}s` }}
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-hover:border-[#a2dd00]/30 group-hover:bg-[#a2dd00]/10 sm:h-12 sm:w-12">
-                    <item.icon className="h-5 w-5 text-[#f3f0ed]/50 transition-colors group-hover:text-[#a2dd00] sm:h-6 sm:w-6" />
+            <div className="relative w-full sm:w-auto">
+              {/* Ambient backdrop — gives the glass something to refract */}
+              <div className="pointer-events-none absolute inset-0 -z-10 overflow-visible">
+                <div className="absolute -left-10 top-[5%] h-56 w-56 rounded-full bg-[#a2dd00]/[0.10] blur-[90px]" />
+                <div className="absolute -right-10 bottom-[5%] h-56 w-56 rounded-full bg-[#1e494b]/55 blur-[90px]" />
+                <div className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#a2dd00]/[0.05] blur-[70px]" />
+              </div>
+
+              <div className="grid w-full grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+              {PANEL_GROUPS.map((group, gi) => {
+                const GroupIcon = group.icon;
+                const groupLabel = t(`groups.${group.id}`);
+                const animDelay = `${0.35 + gi * 0.08}s`;
+                const cardClass = "empty-card-animate group/card flex flex-col rounded-xl border border-white/[0.08] bg-white/[0.045] p-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.09),0_10px_30px_-12px_rgba(0,0,0,0.55)] backdrop-blur-2xl backdrop-saturate-150 transition-[background-color,border-color,box-shadow] duration-200 hover:border-[#a2dd00]/40 hover:bg-[#a2dd00]/[0.045] hover:shadow-[inset_0_1px_0_0_rgba(162,221,0,0.18),0_0_18px_-4px_rgba(162,221,0,0.12),0_10px_30px_-12px_rgba(0,0,0,0.55)] data-[state=open]:border-[#a2dd00]/40 data-[state=open]:bg-[#a2dd00]/[0.045] sm:w-52 sm:p-4";
+
+                const headerInner = (
+                  <>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#a2dd00]/[0.10] ring-1 ring-inset ring-[#a2dd00]/[0.18] transition-colors group-hover/card:bg-[#a2dd00]/[0.18] group-hover/card:ring-[#a2dd00]/[0.32] group-data-[state=open]/card:bg-[#a2dd00]/[0.18] group-data-[state=open]/card:ring-[#a2dd00]/[0.32]">
+                      <GroupIcon className="h-3.5 w-3.5 text-[#a2dd00]" />
+                    </div>
+                    <span className="flex-1 text-left text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[#f3f0ed]/65 transition-colors group-hover/card:text-[#f3f0ed]/85 group-data-[state=open]/card:text-[#f3f0ed]/85">
+                      {groupLabel}
+                    </span>
+                  </>
+                );
+
+                // Mobile single-panel: button that creates the panel directly
+                if (isMobile && group.panels.length === 1) {
+                  const only = group.panels[0];
+                  if (only.comingSoon) {
+                    return (
+                      <div
+                        key={group.id}
+                        className={`${cardClass} opacity-60 hover:border-white/[0.08] hover:bg-white/[0.045]`}
+                        style={{ animationDelay: animDelay }}
+                      >
+                        <div className="flex w-full items-center gap-2.5">
+                          {headerInner}
+                          <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#a2dd00]">
+                            Em breve
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <button
+                      key={group.id}
+                      onClick={() => handleAddPanel(only.type)}
+                      className={cardClass}
+                      style={{ animationDelay: animDelay }}
+                    >
+                      <div className="flex w-full items-center gap-2.5">
+                        {headerInner}
+                        <ChevronRight className="h-3.5 w-3.5 text-[#f3f0ed]/40 transition-transform group-hover/card:translate-x-0.5" />
+                      </div>
+                    </button>
+                  );
+                }
+
+                // Mobile multi-panel: card opens a dropdown with the options
+                if (isMobile) {
+                  return (
+                    <DropdownMenu
+                      key={group.id}
+                      open={openCardId === group.id}
+                      onOpenChange={(open) => setOpenCardId(open ? group.id : null)}
+                      modal={false}
+                    >
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className={cardClass}
+                          style={{ animationDelay: animDelay }}
+                          aria-label={groupLabel}
+                        >
+                          <div className="flex w-full items-center gap-2.5">
+                            {headerInner}
+                            <ChevronDown className="h-3.5 w-3.5 text-[#f3f0ed]/40 transition-transform duration-200 group-data-[state=open]/card:rotate-180" />
+                          </div>
+                        </button>
+                      </DropdownMenuTrigger>
+
+                      <DropdownMenuContent
+                        side="bottom"
+                        align="center"
+                        sideOffset={8}
+                        className="min-w-[12rem] overflow-hidden rounded-xl border border-white/[0.08] bg-[#1a2123]/85 p-1 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_10px_30px_-12px_rgba(0,0,0,0.55)] backdrop-blur-2xl backdrop-saturate-150"
+                      >
+                        {group.panels.map((panel) => {
+                          const Icon = panel.icon;
+                          const isComingSoon = panel.comingSoon;
+                          return (
+                            <DropdownMenuItem
+                              key={panel.type}
+                              disabled={isComingSoon}
+                              onSelect={(e) => {
+                                if (isComingSoon) {
+                                  e.preventDefault();
+                                  return;
+                                }
+                                handleAddPanel(panel.type);
+                              }}
+                              className={`group/item flex items-center gap-2.5 rounded-md px-2 py-1.5 outline-none transition-colors ${
+                                isComingSoon
+                                  ? 'opacity-50'
+                                  : 'cursor-pointer data-[highlighted]:bg-[#f3f0ed]/[0.045]'
+                              }`}
+                            >
+                              <Icon className="h-3.5 w-3.5 shrink-0 text-[#f3f0ed]/45 transition-colors group-data-[highlighted]/item:text-[#a2dd00]" />
+                              <span className="flex-1 truncate text-[12.5px] font-medium text-[#f3f0ed]/85 transition-colors group-data-[highlighted]/item:text-[#f3f0ed]">
+                                {t(`actions.${panel.actionKey}`)}
+                              </span>
+                              {isComingSoon ? (
+                                <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#a2dd00]">
+                                  Em breve
+                                </span>
+                              ) : (
+                                <ChevronRight className="h-3 w-3 shrink-0 text-[#f3f0ed]/0 transition-all group-data-[highlighted]/item:translate-x-0.5 group-data-[highlighted]/item:text-[#a2dd00]/70" />
+                              )}
+                            </DropdownMenuItem>
+                          );
+                        })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  );
+                }
+
+                // Desktop: inline card with header + body
+                return (
+                  <div
+                    key={group.id}
+                    className={cardClass}
+                    style={{ animationDelay: animDelay }}
+                  >
+                    <div className="flex items-center gap-2.5 pb-3">
+                      {headerInner}
+                    </div>
+
+                    <div className="-mx-1 flex flex-col">
+                      {group.panels.map((panel) => {
+                        const Icon = panel.icon;
+                        const isComingSoon = panel.comingSoon;
+                        if (isComingSoon) {
+                          return (
+                            <div
+                              key={panel.type}
+                              className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left opacity-50"
+                            >
+                              <Icon className="h-3.5 w-3.5 shrink-0 text-[#f3f0ed]/45" />
+                              <span className="flex-1 truncate text-[12.5px] font-medium text-[#f3f0ed]/85">
+                                {t(`actions.${panel.actionKey}`)}
+                              </span>
+                              <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#a2dd00]">
+                                Em breve
+                              </span>
+                            </div>
+                          );
+                        }
+                        return (
+                          <button
+                            key={panel.type}
+                            onClick={() => handleAddPanel(panel.type)}
+                            className="group/btn flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-[#f3f0ed]/[0.045] active:bg-[#f3f0ed]/[0.06]"
+                          >
+                            <Icon className="h-3.5 w-3.5 shrink-0 text-[#f3f0ed]/45 transition-colors group-hover/btn:text-[#a2dd00]" />
+                            <span className="flex-1 truncate text-[12.5px] font-medium text-[#f3f0ed]/85 transition-colors group-hover/btn:text-[#f3f0ed]">
+                              {t(`actions.${panel.actionKey}`)}
+                            </span>
+                            <ChevronRight className="h-3 w-3 shrink-0 text-[#f3f0ed]/0 transition-all group-hover/btn:translate-x-0.5 group-hover/btn:text-[#a2dd00]/70" />
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <span className="text-xs font-medium text-[#f3f0ed]/90 sm:text-sm">{item.label}</span>
-                </button>
-              ))}
+                );
+              })}
+              </div>
             </div>
           </div>
         </div>

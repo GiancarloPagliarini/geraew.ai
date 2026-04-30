@@ -12,7 +12,19 @@
         "generateVideo": "Gerar vídeo",
         "copyMotion": "Copiar movimentos",
         "virtualTryOn": "Provador Virtual",
-        "faceSwap": "Troca de Rosto"
+        "faceSwap": "Troca de Rosto",
+        "upscale": "Upscale",
+        "generateAudio": "Gerar Áudio"
+      },
+      "groups": {
+        "image": "Imagem",
+        "video": "Vídeo",
+        "edit": "Edição",
+        "audio": "Áudio",
+        "imageHint": "Gere imagens e influencers",
+        "videoHint": "Crie e anime vídeos",
+        "editHint": "Transforme mídias existentes",
+        "audioHint": "Voz e narração com IA"
       }
     },
     "contextMenu": {
@@ -26,7 +38,14 @@
         "motionControl": { "label": "Copiar movimentos", "description": "Copiar movimentos de um vídeo para outro" },
         "virtualTryOn": { "label": "Provador Virtual", "description": "Vista roupas na sua influencer de IA" },
         "faceSwap": { "label": "Troca de Rosto", "description": "Troque rostos em imagens com IA" },
+        "upscale": { "label": "Upscale", "description": "Aprimora a qualidade da imagem em 2K" },
         "generateVoice": { "label": "Gerar Voz", "description": "Texto para áudio com IA" }
+      },
+      "groups": {
+        "image": "Imagem",
+        "video": "Vídeo",
+        "edit": "Edição",
+        "audio": "Áudio"
       }
     },
     "bottomToolbar": {
@@ -38,6 +57,12 @@
       "copyMotion": "Copiar movimentos",
       "virtualTryOn": "Provador Virtual",
       "faceSwap": "Troca de Rosto",
+      "upscale": "Upscale",
+      "generateAudio": "Gerar Áudio",
+      "groupImage": "Imagem",
+      "groupVideo": "Vídeo",
+      "groupEdit": "Edição",
+      "groupAudio": "Áudio",
       "zoomOut": "Reduzir",
       "zoomIn": "Ampliar",
       "resetZoom": "Resetar zoom",

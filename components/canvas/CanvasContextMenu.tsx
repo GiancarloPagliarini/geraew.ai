@@ -5,33 +5,24 @@ import {
     ContextMenuContent,
     ContextMenuItem,
     ContextMenuLabel,
-    ContextMenuSeparator,
+    ContextMenuSub,
+    ContextMenuSubContent,
+    ContextMenuSubTrigger,
     ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import { AudioWaveform, ImageIcon, ImageUpscale, Mic, Repeat2, Shirt, User, Video } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { PANEL_GROUPS, PanelType } from '@/lib/panel-groups';
 
 interface CanvasContextMenuProps {
     children: React.ReactNode;
-    onAddPanel?: (type: string) => void;
+    onAddPanel?: (type: PanelType) => void;
 }
 
 export function CanvasContextMenu({ children, onAddPanel }: CanvasContextMenuProps) {
     const t = useTranslations('editor.contextMenu');
     const [isMobile, setIsMobile] = useState(false);
     useEffect(() => { setIsMobile(window.innerWidth < 640); }, []);
-
-    const menuItems = [
-        { type: 'generate-image', icon: ImageIcon, label: t('items.generateImage.label'), description: t('items.generateImage.description') },
-        { type: 'create-influencer', icon: User, label: t('items.createInfluencer.label'), description: t('items.createInfluencer.description') },
-        { type: 'generate-video', icon: Video, label: t('items.generateVideo.label'), description: t('items.generateVideo.description') },
-        { type: 'motion-control', icon: AudioWaveform, label: t('items.motionControl.label'), description: t('items.motionControl.description') },
-        { type: 'virtual-try-on', icon: Shirt, label: t('items.virtualTryOn.label'), description: t('items.virtualTryOn.description') },
-        { type: 'face-swap', icon: Repeat2, label: t('items.faceSwap.label'), description: t('items.faceSwap.description') },
-        { type: 'upscale', icon: ImageUpscale, label: 'Upscale', description: 'Aprimora a qualidade da imagem em 2K' },
-        { type: 'generate-voice', icon: Mic, label: t('items.generateVoice.label'), description: t('items.generateVoice.description'), comingSoon: true },
-    ];
 
     if (isMobile) return <>{children}</>;
 
@@ -48,55 +39,115 @@ export function CanvasContextMenu({ children, onAddPanel }: CanvasContextMenuPro
                     {t('heading')}
                 </ContextMenuLabel>
 
-                {menuItems.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                        <ContextMenuItem
-                            key={item.type}
-                            onSelect={(e) => {
-                                if (item.comingSoon) { e.preventDefault(); return; }
-                                onAddPanel?.(item.type);
-                            }}
-                            className={`group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 outline-none transition-all focus:bg-[#1e494b]/40 data-highlighted:bg-[#1e494b]/40 ${item.comingSoon ? 'opacity-60 cursor-default' : ''}`}
-                        >
-                            {/* Icon box */}
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-focus:border-[#a2dd00]/30 group-focus:bg-[#a2dd00]/10">
-                                <Icon className="h-4 w-4 text-[#f3f0ed]/50 transition-colors group-focus:text-[#a2dd00]" />
-                            </div>
+                {PANEL_GROUPS.map((group) => {
+                    const GroupIcon = group.icon;
 
-                            {/* Text */}
-                            <div className="flex flex-col flex-1 min-w-0">
-                                <span className="text-sm font-semibold text-[#f3f0ed]/90">
-                                    {item.label}
-                                </span>
-                                <span className="text-xs text-[#f3f0ed]/35">
-                                    {item.description}
-                                </span>
-                            </div>
-
-                            {/* Coming soon badge */}
-                            {item.comingSoon && (
-                                <div className="flex items-center gap-1 rounded-full border border-[#a2dd00]/30 bg-[#a2dd00]/5 px-2 py-0.5 shrink-0">
-                                    <span className="text-[10px] font-medium text-[#a2dd00]/70">{t('comingSoon')}</span>
-                                    <div className="flex items-center gap-0.5">
-                                        <span className="h-0.5 w-0.5 rounded-full bg-[#a2dd00]/70 animate-bounce [animation-delay:0ms]" />
-                                        <span className="h-0.5 w-0.5 rounded-full bg-[#a2dd00]/70 animate-bounce [animation-delay:150ms]" />
-                                        <span className="h-0.5 w-0.5 rounded-full bg-[#a2dd00]/70 animate-bounce [animation-delay:300ms]" />
-                                    </div>
+                    // Single-panel group → flat item
+                    if (group.panels.length === 1) {
+                        const panel = group.panels[0];
+                        const PanelIcon = panel.icon;
+                        const isComingSoon = panel.comingSoon;
+                        return (
+                            <ContextMenuItem
+                                key={group.id}
+                                disabled={isComingSoon}
+                                onSelect={(e) => {
+                                    if (isComingSoon) {
+                                        e.preventDefault();
+                                        return;
+                                    }
+                                    onAddPanel?.(panel.type);
+                                }}
+                                className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 outline-none transition-all ${
+                                    isComingSoon
+                                        ? 'opacity-50'
+                                        : 'cursor-pointer focus:bg-[#1e494b]/40 data-[highlighted]:bg-[#1e494b]/40'
+                                }`}
+                            >
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-focus:border-[#a2dd00]/30 group-focus:bg-[#a2dd00]/10 group-data-[highlighted]:border-[#a2dd00]/30 group-data-[highlighted]:bg-[#a2dd00]/10">
+                                    <PanelIcon className="h-4 w-4 text-[#f3f0ed]/50 transition-colors group-focus:text-[#a2dd00] group-data-[highlighted]:text-[#a2dd00]" />
                                 </div>
-                            )}
-                        </ContextMenuItem>
+                                <div className="flex flex-col flex-1 min-w-0">
+                                    <span className="flex items-center gap-2 text-sm font-semibold text-[#f3f0ed]/90">
+                                        {t(`items.${panel.contextKey}.label`)}
+                                        {isComingSoon && <ComingSoonBadge />}
+                                    </span>
+                                    <span className="text-xs text-[#f3f0ed]/35">
+                                        {t(`items.${panel.contextKey}.description`)}
+                                    </span>
+                                </div>
+                            </ContextMenuItem>
+                        );
+                    }
+
+                    // Multi-panel group → submenu
+                    return (
+                        <ContextMenuSub key={group.id}>
+                            <ContextMenuSubTrigger
+                                className="group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 outline-none transition-all focus:bg-[#1e494b]/40 data-[state=open]:bg-[#1e494b]/40"
+                            >
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#a2dd00]/20 bg-[#a2dd00]/[0.06] transition-all">
+                                    <GroupIcon className="h-4 w-4 text-[#a2dd00]" />
+                                </div>
+                                <div className="flex flex-1 min-w-0 items-center">
+                                    <span className="text-sm font-semibold text-[#f3f0ed]/90">
+                                        {t(`groups.${group.id}`)}
+                                    </span>
+                                </div>
+                            </ContextMenuSubTrigger>
+
+                            <ContextMenuSubContent
+                                sideOffset={8}
+                                className="w-64 overflow-hidden rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl"
+                            >
+                                {group.panels.map((panel) => {
+                                    const Icon = panel.icon;
+                                    const isComingSoon = panel.comingSoon;
+                                    return (
+                                        <ContextMenuItem
+                                            key={panel.type}
+                                            disabled={isComingSoon}
+                                            onSelect={(e) => {
+                                                if (isComingSoon) {
+                                                    e.preventDefault();
+                                                    return;
+                                                }
+                                                onAddPanel?.(panel.type);
+                                            }}
+                                            className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 outline-none transition-all ${
+                                                isComingSoon
+                                                    ? 'opacity-50'
+                                                    : 'cursor-pointer focus:bg-[#1e494b]/40 data-[highlighted]:bg-[#1e494b]/40'
+                                            }`}
+                                        >
+                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#f3f0ed]/[0.08] bg-[#1e494b]/30 transition-all group-focus:border-[#a2dd00]/30 group-focus:bg-[#a2dd00]/10 group-data-[highlighted]:border-[#a2dd00]/30 group-data-[highlighted]:bg-[#a2dd00]/10">
+                                                <Icon className="h-4 w-4 text-[#f3f0ed]/50 transition-colors group-focus:text-[#a2dd00] group-data-[highlighted]:text-[#a2dd00]" />
+                                            </div>
+                                            <div className="flex flex-col flex-1 min-w-0">
+                                                <span className="flex items-center gap-2 text-sm font-semibold text-[#f3f0ed]/90">
+                                                    {t(`items.${panel.contextKey}.label`)}
+                                                    {isComingSoon && <ComingSoonBadge />}
+                                                </span>
+                                                <span className="text-xs text-[#f3f0ed]/35">
+                                                    {t(`items.${panel.contextKey}.description`)}
+                                                </span>
+                                            </div>
+                                        </ContextMenuItem>
+                                    );
+                                })}
+                            </ContextMenuSubContent>
+                        </ContextMenuSub>
                     );
                 })}
-
-                <ContextMenuSeparator className="my-1.5 bg-[#f3f0ed]/[0.06]" />
-
-                <ContextMenuItem className="group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 outline-none transition-all focus:bg-[#f3f0ed]/[0.04] data-[highlighted]:bg-[#f3f0ed]/[0.04]">
-                    <span className="text-xs text-[#f3f0ed]/30 transition-colors group-focus:text-[#f3f0ed]/60">
-                        {t('moreSoon')}
-                    </span>
-                </ContextMenuItem>
             </ContextMenuContent>
         </ContextMenu>
+    );
+}
+
+function ComingSoonBadge() {
+    return (
+        <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#a2dd00]">
+            Em breve
+        </span>
     );
 }

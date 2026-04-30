@@ -14,6 +14,7 @@
         "all": "Todo",
         "photos": "Fotos",
         "videos": "Videos",
+        "audios": "Audios",
         "favorites": "Favoritos"
       },
       "stats": {
@@ -78,6 +79,7 @@
       },
       "empty": "Aún no hay imágenes generadas.",
       "loadDetailsError": "Error al cargar detalles",
+      "audioPickerBlocked": "No puedes seleccionar audios aquí — elige una imagen o video.",
       "favorited": "Agregada a favoritos",
       "unfavorited": "Removida de favoritos",
       "favoriteError": "Error al actualizar favorito",

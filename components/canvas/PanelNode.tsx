@@ -13,6 +13,7 @@ import { MotionControlPanel } from '../editor/MotionControlPanel';
 import { VirtualTryOnPanel } from '../editor/VirtualTryOnPanel';
 import { FaceSwapPanel } from '../editor/FaceSwapPanel';
 import { UpscalePanel } from '../editor/UpscalePanel';
+import { GenerateAudioPanel } from '../editor/GenerateAudioPanel';
 
 const PANEL_NODE_STYLE = {
   background: 'transparent',
@@ -31,6 +32,7 @@ const STORAGE_KEY_PREFIX: Partial<Record<string, string>> = {
   'virtual-try-on': 'geraew-panel-virtual-try-on-',
   'face-swap': 'geraew-panel-face-swap-',
   'upscale': 'geraew-panel-upscale-',
+  'generate-audio': 'geraew-panel-audio-',
 };
 
 export function PanelNode({ id, data, selected }: NodeProps) {
@@ -106,6 +108,7 @@ export function PanelNode({ id, data, selected }: NodeProps) {
     'virtual-try-on': <VirtualTryOnPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
     'face-swap': <FaceSwapPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
     'upscale': <UpscalePanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
+    'generate-audio': <GenerateAudioPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
   };
 
   const panel = panelMap[data.panelType as string];

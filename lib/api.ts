@@ -494,6 +494,20 @@ export interface ReferenceToVideoKieRequest extends TextToVideoKieRequest {
   reference_images_mime_types?: string[];
 }
 
+export interface TextToSpeechRequest {
+  text: string;
+  voice_id: string;
+  language?: string;
+  speed?: number;
+}
+
+export interface VoiceCloneRequest {
+  text: string;
+  audio: string;
+  audio_mime_type?: string;
+  language?: string;
+}
+
 // ─── Video Editor ─────────────────────────────────────────────────────────────
 
 export interface VideoProject {
@@ -524,6 +538,27 @@ export interface Folder {
   name: string;
   generationCount: number;
   createdAt: string;
+}
+
+// ─── Voices (saved voice profiles) ──────────────────────────────────────────
+
+export interface VoiceProfile {
+  id: string;
+  name: string;
+  language: string;
+  status: 'TRAINING' | 'READY' | 'FAILED';
+  createdAt: string;
+}
+
+export interface VoiceQuota {
+  used: number;
+  limit: number;
+  planSlug: string;
+}
+
+export interface VoiceListResponse {
+  voices: VoiceProfile[];
+  quota: VoiceQuota;
 }
 
 // ─── Affiliates (Admin) ─────────────────────────────────────────────────────
@@ -966,6 +1001,29 @@ export const api = {
     },
   },
 
+  voices: {
+    list(accessToken: string) {
+      return authRequest<VoiceListResponse>('/api/v1/voices', accessToken);
+    },
+    create(accessToken: string, payload: { generationId: string; name: string }) {
+      return authRequest<VoiceProfile>('/api/v1/voices', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    rename(accessToken: string, id: string, name: string) {
+      return authRequest<VoiceProfile>(`/api/v1/voices/${id}`, accessToken, {
+        method: 'PATCH',
+        body: JSON.stringify({ name }),
+      });
+    },
+    delete(accessToken: string, id: string) {
+      return authRequest<void>(`/api/v1/voices/${id}`, accessToken, {
+        method: 'DELETE',
+      });
+    },
+  },
+
   generations: {
     generateImage(accessToken: string, payload: GenerateImageRequest) {
       return authRequest<CreateGenerationResponse>('/api/v1/generations/generate-image-auto', accessToken, {
@@ -1029,6 +1087,18 @@ export const api = {
     },
     referenceToVideoKie(accessToken: string, payload: ReferenceToVideoKieRequest) {
       return authRequest<CreateGenerationResponse>('/api/v1/generations/reference-to-video-kie', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    textToSpeech(accessToken: string, payload: TextToSpeechRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/text-to-speech', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    voiceClone(accessToken: string, payload: VoiceCloneRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/voice-clone', accessToken, {
         method: 'POST',
         body: JSON.stringify(payload),
       });
