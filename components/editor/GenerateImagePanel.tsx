@@ -167,7 +167,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
       (imageModelsQuery.data ?? []).map((m) => [m.slug, m]),
     );
     const base: { value: string; label: string; disabled?: boolean; badge?: string }[] = [
-      { value: 'gpt-image-2', label: 'GPT Image 2', badge: 'Novo' },
+      { value: 'gpt-image-2', label: 'GPT Image 2', badge: tCommon('newBadge') },
       { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2' },
       { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
       { value: 'sem-censura', label: 'Geraew Unlocked' },

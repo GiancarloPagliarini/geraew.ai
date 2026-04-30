@@ -21,6 +21,7 @@
       "credits": "credits",
       "optional": "optional",
       "free": "Free",
+      "newBadge": "New",
       "freeGeneration": "Free generation!",
       "freeGenerationRemaining": "({count} remaining)",
       "errors": {

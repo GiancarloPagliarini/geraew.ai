@@ -21,6 +21,7 @@
       "credits": "créditos",
       "optional": "opcional",
       "free": "Grátis",
+      "newBadge": "Novo",
       "freeGeneration": "Geração gratuita!",
       "freeGenerationRemaining": "({count} restante{plural})",
       "errors": {

@@ -47,6 +47,7 @@ export function CanvasContextMenu({ children, onAddPanel }: CanvasContextMenuPro
                         const panel = group.panels[0];
                         const PanelIcon = panel.icon;
                         const isComingSoon = panel.comingSoon;
+                        const isNew = panel.isNew;
                         return (
                             <ContextMenuItem
                                 key={group.id}
@@ -70,7 +71,8 @@ export function CanvasContextMenu({ children, onAddPanel }: CanvasContextMenuPro
                                 <div className="flex flex-col flex-1 min-w-0">
                                     <span className="flex items-center gap-2 text-sm font-semibold text-[#f3f0ed]/90">
                                         {t(`items.${panel.contextKey}.label`)}
-                                        {isComingSoon && <ComingSoonBadge />}
+                                        {isComingSoon && <ComingSoonBadge label={t('comingSoon')} />}
+                                        {!isComingSoon && isNew && <NewBadge label={t('newBadge')} />}
                                     </span>
                                     <span className="text-xs text-[#f3f0ed]/35">
                                         {t(`items.${panel.contextKey}.description`)}
@@ -103,6 +105,7 @@ export function CanvasContextMenu({ children, onAddPanel }: CanvasContextMenuPro
                                 {group.panels.map((panel) => {
                                     const Icon = panel.icon;
                                     const isComingSoon = panel.comingSoon;
+                                    const isNew = panel.isNew;
                                     return (
                                         <ContextMenuItem
                                             key={panel.type}
@@ -126,7 +129,8 @@ export function CanvasContextMenu({ children, onAddPanel }: CanvasContextMenuPro
                                             <div className="flex flex-col flex-1 min-w-0">
                                                 <span className="flex items-center gap-2 text-sm font-semibold text-[#f3f0ed]/90">
                                                     {t(`items.${panel.contextKey}.label`)}
-                                                    {isComingSoon && <ComingSoonBadge />}
+                                                    {isComingSoon && <ComingSoonBadge label={t('comingSoon')} />}
+                                                    {!isComingSoon && isNew && <NewBadge label={t('newBadge')} />}
                                                 </span>
                                                 <span className="text-xs text-[#f3f0ed]/35">
                                                     {t(`items.${panel.contextKey}.description`)}
@@ -144,10 +148,18 @@ export function CanvasContextMenu({ children, onAddPanel }: CanvasContextMenuPro
     );
 }
 
-function ComingSoonBadge() {
+function ComingSoonBadge({ label }: { label: string }) {
     return (
         <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#a2dd00]">
-            Em breve
+            {label}
+        </span>
+    );
+}
+
+function NewBadge({ label }: { label: string }) {
+    return (
+        <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#a2dd00]">
+            {label}
         </span>
     );
 }

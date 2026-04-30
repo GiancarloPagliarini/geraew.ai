@@ -63,6 +63,11 @@ export function TopNavbar() {
     return status === 'active' && (plan?.slug as string | undefined) !== 'free';
   })();
 
+  const planSlug = (userProfile?.plan as Record<string, unknown> | null)?.slug as string | undefined;
+  const planName = ((userProfile?.plan as Record<string, unknown> | null)?.name as string | undefined)
+    ?? (planSlug ? planSlug.charAt(0).toUpperCase() + planSlug.slice(1) : undefined);
+  const isFreePlan = !planSlug || planSlug === 'free';
+
   // Fecha o menu ao clicar fora (ignora cliques dentro do aside mobile)
   useEffect(() => {
     if (!menuOpen) return;
@@ -326,7 +331,19 @@ export function TopNavbar() {
               /* Desktop dropdown only */
               <div className="absolute right-0 top-full mt-2 hidden w-56 overflow-hidden rounded-xl border border-[#f3f0ed]/8 bg-[#1a2123] shadow-2xl sm:block">
                 <div className="border-b border-landing-text/6 px-4 py-3">
-                  <p className="text-xs font-semibold text-landing-text">{user?.name || t('defaultUser')}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-xs font-semibold text-landing-text">{user?.name || t('defaultUser')}</p>
+                    {planName && (
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${isFreePlan
+                          ? 'border border-[#f3f0ed]/15 bg-[#f3f0ed]/5 text-[#f3f0ed]/60'
+                          : 'border border-[#a2dd00]/30 bg-[#a2dd00]/10 text-[#a2dd00]'
+                          }`}
+                      >
+                        {planName}
+                      </span>
+                    )}
+                  </div>
                   <p className="mt-0.5 text-[11px] text-landing-text/40">{user?.email}</p>
                 </div>
                 <div className="py-1.5">
@@ -399,8 +416,20 @@ export function TopNavbar() {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
           <aside ref={asideRef} className="absolute right-0 top-0 flex h-full w-72 flex-col border-l border-[#f3f0ed]/8 bg-[#1a2123]">
             <div className="flex items-center justify-between border-b border-landing-text/6 px-4 py-4">
-              <div>
-                <p className="text-sm font-semibold text-landing-text">{user?.name || t('defaultUser')}</p>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-semibold text-landing-text">{user?.name || t('defaultUser')}</p>
+                  {planName && (
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${isFreePlan
+                        ? 'border border-[#f3f0ed]/15 bg-[#f3f0ed]/5 text-[#f3f0ed]/60'
+                        : 'border border-[#a2dd00]/30 bg-[#a2dd00]/10 text-[#a2dd00]'
+                        }`}
+                    >
+                      {planName}
+                    </span>
+                  )}
+                </div>
                 <p className="mt-0.5 text-[11px] text-landing-text/40">{user?.email}</p>
               </div>
               <button onClick={() => setMenuOpen(false)} className="flex h-7 w-7 items-center justify-center rounded-full text-landing-text/40 transition-colors hover:bg-landing-text/6 hover:text-landing-text">

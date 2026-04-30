@@ -11,7 +11,8 @@ import { TrendingProductsDialog } from './TrendingProductsDialog';
 import { TutorialDialog } from './TutorialDialog';
 import { VideoEditorDialog } from './VideoEditorDialog';
 import { ImageToPromptDialog } from './ImageToPromptDialog';
-import { ChevronDown, Flame, FolderOpen, GraduationCap, Image as ImageIcon, Menu, Star, Type, X } from 'lucide-react';
+import { VoicesDialog } from './VoicesDialog';
+import { ChevronDown, Clock, Flame, FolderOpen, GraduationCap, Image as ImageIcon, Menu, MicVocal, Star, Type, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useEditor } from '@/lib/editor-context';
@@ -19,12 +20,13 @@ import Image from 'next/image';
 
 export function LeftSidebar() {
   const t = useTranslations('editorChrome.leftSidebar');
-  const navItems: Array<{ id: string; icon: typeof FolderOpen; label: string; tooltip?: string; isNew?: boolean }> = [
+  const navItems: Array<{ id: string; icon: typeof FolderOpen; label: string; tooltip?: string; isNew?: boolean; comingSoon?: boolean }> = [
     { id: 'gallery', icon: FolderOpen, label: t('gallery') },
     { id: 'tutorial', icon: GraduationCap, label: t('tutorial') },
-    { id: 'prompts', icon: Type, label: t('prompts'), tooltip: t('promptsTooltip'), isNew: true },
-    { id: 'trending', icon: Flame, label: t('trending'), tooltip: t('trendingTooltip'), isNew: true },
-    { id: 'imageToPrompt', icon: ImageIcon, label: 'Clone', tooltip: 'Clone de prompt', isNew: true },
+    { id: 'prompts', icon: Type, label: t('prompts'), tooltip: t('promptsTooltip') },
+    { id: 'trending', icon: Flame, label: t('trending'), tooltip: t('trendingTooltip') },
+    { id: 'imageToPrompt', icon: ImageIcon, label: t('clone'), tooltip: t('cloneTooltip') },
+    { id: 'voices', icon: MicVocal, label: t('voices'), tooltip: t('voicesTooltip'), comingSoon: true },
   ];
   const { galleryPickerRequest, setLeftPanelOpen } = useEditor();
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -33,6 +35,7 @@ export function LeftSidebar() {
   const [promptsOpen, setPromptsOpen] = useState(false);
   const [trendingOpen, setTrendingOpen] = useState(false);
   const [imageToPromptOpen, setImageToPromptOpen] = useState(false);
+  const [voicesOpen, setVoicesOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -46,16 +49,18 @@ export function LeftSidebar() {
     setPromptsOpen(id === 'prompts');
     setTrendingOpen(id === 'trending');
     setImageToPromptOpen(id === 'imageToPrompt');
+    setVoicesOpen(id === 'voices');
   }, []);
 
-  const anyOpen = galleryOpen || videoEditorOpen || tutorialOpen || promptsOpen || trendingOpen || imageToPromptOpen;
+  const anyOpen = galleryOpen || videoEditorOpen || tutorialOpen || promptsOpen || trendingOpen || imageToPromptOpen || voicesOpen;
 
   const activeItem = navItems.find(({ id }) =>
     (id === 'gallery' && galleryOpen) ||
     (id === 'tutorial' && tutorialOpen) ||
     (id === 'prompts' && promptsOpen) ||
     (id === 'trending' && trendingOpen) ||
-    (id === 'imageToPrompt' && imageToPromptOpen)
+    (id === 'imageToPrompt' && imageToPromptOpen) ||
+    (id === 'voices' && voicesOpen)
   );
 
   useEffect(() => {
@@ -82,6 +87,11 @@ export function LeftSidebar() {
   }, [mobileMenuOpen]);
 
   function handleNavClick(id: string) {
+    const target = navItems.find((item) => item.id === id);
+    if (target?.comingSoon) {
+      setMobileMenuOpen(false);
+      return;
+    }
     if (switchTimerRef.current) clearTimeout(switchTimerRef.current);
     setMobileMenuOpen(false);
 
@@ -91,7 +101,8 @@ export function LeftSidebar() {
       (id !== 'tutorial' && tutorialOpen) ||
       (id !== 'prompts' && promptsOpen) ||
       (id !== 'trending' && trendingOpen) ||
-      (id !== 'imageToPrompt' && imageToPromptOpen);
+      (id !== 'imageToPrompt' && imageToPromptOpen) ||
+      (id !== 'voices' && voicesOpen);
 
     const isToggleOff =
       (id === 'gallery' && galleryOpen) ||
@@ -99,7 +110,8 @@ export function LeftSidebar() {
       (id === 'tutorial' && tutorialOpen) ||
       (id === 'prompts' && promptsOpen) ||
       (id === 'trending' && trendingOpen) ||
-      (id === 'imageToPrompt' && imageToPromptOpen);
+      (id === 'imageToPrompt' && imageToPromptOpen) ||
+      (id === 'voices' && voicesOpen);
 
     if (isToggleOff) {
       openDialog('none');
@@ -152,30 +164,38 @@ export function LeftSidebar() {
           {/* Dropdown */}
           {mobileMenuOpen && (
             <div className="absolute left-0 top-full z-[100] w-52 overflow-hidden rounded-b-xl border border-t-0 border-[#f3f0ed]/[0.08] bg-[#1a2123]/95 shadow-2xl backdrop-blur-md">
-              {navItems.map(({ id, icon: Icon, label, isNew }) => {
+              {navItems.map(({ id, icon: Icon, label, isNew, comingSoon }) => {
                 const isActive =
                   (id === 'gallery' && galleryOpen) ||
                   (id === 'tutorial' && tutorialOpen) ||
                   (id === 'prompts' && promptsOpen) ||
                   (id === 'trending' && trendingOpen) ||
-                  (id === 'imageToPrompt' && imageToPromptOpen);
+                  (id === 'imageToPrompt' && imageToPromptOpen) ||
+                  (id === 'voices' && voicesOpen);
                 return (
                   <button
                     key={id}
                     id={id === 'tutorial' ? 'tour-tutorial-btn' : undefined}
                     onClick={() => handleNavClick(id)}
-                    className={`relative flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${isActive
-                      ? 'bg-[#a2dd00]/10 text-[#a2dd00]'
-                      : 'text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/[0.04] hover:text-[#f3f0ed]'
+                    disabled={comingSoon}
+                    className={`relative flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${comingSoon
+                      ? 'opacity-50 text-[#f3f0ed]/40'
+                      : isActive
+                        ? 'bg-[#a2dd00]/10 text-[#a2dd00]'
+                        : 'text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/[0.04] hover:text-[#f3f0ed]'
                       }`}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
                     <span className="text-xs font-semibold">{label}</span>
-                    {isNew && (
+                    {comingSoon ? (
+                      <span className="ml-auto flex h-4 w-4 items-center justify-center rounded-full bg-[#a2dd00]/15 text-[#a2dd00]">
+                        <Clock className="h-2.5 w-2.5" />
+                      </span>
+                    ) : isNew ? (
                       <span className="ml-auto flex h-4 w-4 items-center justify-center rounded-full bg-yellow-400 text-black">
                         <Star className="h-2.5 w-2.5" />
                       </span>
-                    )}
+                    ) : null}
                   </button>
                 );
               })}
@@ -195,32 +215,40 @@ export function LeftSidebar() {
 
         {/* ── Desktop: vertical sidebar ── */}
         <div className="hidden md:flex md:h-full md:flex-col md:items-stretch md:gap-1.5 md:py-3 md:px-1.5">
-          {navItems.map(({ id, icon: Icon, label, tooltip, isNew }) => {
+          {navItems.map(({ id, icon: Icon, label, tooltip, isNew, comingSoon }) => {
             const isActive =
               (id === 'gallery' && galleryOpen) ||
               (id === 'videoEditor' && videoEditorOpen) ||
               (id === 'tutorial' && tutorialOpen) ||
               (id === 'prompts' && promptsOpen) ||
               (id === 'trending' && trendingOpen) ||
-              (id === 'imageToPrompt' && imageToPromptOpen);
+              (id === 'imageToPrompt' && imageToPromptOpen) ||
+              (id === 'voices' && voicesOpen);
             return (
               <Tooltip key={id}>
                 <TooltipTrigger asChild>
                   <button
                     id={id === 'tutorial' ? 'tour-tutorial-btn' : undefined}
                     onClick={() => handleNavClick(id)}
-                    className={`group relative flex w-full flex-col items-center gap-0.5 rounded-md py-1.5 px-1 transition-all ${isActive
-                      ? 'bg-[#a2dd00]/15 text-[#a2dd00]'
-                      : 'text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70'
+                    disabled={comingSoon}
+                    className={`group relative flex w-full flex-col items-center gap-0.5 rounded-md py-1.5 px-1 transition-all ${comingSoon
+                      ? 'opacity-50 text-[#f3f0ed]/30'
+                      : isActive
+                        ? 'bg-[#a2dd00]/15 text-[#a2dd00]'
+                        : 'text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70'
                       }`}
                   >
                     <Icon className="h-4.5 w-4.5 shrink-0" />
                     <span className="text-[10px] font-bold tracking-wide text-center leading-tight">{label}</span>
-                    {isNew && (
+                    {comingSoon ? (
+                      <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#a2dd00]/20 text-[#a2dd00] select-none">
+                        <Clock className="h-2.5 w-2.5" />
+                      </div>
+                    ) : isNew ? (
                       <div className="absolute group-hover:animate-pulse -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-400 text-black select-none">
                         <Star className="h-2.5 w-2.5" />
                       </div>
-                    )}
+                    ) : null}
                   </button>
                 </TooltipTrigger>
                 <TooltipContent
@@ -228,7 +256,9 @@ export function LeftSidebar() {
                   sideOffset={10}
                   className="border border-[#f3f0ed]/8 bg-[#1a2123] px-2.5 py-1.5 text-[10px] font-bold tracking-widest text-[#f3f0ed]/90 shadow-2xl backdrop-blur-md"
                 >
-                  {(tooltip ?? label).toUpperCase()}
+                  {comingSoon
+                    ? `${(tooltip ?? label).toUpperCase()} — ${t('comingSoonSuffix')}`
+                    : (tooltip ?? label).toUpperCase()}
                 </TooltipContent>
               </Tooltip>
             );
@@ -248,6 +278,7 @@ export function LeftSidebar() {
       <PromptsDialog open={promptsOpen} onOpenChange={setPromptsOpen} />
       <TrendingProductsDialog open={trendingOpen} onOpenChange={setTrendingOpen} />
       <ImageToPromptDialog open={imageToPromptOpen} onOpenChange={setImageToPromptOpen} />
+      <VoicesDialog open={voicesOpen} onOpenChange={setVoicesOpen} />
     </>
   );
 }

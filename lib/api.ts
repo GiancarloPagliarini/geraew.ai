@@ -547,6 +547,11 @@ export interface VoiceProfile {
   name: string;
   language: string;
   status: 'TRAINING' | 'READY' | 'FAILED';
+  sampleUrl: string;
+  /** URL of the synthesized clone output (the "say this" preview). Null for legacy profiles created before previews were persisted. */
+  previewUrl: string | null;
+  /** Text the user typed when cloning the voice. Null for legacy profiles. */
+  previewText: string | null;
   createdAt: string;
 }
 

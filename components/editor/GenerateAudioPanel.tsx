@@ -18,7 +18,6 @@ import {
   Mic,
   MicVocal,
   Pause,
-  Pencil,
   Play,
   Speech,
   Square,
@@ -27,7 +26,6 @@ import {
   Upload,
   Volume2,
   VolumeX,
-  Wand2,
   X,
 } from 'lucide-react';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
@@ -37,6 +35,7 @@ import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
 import { api, ApiError, VoiceProfile } from '@/lib/api';
+import { VOICE_OPTIONS } from '@/lib/voice-options';
 import { listenGeneration } from '@/lib/sse';
 import { useGenerationRecovery } from '@/lib/use-generation-recovery';
 import { toast } from 'sonner';
@@ -58,16 +57,6 @@ const MAX_AUDIO_SIZE = 15 * 1024 * 1024;
 const TTS_CREDIT_COST = 10;
 const CLONE_CREDIT_COST = 15;
 
-const VOICE_OPTIONS = [
-  { value: 'ana-pt', label: 'Ana (PT) — Feminina' },
-  { value: 'carlos-pt', label: 'Carlos (PT) — Masculina' },
-  { value: 'sofia-pt', label: 'Sofia (PT) — Feminina jovem' },
-  { value: 'rafael-pt', label: 'Rafael (PT) — Masculina jovem' },
-  { value: 'emma-en', label: 'Emma (EN) — Feminina' },
-  { value: 'james-en', label: 'James (EN) — Masculina' },
-  { value: 'lucia-es', label: 'Lucía (ES) — Feminina' },
-  { value: 'diego-es', label: 'Diego (ES) — Masculina' },
-];
 
 const LANGUAGE_OPTIONS = [
   { value: 'pt', label: 'Português' },
@@ -96,9 +85,18 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
     refetchCredits,
     prependToGallery,
     setNodeGenerating,
+    pendingPromptRef,
+    consumePendingPrompt,
   } = useEditor();
   const { accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
+
+  const [pendingVoiceId] = useState(() => {
+    if (pendingPromptRef.current?.panelType === 'generate-audio') {
+      return consumePendingPrompt()?.voiceId ?? null;
+    }
+    return null;
+  });
 
   const storageKey = `geraew-panel-audio-${nodeId}`;
   const [stored] = useState(() => {
@@ -112,7 +110,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
 
   const [mode, setMode] = useState<Mode>(stored?.mode ?? 'tts');
   const [text, setText] = useState<string>(stored?.text ?? '');
-  const [voiceId, setVoiceId] = useState<string>(stored?.voiceId ?? VOICE_OPTIONS[0].value);
+  const [voiceId, setVoiceId] = useState<string>(pendingVoiceId ?? stored?.voiceId ?? VOICE_OPTIONS[0].value);
   const [language, setLanguage] = useState<string>(stored?.language ?? 'pt');
   const [speed, setSpeed] = useState<string>(stored?.speed ?? '1');
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(stored?.generatedAudioUrl ?? null);
@@ -520,34 +518,6 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
       toast.error(msg);
     } finally {
       setSavingVoice(false);
-    }
-  }
-
-  async function handleRenameSavedVoice(voice: VoiceProfile, newName: string) {
-    if (!accessToken) return;
-    const trimmed = newName.trim();
-    if (!trimmed || trimmed === voice.name) return;
-    try {
-      const updated = await api.voices.rename(accessToken, voice.id, trimmed);
-      setSavedVoices((prev) => prev.map((v) => (v.id === voice.id ? updated : v)));
-      toast.success('Voz renomeada.');
-    } catch {
-      toast.error('Não conseguimos renomear a voz. Tente de novo.');
-    }
-  }
-
-  async function handleDeleteSavedVoice(voice: VoiceProfile) {
-    if (!accessToken) return;
-    try {
-      await api.voices.delete(accessToken, voice.id);
-      setSavedVoices((prev) => prev.filter((v) => v.id !== voice.id));
-      // If currently selected, fall back to the first default voice
-      if (voiceId === `clone:${voice.id}`) {
-        setVoiceId(VOICE_OPTIONS[0].value);
-      }
-      toast.success('Voz excluída.');
-    } catch {
-      toast.error('Não conseguimos excluir a voz agora. Tente de novo.');
     }
   }
 
@@ -993,8 +963,6 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
                     onValueChange={setVoiceId}
                     savedVoices={savedVoices}
                     defaultVoices={VOICE_OPTIONS}
-                    onRenameSaved={handleRenameSavedVoice}
-                    onDeleteSaved={handleDeleteSavedVoice}
                   />
                 </div>
               )}
@@ -1153,46 +1121,13 @@ function VoiceSelect({
   onValueChange,
   savedVoices,
   defaultVoices,
-  onRenameSaved,
-  onDeleteSaved,
 }: {
   value: string;
   onValueChange: (v: string) => void;
   savedVoices: VoiceProfile[];
   defaultVoices: { value: string; label: string }[];
-  onRenameSaved: (voice: VoiceProfile, newName: string) => void;
-  onDeleteSaved: (voice: VoiceProfile) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState('');
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-
-  // Reset transient row states whenever the dropdown closes
-  useEffect(() => {
-    if (!open) {
-      setEditingId(null);
-      setEditingName('');
-      setConfirmDeleteId(null);
-    }
-  }, [open]);
-
-  function startRename(voice: VoiceProfile) {
-    setEditingId(voice.id);
-    setEditingName(voice.name);
-    setConfirmDeleteId(null);
-  }
-
-  function commitRename(voice: VoiceProfile) {
-    onRenameSaved(voice, editingName);
-    setEditingId(null);
-    setEditingName('');
-  }
-
-  function cancelRename() {
-    setEditingId(null);
-    setEditingName('');
-  }
 
   function pickVoice(val: string) {
     onValueChange(val);
@@ -1230,118 +1165,24 @@ function VoiceSelect({
             <div className="sidebar-scroll max-h-36 space-y-1 overflow-y-auto pr-1">
               {savedVoices.map((voice) => {
                 const isSelected = value === `clone:${voice.id}`;
-                const isEditing = editingId === voice.id;
-                const isConfirmingDelete = confirmDeleteId === voice.id;
-
-                if (isEditing) {
-                  return (
-                    <div
-                      key={voice.id}
-                      className="flex items-center gap-1 rounded-lg px-2 py-1.5 mb-2"
-                    >
-                      <MicVocal className="h-3 w-3 shrink-0 text-[#a2dd00]/70" />
-                      <input
-                        autoFocus
-                        type="text"
-                        maxLength={40}
-                        value={editingName}
-                        onChange={(e) => setEditingName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            commitRename(voice);
-                          }
-                          if (e.key === 'Escape') {
-                            e.preventDefault();
-                            cancelRename();
-                          }
-                        }}
-                        className="h-6 flex-1 min-w-0 rounded bg-[#1e494b]/40 px-2 text-xs text-[#f3f0ed]/90 outline-none focus:bg-[#1e494b]/60"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => commitRename(voice)}
-                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-[#a2dd00] hover:bg-[#a2dd00]/15"
-                        title="Salvar"
-                      >
-                        <Wand2 className="h-3 w-3" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={cancelRename}
-                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-[#f3f0ed]/40 hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
-                        title="Cancelar"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  );
-                }
 
                 return (
-                  <div
+                  <button
                     key={voice.id}
-                    className={`group flex items-center gap-1 rounded-lg pl-2 pr-1 py-1.5 transition-colors ${isSelected ? 'bg-[#a2dd00]/8' : 'hover:bg-[#1e494b]/40'
+                    type="button"
+                    onClick={() => pickVoice(`clone:${voice.id}`)}
+                    className={`flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left transition-colors ${isSelected ? 'bg-[#a2dd00]/8' : 'hover:bg-[#1e494b]/40'
                       }`}
                   >
-                    <button
-                      type="button"
-                      onClick={() => pickVoice(`clone:${voice.id}`)}
-                      className="flex flex-1 min-w-0 items-center gap-1.5 cursor-pointer text-left"
+                    <MicVocal
+                      className={`h-3 w-3 shrink-0 ${isSelected ? 'text-[#a2dd00]' : 'text-[#a2dd00]/70'}`}
+                    />
+                    <span
+                      className={`truncate text-xs ${isSelected ? 'text-[#a2dd00] font-medium' : 'text-[#f3f0ed]/70'}`}
                     >
-                      <MicVocal
-                        className={`h-3 w-3 shrink-0 ${isSelected ? 'text-[#a2dd00]' : 'text-[#a2dd00]/70'}`}
-                      />
-                      <span
-                        className={`truncate text-xs ${isSelected ? 'text-[#a2dd00] font-medium' : 'text-[#f3f0ed]/70'}`}
-                      >
-                        {voice.name}
-                      </span>
-                    </button>
-
-                    {isConfirmingDelete ? (
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            onDeleteSaved(voice);
-                            setConfirmDeleteId(null);
-                          }}
-                          className="flex h-6 items-center gap-1 rounded bg-red-500/20 px-2 text-[10px] font-bold text-red-400 hover:bg-red-500/30"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                          Excluir
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmDeleteId(null)}
-                          className="flex h-6 w-6 items-center justify-center rounded text-[#f3f0ed]/40 hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
-                          title="Cancelar"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-0.5 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={() => startRename(voice)}
-                          className="flex h-6 w-6 items-center justify-center rounded text-[#f3f0ed]/40 hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
-                          title="Renomear"
-                        >
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmDeleteId(voice.id)}
-                          className="flex h-6 w-6 items-center justify-center rounded text-red-400/60 hover:bg-red-500/10 hover:text-red-400"
-                          title="Excluir"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                      {voice.name}
+                    </span>
+                  </button>
                 );
               })}
             </div>
