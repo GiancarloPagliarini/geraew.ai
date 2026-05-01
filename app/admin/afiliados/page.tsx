@@ -24,6 +24,9 @@ import {
   Trash2,
   KeyRound,
   AlertTriangle,
+  Paperclip,
+  X,
+  Mail,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -385,6 +388,7 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [showPay, setShowPay] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'affiliates', affiliateId, 'earnings'],
@@ -422,10 +426,16 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
   });
 
   const markPaidMutation = useMutation({
-    mutationFn: (ids: string[]) => api.admin.markEarningsPaid(accessToken!, ids),
+    mutationFn: (args: {
+      ids: string[];
+      receipt?: { base64: string; filename: string; mimeType: string };
+    }) => api.admin.markEarningsPaid(accessToken!, args.ids, args.receipt),
     onSuccess: (result) => {
-      toast.success(`${result.updated} comissões marcadas como pagas`);
+      toast.success(`${result.updated} comissões marcadas como pagas`, {
+        description: 'O afiliado recebeu um e-mail de confirmação.',
+      });
       setSelectedIds(new Set());
+      setShowPay(false);
       queryClient.invalidateQueries({ queryKey: ['admin', 'affiliates'] });
     },
     onError: () => toast.error('Erro ao marcar como pago'),
@@ -648,14 +658,22 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
         <div className="flex items-center gap-3 rounded-xl border border-[#a2dd00]/20 bg-[#a2dd00]/5 px-4 py-3">
           <span className="text-sm text-[#f3f0ed]/60">
             {selectedIds.size} selecionada{selectedIds.size > 1 ? 's' : ''}
+            {' · '}
+            <span className="font-bold text-[#a2dd00]">
+              {formatCents(
+                pendingEarnings
+                  .filter((e) => selectedIds.has(e.id))
+                  .reduce((sum, e) => sum + e.commissionCents, 0),
+              )}
+            </span>
           </span>
           <button
-            onClick={() => markPaidMutation.mutate(Array.from(selectedIds))}
+            onClick={() => setShowPay(true)}
             disabled={markPaidMutation.isPending}
             className="flex items-center gap-2 rounded-lg bg-[#a2dd00] px-3 py-1.5 text-sm font-semibold text-[#1c1917] hover:bg-[#a2dd00]/90 disabled:opacity-40"
           >
             {markPaidMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            Marcar como Pago
+            Pagar
           </button>
         </div>
       )}
@@ -824,6 +842,196 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
           onClose={() => setShowDelete(false)}
         />
       )}
+
+      {/* Pay (mark as paid + email) modal */}
+      {showPay && (
+        <PayCommissionsModal
+          affiliateName={affiliate.name}
+          affiliateEmail={affiliate.user?.email ?? null}
+          totalCents={pendingEarnings
+            .filter((e) => selectedIds.has(e.id))
+            .reduce((sum, e) => sum + e.commissionCents, 0)}
+          earningsCount={selectedIds.size}
+          isPending={markPaidMutation.isPending}
+          onConfirm={(receipt) =>
+            markPaidMutation.mutate({ ids: Array.from(selectedIds), receipt })
+          }
+          onClose={() => setShowPay(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Pay Commissions Modal ──────────────────────────────────────────────────
+
+const MAX_RECEIPT_BYTES = 5 * 1024 * 1024;
+const ALLOWED_RECEIPT_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+
+function PayCommissionsModal({
+  affiliateName,
+  affiliateEmail,
+  totalCents,
+  earningsCount,
+  isPending,
+  onConfirm,
+  onClose,
+}: {
+  affiliateName: string;
+  affiliateEmail: string | null;
+  totalCents: number;
+  earningsCount: number;
+  isPending: boolean;
+  onConfirm: (receipt?: { base64: string; filename: string; mimeType: string }) => void;
+  onClose: () => void;
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  function handleFile(picked: File | null) {
+    setError(null);
+    if (!picked) {
+      setFile(null);
+      return;
+    }
+    if (!ALLOWED_RECEIPT_TYPES.includes(picked.type)) {
+      setError('Formato inválido. Use PDF, JPG, PNG ou WEBP.');
+      return;
+    }
+    if (picked.size > MAX_RECEIPT_BYTES) {
+      setError('Arquivo excede 5 MB.');
+      return;
+    }
+    setFile(picked);
+  }
+
+  async function fileToBase64(f: File): Promise<string> {
+    const buffer = await f.arrayBuffer();
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
+  }
+
+  async function handleConfirm() {
+    if (!file) {
+      onConfirm(undefined);
+      return;
+    }
+    const base64 = await fileToBase64(file);
+    onConfirm({ base64, filename: file.name, mimeType: file.type });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="mx-4 w-full max-w-md overflow-hidden rounded-2xl border border-[#a2dd00]/20 bg-[#1a2123]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-3 border-b border-[#f3f0ed]/6 px-6 py-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#a2dd00]/10">
+            <DollarSign className="h-4 w-4 text-[#a2dd00]" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base font-bold text-[#f3f0ed]">Pagar comissões</h2>
+            <p className="mt-0.5 text-xs text-[#f3f0ed]/50">
+              Marca como pago e envia e-mail ao afiliado.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4 px-6 py-5">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/2 px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#f3f0ed]/30">Afiliado</p>
+              <p className="mt-1 truncate text-sm font-medium text-[#f3f0ed]">{affiliateName}</p>
+              <p className="mt-0.5 truncate text-xs text-[#f3f0ed]/40">{affiliateEmail ?? '—'}</p>
+            </div>
+            <div className="rounded-xl border border-[#a2dd00]/20 bg-[#a2dd00]/5 px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#a2dd00]/70">Total</p>
+              <p className="mt-1 text-sm font-bold tabular-nums text-[#a2dd00]">{formatCents(totalCents)}</p>
+              <p className="mt-0.5 text-xs text-[#f3f0ed]/40">
+                {earningsCount} comissã{earningsCount === 1 ? 'o' : 'ões'}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-[#f3f0ed]/40">
+              Comprovante de pagamento <span className="text-[#f3f0ed]/30">(opcional)</span>
+            </label>
+
+            {file ? (
+              <div className="flex items-center gap-3 rounded-xl border border-[#a2dd00]/20 bg-[#a2dd00]/5 px-3 py-2.5">
+                <Paperclip className="h-4 w-4 shrink-0 text-[#a2dd00]" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm text-[#f3f0ed]">{file.name}</p>
+                  <p className="text-[11px] text-[#f3f0ed]/40">{(file.size / 1024).toFixed(0)} KB</p>
+                </div>
+                <button
+                  onClick={() => handleFile(null)}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[#f3f0ed]/40 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-[#f3f0ed]/15 bg-[#f3f0ed]/2 px-3 py-3 text-sm text-[#f3f0ed]/50 transition-colors hover:border-[#a2dd00]/30 hover:bg-[#a2dd00]/5">
+                <Paperclip className="h-4 w-4" />
+                <span>Anexar PDF, JPG, PNG ou WEBP (até 5 MB)</span>
+                <input
+                  type="file"
+                  accept=".pdf,image/jpeg,image/png,image/webp"
+                  onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+                  className="hidden"
+                />
+              </label>
+            )}
+
+            {error && <p className="mt-1.5 text-xs text-red-400">{error}</p>}
+          </div>
+
+          {affiliateEmail && (
+            <div className="flex items-start gap-2 rounded-xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/2 px-3 py-2.5">
+              <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#f3f0ed]/40" />
+              <p className="text-xs text-[#f3f0ed]/50">
+                Um e-mail será enviado para <span className="text-[#f3f0ed]/80">{affiliateEmail}</span> confirmando o pagamento
+                {file ? ' com o comprovante anexado.' : '.'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 border-t border-[#f3f0ed]/6 bg-[#f3f0ed]/[0.02] px-6 py-4">
+          <button
+            onClick={onClose}
+            disabled={isPending}
+            className="flex-1 rounded-xl border border-[#f3f0ed]/8 px-4 py-2.5 text-sm font-medium text-[#f3f0ed]/60 transition-colors hover:bg-[#f3f0ed]/5 disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={isPending}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#a2dd00] px-4 py-2.5 text-sm font-semibold text-[#1c1917] transition-colors hover:bg-[#a2dd00]/90 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Processando...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="h-4 w-4" />
+                Confirmar pagamento
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

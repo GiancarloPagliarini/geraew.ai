@@ -1591,10 +1591,21 @@ export const api = {
         { method: 'DELETE' },
       );
     },
-    markEarningsPaid(accessToken: string, earningIds: string[]) {
+    markEarningsPaid(
+      accessToken: string,
+      earningIds: string[],
+      receipt?: { base64: string; filename: string; mimeType: string },
+    ) {
       return authRequest<{ updated: number }>('/api/v1/admin/affiliates/earnings/mark-paid', accessToken, {
         method: 'POST',
-        body: JSON.stringify({ earningIds }),
+        body: JSON.stringify({
+          earningIds,
+          ...(receipt && {
+            receiptBase64: receipt.base64,
+            receiptFilename: receipt.filename,
+            receiptMimeType: receipt.mimeType,
+          }),
+        }),
       });
     },
     upload(accessToken: string, filename: string, contentType: string, folder: string) {
