@@ -183,7 +183,7 @@ function GroupButton({
             </span>
           </TooltipTrigger>
           <TooltipContent side="top" sideOffset={8}>
-            {t(only.actionKey)} — Em breve
+            {t(only.actionKey)} — {t('comingSoon')}
           </TooltipContent>
         </Tooltip>
       );
@@ -191,6 +191,9 @@ function GroupButton({
     return (
       <ToolbarButton tooltip={t(only.actionKey)} onClick={() => onAddPanel(only.type)}>
         <GroupIcon className="h-4 w-4" />
+        {only.isNew ? (
+          <span className="pointer-events-none absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-[#a2dd00] shadow-[0_0_6px_rgba(162,221,0,0.8)]" />
+        ) : null}
       </ToolbarButton>
     );
   }
@@ -222,6 +225,7 @@ function GroupButton({
         {group.panels.map((panel) => {
           const Icon = panel.icon;
           const isComingSoon = panel.comingSoon;
+          const isNew = panel.isNew;
           return (
             <DropdownMenuItem
               key={panel.type}
@@ -245,7 +249,11 @@ function GroupButton({
               </span>
               {isComingSoon ? (
                 <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#a2dd00]">
-                  Em breve
+                  {t('comingSoon')}
+                </span>
+              ) : isNew ? (
+                <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#a2dd00]">
+                  {t('newBadge')}
                 </span>
               ) : (
                 <ChevronRight className="h-3 w-3 shrink-0 text-[#f3f0ed]/0 transition-all group-data-[highlighted]/item:translate-x-0.5 group-data-[highlighted]/item:text-[#a2dd00]/70" />
@@ -308,7 +316,7 @@ function ToolbarButton({
       <TooltipTrigger asChild>
         <button
           onClick={onClick}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-[#f3f0ed]/40 transition-all hover:bg-[#a2dd00]/10 hover:text-[#a2dd00]"
+          className="relative flex h-7 w-7 items-center justify-center rounded-full text-[#f3f0ed]/40 transition-all hover:bg-[#a2dd00]/10 hover:text-[#a2dd00]"
         >
           {children}
         </button>

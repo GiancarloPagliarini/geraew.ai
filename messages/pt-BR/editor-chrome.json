@@ -51,6 +51,11 @@
       "promptsTooltip": "Fábrica de Prompts",
       "trending": "Trending",
       "trendingTooltip": "Produtos Mais Vendidos",
+      "clone": "Clone",
+      "cloneTooltip": "Clone de Prompt",
+      "voices": "Vozes",
+      "voicesTooltip": "Minhas vozes",
+      "comingSoonSuffix": "EM BREVE",
       "logoAlt": "Geraew",
       "menuLabel": "Menu"
     },

@@ -14,8 +14,10 @@ export interface GalleryPickerRequest {
 }
 
 export interface PendingPrompt {
-  panelType: 'generate-image' | 'generate-video';
+  panelType: 'generate-image' | 'generate-video' | 'generate-audio';
   prompt: string;
+  /** Optional: pre-select a voice when opening the audio panel (raw value, e.g. "clone:<id>" or default voice id). */
+  voiceId?: string;
 }
 
 interface EditorContextValue {

@@ -3,6 +3,8 @@
 import '@xyflow/react/dist/style.css';
 
 import {
+  Background,
+  BackgroundVariant,
   MiniMap,
   Node,
   NodeTypes,
@@ -289,6 +291,12 @@ function CanvasContent() {
             proOptions={{ hideAttribution: true }}
             style={{ width: '100%', height: '100%', background: '#1a2123' }}
           >
+            <Background
+              variant={BackgroundVariant.Dots}
+              gap={24}
+              size={1.5}
+              color="rgba(243, 240, 237, 0.12)"
+            />
             {isMobile && nodes.length > 0 && minimapOpen && (
               <div onClick={() => setMinimapOpen(false)}>
                 <MiniMap
@@ -417,7 +425,7 @@ function CanvasContent() {
                         <div className="flex w-full items-center gap-2.5">
                           {headerInner}
                           <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#a2dd00]">
-                            Em breve
+                            {t('comingSoon')}
                           </span>
                         </div>
                       </div>
@@ -432,6 +440,11 @@ function CanvasContent() {
                     >
                       <div className="flex w-full items-center gap-2.5">
                         {headerInner}
+                        {only.isNew ? (
+                          <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#a2dd00]">
+                            {t('newBadge')}
+                          </span>
+                        ) : null}
                         <ChevronRight className="h-3.5 w-3.5 text-[#f3f0ed]/40 transition-transform group-hover/card:translate-x-0.5" />
                       </div>
                     </button>
@@ -469,6 +482,7 @@ function CanvasContent() {
                         {group.panels.map((panel) => {
                           const Icon = panel.icon;
                           const isComingSoon = panel.comingSoon;
+                          const isNew = panel.isNew;
                           return (
                             <DropdownMenuItem
                               key={panel.type}
@@ -492,7 +506,11 @@ function CanvasContent() {
                               </span>
                               {isComingSoon ? (
                                 <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#a2dd00]">
-                                  Em breve
+                                  {t('comingSoon')}
+                                </span>
+                              ) : isNew ? (
+                                <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#a2dd00]">
+                                  {t('newBadge')}
                                 </span>
                               ) : (
                                 <ChevronRight className="h-3 w-3 shrink-0 text-[#f3f0ed]/0 transition-all group-data-[highlighted]/item:translate-x-0.5 group-data-[highlighted]/item:text-[#a2dd00]/70" />
@@ -531,7 +549,7 @@ function CanvasContent() {
                                 {t(`actions.${panel.actionKey}`)}
                               </span>
                               <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#a2dd00]">
-                                Em breve
+                                {t('comingSoon')}
                               </span>
                             </div>
                           );
@@ -546,7 +564,13 @@ function CanvasContent() {
                             <span className="flex-1 truncate text-[12.5px] font-medium text-[#f3f0ed]/85 transition-colors group-hover/btn:text-[#f3f0ed]">
                               {t(`actions.${panel.actionKey}`)}
                             </span>
-                            <ChevronRight className="h-3 w-3 shrink-0 text-[#f3f0ed]/0 transition-all group-hover/btn:translate-x-0.5 group-hover/btn:text-[#a2dd00]/70" />
+                            {panel.isNew ? (
+                              <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#a2dd00]">
+                                {t('newBadge')}
+                              </span>
+                            ) : (
+                              <ChevronRight className="h-3 w-3 shrink-0 text-[#f3f0ed]/0 transition-all group-hover/btn:translate-x-0.5 group-hover/btn:text-[#a2dd00]/70" />
+                            )}
                           </button>
                         );
                       })}

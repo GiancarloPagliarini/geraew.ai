@@ -6,6 +6,8 @@
       "waitBeforeClose": "Aguarde a geração finalizar antes de fechar o painel.",
       "emptyTitle": "Tudo pronto!",
       "emptySubtitle": "Escolha o que você deseja criar",
+      "comingSoon": "Em breve",
+      "newBadge": "Novo",
       "actions": {
         "generateImage": "Gerar imagem",
         "createInfluencer": "Criar influencer",
@@ -31,6 +33,7 @@
       "heading": "O QUE VOCÊ QUER GERAR?",
       "moreSoon": "Mais opções em breve...",
       "comingSoon": "Em breve",
+      "newBadge": "Novo",
       "items": {
         "generateImage": { "label": "Gerar Imagem", "description": "Criar imagem com IA" },
         "createInfluencer": { "label": "Criar Influencer", "description": "Construa sua AI influencer" },
@@ -67,7 +70,9 @@
       "zoomIn": "Ampliar",
       "resetZoom": "Resetar zoom",
       "deleteSelected": "Excluir selecionado",
-      "fitView": "Encaixar na tela"
+      "fitView": "Encaixar na tela",
+      "comingSoon": "Em breve",
+      "newBadge": "Novo"
     },
     "generationError": {
       "fallback": "Erro ao gerar.",

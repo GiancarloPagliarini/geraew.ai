@@ -6,6 +6,8 @@
       "waitBeforeClose": "Wait for the generation to finish before closing the panel.",
       "emptyTitle": "You're all set!",
       "emptySubtitle": "Pick what you want to create",
+      "comingSoon": "Soon",
+      "newBadge": "New",
       "actions": {
         "generateImage": "Generate image",
         "createInfluencer": "Create influencer",
@@ -31,6 +33,7 @@
       "heading": "WHAT DO YOU WANT TO CREATE?",
       "moreSoon": "More options coming soon...",
       "comingSoon": "Soon",
+      "newBadge": "New",
       "items": {
         "generateImage": { "label": "Generate Image", "description": "Create an image with AI" },
         "createInfluencer": { "label": "Create Influencer", "description": "Build your AI influencer" },
@@ -67,7 +70,9 @@
       "zoomIn": "Zoom in",
       "resetZoom": "Reset zoom",
       "deleteSelected": "Delete selected",
-      "fitView": "Fit to screen"
+      "fitView": "Fit to screen",
+      "comingSoon": "Soon",
+      "newBadge": "New"
     },
     "generationError": {
       "fallback": "Generation failed.",

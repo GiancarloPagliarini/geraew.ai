@@ -229,6 +229,24 @@
       "toastInvalidFormat": "Formato inválido. Usa JPEG, PNG o WebP.",
       "toastTooLarge": "Imagen demasiado grande (máx 5MB).",
       "toastAnalysisFailed": "Falló el análisis"
+    },
+    "voices": {
+      "title": "Voces",
+      "myVoices": "Mis voces",
+      "defaultVoices": "Voces predeterminadas",
+      "emptyMyVoices": "Aún no has guardado ninguna voz. Clona una voz en el panel de audio y guárdala para reutilizarla aquí.",
+      "useVoice": "Usar esta voz",
+      "playPreview": "Reproducir vista previa",
+      "pausePreview": "Pausar vista previa",
+      "delete": "Eliminar",
+      "cancel": "Cancelar",
+      "deleteSuccess": "Voz eliminada.",
+      "deleteError": "No pudimos eliminar la voz. Inténtalo de nuevo.",
+      "previewError": "No se pudo reproducir el audio.",
+      "loadError": "No se pudieron cargar tus voces.",
+      "retry": "Reintentar",
+      "genderF": "Femenina",
+      "genderM": "Masculina"
     }
   }
 }

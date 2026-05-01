@@ -34,6 +34,8 @@ export interface PanelMeta {
   contextKey: string;
   /** When true, panel is shown but not selectable — UI must render a "Em breve" badge. */
   comingSoon?: boolean;
+  /** When true, panel is selectable and UI must render a "Novo" badge / dot. */
+  isNew?: boolean;
 }
 
 export interface PanelGroup {
