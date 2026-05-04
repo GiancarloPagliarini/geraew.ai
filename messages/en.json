@@ -47,6 +47,14 @@
         "title": "Ultra-Realistic Videos",
         "description": "Turn any image into video with natural motion. Ready for Reels, TikTok, and Stories in seconds."
       },
+      "audio": {
+        "title": "AI Audio",
+        "description": "Turn text into professional voiceover with voices in 15 languages. Ready for reels, videos, and podcasts."
+      },
+      "voiceClone": {
+        "title": "Voice Cloning",
+        "description": "Clone your voice from a short sample and use it on any script. Your identity in your creatives — no need to record again."
+      },
       "motion": {
         "title": "Motion Control",
         "description": "Copy the motion from any reference video and apply it to your persona. Dances, gestures, expressions — in one click."
@@ -253,6 +261,14 @@
       {
         "question": "Can I cancel anytime?",
         "answer": "Yes. No penalties, no fees, no hassle. Cancel straight from the dashboard and keep using it until the end of your paid period."
+      },
+      {
+        "question": "How does voice cloning work?",
+        "answer": "You record or upload a short sample of your voice (minimum 10 seconds) and Geraew clones it with AI. Then just write the script and your voice speaks any text, in multiple languages. You must have legal permission to clone the voice you use (yours or someone who authorized you). Each plan allows a different amount of saved voices — check the pricing table."
+      },
+      {
+        "question": "Can I generate audio with professional voices without cloning mine?",
+        "answer": "Yes. We have 60+ ready-to-use voices in 15 languages (English, Portuguese, Spanish and more). Just write the text, pick a voice and the audio is ready in seconds — perfect for reels, videos, podcasts or ads."
       }
     ]
   },

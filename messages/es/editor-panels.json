@@ -271,6 +271,103 @@
         "Refinando detalles finos...",
         "Mejorando nitidez..."
       ]
+    },
+    "audio": {
+      "header": "GENERAR AUDIO",
+      "modes": {
+        "tts": "Texto → Voz",
+        "ttsHint": "Voz lista",
+        "clone": "Clonar Voz",
+        "cloneHint": "Tu voz"
+      },
+      "fields": {
+        "text": "TEXTO",
+        "voice": "VOZ",
+        "speed": "VELOCIDAD",
+        "referenceAudio": "AUDIO DE REFERENCIA",
+        "voiceName": "NOMBRE DE LA VOZ"
+      },
+      "placeholders": {
+        "ttsText": "Escribe el texto que será narrado...",
+        "cloneText": "Escribe el texto que la voz clonada debe decir...",
+        "voiceName": "Ej: Mi voz, Voz comercial..."
+      },
+      "states": {
+        "generating": "Generando audio",
+        "audioGenerated": "Audio generado",
+        "rec": "REC",
+        "saving": "Guardando..."
+      },
+      "buttons": {
+        "download": "Descargar",
+        "downloadTooltip": "Descargar audio",
+        "saveVoice": "Guardar voz",
+        "saveVoiceCloned": "Guardar voz clonada",
+        "generateAudio": "Generar audio",
+        "generateAnother": "Generar otro audio",
+        "stopRecording": "Detener grabación",
+        "upload": "SUBIR",
+        "record": "GRABAR",
+        "expandDetails": "Ver detalles",
+        "collapseDetails": "Ocultar detalles"
+      },
+      "estimatedCost": "Costo estimado",
+      "credits": "{count} créditos",
+      "saveVoiceForm": {
+        "subtitle": "Reutiliza esta voz en tus próximas generaciones de audio",
+        "quotaSaved": "{used} de {total} voces guardadas",
+        "quotaReached": "{used} de {total} voces — límite alcanzado",
+        "tooltipNoQuota": "Mejora tu plan para guardar voces.",
+        "tooltipQuotaReached": "Límite alcanzado. Elimina una voz guardada o mejora el plan."
+      },
+      "consent": {
+        "label": "Confirmo que esta voz es mía",
+        "details": "Al marcar esta opción confirmas que tienes permiso legal para clonar y usar esta voz. Clonar la voz de otra persona sin autorización viola los términos de la plataforma y puede tener implicaciones legales."
+      },
+      "minDuration": "El audio debe durar al menos <strong>{seconds} segundos</strong> para clonarse.",
+      "audioDisabled": {
+        "title": "Generación de audio temporalmente no disponible",
+        "fallbackMessage": "Estamos con inestabilidad en el proveedor de audio. Inténtalo de nuevo en unos minutos."
+      },
+      "errors": {
+        "fileNotAudio": "Este archivo no parece audio. Usa mp3, wav, ogg o webm.",
+        "fileTooLarge": "Audio mayor a 15 MB. Usa un archivo más corto o comprímelo antes.",
+        "micAccess": "No pudimos acceder al micrófono. Verifica los permisos del navegador.",
+        "voiceNameRequired": "Dale un nombre a la voz antes de guardar.",
+        "voiceSaveFailed": "No pudimos guardar la voz ahora. Inténtalo de nuevo.",
+        "noReferenceAudio": "Sube o graba un audio de referencia antes de clonar la voz.",
+        "concurrentLimit": "Ya tienes el número máximo de generaciones en curso. Espera que termine una e inténtalo de nuevo.",
+        "startFailed": "No fue posible iniciar la generación.",
+        "startFailedConnection": "No fue posible iniciar la generación. Verifica tu conexión e inténtalo de nuevo.",
+        "fallback": "No fue posible generar el audio. Inténtalo de nuevo en unos momentos.",
+        "fallbackConnection": "Perdimos la conexión al verificar el estado. Recarga para ver el resultado."
+      },
+      "success": {
+        "audioAdded": "Audio de referencia añadido.",
+        "recordingSaved": "Grabación guardada.",
+        "voiceSaved": "Voz \"{name}\" guardada."
+      }
+    },
+    "voicePicker": {
+      "title": "Seleccionar voz",
+      "description": "Elige una voz por defecto o clona la tuya",
+      "close": "Cerrar",
+      "myVoices": "Mis voces",
+      "defaultVoices": "Voces por defecto",
+      "cloneVoice": "Clonar voz",
+      "emptyMyVoices": "Aún no tienes voces clonadas. Usa el botón de arriba para crear una.",
+      "all": "Todos",
+      "noVoicesForCountry": "No hay voces disponibles para este país.",
+      "noVoicesAvailable": "No hay voces disponibles ahora.",
+      "personalized": "Personalizada",
+      "genderFemale": "Femenina",
+      "genderMale": "Masculina",
+      "selectVoice": "Selecciona una voz",
+      "loading": "Cargando voces…",
+      "voicesButton": "Voces",
+      "playPreview": "Reproducir vista previa",
+      "pausePreview": "Pausar vista previa",
+      "loadingPreview": "Cargando vista previa"
     }
   }
 }

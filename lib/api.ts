@@ -566,6 +566,23 @@ export interface VoiceListResponse {
   quota: VoiceQuota;
 }
 
+// ─── Inworld voices (preset catalog from inworld.ai direct) ─────────────────
+
+export type InworldVoiceSource = 'SYSTEM' | 'IVC' | 'PVC';
+
+export interface InworldVoice {
+  voiceId: string;
+  displayName: string;
+  description?: string;
+  langCode: string;
+  tags?: string[];
+  source?: InworldVoiceSource;
+}
+
+export interface InworldVoiceListResponse {
+  voices: InworldVoice[];
+}
+
 // ─── Affiliates (Admin) ─────────────────────────────────────────────────────
 
 export type AffiliateDiscountScope = 'FIRST_PURCHASE' | 'ALL_PURCHASES';
@@ -863,11 +880,12 @@ export interface HealthStats {
   alerts: { level: 'warning' | 'critical'; message: string }[];
 }
 
-export type AnnouncementVariant = 'feature' | 'maintenance' | 'promo' | 'openai' | 'gift';
+export type AnnouncementVariant = 'feature' | 'maintenance' | 'promo' | 'openai' | 'gift' | 'mic';
 
 export type AnnouncementAction =
   | { type: 'open-image-panel' }
   | { type: 'open-video-panel' }
+  | { type: 'open-audio-panel' }
   | { type: 'open-weekly-claim' }
   | { type: 'href'; url: string };
 
@@ -935,6 +953,11 @@ export interface AdminGeneration {
   createdAt: string;
   completedAt: string | null;
 }
+
+// ─── Inworld voices cache (module-level, dedupes concurrent fetches) ─────
+const INWORLD_VOICES_CACHE_TTL = 60 * 60 * 1000; // 1h
+let inworldVoicesCache: { at: number; voices: InworldVoice[] } | null = null;
+let inworldVoicesInFlight: Promise<InworldVoiceListResponse> | null = null;
 
 export const api = {
   gallery: {
@@ -1026,6 +1049,39 @@ export const api = {
       return authRequest<void>(`/api/v1/voices/${id}`, accessToken, {
         method: 'DELETE',
       });
+    },
+  },
+
+  inworld: {
+    listVoices(language?: string) {
+      // Filtered queries: always go to backend (cache is for the full list).
+      if (language) {
+        return request<InworldVoiceListResponse>(
+          `/api/v1/inworld/voices?language=${encodeURIComponent(language)}`,
+        );
+      }
+      const now = Date.now();
+      if (
+        inworldVoicesCache &&
+        now - inworldVoicesCache.at < INWORLD_VOICES_CACHE_TTL
+      ) {
+        return Promise.resolve({ voices: inworldVoicesCache.voices });
+      }
+      if (inworldVoicesInFlight) return inworldVoicesInFlight;
+      inworldVoicesInFlight = request<InworldVoiceListResponse>(
+        '/api/v1/inworld/voices',
+      )
+        .then((res) => {
+          inworldVoicesCache = { at: Date.now(), voices: res.voices };
+          return res;
+        })
+        .finally(() => {
+          inworldVoicesInFlight = null;
+        });
+      return inworldVoicesInFlight;
+    },
+    previewUrl(voiceId: string): string {
+      return `${BASE_URL}/api/v1/inworld/voices/${encodeURIComponent(voiceId)}/preview`;
     },
   },
 
@@ -1364,6 +1420,9 @@ export const api = {
     },
     listImages() {
       return request<AiModelPublic[]>('/api/v1/models/images');
+    },
+    listAudio() {
+      return request<AiModelPublic[]>('/api/v1/models/audio');
     },
   },
 

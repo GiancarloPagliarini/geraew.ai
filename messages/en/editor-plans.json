@@ -10,6 +10,8 @@
       "generation": "{count, plural, one {# Generation} other {# Generations}}",
       "video": "{count, plural, one {# Video} other {# Videos}}",
       "videoFree": "{count, plural, one {# Free Video} other {# Free Videos}}",
+      "audio": "{count, plural, one {# Audio} other {# Audios}}",
+      "voiceClone": "{count, plural, one {# Voice clone} other {# Voice clones}}",
       "blocked": "Locked"
     },
     "badges": {
@@ -38,7 +40,9 @@
       "gallery180": "180 days gallery",
       "gallery365": "365 days gallery",
       "tryNoCommit": "Try with no commitment",
-      "freeVideoGenerations": "Get 2 free video generations"
+      "freeVideoGenerations": "Get 2 free video generations",
+      "savedVoices": "{count, plural, one {# saved voice for reuse} other {# saved voices for reuse}}",
+      "noVoiceCloning": "No voice cloning"
     },
     "subtitles": {
       "ultra-basic": "Beginner",

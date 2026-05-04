@@ -1,6 +1,6 @@
 'use client';
 
-import { Sparkles, Wrench, Tag, ArrowRight, Gift } from 'lucide-react';
+import { Sparkles, Wrench, Tag, ArrowRight, Gift, Mic } from 'lucide-react';
 import type { ComponentType, SVGProps } from 'react';
 import { useTranslations } from 'next-intl';
 import {
@@ -50,6 +50,7 @@ const VARIANT_ICON: Record<AnnouncementVariant, IconComponent> = {
   promo: Tag,
   openai: OpenAILogo,
   gift: Gift,
+  mic: Mic,
 };
 
 export function AnnouncementModal({

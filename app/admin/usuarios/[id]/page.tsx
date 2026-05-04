@@ -42,6 +42,7 @@ import {
   ChevronRight,
   Eye,
   Video,
+  AudioLines,
   AlertTriangle,
   RefreshCw,
 } from 'lucide-react';
@@ -109,10 +110,32 @@ function isVideoMime(mimeType: string | null) {
   return mimeType?.startsWith('video/') ?? false;
 }
 
+function isAudioMime(mimeType: string | null) {
+  return mimeType?.startsWith('audio/') ?? false;
+}
+
 const VIDEO_GENERATION_TYPES = ['TEXT_TO_VIDEO', 'IMAGE_TO_VIDEO', 'MOTION_CONTROL', 'REFERENCE_VIDEO'];
+const AUDIO_GENERATION_TYPES = ['VOICE_CLONE', 'TEXT_TO_SPEECH'];
 
 function MediaPreview({ output, genType }: { output: AdminUserGeneration['outputs'][0]; genType: string }) {
   const [expanded, setExpanded] = useState(false);
+
+  if (isAudioMime(output.mimeType) || AUDIO_GENERATION_TYPES.includes(genType)) {
+    return (
+      <div className="flex aspect-square w-full flex-col items-center justify-center gap-3 rounded-lg border border-[#f3f0ed]/8 bg-gradient-to-br from-[#a2dd00]/[0.06] to-transparent p-4">
+        <AudioLines className="h-10 w-10 text-[#a2dd00]/60" strokeWidth={1.5} />
+        <audio
+          src={output.url}
+          controls
+          preload="metadata"
+          className="w-full max-w-[200px]"
+        />
+        <Badge className="border-none bg-[#a2dd00]/15 text-[10px] text-[#a2dd00]/90">
+          AUDIO
+        </Badge>
+      </div>
+    );
+  }
 
   if (isVideoMime(output.mimeType) || VIDEO_GENERATION_TYPES.includes(genType)) {
     return (

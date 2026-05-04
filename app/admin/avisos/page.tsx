@@ -40,11 +40,13 @@ const VARIANT_LABEL: Record<AnnouncementVariant, string> = {
   promo: 'Promo',
   openai: 'OpenAI',
   gift: 'Presente',
+  mic: 'Microfone',
 };
 
 const ACTION_LABEL: Record<AnnouncementAction['type'], string> = {
   'open-image-panel': 'Abrir painel de imagem',
   'open-video-panel': 'Abrir painel de vídeo',
+  'open-audio-panel': 'Abrir painel de áudio',
   'open-weekly-claim': 'Abrir resgate semanal',
   href: 'Link externo',
 };
@@ -534,6 +536,7 @@ function AnnouncementEditor({ mode, announcement, accessToken, onClose, onSaved 
                   <option value="promo">Promo</option>
                   <option value="openai">OpenAI</option>
                   <option value="gift">Presente</option>
+                  <option value="mic">Microfone</option>
                 </select>
               </Field>
               <Field label="Ordem" hint="Menor número = aparece primeiro.">
@@ -623,6 +626,7 @@ function AnnouncementEditor({ mode, announcement, accessToken, onClose, onSaved 
                   <option value="none">Nenhuma (apenas fechar)</option>
                   <option value="open-image-panel">Abrir painel de imagem</option>
                   <option value="open-video-panel">Abrir painel de vídeo</option>
+                  <option value="open-audio-panel">Abrir painel de áudio</option>
                   <option value="open-weekly-claim">Abrir resgate semanal</option>
                   <option value="href">Link externo</option>
                 </select>

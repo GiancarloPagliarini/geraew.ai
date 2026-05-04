@@ -89,6 +89,9 @@ export function AnnouncementsManager() {
       case 'open-video-panel':
         requestPanelWithPrompt({ panelType: 'generate-video', prompt: '' });
         break;
+      case 'open-audio-panel':
+        requestPanelWithPrompt({ panelType: 'generate-audio', prompt: '' });
+        break;
       case 'open-weekly-claim':
         requestWeeklyClaim();
         break;

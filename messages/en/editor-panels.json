@@ -271,6 +271,103 @@
         "Refining fine details...",
         "Enhancing sharpness..."
       ]
+    },
+    "audio": {
+      "header": "GENERATE AUDIO",
+      "modes": {
+        "tts": "Text → Voice",
+        "ttsHint": "Ready voice",
+        "clone": "Clone Voice",
+        "cloneHint": "Your voice"
+      },
+      "fields": {
+        "text": "TEXT",
+        "voice": "VOICE",
+        "speed": "SPEED",
+        "referenceAudio": "REFERENCE AUDIO",
+        "voiceName": "VOICE NAME"
+      },
+      "placeholders": {
+        "ttsText": "Write the text to be narrated...",
+        "cloneText": "Write the text the cloned voice should say...",
+        "voiceName": "E.g.: My voice, Commercial voice..."
+      },
+      "states": {
+        "generating": "Generating audio",
+        "audioGenerated": "Audio generated",
+        "rec": "REC",
+        "saving": "Saving..."
+      },
+      "buttons": {
+        "download": "Download",
+        "downloadTooltip": "Download audio",
+        "saveVoice": "Save voice",
+        "saveVoiceCloned": "Save cloned voice",
+        "generateAudio": "Generate audio",
+        "generateAnother": "Generate another audio",
+        "stopRecording": "Stop recording",
+        "upload": "UPLOAD",
+        "record": "RECORD",
+        "expandDetails": "Show details",
+        "collapseDetails": "Hide details"
+      },
+      "estimatedCost": "Estimated cost",
+      "credits": "{count} credits",
+      "saveVoiceForm": {
+        "subtitle": "Reuse this voice in your next audio generations",
+        "quotaSaved": "{used} of {total} saved voices",
+        "quotaReached": "{used} of {total} voices — limit reached",
+        "tooltipNoQuota": "Upgrade your plan to save voices.",
+        "tooltipQuotaReached": "Limit reached. Delete a saved voice or upgrade."
+      },
+      "consent": {
+        "label": "I confirm this voice is mine",
+        "details": "By checking this option you confirm you have legal permission to clone and use this voice. Cloning someone else's voice without authorization violates the platform terms and may have legal implications."
+      },
+      "minDuration": "The audio must be at least <strong>{seconds} seconds</strong> long for cloning.",
+      "audioDisabled": {
+        "title": "Audio generation temporarily unavailable",
+        "fallbackMessage": "We're experiencing instability with the audio provider. Try again in a few minutes."
+      },
+      "errors": {
+        "fileNotAudio": "This file does not look like audio. Use mp3, wav, ogg or webm.",
+        "fileTooLarge": "Audio above 15 MB. Use a shorter file or compress it first.",
+        "micAccess": "Couldn't access the microphone. Check your browser permissions.",
+        "voiceNameRequired": "Give the voice a name before saving.",
+        "voiceSaveFailed": "Couldn't save the voice now. Try again.",
+        "noReferenceAudio": "Upload or record a reference audio before cloning the voice.",
+        "concurrentLimit": "You already have the maximum number of in-progress generations. Wait for one to finish and try again.",
+        "startFailed": "Couldn't start the generation.",
+        "startFailedConnection": "Couldn't start the generation. Check your connection and try again.",
+        "fallback": "Couldn't generate the audio. Try again in a few moments.",
+        "fallbackConnection": "Lost the connection while checking status. Reload to see the result."
+      },
+      "success": {
+        "audioAdded": "Reference audio added.",
+        "recordingSaved": "Recording saved.",
+        "voiceSaved": "Voice \"{name}\" saved."
+      }
+    },
+    "voicePicker": {
+      "title": "Select voice",
+      "description": "Pick a default voice or clone your own",
+      "close": "Close",
+      "myVoices": "My voices",
+      "defaultVoices": "Default voices",
+      "cloneVoice": "Clone voice",
+      "emptyMyVoices": "You don't have any cloned voices yet. Use the button above to create one.",
+      "all": "All",
+      "noVoicesForCountry": "No voices available for this country.",
+      "noVoicesAvailable": "No voices available right now.",
+      "personalized": "Personalized",
+      "genderFemale": "Female",
+      "genderMale": "Male",
+      "selectVoice": "Select a voice",
+      "loading": "Loading voices…",
+      "voicesButton": "Voices",
+      "playPreview": "Play preview",
+      "pausePreview": "Pause preview",
+      "loadingPreview": "Loading preview"
     }
   }
 }

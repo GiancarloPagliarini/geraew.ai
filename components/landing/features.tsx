@@ -1,12 +1,14 @@
 "use client";
 
-import { User, Video, Move3d, ScanFace, BookOpen, Zap } from "lucide-react";
+import { User, Video, Move3d, ScanFace, BookOpen, Zap, MicVocal, AudioLines } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useScrollReveal } from "./use-scroll-reveal";
 
 const FEATURE_META = [
   { icon: User, key: "influencers" },
   { icon: Video, key: "videos" },
+  { icon: AudioLines, key: "audio" },
+  { icon: MicVocal, key: "voiceClone" },
   { icon: Move3d, key: "motion" },
   { icon: ScanFace, key: "faceSwap" },
   { icon: BookOpen, key: "prompts" },

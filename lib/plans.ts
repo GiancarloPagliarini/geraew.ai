@@ -25,7 +25,7 @@ export interface PlanGenerationExample {
   blocked?: boolean;
 }
 
-export type GenerationUnit = 'image' | 'generation' | 'video';
+export type GenerationUnit = 'image' | 'generation' | 'video' | 'audio' | 'voiceClone';
 
 export interface PlanGenerationEntry {
   label: string;
@@ -45,6 +45,8 @@ export const PLAN_GENERATION_ENTRIES: Record<string, PlanGenerationEntry[]> = {
     { label: 'Geraew Fast', countNumber: 2, unit: 'video' },
     { label: 'Geraew Quality', countNumber: 2, unit: 'video' },
     { label: 'Veo 3.1', countNumber: 0, unit: 'video', blocked: true },
+    { label: 'Áudio (TTS)', countNumber: 8, unit: 'audio' },
+    { label: 'Clonar voz', countNumber: 0, unit: 'voiceClone', blocked: true },
   ],
   'ultra-basic': [
     { label: 'Nano Banana 2', countNumber: 7, unit: 'image' },
@@ -53,6 +55,8 @@ export const PLAN_GENERATION_ENTRIES: Record<string, PlanGenerationEntry[]> = {
     { label: 'Geraew Quality', countNumber: 0, unit: 'video', blocked: true },
     { label: 'Veo 3.1 Fast', countNumber: 0, unit: 'video', blocked: true },
     { label: 'Veo 3.1 Quality', countNumber: 0, unit: 'video', blocked: true },
+    { label: 'Áudio (TTS)', countNumber: 20, unit: 'audio' },
+    { label: 'Clonar voz', countNumber: 1, unit: 'voiceClone' },
   ],
   starter: [
     { label: 'Nano Banana 2', countNumber: 44, unit: 'image' },
@@ -61,6 +65,8 @@ export const PLAN_GENERATION_ENTRIES: Record<string, PlanGenerationEntry[]> = {
     { label: 'Geraew Quality', countNumber: 2, unit: 'video' },
     { label: 'Veo 3.1 Fast', countNumber: 3, unit: 'video' },
     { label: 'Veo 3.1 Quality', countNumber: 1, unit: 'video' },
+    { label: 'Áudio (TTS)', countNumber: 100, unit: 'audio' },
+    { label: 'Clonar voz', countNumber: 3, unit: 'voiceClone' },
   ],
   basic: [
     { label: 'Nano Banana 2', countNumber: 77, unit: 'image' },
@@ -69,6 +75,8 @@ export const PLAN_GENERATION_ENTRIES: Record<string, PlanGenerationEntry[]> = {
     { label: 'Geraew Quality', countNumber: 3, unit: 'video' },
     { label: 'Veo 3.1 Fast', countNumber: 5, unit: 'video' },
     { label: 'Veo 3.1 Quality', countNumber: 2, unit: 'video' },
+    { label: 'Áudio (TTS)', countNumber: 200, unit: 'audio' },
+    { label: 'Clonar voz', countNumber: 5, unit: 'voiceClone' },
   ],
   creator: [
     { label: 'Nano Banana 2', countNumber: 133, unit: 'image' },
@@ -77,6 +85,8 @@ export const PLAN_GENERATION_ENTRIES: Record<string, PlanGenerationEntry[]> = {
     { label: 'Geraew Quality', countNumber: 6, unit: 'video' },
     { label: 'Veo 3.1 Fast', countNumber: 9, unit: 'video' },
     { label: 'Veo 3.1 Quality', countNumber: 4, unit: 'video' },
+    { label: 'Áudio (TTS)', countNumber: 340, unit: 'audio' },
+    { label: 'Clonar voz', countNumber: 8, unit: 'voiceClone' },
   ],
   pro: [
     { label: 'Nano Banana 2', countNumber: 333, unit: 'image' },
@@ -85,6 +95,8 @@ export const PLAN_GENERATION_ENTRIES: Record<string, PlanGenerationEntry[]> = {
     { label: 'Geraew Quality', countNumber: 15, unit: 'video' },
     { label: 'Veo 3.1 Fast', countNumber: 23, unit: 'video' },
     { label: 'Veo 3.1 Quality', countNumber: 10, unit: 'video' },
+    { label: 'Áudio (TTS)', countNumber: 850, unit: 'audio' },
+    { label: 'Clonar voz', countNumber: 12, unit: 'voiceClone' },
   ],
   advanced: [
     { label: 'Nano Banana 2', countNumber: 555, unit: 'image' },
@@ -93,6 +105,8 @@ export const PLAN_GENERATION_ENTRIES: Record<string, PlanGenerationEntry[]> = {
     { label: 'Geraew Quality', countNumber: 25, unit: 'video' },
     { label: 'Veo 3.1 Fast', countNumber: 38, unit: 'video' },
     { label: 'Veo 3.1 Quality', countNumber: 17, unit: 'video' },
+    { label: 'Áudio (TTS)', countNumber: 1400, unit: 'audio' },
+    { label: 'Clonar voz', countNumber: 15, unit: 'voiceClone' },
   ],
   studio: [
     { label: 'Nano Banana 2', countNumber: 888, unit: 'image' },
@@ -101,7 +115,24 @@ export const PLAN_GENERATION_ENTRIES: Record<string, PlanGenerationEntry[]> = {
     { label: 'Geraew Quality', countNumber: 40, unit: 'video' },
     { label: 'Veo 3.1 Fast', countNumber: 61, unit: 'video' },
     { label: 'Veo 3.1 Quality', countNumber: 27, unit: 'video' },
+    { label: 'Áudio (TTS)', countNumber: 2280, unit: 'audio' },
+    { label: 'Clonar voz', countNumber: 15, unit: 'voiceClone' },
   ],
+};
+
+/**
+ * Quantidade máxima de vozes salvas por plano (mirror do backend
+ * `voices.constants.ts` → VOICE_PROFILE_QUOTAS).
+ */
+export const PLAN_SAVED_VOICES_QUOTAS: Record<string, number> = {
+  free: 0,
+  'ultra-basic': 1,
+  starter: 3,
+  basic: 5,
+  creator: 8,
+  pro: 12,
+  advanced: 15,
+  studio: 15,
 };
 
 /**
@@ -115,6 +146,8 @@ export const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
     { label: 'Geraew Fast', count: '2 Vídeos Grátis' },
     { label: 'Geraew Quality', count: '2 Vídeos Grátis' },
     { label: 'Veo 3.1', count: 'Bloqueado', blocked: true },
+    { label: 'Áudio (TTS)', count: '8 Áudios' },
+    { label: 'Clonar voz', count: 'Bloqueado', blocked: true },
   ],
   'ultra-basic': [
     { label: 'Nano Banana 2', count: '7 Imagens' },
@@ -123,6 +156,8 @@ export const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
     { label: 'Geraew Quality', count: 'Bloqueado', blocked: true },
     { label: 'Veo 3.1 Fast', count: 'Bloqueado', blocked: true },
     { label: 'Veo 3.1 Quality', count: 'Bloqueado', blocked: true },
+    { label: 'Áudio (TTS)', count: '20 Áudios' },
+    { label: 'Clonar voz', count: '1 Clonagem' },
   ],
   starter: [
     { label: 'Nano Banana 2', count: '44 Imagens' },
@@ -131,6 +166,8 @@ export const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
     { label: 'Geraew Quality', count: '2 Vídeos' },
     { label: 'Veo 3.1 Fast', count: '3 Vídeos' },
     { label: 'Veo 3.1 Quality', count: '1 Vídeo' },
+    { label: 'Áudio (TTS)', count: '100 Áudios' },
+    { label: 'Clonar voz', count: '3 Clonagens' },
   ],
   basic: [
     { label: 'Nano Banana 2', count: '77 Imagens' },
@@ -139,6 +176,8 @@ export const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
     { label: 'Geraew Quality', count: '3 Vídeos' },
     { label: 'Veo 3.1 Fast', count: '5 Vídeos' },
     { label: 'Veo 3.1 Quality', count: '2 Vídeos' },
+    { label: 'Áudio (TTS)', count: '200 Áudios' },
+    { label: 'Clonar voz', count: '5 Clonagens' },
   ],
   creator: [
     { label: 'Nano Banana 2', count: '133 Imagens' },
@@ -147,6 +186,8 @@ export const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
     { label: 'Geraew Quality', count: '6 Vídeos' },
     { label: 'Veo 3.1 Fast', count: '9 Vídeos' },
     { label: 'Veo 3.1 Quality', count: '4 Vídeos' },
+    { label: 'Áudio (TTS)', count: '340 Áudios' },
+    { label: 'Clonar voz', count: '8 Clonagens' },
   ],
   pro: [
     { label: 'Nano Banana 2', count: '333 Imagens' },
@@ -155,6 +196,8 @@ export const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
     { label: 'Geraew Quality', count: '15 Vídeos' },
     { label: 'Veo 3.1 Fast', count: '23 Vídeos' },
     { label: 'Veo 3.1 Quality', count: '10 Vídeos' },
+    { label: 'Áudio (TTS)', count: '850 Áudios' },
+    { label: 'Clonar voz', count: '12 Clonagens' },
   ],
   advanced: [
     { label: 'Nano Banana 2', count: '555 Imagens' },
@@ -163,6 +206,8 @@ export const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
     { label: 'Geraew Quality', count: '25 Vídeos' },
     { label: 'Veo 3.1 Fast', count: '38 Vídeos' },
     { label: 'Veo 3.1 Quality', count: '17 Vídeos' },
+    { label: 'Áudio (TTS)', count: '1.400 Áudios' },
+    { label: 'Clonar voz', count: '15 Clonagens' },
   ],
   studio: [
     { label: 'Nano Banana 2', count: '888 Imagens' },
@@ -171,6 +216,8 @@ export const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
     { label: 'Geraew Quality', count: '40 Vídeos' },
     { label: 'Veo 3.1 Fast', count: '61 Vídeos' },
     { label: 'Veo 3.1 Quality', count: '27 Vídeos' },
+    { label: 'Áudio (TTS)', count: '2.280 Áudios' },
+    { label: 'Clonar voz', count: '15 Clonagens' },
   ],
 };
 
@@ -353,6 +400,7 @@ export function getPlanFeatureKeys(plan: Plan): PlanFeatureEntry[] {
     features.push({ key: 'features.emailSupport' });
     features.push({ key: 'features.gallery7' });
     features.push({ key: 'features.tryNoCommit' });
+    features.push({ key: 'features.noVoiceCloning' });
     return features;
   }
 

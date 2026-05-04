@@ -18,6 +18,8 @@ export interface PendingPrompt {
   prompt: string;
   /** Optional: pre-select a voice when opening the audio panel (raw value, e.g. "clone:<id>" or default voice id). */
   voiceId?: string;
+  /** Optional: pre-set the audio panel mode (used for "Clonar voz" entry from sidebar). */
+  audioMode?: 'tts' | 'clone';
 }
 
 interface EditorContextValue {
@@ -47,6 +49,9 @@ interface EditorContextValue {
   setNodeGenerating: (nodeId: string, generating: boolean) => void;
   weeklyClaimRequest: number;
   requestWeeklyClaim: () => void;
+  /** Incremented whenever the saved voice profiles list changes. Subscribers re-fetch on change. */
+  voicesVersion: number;
+  bumpVoicesVersion: () => void;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
@@ -60,6 +65,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [nodePanelTypes, setNodePanelTypes] = useState<Record<string, string>>({});
   const [galleryPickerRequest, setGalleryPickerRequest] = useState<GalleryPickerRequest | null>(null);
   const [weeklyClaimRequest, setWeeklyClaimRequest] = useState(0);
+  const [voicesVersion, setVoicesVersion] = useState(0);
+  const bumpVoicesVersion = useCallback(() => setVoicesVersion((v) => v + 1), []);
   const [leftPanelOpen, setLeftPanelOpen] = useState(false);
   const [generatingNodeIds, setGeneratingNodeIds] = useState<Set<string>>(new Set());
   const setNodeGenerating = useCallback((nodeId: string, generating: boolean) => {
@@ -211,6 +218,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         },
         weeklyClaimRequest,
         requestWeeklyClaim: () => setWeeklyClaimRequest((n) => n + 1),
+        voicesVersion,
+        bumpVoicesVersion,
       }}
     >
       {children}

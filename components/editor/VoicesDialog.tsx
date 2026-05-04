@@ -1,14 +1,20 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Loader2, MicVocal, Pause, Play, Sparkles, Trash2, Volume2, X } from 'lucide-react';
+import { Loader2, MicVocal, Plus, Trash2, Volume2, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { api, ApiError, VoiceProfile } from '@/lib/api';
+import { api, ApiError, InworldVoice, VoiceProfile } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useEditor } from '@/lib/editor-context';
 import { useLoginModal } from '@/lib/login-modal-context';
-import { VOICE_OPTIONS, VoiceOption } from '@/lib/voice-options';
+import {
+  COUNTRY_PRIORITY,
+  VoiceCard,
+  countryLabel,
+  parseGender,
+  pickGradient,
+} from './VoiceCard';
 
 interface VoicesDialogProps {
   open: boolean;
@@ -19,15 +25,50 @@ export function VoicesDialog({ open, onOpenChange }: VoicesDialogProps) {
   const t = useTranslations('editorDialogs.voices');
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
-  const { requestPanelWithPrompt } = useEditor();
+  const { requestPanelWithPrompt, voicesVersion, bumpVoicesVersion } = useEditor();
 
   const [voices, setVoices] = useState<VoiceProfile[]>([]);
+  const [inworldVoices, setInworldVoices] = useState<InworldVoice[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null);
+  const [previewProgress, setPreviewProgress] = useState(0);
+  const [country, setCountry] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  function resetPreviewState() {
+    setPlayingId(null);
+    setPreviewLoadingId(null);
+    setPreviewProgress(0);
+  }
+
+  const availableCountries = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const v of inworldVoices) {
+      counts.set(v.langCode, (counts.get(v.langCode) ?? 0) + 1);
+    }
+    return Array.from(counts.entries()).sort((a, b) => {
+      const ai = COUNTRY_PRIORITY.indexOf(a[0]);
+      const bi = COUNTRY_PRIORITY.indexOf(b[0]);
+      if (ai !== -1 || bi !== -1) {
+        if (ai === -1) return 1;
+        if (bi === -1) return -1;
+        return ai - bi;
+      }
+      return countryLabel(a[0]).localeCompare(countryLabel(b[0]));
+    });
+  }, [inworldVoices]);
+
+  const filteredInworld = useMemo(
+    () =>
+      country
+        ? inworldVoices.filter((v) => v.langCode === country)
+        : inworldVoices,
+    [inworldVoices, country],
+  );
 
   const hasFetchedRef = useRef(false);
   const fetchRef = useRef(0);
@@ -51,9 +92,13 @@ export function VoicesDialog({ open, onOpenChange }: VoicesDialogProps) {
     try {
       setLoading(true);
       setError(false);
-      const data = await api.voices.list(accessToken);
+      const [own, inworld] = await Promise.all([
+        api.voices.list(accessToken),
+        api.inworld.listVoices().catch(() => ({ voices: [] as InworldVoice[] })),
+      ]);
       if (id === fetchRef.current) {
-        setVoices(data.voices);
+        setVoices(own.voices);
+        setInworldVoices(inworld.voices.filter((v) => v.source !== 'PVC'));
         hasFetchedRef.current = true;
       }
     } catch {
@@ -71,6 +116,23 @@ export function VoicesDialog({ open, onOpenChange }: VoicesDialogProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user, accessToken]);
 
+  // Re-fetch when voices version bumps (after save/delete elsewhere).
+  // Skip the initial mount (already handled by the open-effect above).
+  const skipFirstVersionEffect = useRef(true);
+  useEffect(() => {
+    if (skipFirstVersionEffect.current) {
+      skipFirstVersionEffect.current = false;
+      return;
+    }
+    // Mark cache as stale so a future open re-fetches.
+    hasFetchedRef.current = false;
+    // If currently open, fetch right now.
+    if (open && user && accessToken) {
+      fetchVoices();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voicesVersion]);
+
   useEffect(() => {
     if (!user) {
       hasFetchedRef.current = false;
@@ -84,7 +146,7 @@ export function VoicesDialog({ open, onOpenChange }: VoicesDialogProps) {
     if (!open && audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
-      setPlayingId(null);
+      resetPreviewState();
     }
   }, [open]);
 
@@ -94,34 +156,55 @@ export function VoicesDialog({ open, onOpenChange }: VoicesDialogProps) {
   }, []);
 
   function togglePreview(id: string, url: string) {
-    if (playingId === id && audioRef.current) {
+    if ((playingId === id || previewLoadingId === id) && audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
-      setPlayingId(null);
+      resetPreviewState();
       return;
     }
 
     audioRef.current?.pause();
+    audioRef.current = null;
+    resetPreviewState();
+
     const audio = new Audio(url);
-    audio.onended = () => {
-      if (audioRef.current === audio) {
-        audioRef.current = null;
-        setPlayingId(null);
+    audio.preload = 'auto';
+    audioRef.current = audio;
+    setPreviewLoadingId(id);
+
+    const onPlaying = () => {
+      if (audioRef.current !== audio) return;
+      setPreviewLoadingId(null);
+      setPlayingId(id);
+    };
+    const onTime = () => {
+      if (audioRef.current !== audio) return;
+      const dur = audio.duration;
+      if (Number.isFinite(dur) && dur > 0) {
+        setPreviewProgress(Math.min(1, audio.currentTime / dur));
       }
     };
-    audio.onerror = () => {
-      if (audioRef.current === audio) {
-        audioRef.current = null;
-        setPlayingId(null);
-      }
+    const onEnded = () => {
+      if (audioRef.current !== audio) return;
+      audioRef.current = null;
+      resetPreviewState();
+    };
+    const onError = () => {
+      if (audioRef.current !== audio) return;
+      audioRef.current = null;
+      resetPreviewState();
       toast.error(t('previewError'));
     };
-    audioRef.current = audio;
-    setPlayingId(id);
+
+    audio.addEventListener('playing', onPlaying);
+    audio.addEventListener('timeupdate', onTime);
+    audio.addEventListener('ended', onEnded);
+    audio.addEventListener('error', onError);
+
     audio.play().catch(() => {
       if (audioRef.current === audio) {
         audioRef.current = null;
-        setPlayingId(null);
+        resetPreviewState();
       }
     });
   }
@@ -132,10 +215,11 @@ export function VoicesDialog({ open, onOpenChange }: VoicesDialogProps) {
     try {
       await api.voices.delete(accessToken, voice.id);
       setVoices((prev) => prev.filter((v) => v.id !== voice.id));
-      if (playingId === voice.id) {
+      bumpVoicesVersion();
+      if (playingId === voice.id || previewLoadingId === voice.id) {
         audioRef.current?.pause();
         audioRef.current = null;
-        setPlayingId(null);
+        resetPreviewState();
       }
       toast.success(t('deleteSuccess'));
     } catch (err) {
@@ -160,7 +244,7 @@ export function VoicesDialog({ open, onOpenChange }: VoicesDialogProps) {
     onOpenChange(false);
   }
 
-  function handleUseDefaultVoice(opt: VoiceOption) {
+  function handleUseInworldVoice(voice: InworldVoice) {
     if (!user || !accessToken) {
       openLoginModal();
       return;
@@ -168,7 +252,20 @@ export function VoicesDialog({ open, onOpenChange }: VoicesDialogProps) {
     requestPanelWithPrompt({
       panelType: 'generate-audio',
       prompt: '',
-      voiceId: opt.value,
+      voiceId: `inworld:${voice.voiceId}`,
+    });
+    onOpenChange(false);
+  }
+
+  function handleStartClone() {
+    if (!user || !accessToken) {
+      openLoginModal();
+      return;
+    }
+    requestPanelWithPrompt({
+      panelType: 'generate-audio',
+      prompt: '',
+      audioMode: 'clone',
     });
     onOpenChange(false);
   }
@@ -185,7 +282,7 @@ export function VoicesDialog({ open, onOpenChange }: VoicesDialogProps) {
           <span className="text-sm font-semibold tracking-tight text-white/85">{t('title')}</span>
           {!loading && (
             <span className="text-[10px] font-bold text-[#a2dd00]/80 bg-[#a2dd00]/[0.08] px-2 py-0.5 rounded-full tabular-nums">
-              {voices.length + VOICE_OPTIONS.length}
+              {voices.length + inworldVoices.length}
             </span>
           )}
         </div>
@@ -200,8 +297,13 @@ export function VoicesDialog({ open, onOpenChange }: VoicesDialogProps) {
       {/* Body */}
       <div className="flex-1 overflow-y-auto sidebar-scroll px-3 pb-4">
         {loading ? (
-          <div className="flex items-center justify-center py-12 text-white/40">
-            <Loader2 className="h-5 w-5 animate-spin" />
+          <div className="flex items-center justify-center py-24">
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin text-white/15" />
+              <span className="animate-pulse text-xs font-semibold text-white/50">
+                {t('loading')}
+              </span>
+            </div>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center gap-2 py-12 text-center text-white/40">
@@ -216,49 +318,50 @@ export function VoicesDialog({ open, onOpenChange }: VoicesDialogProps) {
         ) : (
           <>
             {/* My voices */}
-            <div className="px-1 pt-2 pb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#a2dd00]/75">
+            <div className="px-1 pt-2 pb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#a2dd00]/75">
               <MicVocal className="h-3 w-3" />
               {t('myVoices')}
+              <span className="ml-auto rounded-full bg-[#a2dd00]/[0.08] px-1.5 py-px text-[9px] font-bold tabular-nums text-[#a2dd00]/80">
+                {voices.length}
+              </span>
             </div>
 
-            {voices.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-white/[0.07] bg-white/[0.015] px-4 py-6 text-center">
-                <p className="text-xs text-white/45 leading-relaxed">{t('emptyMyVoices')}</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-1.5">
-                {voices.map((voice) => {
-                  const isPlaying = playingId === voice.id;
-                  const isConfirming = confirmDeleteId === voice.id;
-                  const isDeleting = deletingId === voice.id;
-                  const previewUrl = voice.previewUrl ?? voice.sampleUrl;
-                  const subtitle = voice.previewText?.trim() || voice.language;
+            <div className="grid grid-cols-2 gap-2">
+              {/* Clonar voz card */}
+              <button
+                type="button"
+                onClick={handleStartClone}
+                className="group flex min-h-[150px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[#a2dd00]/30 bg-[#a2dd00]/5 p-4 text-[#a2dd00]/80 transition-all hover:border-[#a2dd00]/60 hover:bg-[#a2dd00]/10 hover:text-[#a2dd00]"
+              >
+                <Plus className="h-6 w-6" strokeWidth={1.5} />
+                <span className="text-xs font-medium">{t('cloneVoice')}</span>
+              </button>
 
-                  return (
-                    <div
-                      key={voice.id}
-                      className="group flex items-center gap-2 rounded-xl border border-white/[0.05] bg-white/[0.02] px-2.5 py-2 transition-colors hover:border-white/[0.1] hover:bg-white/[0.035]"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => togglePreview(voice.id, previewUrl)}
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                          isPlaying
-                            ? 'bg-[#a2dd00]/20 text-[#a2dd00] ring-1 ring-[#a2dd00]/30'
-                            : 'bg-[#1e494b]/30 text-[#a2dd00]/70 hover:bg-[#1e494b]/50 hover:text-[#a2dd00]'
-                        }`}
-                        title={isPlaying ? t('pausePreview') : t('playPreview')}
-                      >
-                        {isPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                      </button>
-
-                      <div className="flex flex-1 min-w-0 flex-col">
-                        <span className="truncate text-xs font-medium text-white/85">{voice.name}</span>
-                        <span className="truncate text-[10px] text-white/35" title={subtitle}>{subtitle}</span>
-                      </div>
-
-                      {isConfirming ? (
-                        <div className="flex items-center gap-1 shrink-0">
+              {voices.map((voice) => {
+                const isPlaying = playingId === voice.id;
+                const isConfirming = confirmDeleteId === voice.id;
+                const isDeleting = deletingId === voice.id;
+                const previewUrl = voice.previewUrl ?? voice.sampleUrl;
+                return (
+                  <div key={voice.id} className="group relative">
+                    <VoiceCard
+                      selected={false}
+                      gradient={pickGradient(voice.id)}
+                      meta="Personalizada"
+                      name={voice.name}
+                      playing={isPlaying}
+                      loading={previewLoadingId === voice.id}
+                      progress={isPlaying ? previewProgress : 0}
+                      hasPreview={!!previewUrl}
+                      onPlay={previewUrl ? () => togglePreview(voice.id, previewUrl) : undefined}
+                      onSelect={() => handleUseSavedVoice(voice)}
+                    />
+                    {isConfirming ? (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-red-400/30 bg-[#1a2123]/95 p-3 backdrop-blur-sm">
+                        <p className="text-center text-[11px] font-semibold text-white/80">
+                          Excluir voz?
+                        </p>
+                        <div className="flex gap-1.5">
                           <button
                             type="button"
                             disabled={isDeleting}
@@ -276,72 +379,126 @@ export function VoicesDialog({ open, onOpenChange }: VoicesDialogProps) {
                             type="button"
                             disabled={isDeleting}
                             onClick={() => setConfirmDeleteId(null)}
-                            className="flex h-7 w-7 items-center justify-center rounded-md text-white/40 hover:bg-white/5 hover:text-white/80 disabled:opacity-60"
-                            title={t('cancel')}
+                            className="flex h-7 items-center rounded-md px-2 text-[10px] font-bold text-white/60 hover:bg-white/[0.06] hover:text-white/90 disabled:opacity-60"
                           >
-                            <X className="h-3 w-3" />
+                            {t('cancel')}
                           </button>
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => handleUseSavedVoice(voice)}
-                            className="flex h-7 items-center gap-1 rounded-md bg-[#a2dd00]/15 px-2 text-[10px] font-bold text-[#a2dd00] ring-1 ring-[#a2dd00]/25 hover:bg-[#a2dd00]/25"
-                          >
-                            <Sparkles className="h-3 w-3" />
-                            {t('useVoice')}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setConfirmDeleteId(voice.id)}
-                            className="flex h-7 w-7 items-center justify-center rounded-md text-red-400/55 hover:bg-red-500/10 hover:text-red-400 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                            title={t('delete')}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmDeleteId(voice.id);
+                        }}
+                        className="absolute right-9 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[#1e494b]/40 text-red-400/70 transition-all hover:bg-red-500/20 hover:text-red-400 sm:opacity-0 group-hover:opacity-100"
+                        title={t('delete')}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {voices.length === 0 && (
+              <div className="mt-2 rounded-xl border border-dashed border-white/[0.07] bg-white/[0.015] px-4 py-3 text-center">
+                <p className="text-[11px] text-white/45 leading-relaxed">
+                  {t('emptyMyVoices')}
+                </p>
+              </div>
+            )}
+
+            {/* Default voices */}
+            <div className="mt-5 px-1 pb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">
+              <Volume2 className="h-3 w-3" />
+              {t('defaultVoices')}
+              <span className="ml-auto rounded-full bg-white/[0.04] px-1.5 py-px text-[9px] font-bold tabular-nums text-white/40">
+                {inworldVoices.length}
+              </span>
+            </div>
+
+            {availableCountries.length > 0 && (
+              <div className="sidebar-scroll mb-2 -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1.5">
+                <button
+                  type="button"
+                  onClick={() => setCountry(null)}
+                  className={`flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2 text-[10px] font-medium transition-colors ${
+                    country === null
+                      ? 'bg-[#a2dd00]/15 text-[#a2dd00]'
+                      : 'bg-white/[0.04] text-white/55 hover:bg-white/[0.08] hover:text-white/80'
+                  }`}
+                >
+                  Todos
+                  <span className={country === null ? 'opacity-70' : 'opacity-50'}>
+                    {inworldVoices.length}
+                  </span>
+                </button>
+                {availableCountries.map(([code, count]) => {
+                  const active = country === code;
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => setCountry(code)}
+                      className={`flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2 text-[10px] font-medium transition-colors ${
+                        active
+                          ? 'bg-[#a2dd00]/15 text-[#a2dd00]'
+                          : 'bg-white/[0.04] text-white/55 hover:bg-white/[0.08] hover:text-white/80'
+                      }`}
+                    >
+                      {countryLabel(code)}
+                      <span className={active ? 'opacity-70' : 'opacity-50'}>
+                        {count}
+                      </span>
+                    </button>
                   );
                 })}
               </div>
             )}
 
-            {/* Default voices */}
-            <div className="mt-5 px-1 pb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">
-              <Volume2 className="h-3 w-3" />
-              {t('defaultVoices')}
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              {VOICE_OPTIONS.map((opt) => (
-                <div
-                  key={opt.value}
-                  className="group flex items-center gap-2 rounded-xl border border-white/[0.05] bg-white/[0.015] px-2.5 py-2 transition-colors hover:border-white/[0.1] hover:bg-white/[0.035]"
-                >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] text-white/40">
-                    <Volume2 className="h-3.5 w-3.5" />
-                  </div>
-
-                  <div className="flex flex-1 min-w-0 flex-col">
-                    <span className="truncate text-xs font-medium text-white/80">{opt.label}</span>
-                    <span className="text-[10px] uppercase tracking-wider text-white/30">
-                      {opt.language} · {opt.gender === 'F' ? t('genderF') : t('genderM')}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleUseDefaultVoice(opt)}
-                    className="flex h-7 items-center gap-1 rounded-md bg-white/[0.04] px-2 text-[10px] font-bold text-white/70 hover:bg-white/[0.08] hover:text-white/90"
-                  >
-                    <Sparkles className="h-3 w-3" />
-                    {t('useVoice')}
-                  </button>
-                </div>
-              ))}
-            </div>
+            {filteredInworld.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-white/[0.07] bg-white/[0.015] px-4 py-6 text-center">
+                <p className="text-xs text-white/45">
+                  {country
+                    ? t('noVoicesForCountry')
+                    : t('noVoicesAvailable')}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {filteredInworld.map((voice) => {
+                  const id = `inworld:${voice.voiceId}`;
+                  const previewUrl = api.inworld.previewUrl(voice.voiceId);
+                  const gender = parseGender(voice.description);
+                  const countryName = countryLabel(voice.langCode);
+                  const genderLabel =
+                    gender === 'F'
+                      ? t('genderF')
+                      : gender === 'M'
+                        ? t('genderM')
+                        : null;
+                  const meta = genderLabel ? `${countryName} · ${genderLabel}` : countryName;
+                  return (
+                    <VoiceCard
+                      key={id}
+                      selected={false}
+                      gradient={pickGradient(voice.voiceId)}
+                      meta={meta}
+                      name={voice.displayName}
+                      playing={playingId === id}
+                      loading={previewLoadingId === id}
+                      progress={playingId === id ? previewProgress : 0}
+                      hasPreview
+                      onPlay={() => togglePreview(id, previewUrl)}
+                      onSelect={() => handleUseInworldVoice(voice)}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </>
         )}
       </div>

@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { useScrollReveal } from "./use-scroll-reveal";
 
-const FAQ_COUNT = 8;
+const FAQ_COUNT = 10;
 
 function Item({
   question,

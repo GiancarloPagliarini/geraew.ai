@@ -97,6 +97,7 @@
       "noneFound": "Nenhum prompt encontrado",
       "clearSearch": "Limpar busca",
       "loadError": "Erro ao carregar prompts",
+      "loading": "Carregando prompts...",
       "tryAgain": "Tentar novamente",
       "loginTitle": "Faça login para acessar",
       "loginDescription": "Entre na sua conta para visualizar e usar os prompts disponíveis.",
@@ -244,7 +245,11 @@
       "deleteError": "Não conseguimos excluir a voz agora. Tente de novo.",
       "previewError": "Não foi possível reproduzir o áudio.",
       "loadError": "Não foi possível carregar suas vozes.",
+      "loading": "Carregando vozes...",
       "retry": "Tentar de novo",
+      "cloneVoice": "Clonar voz",
+      "noVoicesForCountry": "Nenhuma voz disponível para esse país.",
+      "noVoicesAvailable": "Nenhuma voz disponível no momento.",
       "genderF": "Feminina",
       "genderM": "Masculina"
     }

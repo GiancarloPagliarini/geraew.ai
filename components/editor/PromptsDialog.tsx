@@ -537,7 +537,12 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
         <div ref={scrollRef} className="flex-1 overflow-y-auto sidebar-scroll">
           {loading && (
             <div className="flex items-center justify-center py-24">
-              <Loader2 className="h-5 w-5 animate-spin text-white/15" />
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="h-5 w-5 animate-spin text-white/15" />
+                <span className="animate-pulse text-xs font-semibold text-white/50">
+                  {t('loading')}
+                </span>
+              </div>
             </div>
           )}
 

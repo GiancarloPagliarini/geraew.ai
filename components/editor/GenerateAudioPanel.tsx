@@ -3,15 +3,14 @@
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Bookmark,
+  ChevronRight,
   Coins,
   Download,
   Loader2,
@@ -29,13 +28,14 @@ import {
   X,
 } from 'lucide-react';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
+import { VoicePickerModal } from './VoicePickerModal';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { idbDelete, idbLoad, idbSave } from '@/lib/panel-idb';
 import { useEditor } from '@/lib/editor-context';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
-import { api, ApiError, VoiceProfile } from '@/lib/api';
-import { VOICE_OPTIONS } from '@/lib/voice-options';
+import { api, ApiError, InworldVoice, VoiceProfile } from '@/lib/api';
 import { listenGeneration } from '@/lib/sse';
 import { useGenerationRecovery } from '@/lib/use-generation-recovery';
 import { toast } from 'sonner';
@@ -46,23 +46,37 @@ import { GenerationErrorBanner, showGenerationError } from './GenerationError';
 type GenState = 'idle' | 'generating' | 'done';
 type Mode = 'tts' | 'clone';
 
+interface ModeGen {
+  audioUrl: string | null;
+  generationId: string | null;
+  state: GenState;
+  errorMsg: string | null;
+}
+
 interface ReferenceAudio {
   base64: string;
   mime_type: string;
   durationSeconds?: number;
 }
 
-const MAX_TEXT_LENGTH = 2000;
+const MAX_TEXT_LENGTH = 900;
 const MAX_AUDIO_SIZE = 15 * 1024 * 1024;
-const TTS_CREDIT_COST = 10;
-const CLONE_CREDIT_COST = 15;
+// Tabela de créditos por geração de áudio. O threshold separa texto curto
+// (até 399 chars) de texto longo (400+). TTS usa Inworld preset; CLONE inclui
+// criar voz nova OU usar uma voz salva (tudo via OmniVoice voice-clone).
+const AUDIO_TIER_THRESHOLD = 400;
+const TTS_CREDIT_COST_SHORT = 35;
+const TTS_CREDIT_COST_LONG = 45;
+const CLONE_CREDIT_COST_SHORT = 65;
+const CLONE_CREDIT_COST_LONG = 80;
 
+function ttsCreditCost(textLength: number): number {
+  return textLength >= AUDIO_TIER_THRESHOLD ? TTS_CREDIT_COST_LONG : TTS_CREDIT_COST_SHORT;
+}
+function cloneCreditCost(textLength: number): number {
+  return textLength >= AUDIO_TIER_THRESHOLD ? CLONE_CREDIT_COST_LONG : CLONE_CREDIT_COST_SHORT;
+}
 
-const LANGUAGE_OPTIONS = [
-  { value: 'pt', label: 'Português' },
-  { value: 'en', label: 'Inglês' },
-  { value: 'es', label: 'Espanhol' },
-];
 
 const SPEED_OPTIONS = [
   { value: '0.75', label: '0.75×' },
@@ -80,6 +94,7 @@ interface GenerateAudioPanelProps {
 }
 
 export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAudioPanelProps) {
+  const t = useTranslations('editorPanels.audio');
   const {
     consumeCredits,
     refetchCredits,
@@ -87,13 +102,15 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
     setNodeGenerating,
     pendingPromptRef,
     consumePendingPrompt,
+    voicesVersion,
+    bumpVoicesVersion,
   } = useEditor();
   const { accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
 
-  const [pendingVoiceId] = useState(() => {
+  const [pendingPrompt] = useState(() => {
     if (pendingPromptRef.current?.panelType === 'generate-audio') {
-      return consumePendingPrompt()?.voiceId ?? null;
+      return consumePendingPrompt();
     }
     return null;
   });
@@ -108,26 +125,82 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
     }
   });
 
-  const [mode, setMode] = useState<Mode>(stored?.mode ?? 'tts');
+  // Per-mode generation snapshots so each tab keeps its own session.
+  // Migrates legacy stored shape (single set of fields) to byMode on first load.
+  const initialMode: Mode =
+    pendingPrompt?.audioMode ?? stored?.mode ?? 'tts';
+  const initialByMode = ((): Record<Mode, ModeGen> => {
+    const fromByMode = stored?.byMode as
+      | Partial<Record<Mode, ModeGen>>
+      | undefined;
+    const legacyAtRoot: ModeGen | null = stored?.generationId || stored?.generatedAudioUrl
+      ? {
+        audioUrl: stored.generatedAudioUrl ?? null,
+        generationId: stored.generationId ?? null,
+        state:
+          stored.genState === 'generating' && stored.generationId
+            ? 'generating'
+            : stored.generatedAudioUrl
+              ? 'done'
+              : 'idle',
+        errorMsg: null,
+      }
+      : null;
+    const empty: ModeGen = {
+      audioUrl: null,
+      generationId: null,
+      state: 'idle',
+      errorMsg: null,
+    };
+    return {
+      tts:
+        fromByMode?.tts ??
+        (initialMode === 'tts' && legacyAtRoot ? legacyAtRoot : empty),
+      clone:
+        fromByMode?.clone ??
+        (initialMode === 'clone' && legacyAtRoot ? legacyAtRoot : empty),
+    };
+  })();
+
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [text, setText] = useState<string>(stored?.text ?? '');
-  const [voiceId, setVoiceId] = useState<string>(pendingVoiceId ?? stored?.voiceId ?? VOICE_OPTIONS[0].value);
-  const [language, setLanguage] = useState<string>(stored?.language ?? 'pt');
-  const [speed, setSpeed] = useState<string>(stored?.speed ?? '1');
-  const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(stored?.generatedAudioUrl ?? null);
-  const [generationId, setGenerationId] = useState<string | null>(stored?.generationId ?? null);
-  const [genState, setGenState] = useState<GenState>(
-    stored?.genState === 'generating' && stored?.generationId
-      ? 'generating'
-      : stored?.generatedAudioUrl
-        ? 'done'
-        : 'idle',
+  const [voiceId, setVoiceId] = useState<string>(
+    pendingPrompt?.voiceId ?? stored?.voiceId ?? '',
   );
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [speed, setSpeed] = useState<string>(stored?.speed ?? '1');
+  const [savedByMode, setSavedByMode] = useState<Record<Mode, ModeGen>>(initialByMode);
+  const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(initialByMode[initialMode].audioUrl);
+  const [generationId, setGenerationId] = useState<string | null>(initialByMode[initialMode].generationId);
+  const [genState, setGenState] = useState<GenState>(initialByMode[initialMode].state);
+  const [errorMsg, setErrorMsg] = useState<string | null>(initialByMode[initialMode].errorMsg);
   const [progress, setProgress] = useState(0);
+
+  function switchMode(newMode: Mode) {
+    if (newMode === mode) return;
+    // Save current mode's snapshot
+    const currentSnapshot: ModeGen = {
+      audioUrl: generatedAudioUrl,
+      generationId,
+      state: genState,
+      errorMsg,
+    };
+    setSavedByMode((prev) => ({ ...prev, [mode]: currentSnapshot }));
+    // Restore new mode's snapshot
+    const next = savedByMode[newMode];
+    setGeneratedAudioUrl(next.audioUrl);
+    setGenerationId(next.generationId);
+    setGenState(next.state);
+    setErrorMsg(next.errorMsg);
+    setProgress(0);
+    setMode(newMode);
+  }
 
   const [referenceAudio, setReferenceAudio] = useState<ReferenceAudio | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
+  // Reset on every new reference sample so the user re-confirms ownership.
+  const [voiceConsent, setVoiceConsent] = useState(false);
+  const [consentExpanded, setConsentExpanded] = useState(false);
 
   // Saved voice profiles (from /voices)
   const [savedVoices, setSavedVoices] = useState<VoiceProfile[]>([]);
@@ -135,6 +208,14 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
   const [savingVoice, setSavingVoice] = useState(false);
   const [showSaveVoiceForm, setShowSaveVoiceForm] = useState(false);
   const [saveVoiceName, setSaveVoiceName] = useState('');
+  const [voicePickerOpen, setVoicePickerOpen] = useState(false);
+
+  const [inworldVoices, setInworldVoices] = useState<InworldVoice[]>([]);
+  const [inworldLoading, setInworldLoading] = useState(true);
+
+  // Status do toggle global de áudio (admin pode desativar)
+  const [audioDisabled, setAudioDisabled] = useState(false);
+  const [audioDisabledMessage, setAudioDisabledMessage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -153,26 +234,32 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
     return () => setNodeGenerating(nodeId, false);
   }, [genState, nodeId, setNodeGenerating]);
 
-  // Persist form state
+  // Persist form state — current mode's live state always overrides its byMode entry
   useEffect(() => {
     try {
+      const byMode: Record<Mode, ModeGen> = {
+        ...savedByMode,
+        [mode]: {
+          audioUrl: generatedAudioUrl,
+          generationId,
+          state: genState,
+          errorMsg,
+        },
+      };
       localStorage.setItem(
         storageKey,
         JSON.stringify({
           mode,
           text,
           voiceId,
-          language,
           speed,
-          generatedAudioUrl,
-          generationId,
-          genState,
+          byMode,
         }),
       );
     } catch {
       /* ignore */
     }
-  }, [storageKey, mode, text, voiceId, language, speed, generatedAudioUrl, generationId, genState]);
+  }, [storageKey, mode, text, voiceId, speed, generatedAudioUrl, generationId, genState, errorMsg, savedByMode]);
 
   // Load reference audio from IndexedDB on mount
   useEffect(() => {
@@ -191,7 +278,12 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
     }
   }, [storageKey, referenceAudio]);
 
-  // Load saved voice profiles
+  // Reset consent whenever the sample changes or is cleared.
+  useEffect(() => {
+    setVoiceConsent(false);
+  }, [referenceAudio]);
+
+  // Load saved voice profiles. Re-fetches when `voicesVersion` bumps.
   useEffect(() => {
     if (!accessToken) return;
     api.voices
@@ -203,23 +295,77 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
         if (voiceId.startsWith('clone:')) {
           const id = voiceId.slice('clone:'.length);
           if (!res.voices.some((v) => v.id === id)) {
-            setVoiceId(VOICE_OPTIONS[0].value);
+            setVoiceId('');
           }
         }
       })
       .catch(() => { });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
+  }, [accessToken, voicesVersion]);
+
+  // Load Inworld preset voices (public endpoint, no auth needed)
+  useEffect(() => {
+    let cancelled = false;
+    setInworldLoading(true);
+    api.inworld
+      .listVoices()
+      .then((res) => {
+        if (cancelled) return;
+        setInworldVoices(res.voices.filter((v) => v.source !== 'PVC'));
+      })
+      .catch(() => { })
+      .finally(() => {
+        if (!cancelled) setInworldLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Verifica se admin desativou geração de áudio globalmente.
+  useEffect(() => {
+    let cancelled = false;
+    api.models
+      .listAudio()
+      .then((models) => {
+        if (cancelled) return;
+        const gateway = models.find((m) => m.slug === 'audio-generation');
+        if (gateway && !gateway.isActive) {
+          setAudioDisabled(true);
+          setAudioDisabledMessage(gateway.statusMessage ?? null);
+        } else {
+          setAudioDisabled(false);
+          setAudioDisabledMessage(null);
+        }
+      })
+      .catch(() => { });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Reset legacy/invalid voiceId once Inworld voices arrive — leaves the
+  // selection empty so the user picks intentionally (no default voice).
+  useEffect(() => {
+    if (!inworldVoices.length) return;
+    if (!voiceId) return;
+    const isValid =
+      voiceId.startsWith('clone:') ||
+      (voiceId.startsWith('inworld:') &&
+        inworldVoices.some((v) => `inworld:${v.voiceId}` === voiceId));
+    if (!isValid) setVoiceId('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inworldVoices]);
 
 
   // Resume in-progress generation
   const resumedRef = useRef(false);
   useEffect(() => {
     if (resumedRef.current) return;
-    if (stored?.genState === 'generating' && stored?.generationId && accessToken) {
+    if (genState === 'generating' && generationId && accessToken) {
       resumedRef.current = true;
-      startProgressAnimation(70);
-      startPollingFallback(stored.generationId);
+      startProgressAnimation(85);
+      startPollingFallback(generationId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken]);
@@ -236,7 +382,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
       setErrorMsg(
         showGenerationError({
           errorMessage: gen.errorMessage,
-          fallback: 'Não foi possível gerar o áudio. Tente novamente em alguns instantes.',
+          fallback: t('errors.fallback'),
         }),
       );
       refetchCredits();
@@ -324,7 +470,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
           setErrorMsg(
             showGenerationError({
               errorMessage: generation.errorMessage,
-              fallback: 'Não foi possível gerar o áudio. Tente novamente em alguns instantes.',
+              fallback: t('errors.fallback'),
             }),
           );
           refetchCredits();
@@ -334,7 +480,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
         setGenState('idle');
         setErrorMsg(
           showGenerationError({
-            fallback: 'Perdemos a conexão ao verificar o status. Recarregue para ver o resultado.',
+            fallback: t('errors.fallbackConnection'),
           }),
         );
       }
@@ -348,11 +494,11 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
     e.target.value = '';
     if (!file) return;
     if (!file.type.startsWith('audio/')) {
-      toast.error('Esse arquivo não parece áudio. Use mp3, wav, ogg ou webm.');
+      toast.error(t('errors.fileNotAudio'));
       return;
     }
     if (file.size > MAX_AUDIO_SIZE) {
-      toast.error('Áudio acima de 15 MB. Use um arquivo mais curto ou comprima antes.');
+      toast.error(t('errors.fileTooLarge'));
       return;
     }
     const reader = new FileReader();
@@ -360,7 +506,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
       const dataUrl = ev.target?.result as string;
       const base64 = dataUrl.split(',')[1];
       setReferenceAudio({ base64, mime_type: file.type });
-      toast.success('Áudio de referência adicionado.');
+      toast.success(t('success.audioAdded'));
     };
     reader.readAsDataURL(file);
   }
@@ -390,7 +536,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
             mime_type: blob.type,
             durationSeconds: recordSeconds,
           });
-          toast.success('Gravação salva.');
+          toast.success(t('success.recordingSaved'));
         };
         reader.readAsDataURL(blob);
       };
@@ -405,7 +551,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
       // Defer to next frame so the canvas is mounted (it's conditionally rendered)
       requestAnimationFrame(() => startVisualizer(stream));
     } catch {
-      toast.error('Não conseguimos acessar o microfone. Verifique as permissões do navegador.');
+      toast.error(t('errors.micAccess'));
     }
   }
 
@@ -494,7 +640,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
     if (!accessToken || !generationId) return;
     const trimmed = saveVoiceName.trim();
     if (!trimmed) {
-      toast.error('Dê um nome para a voz antes de salvar.');
+      toast.error(t('errors.voiceNameRequired'));
       return;
     }
     setSavingVoice(true);
@@ -504,17 +650,18 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
         name: trimmed,
       });
       setSavedVoices((prev) => [voice, ...prev]);
+      bumpVoicesVersion();
       setShowSaveVoiceForm(false);
       setSaveVoiceName('');
-      toast.success(`Voz "${voice.name}" salva.`);
+      toast.success(t('success.voiceSaved', { name: voice.name }));
       // Switch to TTS mode pre-selecting the new voice for immediate reuse
-      setMode('tts');
+      switchMode('tts');
       setVoiceId(`clone:${voice.id}`);
     } catch (err) {
       const msg =
         err instanceof Error
           ? err.message
-          : 'Não conseguimos salvar a voz agora. Tente novamente.';
+          : t('errors.voiceSaveFailed');
       toast.error(msg);
     } finally {
       setSavingVoice(false);
@@ -532,7 +679,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
     if (!text.trim()) return;
 
     if (mode === 'clone' && !referenceAudio) {
-      setErrorMsg('Faça upload ou grave um áudio de referência antes de clonar a voz.');
+      setErrorMsg(t('errors.noReferenceAudio'));
       return;
     }
 
@@ -551,14 +698,12 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
           ? await api.generations.textToSpeech(accessToken, {
             text,
             voice_id: voiceId,
-            language,
             speed: parseFloat(speed),
           })
           : await api.generations.voiceClone(accessToken, {
             text,
             audio: referenceAudio!.base64,
             audio_mime_type: referenceAudio!.mime_type,
-            language,
           });
 
       consumeCredits(creditsConsumed);
@@ -579,7 +724,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
             showGenerationError({
               errorMessage,
               creditsRefunded,
-              fallback: 'Não foi possível gerar o áudio. Tente novamente em alguns instantes.',
+              fallback: t('errors.fallback'),
             }),
           );
           refetchCredits();
@@ -594,9 +739,8 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
       if (err instanceof ApiError && err.status === 429) {
         setErrorMsg(
           showGenerationError({
-            errorMessage:
-              'Você já tem o número máximo de gerações em andamento. Aguarde uma delas terminar e tente de novo.',
-            fallback: 'Não foi possível iniciar a geração.',
+            errorMessage: t('errors.concurrentLimit'),
+            fallback: t('errors.startFailed'),
           }),
         );
         return;
@@ -604,7 +748,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
       setErrorMsg(
         showGenerationError({
           errorMessage: err instanceof Error ? err.message : null,
-          fallback: 'Não foi possível iniciar a geração. Verifique sua conexão e tente novamente.',
+          fallback: t('errors.startFailedConnection'),
         }),
       );
     }
@@ -640,9 +784,18 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
   }
 
   const isGenerating = genState === 'generating';
-  const creditsCost = mode === 'tts' ? TTS_CREDIT_COST : CLONE_CREDIT_COST;
+  // CLONE pricing só na hora de CRIAR a voz pela primeira vez. Quando a voz
+  // já está salva, TTS com ela usa o mesmo custo das vozes padrão.
+  const textLen = text.trim().length;
+  const creditsCost =
+    mode === 'clone' ? cloneCreditCost(textLen) : ttsCreditCost(textLen);
   const canGenerate =
-    !isGenerating && text.trim().length > 0 && (mode === 'tts' || referenceAudio !== null);
+    !isGenerating &&
+    !audioDisabled &&
+    text.trim().length > 0 &&
+    (mode === 'tts'
+      ? voiceId.length > 0
+      : referenceAudio !== null && voiceConsent);
 
   const previewDataUrl = referenceAudio
     ? `data:${referenceAudio.mime_type};base64,${referenceAudio.base64}`
@@ -659,11 +812,11 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
           <div className="flex items-center gap-2">
             <Mic className="h-4 w-4 text-[#a2dd00]" />
             <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
-              GERAR ÁUDIO
+              {t('header')}
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <PanelDuplicateButton onClick={onDuplicate} />
+            <PanelDuplicateButton onClick={onDuplicate} disabled={isGenerating} />
             <button
               onClick={() => {
                 localStorage.removeItem(storageKey);
@@ -677,24 +830,41 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
           </div>
         </div>
 
-        <div className="space-y-4 p-4">
+        <div className="space-y-3 p-4">
+          {/* ── Aviso global: áudio desativado pelo admin ─────────── */}
+          {audioDisabled && (
+            <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.06] p-3">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/15">
+                <Volume2 className="h-3.5 w-3.5 text-amber-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-bold text-amber-400">
+                  {t('audioDisabled.title')}
+                </p>
+                <p className="mt-0.5 text-[10px] leading-relaxed text-[#f3f0ed]/55">
+                  {audioDisabledMessage ?? t('audioDisabled.fallbackMessage')}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* ── Mode tabs ────────────────────────────────────────────── */}
           <div className="grid grid-cols-2 gap-2">
             <ModeTab
               icon={Type}
-              label="Texto → Voz"
-              hint="Voz pronta"
+              label={t('modes.tts')}
+              hint={t('modes.ttsHint')}
               active={mode === 'tts'}
               disabled={isGenerating}
-              onClick={() => setMode('tts')}
+              onClick={() => switchMode('tts')}
             />
             <ModeTab
               icon={Speech}
-              label="Clonar Voz"
-              hint="Sua voz"
+              label={t('modes.clone')}
+              hint={t('modes.cloneHint')}
               active={mode === 'clone'}
               disabled={isGenerating}
-              onClick={() => setMode('clone')}
+              onClick={() => switchMode('clone')}
             />
           </div>
 
@@ -707,7 +877,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#f3f0ed]/70">
-                    Gerando áudio
+                    {t('states.generating')}
                   </div>
                   <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-[#f3f0ed]/8">
                     <div
@@ -730,7 +900,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
                 <div className="mb-2 flex items-center gap-1.5">
                   <div className="h-1.5 w-1.5 rounded-full bg-[#a2dd00]" />
                   <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#a2dd00]/70">
-                    Áudio gerado
+                    {t('states.audioGenerated')}
                   </span>
                 </div>
                 <InlineAudioPlayer src={generatedAudioUrl} />
@@ -745,21 +915,10 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
                       className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#f3f0ed]/8 bg-[#1e494b]/20 text-xs font-semibold text-[#f3f0ed]/60 transition-all hover:border-[#a2dd00]/30 hover:text-[#a2dd00]"
                     >
                       <Download className="h-3.5 w-3.5" />
-                      Baixar
+                      {t('buttons.download')}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={4}>Baixar áudio</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={handleDiscard}
-                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#f3f0ed]/8 bg-[#1e494b]/20 text-[#f3f0ed]/40 transition-all hover:border-red-400/30 hover:text-red-400"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={4}>Descartar</TooltipContent>
+                  <TooltipContent side="bottom" sideOffset={4}>{t('buttons.downloadTooltip')}</TooltipContent>
                 </Tooltip>
               </div>
 
@@ -772,44 +931,84 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
 
                 if (showSaveVoiceForm) {
                   return (
-                    <div className="flex items-center gap-1.5 rounded-xl border border-[#a2dd00]/25 bg-[#a2dd00]/5 p-1.5">
-                      <input
-                        autoFocus
-                        type="text"
-                        maxLength={40}
-                        value={saveVoiceName}
-                        onChange={(e) => setSaveVoiceName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !savingVoice) handleSaveVoice();
-                          if (e.key === 'Escape') {
+                    <div className="space-y-2.5 rounded-2xl border border-[#a2dd00]/30 bg-gradient-to-br from-[#a2dd00]/[0.08] to-transparent p-3">
+                      <div className="flex items-start gap-2.5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#a2dd00]/15 text-[#a2dd00]">
+                          <Bookmark className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-bold text-[#f3f0ed]/90">
+                            {t('buttons.saveVoiceCloned')}
+                          </div>
+                          <div className="mt-0.5 text-[10px] leading-relaxed text-[#f3f0ed]/45">
+                            {t('saveVoiceForm.subtitle')}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
                             setShowSaveVoiceForm(false);
                             setSaveVoiceName('');
-                          }
-                        }}
-                        placeholder="Nome da voz"
-                        className="h-8 flex-1 min-w-0 rounded-lg bg-[#1e494b]/30 px-3 text-xs text-[#f3f0ed]/90 placeholder-[#f3f0ed]/30 outline-none focus:bg-[#1e494b]/50"
-                      />
+                          }}
+                          disabled={savingVoice}
+                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#f3f0ed]/40 transition-colors hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
+                          {t('fields.voiceName')}
+                        </label>
+                        <div className="relative">
+                          <input
+                            autoFocus
+                            type="text"
+                            maxLength={40}
+                            value={saveVoiceName}
+                            onChange={(e) => setSaveVoiceName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !savingVoice && saveVoiceName.trim())
+                                handleSaveVoice();
+                              if (e.key === 'Escape') {
+                                setShowSaveVoiceForm(false);
+                                setSaveVoiceName('');
+                              }
+                            }}
+                            placeholder={t('placeholders.voiceName')}
+                            className="h-9 w-full rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 pr-12 text-xs text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30"
+                          />
+                          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[10px] tabular-nums text-[#f3f0ed]/30">
+                            {saveVoiceName.length}/40
+                          </span>
+                        </div>
+                      </div>
+
                       <button
                         onClick={handleSaveVoice}
                         disabled={savingVoice || !saveVoiceName.trim()}
-                        className="flex h-8 items-center gap-1 rounded-lg bg-[#a2dd00] px-3 text-xs font-bold text-[#1a2123] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-[#a2dd00] text-xs font-bold text-[#1a2123] transition-all active:scale-95 disabled:opacity-50"
                       >
                         {savingVoice ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            {t('states.saving')}
+                          </>
                         ) : (
-                          'Salvar'
+                          <>
+                            <Bookmark className="h-3.5 w-3.5" />
+                            {t('buttons.saveVoice')}
+                          </>
                         )}
                       </button>
-                      <button
-                        onClick={() => {
-                          setShowSaveVoiceForm(false);
-                          setSaveVoiceName('');
-                        }}
-                        disabled={savingVoice}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#f3f0ed]/40 hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
+
+                      {voiceQuotaLimit > 0 && (
+                        <p className="text-center text-[10px] text-[#f3f0ed]/35">
+                          {savedVoices.length >= voiceQuotaLimit
+                            ? t('saveVoiceForm.quotaReached', { used: savedVoices.length, total: voiceQuotaLimit })
+                            : t('saveVoiceForm.quotaSaved', { used: savedVoices.length, total: voiceQuotaLimit })}
+                        </p>
+                      )}
                     </div>
                   );
                 }
@@ -821,10 +1020,10 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
                         <button
                           onClick={() => disabled ? undefined : setShowSaveVoiceForm(true)}
                           disabled={disabled}
-                          className="flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-[#a2dd00]/25 bg-[#a2dd00]/5 text-xs font-bold text-[#a2dd00] transition-all hover:bg-[#a2dd00]/12 disabled:cursor-not-allowed disabled:opacity-40"
+                          className="flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-[#a2dd00]/25 bg-[#a2dd00]/5 text-xs font-bold text-[#a2dd00] transition-all hover:bg-[#a2dd00]/12 disabled:opacity-40"
                         >
                           <Bookmark className="h-3.5 w-3.5" />
-                          Salvar voz
+                          {t('buttons.saveVoice')}
                           {voiceQuotaLimit > 0 && (
                             <span className="text-[10px] font-medium opacity-60">
                               {savedVoices.length}/{voiceQuotaLimit}
@@ -836,8 +1035,8 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
                     {disabled && (
                       <TooltipContent side="top" sideOffset={6}>
                         {noQuota
-                          ? 'Faça upgrade de plano para salvar vozes.'
-                          : 'Limite atingido. Exclua uma voz salva ou faça upgrade.'}
+                          ? t('saveVoiceForm.tooltipNoQuota')
+                          : t('saveVoiceForm.tooltipQuotaReached')}
                       </TooltipContent>
                     )}
                   </Tooltip>
@@ -849,7 +1048,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
                 onClick={handleDiscard}
                 className="flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/6 text-xs font-semibold text-[#f3f0ed]/40 transition-all hover:border-[#f3f0ed]/15 hover:text-[#f3f0ed]/70"
               >
-                Gerar outro áudio
+                {t('buttons.generateAnother')}
               </button>
             </div>
           )}
@@ -860,7 +1059,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
               {/* Texto */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
-                  TEXTO
+                  {t('fields.text')}
                 </label>
                 <div className="relative">
                   <textarea
@@ -869,8 +1068,8 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
                     rows={3}
                     placeholder={
                       mode === 'tts'
-                        ? 'Escreva o texto que será narrado...'
-                        : 'Escreva o texto que a voz clonada deve falar...'
+                        ? t('placeholders.ttsText')
+                        : t('placeholders.cloneText')
                     }
                     className="w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/15 px-3 py-2 pb-6 text-sm leading-snug text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30"
                   />
@@ -884,7 +1083,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
               {mode === 'clone' && (
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
-                    ÁUDIO DE REFERÊNCIA
+                    {t('fields.referenceAudio')}
                   </label>
                   {isRecording ? (
                     <div className="flex items-center gap-2 rounded-xl border border-red-400/30 bg-red-500/8 px-2.5 py-2">
@@ -894,7 +1093,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
                           <span className="relative h-2 w-2 rounded-full bg-red-400" />
                         </span>
                         <span className="text-[10px] font-bold tracking-[0.15em] text-red-400">
-                          REC
+                          {t('states.rec')}
                         </span>
                       </div>
                       <canvas
@@ -904,43 +1103,115 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
                       <span className="shrink-0 font-mono text-[10px] tabular-nums text-red-400/80">
                         {formatRecordTime(recordSeconds)}
                       </span>
-                      <button
-                        onClick={stopRecording}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-500/20 text-red-400 transition-all hover:bg-red-500/30 active:scale-95"
-                        title="Parar gravação"
-                      >
-                        <Square className="h-3.5 w-3.5 fill-red-400" />
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={stopRecording}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-500/20 text-red-400 transition-all hover:bg-red-500/30 active:scale-95"
+                          >
+                            <Square className="h-3.5 w-3.5 fill-red-400" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" sideOffset={4}>{t('buttons.stopRecording')}</TooltipContent>
+                      </Tooltip>
                     </div>
                   ) : referenceAudio && previewDataUrl ? (
-                    <InlineAudioPlayer
-                      src={previewDataUrl}
-                      actions={
-                        <button
-                          onClick={clearReferenceAudio}
-                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#f3f0ed]/40 transition-all hover:bg-red-500/10 hover:text-red-400"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      }
-                    />
+                    <>
+                      <InlineAudioPlayer
+                        src={previewDataUrl}
+                        actions={
+                          <button
+                            onClick={clearReferenceAudio}
+                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#f3f0ed]/40 transition-all hover:bg-red-500/10 hover:text-red-400"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        }
+                      />
+                      <div
+                        className={`mt-2 overflow-hidden rounded-xl border transition-all ${voiceConsent
+                          ? 'border-[#a2dd00]/40 bg-[#a2dd00]/[0.06]'
+                          : 'border-[#f3f0ed]/[0.07] bg-[#1e494b]/15'
+                          }`}
+                      >
+                        <div className="flex items-center gap-2 px-2.5 py-2">
+                          <button
+                            type="button"
+                            onClick={() => setVoiceConsent((v) => !v)}
+                            className="flex flex-1 items-center gap-2 text-left"
+                          >
+                            <span
+                              className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-all ${voiceConsent
+                                ? 'border-[#a2dd00] bg-[#a2dd00]'
+                                : 'border-[#f3f0ed]/30 bg-transparent'
+                                }`}
+                            >
+                              {voiceConsent && (
+                                <svg
+                                  viewBox="0 0 12 12"
+                                  className="h-2.5 w-2.5 text-[#1a2123]"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <polyline points="2.5,6.5 5,9 9.5,3.5" />
+                                </svg>
+                              )}
+                            </span>
+                            <span className="text-[11px] font-medium text-[#f3f0ed]/80">
+                              {t('consent.label')}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConsentExpanded((v) => !v)}
+                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-[#f3f0ed]/40 transition-colors hover:bg-[#f3f0ed]/[0.06] hover:text-[#f3f0ed]/80"
+                            aria-label={consentExpanded ? t('buttons.collapseDetails') : t('buttons.expandDetails')}
+                          >
+                            <ChevronRight
+                              className={`h-3.5 w-3.5 transition-transform ${consentExpanded ? 'rotate-90' : ''
+                                }`}
+                            />
+                          </button>
+                        </div>
+                        {consentExpanded && (
+                          <div className="border-t border-[#f3f0ed]/[0.06] px-2.5 py-2">
+                            <p className="text-[10px] leading-relaxed text-[#f3f0ed]/55">
+                              {t('consent.details')}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex h-12 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[#f3f0ed]/15 text-[#f3f0ed]/40 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]"
-                      >
-                        <Upload className="h-3.5 w-3.5" />
-                        <span className="text-[10px] font-bold tracking-wider">UPLOAD</span>
-                      </button>
-                      <button
-                        onClick={startRecording}
-                        className="flex h-12 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[#f3f0ed]/15 text-[#f3f0ed]/40 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]"
-                      >
-                        <Mic className="h-3.5 w-3.5" />
-                        <span className="text-[10px] font-bold tracking-wider">GRAVAR</span>
-                      </button>
-                    </div>
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex h-12 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[#f3f0ed]/15 text-[#f3f0ed]/40 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]"
+                        >
+                          <Upload className="h-3.5 w-3.5" />
+                          <span className="text-[10px] font-bold tracking-wider">{t('buttons.upload')}</span>
+                        </button>
+                        <button
+                          onClick={startRecording}
+                          className="flex h-12 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[#f3f0ed]/15 text-[#f3f0ed]/40 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]"
+                        >
+                          <Mic className="h-3.5 w-3.5" />
+                          <span className="text-[10px] font-bold tracking-wider">{t('buttons.record')}</span>
+                        </button>
+                      </div>
+                      <p className="mt-1.5 text-center text-[10px] leading-relaxed text-[#f3f0ed]/40">
+                        {t.rich('minDuration', {
+                          seconds: 10,
+                          strong: (chunks) => (
+                            <span className="font-semibold text-[#f3f0ed]/65">{chunks}</span>
+                          ),
+                        })}
+                      </p>
+                    </>
                   )}
                   <input
                     ref={fileInputRef}
@@ -956,34 +1227,27 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
               {mode === 'tts' && (
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
-                    VOZ
+                    {t('fields.voice')}
                   </label>
-                  <VoiceSelect
+                  <VoicePickerButton
                     value={voiceId}
-                    onValueChange={setVoiceId}
                     savedVoices={savedVoices}
-                    defaultVoices={VOICE_OPTIONS}
+                    inworldVoices={inworldVoices}
+                    loading={inworldLoading}
+                    onClick={() => setVoicePickerOpen(true)}
                   />
                 </div>
               )}
 
-              {/* Idioma + Velocidade (TTS) ou só Idioma (clone) */}
-              <div className={mode === 'tts' ? 'grid grid-cols-2 gap-3' : ''}>
+              {/* Velocidade (TTS apenas) */}
+              {mode === 'tts' && (
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
-                    IDIOMA
+                    {t('fields.speed')}
                   </label>
-                  <PanelSelect value={language} onValueChange={setLanguage} options={LANGUAGE_OPTIONS} />
+                  <PanelSelect value={speed} onValueChange={setSpeed} options={SPEED_OPTIONS} />
                 </div>
-                {mode === 'tts' && (
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40">
-                      VELOCIDADE
-                    </label>
-                    <PanelSelect value={speed} onValueChange={setSpeed} options={SPEED_OPTIONS} />
-                  </div>
-                )}
-              </div>
+              )}
 
               <GenerationErrorBanner msg={errorMsg} />
 
@@ -992,12 +1256,12 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
                 <div className="flex items-center gap-1.5">
                   <Coins className="h-3 w-3 text-[#a2dd00]" />
                   <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#f3f0ed]/40">
-                    Custo estimado
+                    {t('estimatedCost')}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-[#f3f0ed]/70">
-                    {creditsCost} créditos
+                    {t('credits', { count: creditsCost })}
                   </span>
                   <div className="h-1.5 w-1.5 rounded-full bg-[#a2dd00]" />
                 </div>
@@ -1007,25 +1271,30 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
               <button
                 onClick={handleGenerate}
                 disabled={!canGenerate}
-                className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:opacity-60"
                 style={{
                   background: '#a2dd00',
                   color: '#1a2123',
                 }}
               >
                 <MicVocal className="h-4 w-4" />
-                Gerar áudio
+                {t('buttons.generateAudio')}
               </button>
-
-              <p className="text-center text-[10px] text-[#f3f0ed]/25">
-                {mode === 'tts'
-                  ? 'O texto será sintetizado em voz pela IA.'
-                  : 'A voz da gravação será replicada para falar o texto acima.'}
-              </p>
             </>
           )}
         </div>
       </div>
+
+      <VoicePickerModal
+        open={voicePickerOpen}
+        onOpenChange={setVoicePickerOpen}
+        selectedVoiceId={voiceId}
+        savedVoices={savedVoices}
+        inworldVoices={inworldVoices}
+        loadingInworld={inworldLoading}
+        onPickVoice={setVoiceId}
+        onAddVoice={() => switchMode('clone')}
+      />
     </TooltipProvider>
   );
 }
@@ -1057,7 +1326,7 @@ function ModeTab({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`group relative flex flex-col items-start gap-0.5 overflow-hidden rounded-xl border px-3 py-2.5 text-left transition-all disabled:cursor-not-allowed disabled:opacity-50 ${active
+      className={`group relative flex flex-col items-start gap-0.5 overflow-hidden rounded-xl border px-3 py-2.5 text-left transition-all disabled:opacity-50 ${active
         ? 'border-[#a2dd00]/50 bg-[#a2dd00]/8'
         : 'border-[#f3f0ed]/[0.07] bg-[#1e494b]/15 hover:border-[#f3f0ed]/15 hover:bg-[#1e494b]/25'
         }`}
@@ -1116,98 +1385,49 @@ function PanelSelect({
   );
 }
 
-function VoiceSelect({
+function VoicePickerButton({
   value,
-  onValueChange,
   savedVoices,
-  defaultVoices,
+  inworldVoices,
+  loading,
+  onClick,
 }: {
   value: string;
-  onValueChange: (v: string) => void;
   savedVoices: VoiceProfile[];
-  defaultVoices: { value: string; label: string }[];
+  inworldVoices: InworldVoice[];
+  loading: boolean;
+  onClick: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-
-  function pickVoice(val: string) {
-    onValueChange(val);
-    setOpen(false);
-  }
-
-  // Compute the trigger label since cloned voices aren't SelectItem children
+  const t = useTranslations('editorPanels.voicePicker');
   const selectedClonedVoice = value.startsWith('clone:')
     ? savedVoices.find((v) => v.id === value.slice('clone:'.length))
     : null;
-  const selectedDefaultVoice = !selectedClonedVoice
-    ? defaultVoices.find((o) => o.value === value)
-    : null;
+  const selectedInworldVoice =
+    !selectedClonedVoice && value.startsWith('inworld:')
+      ? inworldVoices.find((v) => `inworld:${v.voiceId}` === value)
+      : null;
+
+  const label = selectedClonedVoice
+    ? selectedClonedVoice.name
+    : selectedInworldVoice
+      ? selectedInworldVoice.displayName
+      : loading
+        ? t('loading')
+        : t('selectVoice');
 
   return (
-    <Select value={value} onValueChange={onValueChange} open={open} onOpenChange={setOpen}>
-      <SelectTrigger className="h-9 w-full rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 text-xs text-[#f3f0ed]/80 outline-none transition-all focus:border-[#a2dd00]/40 focus:ring-0 [&>svg]:text-[#f3f0ed]/30">
-        <SelectValue placeholder="Selecione uma voz">
-          {selectedClonedVoice ? (
-            <span className="flex items-center gap-1.5">
-              <MicVocal className="h-3 w-3 text-[#a2dd00]" />
-              <span className="truncate">{selectedClonedVoice.name}</span>
-            </span>
-          ) : (
-            selectedDefaultVoice?.label
-          )}
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent className="rounded-xl border border-[#f3f0ed]/8 bg-[#1a2123] p-1 shadow-2xl shadow-black/60 backdrop-blur-md">
-        {savedVoices.length > 0 && (
-          <div>
-            <div className="px-3 py-1 text-[9px] font-bold uppercase tracking-[0.15em] text-[#a2dd00]/70">
-              Minhas vozes
-            </div>
-            <div className="sidebar-scroll max-h-36 space-y-1 overflow-y-auto pr-1">
-              {savedVoices.map((voice) => {
-                const isSelected = value === `clone:${voice.id}`;
-
-                return (
-                  <button
-                    key={voice.id}
-                    type="button"
-                    onClick={() => pickVoice(`clone:${voice.id}`)}
-                    className={`flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left transition-colors ${isSelected ? 'bg-[#a2dd00]/8' : 'hover:bg-[#1e494b]/40'
-                      }`}
-                  >
-                    <MicVocal
-                      className={`h-3 w-3 shrink-0 ${isSelected ? 'text-[#a2dd00]' : 'text-[#a2dd00]/70'}`}
-                    />
-                    <span
-                      className={`truncate text-xs ${isSelected ? 'text-[#a2dd00] font-medium' : 'text-[#f3f0ed]/70'}`}
-                    >
-                      {voice.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        <SelectGroup>
-          {savedVoices.length > 0 && (
-            <SelectLabel className="px-3 pt-2 pb-1 text-[9px] font-bold uppercase tracking-[0.15em] text-[#f3f0ed]/30">
-              Vozes padrão
-            </SelectLabel>
-          )}
-          <div className="sidebar-scroll max-h-44 overflow-y-auto pr-1">
-            {defaultVoices.map((opt) => (
-              <SelectItem
-                key={opt.value}
-                value={opt.value}
-                className="cursor-pointer rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/70 transition-all focus:bg-[#1e494b]/40 focus:text-[#f3f0ed] data-[state=checked]:text-[#a2dd00] [&>span:last-child>svg]:text-[#a2dd00]"
-              >
-                {opt.label}
-              </SelectItem>
-            ))}
-          </div>
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-9 w-full items-center gap-2 rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 text-xs text-[#f3f0ed]/80 outline-none transition-all hover:border-[#a2dd00]/40 hover:bg-[#1e494b]/30 focus:border-[#a2dd00]/40"
+    >
+      <MicVocal className="h-3.5 w-3.5 shrink-0 text-[#a2dd00]" />
+      <span className="flex-1 truncate text-left">{label}</span>
+      <span className="flex shrink-0 items-center gap-0.5 text-[10px] font-bold uppercase tracking-wider text-[#a2dd00]/80">
+        {t('voicesButton')}
+        <ChevronRight className="h-3 w-3" />
+      </span>
+    </button>
   );
 }
 

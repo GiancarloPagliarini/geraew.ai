@@ -47,6 +47,14 @@
         "title": "Vídeos Ultra-Realistas",
         "description": "Transforme qualquer imagem em vídeo com movimentos naturais. Pronto para Reels, TikTok e Stories em poucos segundos."
       },
+      "audio": {
+        "title": "Áudio com IA",
+        "description": "Transforme texto em narração profissional com vozes em 15 idiomas. Pronto pra reels, vídeos e podcasts."
+      },
+      "voiceClone": {
+        "title": "Clonagem de Voz",
+        "description": "Clone sua voz com uma amostra curta e use em qualquer roteiro. Sua identidade nos seus criativos, sem precisar gravar de novo."
+      },
       "motion": {
         "title": "Controle de Movimento",
         "description": "Copie o movimento de qualquer vídeo de referência e aplique na sua persona. Danças, gestos, expressões — com um clique."
@@ -253,6 +261,14 @@
       {
         "question": "Posso cancelar a qualquer momento?",
         "answer": "Sim. Sem multa, sem taxa, sem burocracia. Cancele direto pelo painel e continue usando até o fim do período pago."
+      },
+      {
+        "question": "Como funciona a clonagem de voz?",
+        "answer": "Você grava ou faz upload de uma amostra curta da sua voz (mínimo 10 segundos) e a Geraew clona ela com IA. Depois é só escrever o roteiro e a sua voz fala em qualquer texto, em vários idiomas. Você precisa ter permissão legal para clonar a voz utilizada (a sua ou de alguém que autorizou). Cada plano permite uma quantidade diferente de vozes salvas — confira na tabela de planos."
+      },
+      {
+        "question": "Posso gerar áudio com vozes profissionais sem clonar a minha?",
+        "answer": "Sim. Temos mais de 60 vozes prontas em 15 idiomas (português, inglês, espanhol e mais). É só escrever o texto, escolher uma voz e o áudio sai pronto em segundos — perfeito para narrar reels, vídeos, podcasts ou anúncios."
       }
     ]
   },

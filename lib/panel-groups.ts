@@ -74,7 +74,7 @@ export const PANEL_GROUPS: PanelGroup[] = [
     id: 'audio',
     icon: AudioLines,
     panels: [
-      { type: 'generate-audio', icon: Mic, actionKey: 'generateAudio', contextKey: 'generateVoice', comingSoon: true },
+      { type: 'generate-audio', icon: Mic, actionKey: 'generateAudio', contextKey: 'generateVoice', isNew: true },
     ],
   },
 ];

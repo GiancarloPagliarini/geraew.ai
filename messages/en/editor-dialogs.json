@@ -97,6 +97,7 @@
       "noneFound": "No prompts found",
       "clearSearch": "Clear search",
       "loadError": "Failed to load prompts",
+      "loading": "Loading prompts...",
       "tryAgain": "Try again",
       "loginTitle": "Sign in to access",
       "loginDescription": "Log in to your account to browse and use the available prompts.",
@@ -244,7 +245,11 @@
       "deleteError": "Couldn't delete the voice. Please try again.",
       "previewError": "Couldn't play the audio.",
       "loadError": "Couldn't load your voices.",
+      "loading": "Loading voices...",
       "retry": "Try again",
+      "cloneVoice": "Clone voice",
+      "noVoicesForCountry": "No voices available for this country.",
+      "noVoicesAvailable": "No voices available right now.",
       "genderF": "Female",
       "genderM": "Male"
     }

@@ -97,6 +97,7 @@
       "noneFound": "No se encontraron prompts",
       "clearSearch": "Limpiar búsqueda",
       "loadError": "Error al cargar prompts",
+      "loading": "Cargando prompts...",
       "tryAgain": "Intentar de nuevo",
       "loginTitle": "Inicia sesión para acceder",
       "loginDescription": "Ingresa a tu cuenta para ver y usar los prompts disponibles.",
@@ -244,7 +245,11 @@
       "deleteError": "No pudimos eliminar la voz. Inténtalo de nuevo.",
       "previewError": "No se pudo reproducir el audio.",
       "loadError": "No se pudieron cargar tus voces.",
+      "loading": "Cargando voces...",
       "retry": "Reintentar",
+      "cloneVoice": "Clonar voz",
+      "noVoicesForCountry": "No hay voces disponibles para este país.",
+      "noVoicesAvailable": "No hay voces disponibles ahora.",
       "genderF": "Femenina",
       "genderM": "Masculina"
     }
