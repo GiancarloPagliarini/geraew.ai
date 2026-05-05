@@ -218,7 +218,7 @@ export function TopNavbar() {
                   onClick={toggleStudioMode}
                   aria-pressed={studioMode}
                   title="Studio Mode"
-                  className="flex h-7 items-center gap-1.5 rounded-full bg-[#a2dd00]/10 px-3 text-[11px] font-medium text-[#a2dd00] transition-all hover:bg-[#a2dd00]/15"
+                  className="hidden h-7 items-center gap-1.5 rounded-full bg-[#a2dd00]/10 px-3 text-[11px] font-medium text-[#a2dd00] transition-all hover:bg-[#a2dd00]/15 md:flex"
                 >
                   <Clapperboard className="h-3 w-3" />
                   Studio
@@ -490,7 +490,7 @@ export function TopNavbar() {
               onClick={toggleStudioMode}
               aria-pressed={studioMode}
               title={studioMode ? 'Desativar Studio Mode' : 'Ativar Studio Mode'}
-              className={`hidden h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-all sm:flex ${
+              className={`hidden h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-all md:flex ${
                 studioMode
                   ? 'border-[#a2dd00]/40 bg-[#a2dd00]/10 text-[#a2dd00] hover:bg-[#a2dd00]/15'
                   : 'border-[#1e494b] text-[#f3f0ed]/80 hover:border-[#a2dd00]/50 hover:text-[#f3f0ed]'

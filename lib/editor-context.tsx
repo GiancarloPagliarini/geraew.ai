@@ -100,12 +100,26 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (window.localStorage.getItem(STUDIO_MODE_STORAGE_KEY) === '1') {
-      setStudioModeState(true);
-    }
+    const mql = window.matchMedia('(min-width: 768px)');
+    const apply = () => {
+      if (!mql.matches) {
+        setStudioModeState(false);
+        return;
+      }
+      if (window.localStorage.getItem(STUDIO_MODE_STORAGE_KEY) === '1') {
+        setStudioModeState(true);
+      }
+    };
+    apply();
+    mql.addEventListener('change', apply);
+    return () => mql.removeEventListener('change', apply);
   }, []);
 
   const setStudioMode = useCallback((enabled: boolean) => {
+    if (typeof window !== 'undefined' && !window.matchMedia('(min-width: 768px)').matches) {
+      setStudioModeState(false);
+      return;
+    }
     setStudioModeState(enabled);
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(STUDIO_MODE_STORAGE_KEY, enabled ? '1' : '0');
@@ -113,6 +127,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const toggleStudioMode = useCallback(() => {
+    if (typeof window !== 'undefined' && !window.matchMedia('(min-width: 768px)').matches) {
+      setStudioModeState(false);
+      return;
+    }
     setStudioModeState((prev) => {
       const next = !prev;
       if (typeof window !== 'undefined') {
