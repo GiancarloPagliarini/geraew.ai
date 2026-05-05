@@ -28,7 +28,7 @@ export function LeftSidebar() {
     { id: 'imageToPrompt', icon: ImageIcon, label: t('clone'), tooltip: t('cloneTooltip') },
     { id: 'voices', icon: MicVocal, label: t('voices'), tooltip: t('voicesTooltip'), isNew: true },
   ];
-  const { galleryPickerRequest, setLeftPanelOpen, studioMode, addPanel } = useEditor();
+  const { galleryPickerRequest, setLeftPanelOpen, studioMode, addPanel, registerOpenVoicesDialog } = useEditor();
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [videoEditorOpen, setVideoEditorOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
@@ -51,6 +51,11 @@ export function LeftSidebar() {
     setImageToPromptOpen(id === 'imageToPrompt');
     setVoicesOpen(id === 'voices');
   }, []);
+
+  useEffect(() => {
+    registerOpenVoicesDialog(() => openDialog('voices'));
+    return () => registerOpenVoicesDialog(null);
+  }, [openDialog, registerOpenVoicesDialog]);
 
   const anyOpen = galleryOpen || videoEditorOpen || tutorialOpen || promptsOpen || trendingOpen || imageToPromptOpen || voicesOpen;
 

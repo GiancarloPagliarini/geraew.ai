@@ -67,6 +67,9 @@ interface EditorContextValue {
   /** Canvas registers an add-panel callback so other UI (sidebar, etc.) can request a new node. */
   registerAddPanelHandler: (fn: ((type: string) => void) | null) => void;
   addPanel: (type: string) => void;
+  /** LeftSidebar registers an opener for the "Minhas Vozes" dialog so panels can trigger it. */
+  registerOpenVoicesDialog: (fn: (() => void) | null) => void;
+  openVoicesDialog: () => void;
 }
 
 const STUDIO_MODE_STORAGE_KEY = 'geraew-studio-mode';
@@ -96,6 +99,13 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const addPanel = useCallback((type: string) => {
     addPanelHandlerRef.current?.(type);
+  }, []);
+  const openVoicesDialogRef = useRef<(() => void) | null>(null);
+  const registerOpenVoicesDialog = useCallback((fn: (() => void) | null) => {
+    openVoicesDialogRef.current = fn;
+  }, []);
+  const openVoicesDialog = useCallback(() => {
+    openVoicesDialogRef.current?.();
   }, []);
 
   useEffect(() => {
@@ -303,6 +313,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
           setNodeTexts((prev) => ({ ...prev, [nodeId]: text })),
         registerAddPanelHandler,
         addPanel,
+        registerOpenVoicesDialog,
+        openVoicesDialog,
       }}
     >
       {children}
