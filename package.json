@@ -19,6 +19,7 @@
     "clsx": "^2.1.1",
     "firebase": "^12.11.0",
     "lucide-react": "^0.576.0",
+    "marked": "^18.0.3",
     "next": "16.1.6",
     "next-intl": "^4.9.1",
     "radix-ui": "^1.4.3",

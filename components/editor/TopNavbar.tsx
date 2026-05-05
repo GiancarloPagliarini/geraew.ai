@@ -14,7 +14,6 @@ import { AffiliateProgramModal } from './AffiliateProgramModal';
 import { WeeklyClaimWidget } from './WeeklyClaimWidget';
 import { useLoginModal } from '@/lib/login-modal-context';
 import { LocaleSwitcher } from '@/components/locale-switcher';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 function formatCents(cents: number, locale: string) {
   const intlLocale = locale === 'pt-BR' ? 'pt-BR' : locale === 'es' ? 'es' : 'en-US';
@@ -487,26 +486,16 @@ export function TopNavbar() {
           )}
 
           {user && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0} className="hidden md:inline-flex">
-                    <button
-                      type="button"
-                      disabled
-                      aria-disabled="true"
-                      className="hidden h-8 items-center gap-1.5 rounded-full border border-[#1e494b] px-3 text-xs font-semibold text-[#f3f0ed]/40 opacity-60 transition-all md:flex"
-                    >
-                      <Clapperboard className="h-3.5 w-3.5" />
-                      Studio
-                    </button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" sideOffset={6}>
-                  Em breve
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <button
+              type="button"
+              onClick={toggleStudioMode}
+              aria-pressed={studioMode}
+              title="Studio Mode"
+              className="hidden h-8 items-center gap-1.5 rounded-full border border-[#1e494b] bg-[#a2dd00]/10 px-3 text-xs font-semibold text-[#a2dd00] transition-all hover:bg-[#a2dd00]/15 md:flex"
+            >
+              <Clapperboard className="h-3.5 w-3.5" />
+              Studio
+            </button>
           )}
 
           <LocaleSwitcher />

@@ -1847,6 +1847,110 @@ export const api = {
     },
   },
 
+  adminEmails: {
+    previewCount(
+      accessToken: string,
+      payload: {
+        recipientType: 'ALL' | 'ALL_PAID' | 'BY_PLAN' | 'CUSTOM_LIST' | 'SINGLE';
+        recipientFilter?: { planSlug?: string; emails?: string[]; email?: string };
+      },
+    ) {
+      return authRequest<{ count: number }>(
+        '/api/v1/admin/emails/preview-count',
+        accessToken,
+        { method: 'POST', body: JSON.stringify(payload) },
+      );
+    },
+    renderPreview(
+      accessToken: string,
+      payload: {
+        bodyMarkdown: string;
+        subject?: string;
+        mergeVars?: Record<string, string>;
+      },
+    ) {
+      return authRequest<{ html: string; subject?: string }>(
+        '/api/v1/admin/emails/render-preview',
+        accessToken,
+        { method: 'POST', body: JSON.stringify(payload) },
+      );
+    },
+    sendTest(
+      accessToken: string,
+      payload: { subject: string; bodyMarkdown: string },
+    ) {
+      return authRequest<{ ok: boolean; sentTo: string }>(
+        '/api/v1/admin/emails/test',
+        accessToken,
+        { method: 'POST', body: JSON.stringify(payload) },
+      );
+    },
+    send(
+      accessToken: string,
+      payload: {
+        subject: string;
+        bodyMarkdown: string;
+        recipientType: 'ALL' | 'ALL_PAID' | 'BY_PLAN' | 'CUSTOM_LIST' | 'SINGLE';
+        recipientFilter?: { planSlug?: string; emails?: string[]; email?: string };
+      },
+    ) {
+      return authRequest<{ id: string; status: string; totalRecipients: number }>(
+        '/api/v1/admin/emails/send',
+        accessToken,
+        { method: 'POST', body: JSON.stringify(payload) },
+      );
+    },
+    list(accessToken: string, page = 1, limit = 20) {
+      return authRequest<{
+        items: Array<{
+          id: string;
+          subject: string;
+          recipientType: string;
+          totalRecipients: number;
+          sentCount: number;
+          failedCount: number;
+          status: string;
+          startedAt: string | null;
+          completedAt: string | null;
+          createdAt: string;
+          triggeredBy: { id: string; name: string; email: string };
+        }>;
+        total: number;
+        page: number;
+        limit: number;
+      }>(`/api/v1/admin/emails?page=${page}&limit=${limit}`, accessToken);
+    },
+    detail(accessToken: string, id: string) {
+      return authRequest<{
+        id: string;
+        subject: string;
+        bodyMarkdown: string;
+        bodyHtml: string;
+        recipientType: string;
+        recipientFilter: unknown;
+        totalRecipients: number;
+        sentCount: number;
+        failedCount: number;
+        status: string;
+        errorMessage: string | null;
+        startedAt: string | null;
+        completedAt: string | null;
+        createdAt: string;
+        triggeredBy: { id: string; name: string; email: string };
+        recipients: Array<{
+          id: string;
+          email: string;
+          status: string;
+          errorMessage: string | null;
+          deliveredAt: string | null;
+          openedAt: string | null;
+          clickedAt: string | null;
+          bouncedAt: string | null;
+        }>;
+      }>(`/api/v1/admin/emails/${id}`, accessToken);
+    },
+  },
+
   promptPosts: {
     getBySlug(slug: string) {
       return request<PromptPost>(`/api/v1/prompt-posts/${slug}`);

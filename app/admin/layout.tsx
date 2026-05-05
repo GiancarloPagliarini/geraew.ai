@@ -20,6 +20,7 @@ import {
   ThumbsUp,
   BrainCircuit,
   Megaphone,
+  Mail,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -31,6 +32,7 @@ const NAV_ITEMS = [
   { href: '/admin/prompts', label: 'Prompts', icon: FileText },
   { href: '/admin/prompt-posts', label: 'Posts Públicos', icon: ThumbsUp },
   { href: '/admin/avisos', label: 'Avisos', icon: Megaphone },
+  { href: '/admin/emails', label: 'Emails', icon: Mail },
   { href: '/admin/assinaturas', label: 'Assinaturas', icon: CreditCard },
   { href: '/admin/stripe', label: 'Stripe', icon: Banknote },
   { href: '/admin/afiliados', label: 'Afiliados', icon: Handshake },
