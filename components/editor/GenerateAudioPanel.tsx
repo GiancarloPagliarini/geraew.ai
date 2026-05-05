@@ -107,7 +107,6 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
     voicesVersion,
     bumpVoicesVersion,
     studioMode,
-    openVoicesDialog,
   } = useEditor();
   const { accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
@@ -1433,7 +1432,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
                     savedVoices={savedVoices}
                     inworldVoices={inworldVoices}
                     loading={inworldLoading}
-                    onClick={() => openVoicesDialog()}
+                    onClick={() => setVoicePickerOpen(true)}
                   />
                 </div>
               )}
