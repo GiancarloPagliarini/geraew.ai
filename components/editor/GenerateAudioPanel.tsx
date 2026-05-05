@@ -18,6 +18,7 @@ import {
   MicVocal,
   Pause,
   Play,
+  Sparkles,
   Speech,
   Square,
   Trash2,
@@ -27,6 +28,7 @@ import {
   VolumeX,
   X,
 } from 'lucide-react';
+import { StudioPill, StudioSelectPill } from './studio/StudioControls';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { VoicePickerModal } from './VoicePickerModal';
 import { useEffect, useRef, useState } from 'react';
@@ -104,6 +106,7 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
     consumePendingPrompt,
     voicesVersion,
     bumpVoicesVersion,
+    studioMode,
   } = useEditor();
   const { accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
@@ -800,6 +803,201 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
   const previewDataUrl = referenceAudio
     ? `data:${referenceAudio.mime_type};base64,${referenceAudio.base64}`
     : null;
+
+  if (studioMode) {
+    const selectedClonedVoice = voiceId.startsWith('clone:')
+      ? savedVoices.find((v) => v.id === voiceId.slice('clone:'.length))
+      : null;
+    const selectedInworldVoice = !selectedClonedVoice && voiceId.startsWith('inworld:')
+      ? inworldVoices.find((v) => `inworld:${v.voiceId}` === voiceId)
+      : null;
+    const voiceLabel = selectedClonedVoice?.name
+      ?? selectedInworldVoice?.displayName
+      ?? (voiceId || 'Selecionar voz');
+    const voiceOptions = [
+      ...savedVoices.map((v) => ({ value: `clone:${v.id}`, label: v.name })),
+      ...inworldVoices.map((v) => ({ value: `inworld:${v.voiceId}`, label: v.displayName })),
+    ];
+
+    return (
+      <TooltipProvider>
+        <div
+          ref={panelRef}
+          className="group/studio max-w-[calc(100vw-5rem)] overflow-hidden rounded-2xl bg-[#161a1c] shadow-2xl shadow-black/50"
+          style={{ width: 340 }}
+        >
+          <div className="panel-drag-handle flex cursor-grab items-center justify-between px-3 py-2.5 active:cursor-grabbing">
+            <div className="flex items-center gap-1.5">
+              <Mic className="h-3.5 w-3.5 text-[#f3f0ed]/40" />
+              <span className="text-[11px] font-medium text-[#f3f0ed]/60">Gerar Áudio</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <PanelDuplicateButton onClick={onDuplicate} />
+              <button
+                onClick={() => { localStorage.removeItem(storageKey); idbDelete(`${storageKey}-audio`).catch(() => { }); onClose?.(); }}
+                className="flex h-5 w-5 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2 px-3 pb-3">
+            <GenerationErrorBanner msg={errorMsg} />
+
+            <div className="flex items-center gap-1.5">
+              <StudioPill
+                active={mode === 'tts'}
+                disabled={isGenerating}
+                onClick={() => setMode('tts')}
+                icon={<Type className="h-3 w-3" />}
+              >
+                TTS
+              </StudioPill>
+              <StudioPill
+                active={mode === 'clone'}
+                disabled={isGenerating}
+                onClick={() => setMode('clone')}
+                icon={<Speech className="h-3 w-3" />}
+              >
+                Clone
+              </StudioPill>
+            </div>
+
+            {genState === 'done' && generatedAudioUrl ? (
+              <div className="rounded-xl bg-[#0d1011] p-2">
+                <InlineAudioPlayer src={generatedAudioUrl} />
+                <div className="mt-1.5 flex justify-end gap-1.5">
+                  <a
+                    href={generatedAudioUrl}
+                    download
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#f3f0ed]/5 text-[#f3f0ed]/60 transition-all hover:text-[#a2dd00]"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </a>
+                  <button
+                    onClick={handleDiscard}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#f3f0ed]/5 text-[#f3f0ed]/60 transition-all hover:text-[#a2dd00]"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder={mode === 'tts' ? 'Digite o texto que será falado...' : 'Digite o texto que sua voz clonada vai falar...'}
+                disabled={isGenerating}
+                rows={3}
+                maxLength={MAX_TEXT_LENGTH}
+                className="min-h-[80px] w-full resize-none rounded-xl bg-[#0d1011] px-3 py-2.5 text-[12px] text-[#f3f0ed]/85 placeholder-[#f3f0ed]/30 outline-none disabled:opacity-50"
+              />
+            )}
+
+            {mode === 'clone' && (
+              isRecording ? (
+                <div className="flex items-center gap-2 rounded-xl border border-red-400/30 bg-red-500/8 px-2 py-1.5">
+                  <span className="relative flex h-2 w-2 shrink-0">
+                    <span className="absolute inset-0 animate-ping rounded-full bg-red-400/60" />
+                    <span className="relative h-2 w-2 rounded-full bg-red-400" />
+                  </span>
+                  <canvas ref={visualizerCanvasRef} className="h-6 min-w-0 flex-1" />
+                  <span className="shrink-0 font-mono text-[10px] tabular-nums text-red-400/80">
+                    {formatRecordTime(recordSeconds)}
+                  </span>
+                  <button
+                    onClick={stopRecording}
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-500/20 text-red-400 transition-all hover:bg-red-500/30 active:scale-95"
+                  >
+                    <Square className="h-3 w-3 fill-red-400" />
+                  </button>
+                </div>
+              ) : referenceAudio ? (
+                <div className="flex items-center gap-2 rounded-xl bg-[#0d1011] px-2 py-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setVoiceConsent((v) => !v)}
+                    className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-all ${voiceConsent ? 'border-[#a2dd00] bg-[#a2dd00]' : 'border-[#f3f0ed]/30'}`}
+                    aria-label="Consent"
+                  >
+                    {voiceConsent && (
+                      <svg viewBox="0 0 12 12" className="h-2.5 w-2.5 text-[#1a2123]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="2.5,6.5 5,9 9.5,3.5" />
+                      </svg>
+                    )}
+                  </button>
+                  <MicVocal className="h-3.5 w-3.5 shrink-0 text-[#a2dd00]" />
+                  <span className="flex-1 truncate text-[11px] text-[#f3f0ed]/70">Referência carregada</span>
+                  <button
+                    onClick={clearReferenceAudio}
+                    disabled={isGenerating}
+                    className="flex h-5 w-5 items-center justify-center rounded-full text-[#f3f0ed]/40 transition-all hover:text-[#f3f0ed]"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isGenerating}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#0d1011] px-3 py-2 text-[11px] font-medium text-[#f3f0ed]/50 transition-all hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    Anexar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={startRecording}
+                    disabled={isGenerating}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#0d1011] px-3 py-2 text-[11px] font-medium text-[#f3f0ed]/50 transition-all hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <Mic className="h-3.5 w-3.5" />
+                    Gravar
+                  </button>
+                </div>
+              )
+            )}
+            <input ref={fileInputRef} type="file" accept="audio/*" className="hidden" onChange={handleAudioFileSelect} />
+
+            <div className="grid grid-rows-[0fr] opacity-0 transition-all duration-300 ease-out group-hover/studio:grid-rows-[1fr] group-hover/studio:opacity-100">
+              <div className="overflow-hidden">
+                <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
+                  {mode === 'tts' && (
+                    <StudioSelectPill
+                      value={voiceId}
+                      label={voiceLabel}
+                      options={voiceOptions}
+                      onChange={setVoiceId}
+                      disabled={isGenerating}
+                      icon={<MicVocal className="h-3 w-3 text-[#a2dd00]" />}
+                    />
+                  )}
+                  <StudioSelectPill
+                    value={speed}
+                    label={SPEED_OPTIONS.find((s) => s.value === speed)?.label ?? speed}
+                    options={SPEED_OPTIONS}
+                    onChange={setSpeed}
+                    disabled={isGenerating}
+                  />
+                  <button
+                    onClick={handleGenerate}
+                    disabled={!canGenerate}
+                    className="ml-auto inline-flex items-center gap-1 rounded-full bg-[#a2dd00] px-2.5 py-1 text-[11px] font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {creditsCost}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </TooltipProvider>
+    );
+  }
 
   return (
     <TooltipProvider>

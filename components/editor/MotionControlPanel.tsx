@@ -8,13 +8,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  ArrowRight,
   AudioWaveform,
   Coins,
   Download, Image,
+  Loader2,
+  Sparkles,
   Video,
   Wand2,
   X
 } from 'lucide-react';
+import { StudioSelectPill } from './studio/StudioControls';
+import { StudioImageInputHandle } from './studio/StudioHandles';
+import { useIncomingImage, urlToImagePayload } from '@/lib/use-incoming-image';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -75,7 +81,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
   const t = useTranslations('editorPanels.motionControl');
   const tCommon = useTranslations('editorPanels.common');
   const LOADING_MESSAGES = t.raw('loadingMessages') as string[];
-  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating } = useEditor();
+  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating, studioMode } = useEditor();
   const { accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
 
@@ -101,7 +107,7 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
         if (data.videoFile) setVideoFile(data.videoFile);
         if (data.imageFile) setImageFile(data.imageFile);
       })
-      .catch(() => { });
+      .catch((err) => { console.error('[motion-panel] failed to fetch incoming image', err); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(stored?.generatedVideoUrl ?? null);
@@ -511,6 +517,161 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
   }, []);
 
   const dashOffset = CIRCUMFERENCE * (1 - progress / 100);
+  const isGenerating = genState === 'generating';
+
+  const incomingImageUrl = useIncomingImage(nodeId);
+  const lastIncomingRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!incomingImageUrl) {
+      if (lastIncomingRef.current) {
+        lastIncomingRef.current = null;
+        setImageFile(null);
+      }
+      return;
+    }
+    if (incomingImageUrl === lastIncomingRef.current) return;
+    lastIncomingRef.current = incomingImageUrl;
+    let cancelled = false;
+    urlToImagePayload(incomingImageUrl)
+      .then((payload) => {
+        if (!cancelled) setImageFile(payload);
+      })
+      .catch((err) => { console.error('[motion-panel] failed to fetch incoming image', err); });
+    return () => { cancelled = true; };
+  }, [incomingImageUrl]);
+
+  if (studioMode) {
+    const isFreeGen = !!estimate?.canUseFreeGeneration;
+    const creditCost = estimate?.creditsRequired ?? 0;
+    const ready = !!videoFile && !!imageFile;
+    const resolutionOptions = [
+      { value: '720p', label: '720p' },
+      { value: '1080p', label: '1080p' },
+    ];
+
+    return (
+      <TooltipProvider>
+        <div className="relative">
+          <StudioImageInputHandle />
+        <div
+          ref={panelRef}
+          className={`group/studio max-w-[calc(100vw-5rem)] overflow-hidden rounded-2xl bg-[#161a1c] shadow-2xl shadow-black/50 ${isDraggingOver ? 'ring-2 ring-[#a2dd00]/30' : ''}`}
+          style={{ width: 340 }}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <div className="panel-drag-handle flex cursor-grab items-center justify-between px-3 py-2.5 active:cursor-grabbing">
+            <div className="flex items-center gap-1.5">
+              <AudioWaveform className="h-3.5 w-3.5 text-[#f3f0ed]/40" />
+              <span className="text-[11px] font-medium text-[#f3f0ed]/60">{t('header')}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <PanelDuplicateButton onClick={onDuplicate} />
+              <button
+                onClick={() => { localStorage.removeItem(storageKey); idbDelete(`${storageKey}-images`).catch(() => { }); onClose?.(); }}
+                className="flex h-5 w-5 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2 px-3 pb-3">
+            <GenerationErrorBanner msg={errorMsg} />
+
+            {genState === 'idle' && !generatedVideoUrl ? (
+              <div className="flex items-center gap-2">
+                <MotionStudioSlot
+                  label="Vídeo"
+                  icon={<Video className="h-4 w-4" />}
+                  filled={!!videoFile}
+                  videoName={videoFile?.name}
+                  onClick={() => videoInputRef.current?.click()}
+                  onClear={() => setVideoFile(null)}
+                  disabled={isGenerating}
+                />
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#f3f0ed]/25" />
+                <MotionStudioSlot
+                  label="Imagem"
+                  icon={<Image className="h-4 w-4" />}
+                  filled={!!imageFile}
+                  imagePreview={imageFile?.preview}
+                  onClick={() => imageInputRef.current?.click()}
+                  onClear={() => setImageFile(null)}
+                  disabled={isGenerating}
+                />
+              </div>
+            ) : (
+              <GenerationPreview
+                proportion={videoAspect}
+                genState={genState}
+                imageVisible={videoVisible}
+                progress={progress}
+                renderMedia={generatedVideoUrl ? () => (
+                  <video
+                    src={generatedVideoUrl}
+                    className="h-full w-full object-contain"
+                    controls
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    onLoadedMetadata={(e) => {
+                      const v = e.currentTarget;
+                      if (v.videoWidth && v.videoHeight) {
+                        setVideoAspect(`${v.videoWidth} / ${v.videoHeight}`);
+                      }
+                    }}
+                    onLoadedData={() => setVideoVisible(true)}
+                  />
+                ) : undefined}
+              >
+                <button
+                  onClick={handleDiscard}
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1a2123]/80 text-[#f3f0ed]/70 backdrop-blur-sm transition-all hover:bg-[#1e494b] hover:text-[#a2dd00]"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </GenerationPreview>
+            )}
+
+            <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={handleVideoSelect} />
+            <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleImageSelect} />
+
+            <div className="grid grid-rows-[0fr] opacity-0 transition-all duration-300 ease-out group-hover/studio:grid-rows-[1fr] group-hover/studio:opacity-100">
+              <div className="overflow-hidden">
+                <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
+                  <StudioSelectPill
+                    value={resolution}
+                    label={resolution}
+                    options={resolutionOptions}
+                    onChange={setResolution}
+                    disabled={isGenerating}
+                  />
+                  {videoDuration > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#f3f0ed]/[0.04] px-2.5 py-1 text-[11px] font-medium text-[#f3f0ed]/60">
+                      {videoDuration}s
+                    </span>
+                  )}
+                  <button
+                    onClick={handleGenerate}
+                    disabled={isGenerating || !ready}
+                    title={tCommon('generate')}
+                    className="ml-auto inline-flex items-center gap-1 rounded-full bg-[#a2dd00] px-2.5 py-1 text-[11px] font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {isFreeGen ? tCommon('free') : (creditCost || '—')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </TooltipProvider>
+    );
+  }
 
   return (
     <TooltipProvider>
@@ -744,5 +905,59 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
         </div>
       </div>
     </TooltipProvider>
+  );
+}
+
+function MotionStudioSlot({
+  label,
+  icon,
+  filled,
+  imagePreview,
+  videoName,
+  onClick,
+  onClear,
+  disabled,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  filled: boolean;
+  imagePreview?: string;
+  videoName?: string;
+  onClick: () => void;
+  onClear: () => void;
+  disabled?: boolean;
+}) {
+  if (filled) {
+    return (
+      <div className="group/slot relative aspect-square min-w-0 flex-1 overflow-hidden rounded-xl bg-[#0d1011]">
+        {imagePreview ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={imagePreview} alt={label} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-1 px-2 text-[#a2dd00]/80">
+            <Video className="h-5 w-5" />
+            <span className="line-clamp-2 text-center text-[9px] text-[#f3f0ed]/50">{videoName}</span>
+          </div>
+        )}
+        <button
+          onClick={onClear}
+          disabled={disabled}
+          className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-[#f3f0ed]/80 opacity-0 transition-opacity hover:text-[#f3f0ed] group-hover/slot:opacity-100"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="group/slot flex aspect-square min-w-0 flex-1 flex-col items-center justify-center gap-1.5 rounded-xl bg-[#0d1011] text-[#f3f0ed]/40 transition-all hover:bg-[#0f1416] hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      <span className="opacity-70 transition-opacity group-hover/slot:opacity-100">{icon}</span>
+      <span className="text-[10px] font-medium">{label}</span>
+    </button>
   );
 }

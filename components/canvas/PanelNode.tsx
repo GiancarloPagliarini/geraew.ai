@@ -14,6 +14,8 @@ import { VirtualTryOnPanel } from '../editor/VirtualTryOnPanel';
 import { FaceSwapPanel } from '../editor/FaceSwapPanel';
 import { UpscalePanel } from '../editor/UpscalePanel';
 import { GenerateAudioPanel } from '../editor/GenerateAudioPanel';
+import { ImageSourcePanel } from '../editor/ImageSourcePanel';
+import { PromptSourcePanel } from '../editor/PromptSourcePanel';
 
 const PANEL_NODE_STYLE = {
   background: 'transparent',
@@ -109,6 +111,8 @@ export function PanelNode({ id, data, selected }: NodeProps) {
     'face-swap': <FaceSwapPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
     'upscale': <UpscalePanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
     'generate-audio': <GenerateAudioPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
+    'image-source': <ImageSourcePanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
+    'prompt-source': <PromptSourcePanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
   };
 
   const panel = panelMap[data.panelType as string];

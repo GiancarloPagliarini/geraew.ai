@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, BadgePercent, BatteryCharging, Coins, CreditCard, Gift, Loader2, LogIn, LogOut, Plus, Settings, User, Users, Wallet, X } from 'lucide-react';
+import { ArrowRight, BadgePercent, BatteryCharging, Clapperboard, Coins, CreditCard, Gift, Loader2, LogIn, LogOut, Plus, Settings, User, Users, Wallet, X } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -28,7 +28,7 @@ export function TopNavbar() {
   const tMenu = useTranslations('editorChrome.navbar.menu');
   const locale = useLocale();
   const router = useRouter();
-  const { credits, creditsLoading, creditsBalance } = useEditor();
+  const { credits, creditsLoading, creditsBalance, studioMode, toggleStudioMode } = useEditor();
   const { user, logout, loading: authLoading, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -96,9 +96,203 @@ export function TopNavbar() {
     router.push('/');
   }
 
+  if (studioMode) {
+    return (
+      <>
+        <header className="relative z-50 flex h-10 shrink-0 items-center justify-between bg-[#0d1011] px-3">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/logo_2.svg"
+              alt={t('logoAlt')}
+              width={22}
+              height={22}
+              className="rounded-md mix-blend-lighten opacity-80"
+            />
+            <span className="text-[12px] font-medium tracking-wide text-[#f3f0ed]/70">{t('brand')}</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            {authLoading ? (
+              <div className="h-6 w-40 animate-pulse rounded-full bg-[#f3f0ed]/5" />
+            ) : user ? (
+              <>
+                <div className="flex h-7 items-center gap-1.5 rounded-full bg-[#f3f0ed]/[0.04] px-2.5 text-[11px] font-medium text-[#f3f0ed]/70">
+                  <Coins className="h-3 w-3 text-[#a2dd00]" />
+                  {creditsLoading ? (
+                    <span className="h-2.5 w-8 animate-pulse rounded-full bg-[#f3f0ed]/10" />
+                  ) : (
+                    <span className="tabular-nums">{new Intl.NumberFormat(locale).format(credits)}</span>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => setPlansModalOpen(true)}
+                  title={t('buyCredits')}
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-[#a2dd00]/12 text-[#a2dd00] transition-all hover:bg-[#a2dd00]/20"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+
+                <WeeklyClaimWidget />
+
+                <div ref={affiliateMenuRef} className="relative">
+                  <button
+                    onClick={() => {
+                      if (!affiliateFetched || affiliateLoading) {
+                        setAffiliateMenuOpen((v) => !v);
+                      } else if (affiliateData) {
+                        setAffiliateMenuOpen((v) => !v);
+                      } else {
+                        setAffiliateModalOpen(true);
+                      }
+                    }}
+                    title={t('becomeAffiliate')}
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-[#f3f0ed]/45 transition-all hover:bg-[#f3f0ed]/[0.06] hover:text-[#f3f0ed]"
+                  >
+                    <Users className="h-3.5 w-3.5" />
+                  </button>
+
+                  {affiliateMenuOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-72 overflow-hidden rounded-xl bg-[#1a2123] shadow-2xl backdrop-blur-md">
+                      {!affiliateFetched || affiliateLoading ? (
+                        <div className="flex items-center justify-center gap-2 px-4 py-8">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#a2dd00]" />
+                          <span className="text-xs text-[#f3f0ed]/50">{t('affiliateLoading')}</span>
+                        </div>
+                      ) : affiliateData ? (
+                        <>
+                          <div className="flex items-center justify-between px-4 py-3">
+                            <div>
+                              <p className="text-xs font-medium text-[#f3f0ed]/85">{t('affiliateMenuTitle')}</p>
+                              <p className="mt-0.5 font-mono text-[10px] tracking-wide text-[#a2dd00]">
+                                {affiliateData.affiliate.code}
+                              </p>
+                            </div>
+                            <span className="rounded-full bg-[#a2dd00]/10 px-2 py-0.5 text-[10px] font-semibold text-[#a2dd00]">
+                              {affiliateData.affiliate.commissionPercent}%
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 px-3 pb-3">
+                            <div className="flex flex-col gap-1 rounded-lg bg-[#f3f0ed]/[0.03] p-3">
+                              <div className="flex items-center gap-1.5">
+                                <Wallet className="h-3 w-3 text-emerald-400" />
+                                <span className="text-[9px] font-medium uppercase tracking-wide text-[#f3f0ed]/40">
+                                  {t('affiliateAvailable')}
+                                </span>
+                              </div>
+                              <p className="text-sm font-bold tabular-nums text-[#f3f0ed]">
+                                {formatCents(affiliateData.summary.availableCommissionCents ?? 0, locale)}
+                              </p>
+                            </div>
+                            <div className="flex flex-col gap-1 rounded-lg bg-[#f3f0ed]/[0.03] p-3">
+                              <div className="flex items-center gap-1.5">
+                                <Users className="h-3 w-3 text-blue-400" />
+                                <span className="text-[9px] font-medium uppercase tracking-wide text-[#f3f0ed]/40">
+                                  {t('affiliateReferrals')}
+                                </span>
+                              </div>
+                              <p className="text-sm font-bold tabular-nums text-[#f3f0ed]">
+                                {(affiliateData.summary.referredUsers ?? 0).toLocaleString(locale)}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setAffiliateMenuOpen(false);
+                              router.push('/painel-afiliado');
+                            }}
+                            className="flex w-full items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-medium text-[#a2dd00] transition-colors hover:bg-[#a2dd00]/5"
+                          >
+                            {t('affiliateViewPanel')}
+                            <ArrowRight className="h-3 w-3" />
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+
+                <LocaleSwitcher compact />
+
+                <button
+                  onClick={toggleStudioMode}
+                  aria-pressed={studioMode}
+                  title="Studio Mode"
+                  className="flex h-7 items-center gap-1.5 rounded-full bg-[#a2dd00]/10 px-3 text-[11px] font-medium text-[#a2dd00] transition-all hover:bg-[#a2dd00]/15"
+                >
+                  <Clapperboard className="h-3 w-3" />
+                  Studio
+                </button>
+
+                <div ref={menuRef} className="relative">
+                  <button
+                    onClick={() => setMenuOpen((v) => !v)}
+                    className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full transition-opacity hover:opacity-90"
+                  >
+                    {user?.avatarUrl ? (
+                      <img src={user.avatarUrl} alt={user.name} width={28} height={28} className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center bg-[#1e494b]">
+                        <User className="h-3.5 w-3.5 text-[#f3f0ed]/50" />
+                      </span>
+                    )}
+                  </button>
+
+                  {menuOpen && (
+                    <div className="absolute right-0 top-full mt-2 hidden w-56 overflow-hidden rounded-xl bg-[#1a2123] shadow-2xl backdrop-blur-md sm:block">
+                      <div className="px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-[11px] font-medium text-[#f3f0ed]/80">{user?.name || t('defaultUser')}</p>
+                          {planName && (
+                            <span
+                              className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide ${isFreePlan
+                                ? 'bg-[#f3f0ed]/5 text-[#f3f0ed]/50'
+                                : 'bg-[#a2dd00]/10 text-[#a2dd00]'
+                                }`}
+                            >
+                              {planName}
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-0.5 text-[10px] text-[#f3f0ed]/35">{user?.email}</p>
+                      </div>
+                      <div className="py-1">
+                        <DropdownItem icon={User} label={tMenu('profile')} onClick={() => { setMenuOpen(false); router.push('/perfil'); }} />
+                        <DropdownItem icon={CreditCard} label={tMenu('credits')} onClick={() => { setMenuOpen(false); router.push('/creditos'); }} />
+                        <DropdownItem icon={BadgePercent} label={tMenu('plans')} onClick={() => { setMenuOpen(false); setPlansModalOpen(true); }} />
+                        <DropdownItem icon={BatteryCharging} label={tMenu('usage')} onClick={() => { setMenuOpen(false); router.push('/uso'); }} />
+                        <DropdownItem icon={Users} label={tMenu('affiliate')} onClick={() => { setMenuOpen(false); router.push('/painel-afiliado'); }} />
+                      </div>
+                      <div className="flex items-center pr-2">
+                        <div className="flex-1 min-w-0">
+                          <DropdownItem icon={LogOut} label={tMenu('logout')} danger onClick={() => { setMenuOpen(false); handleLogout(); }} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <button
+                onClick={() => openLoginModal()}
+                className="flex h-7 items-center gap-1.5 rounded-full bg-[#a2dd00] px-3 text-[11px] font-bold text-[#1a2123] transition-all hover:brightness-110"
+              >
+                <LogIn className="h-3 w-3" />
+                {t('signIn')}
+              </button>
+            )}
+          </div>
+        </header>
+
+        {plansModalOpen && <PlansModal onClose={() => setPlansModalOpen(false)} />}
+        {affiliateModalOpen && <AffiliateProgramModal onClose={() => setAffiliateModalOpen(false)} />}
+      </>
+    );
+  }
+
   return (
     <>
-      <header className="relative z-50 flex h-12 shrink-0 items-center justify-between border-b border-[#f3f0ed]/[0.07] bg-[#1a2123] px-2 sm:px-4">
+      <header className={`relative z-50 flex h-12 shrink-0 items-center justify-between border-b border-[#f3f0ed]/[0.07] px-2 sm:px-4 ${studioMode ? 'bg-[#0d1011]' : 'bg-[#1a2123]'}`}>
         {/* Logo */}
         <div className="flex items-center gap-2.5">
           <Image
@@ -289,6 +483,22 @@ export function TopNavbar() {
                 </div>
               )}
             </div>
+          )}
+
+          {user && (
+            <button
+              onClick={toggleStudioMode}
+              aria-pressed={studioMode}
+              title={studioMode ? 'Desativar Studio Mode' : 'Ativar Studio Mode'}
+              className={`hidden h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-all sm:flex ${
+                studioMode
+                  ? 'border-[#a2dd00]/40 bg-[#a2dd00]/10 text-[#a2dd00] hover:bg-[#a2dd00]/15'
+                  : 'border-[#1e494b] text-[#f3f0ed]/80 hover:border-[#a2dd00]/50 hover:text-[#f3f0ed]'
+              }`}
+            >
+              <Clapperboard className="h-3.5 w-3.5" />
+              Studio
+            </button>
           )}
 
           <LocaleSwitcher />

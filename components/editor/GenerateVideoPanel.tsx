@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  ArrowRight,
   ArrowUpRight,
   Ban,
   Coins,
@@ -16,14 +17,21 @@ import {
   Image,
   ImagePlus, Info,
   Loader2,
+  Maximize2,
+  Plus,
   Settings,
   Sparkles,
   Type,
   Video,
+  Volume2, VolumeX,
   Wand2,
   TriangleAlert,
   X
 } from 'lucide-react';
+import { StudioPill, StudioSelectPill } from './studio/StudioControls';
+import { StudioImageInputHandle, StudioTextInputHandle } from './studio/StudioHandles';
+import { useIncomingImage, urlToImagePayload } from '@/lib/use-incoming-image';
+import { useIncomingText } from '@/lib/use-incoming-text';
 import { EnhancePromptToggle } from './EnhancePromptToggle';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -98,7 +106,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   const t = useTranslations('editorPanels.video');
   const tCommon = useTranslations('editorPanels.common');
   const VIDEO_LOADING_MESSAGES = t.raw('loadingMessages') as string[];
-  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker, pendingPromptRef, consumePendingPrompt, setNodeGenerating } = useEditor();
+  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker, pendingPromptRef, consumePendingPrompt, setNodeGenerating, studioMode } = useEditor();
   const [initialPendingPrompt] = useState(() => {
     if (pendingPromptRef.current?.panelType === 'generate-video') {
       return consumePendingPrompt()!.prompt;
@@ -735,6 +743,367 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   }, []);
 
   const dashOffset = CIRCUMFERENCE * (1 - progress / 100);
+
+  const incomingImageUrl = useIncomingImage(nodeId);
+  const lastIncomingRef = useRef<string | null>(null);
+  const [connectionPayload, setConnectionPayload] = useState<{ base64: string; mime_type: string; preview: string } | null>(null);
+
+  // Step 1 — fetch the incoming URL once when it changes; clear when disconnected
+  useEffect(() => {
+    if (!incomingImageUrl) {
+      if (lastIncomingRef.current) {
+        lastIncomingRef.current = null;
+        setConnectionPayload(null);
+      }
+      return;
+    }
+    if (incomingImageUrl === lastIncomingRef.current) return;
+    lastIncomingRef.current = incomingImageUrl;
+    let cancelled = false;
+    urlToImagePayload(incomingImageUrl)
+      .then((payload) => {
+        if (!cancelled) setConnectionPayload(payload);
+      })
+      .catch((err) => {
+        console.error('[video-panel] failed to fetch incoming image', err);
+      });
+    return () => { cancelled = true; };
+  }, [incomingImageUrl]);
+
+  const incomingText = useIncomingText(nodeId);
+  const lastIncomingTextRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (incomingText === null) {
+      if (lastIncomingTextRef.current !== null) {
+        lastIncomingTextRef.current = null;
+        setPrompt('');
+      }
+      return;
+    }
+    lastIncomingTextRef.current = incomingText;
+    setPrompt(incomingText);
+  }, [incomingText]);
+
+  // Step 2 — route the payload to the right slot based on current mode.
+  // Text mode → reference. Image mode → first frame. When disconnected, clear.
+  const lastAppliedBase64Ref = useRef<string | null>(null);
+  useEffect(() => {
+    if (!connectionPayload) {
+      const last = lastAppliedBase64Ref.current;
+      if (last) {
+        setRefImages((prev) => prev.filter((r) => r.base64 !== last));
+        setFirstFrame((prev) => (prev && prev.base64 === last ? null : prev));
+        lastAppliedBase64Ref.current = null;
+      }
+      return;
+    }
+    lastAppliedBase64Ref.current = connectionPayload.base64;
+    if (videoMode === 'image') {
+      setFirstFrame(connectionPayload);
+      setRefImages((prev) => prev.filter((r) => r.base64 !== connectionPayload.base64));
+    } else {
+      setRefImages((prev) => {
+        if (prev.some((r) => r.base64 === connectionPayload.base64)) return prev;
+        const next = [...prev, connectionPayload];
+        return next.slice(-3);
+      });
+      setFirstFrame((prev) => (prev && prev.base64 === connectionPayload.base64 ? null : prev));
+    }
+  }, [connectionPayload, videoMode]);
+
+  if (studioMode) {
+    const PROPORTION_LABELS: Record<string, string> = { '16-9': '16:9', '9-16': '9:16', '1-1': '1:1' };
+    const RESOLUTION_LABELS: Record<string, string> = { 'RES_720P': '720p', 'RES_1080P': '1080p', 'RES_4K': '4K' };
+    const PROPORTION_WIDTH: Record<string, number> = { '9-16': 280, '1-1': 340, '16-9': 460 };
+    const studioWidth = PROPORTION_WIDTH[proportion] ?? 320;
+    const currentModelLabel = videoModelOptions.find((o) => o.value === model)?.label ?? model;
+    const currentProportionLabel = PROPORTION_LABELS[proportion] ?? proportion;
+    const currentResolutionLabel = RESOLUTION_LABELS[resolution] ?? resolution;
+    const isFreeGen = !!estimate?.canUseFreeGeneration;
+    const creditCost = estimate?.creditsRequired ?? 0;
+    const proportionOptions = [
+      { value: '9-16', label: t('proportionOptions.portrait'), suffix: '9:16' },
+      { value: '1-1', label: t('proportionOptions.square'), suffix: '1:1' },
+      { value: '16-9', label: t('proportionOptions.landscape'), suffix: '16:9' },
+    ];
+    const resolutionOptions = [
+      { value: 'RES_720P', label: '720p' },
+      { value: 'RES_1080P', label: '1080p' },
+      { value: 'RES_4K', label: '4K' },
+    ];
+    const durationOptions = ['4s', '6s', '8s'].map((d) => ({
+      value: d,
+      label: d,
+      disabled: forceEightSeconds && d !== '8s',
+    }));
+    const sampleOptions = [1, 2, 3, 4].map((n) => ({ value: String(n), label: `${n}× ${tCommon('credits')}` }));
+    const modelSelectOptions = videoModelOptions.map((o) => ({
+      value: o.value,
+      label: o.label,
+      disabled: 'disabled' in o ? Boolean(o.disabled) : false,
+    }));
+    const showAudioToggle = !isKieModel;
+    const hasMedia = generatedVideoUrls.length > 0;
+
+    return (
+      <>
+        <TooltipProvider>
+          <div className="relative">
+            <StudioImageInputHandle />
+            <StudioTextInputHandle />
+          <div
+            ref={panelRef}
+            className={`group/studio max-w-[calc(100vw-5rem)] overflow-hidden rounded-2xl bg-[#161a1c] shadow-2xl shadow-black/50 ${isDraggingOver ? 'ring-2 ring-[#a2dd00]/30' : ''}`}
+            style={{ width: studioWidth, transition: 'width 0.4s ease' }}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <div className="panel-drag-handle flex cursor-grab items-center justify-between px-3 py-2.5 active:cursor-grabbing">
+              <div className="flex items-center gap-1.5">
+                <Video className="h-3.5 w-3.5 text-[#f3f0ed]/40" />
+                <span className="text-[11px] font-medium text-[#f3f0ed]/60">{t('header')}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <PanelDuplicateButton onClick={onDuplicate} />
+                <button
+                  onClick={() => { localStorage.removeItem(storageKey); idbDelete(`${storageKey}-images`).catch(() => { }); onClose?.(); }}
+                  className="flex h-5 w-5 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2 px-3 pb-3">
+              <GenerationErrorBanner msg={errorMsg} />
+
+              {genState === 'idle' && !hasMedia && (
+                <div
+                  className="rounded-xl bg-[#0d1011]"
+                  style={{ aspectRatio: proportion.replace('-', ' / '), transition: 'aspect-ratio 0.4s ease' }}
+                />
+              )}
+
+              {(genState !== 'idle' || hasMedia) && (
+                <GenerationPreview
+                  proportion={proportion}
+                  genState={genState}
+                  imageVisible={videosVisible}
+                  progress={progress}
+                  renderMedia={hasMedia ? ((visible) => (
+                    <video
+                      src={generatedVideoUrls[selectedVideoIdx]}
+                      className="h-full w-full object-cover"
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      onLoadedData={() => setVideosVisible(true)}
+                      style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.6s ease' }}
+                    />
+                  )) : undefined}
+                >
+                  <ActionButton title={tCommon('discard')} onClick={handleDiscard}>
+                    <X className="h-3.5 w-3.5" />
+                  </ActionButton>
+                </GenerationPreview>
+              )}
+
+              {videoMode === 'image' && genState === 'idle' && !hasMedia && (
+                <div className="flex items-center gap-2 pt-1">
+                  <VideoStudioSlot
+                    label="Início"
+                    image={firstFrame?.preview}
+                    onClick={() => firstFrameInputRef.current?.click()}
+                    onClear={() => setFirstFrame(null)}
+                    disabled={isGenerating}
+                  />
+                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#f3f0ed]/25" />
+                  <VideoStudioSlot
+                    label="Fim"
+                    optional
+                    image={lastFrame?.preview}
+                    onClick={() => lastFrameInputRef.current?.click()}
+                    onClear={() => setLastFrame(null)}
+                    disabled={isGenerating}
+                  />
+                </div>
+              )}
+
+              {videoMode === 'text' && refImages.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {refImages.map((img, i) => (
+                    <div key={i} className="group/ref relative h-10 w-10 shrink-0 overflow-hidden rounded-lg">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img.preview} alt="" className="h-full w-full object-cover" />
+                      <button onClick={() => setRefImages((prev) => prev.filter((_, idx) => idx !== i))} className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover/ref:opacity-100">
+                        <X className="h-3 w-3 text-white" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center gap-1.5 pt-1">
+                {videoMode === 'text' && (
+                  <>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isGenerating || refImages.length >= 3}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f3f0ed]/5 text-[#f3f0ed]/50 transition-all hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" sideOffset={6}>{tCommon('uploadFromDevice')}</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => openGalleryPicker({ nodeId, remaining: 3 - refImages.length, onSelect: (url) => { addImageFromUrl(url); } })}
+                          disabled={isGenerating || refImages.length >= 3}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f3f0ed]/5 text-[#f3f0ed]/50 transition-all hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <FolderOpen className="h-3.5 w-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" sideOffset={6}>{tCommon('pickFromGallery')}</TooltipContent>
+                    </Tooltip>
+                  </>
+                )}
+                <input
+                  value={editingNegative && !isKieModel ? negativePrompt : prompt}
+                  onChange={(e) =>
+                    editingNegative && !isKieModel
+                      ? setNegativePrompt(e.target.value)
+                      : setPrompt(e.target.value)
+                  }
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
+                  placeholder={editingNegative && !isKieModel ? 'O que você NÃO quer no vídeo' : t('promptPlaceholder')}
+                  disabled={isGenerating}
+                  className={
+                    editingNegative && !isKieModel
+                      ? 'min-w-0 flex-1 bg-transparent text-[12px] text-red-100/95 placeholder-red-300/35 outline-none'
+                      : 'min-w-0 flex-1 bg-transparent text-[12px] text-[#f3f0ed]/85 placeholder-[#f3f0ed]/30 outline-none'
+                  }
+                  style={editingNegative && !isKieModel ? { caretColor: '#ef4444' } : undefined}
+                />
+              </div>
+              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileSelect} />
+              <input ref={firstFrameInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) processFrameFile(f, setFirstFrame); e.target.value = ''; }} />
+              <input ref={lastFrameInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) processFrameFile(f, setLastFrame); e.target.value = ''; }} />
+
+              <div className="grid grid-rows-[0fr] opacity-0 transition-all duration-300 ease-out group-hover/studio:grid-rows-[1fr] group-hover/studio:opacity-100">
+                <div className="overflow-hidden">
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
+                    <StudioPill
+                      active={videoMode === 'text'}
+                      disabled={isGenerating}
+                      onClick={() => setVideoMode('text')}
+                      icon={<Type className="h-3 w-3" />}
+                    >
+                      {t('modes.text')}
+                    </StudioPill>
+                    <StudioPill
+                      active={videoMode === 'image'}
+                      disabled={isGenerating}
+                      onClick={() => setVideoMode('image')}
+                      icon={<Image className="h-3 w-3" />}
+                    >
+                      {t('modes.image')}
+                    </StudioPill>
+                    <StudioSelectPill
+                      value={model}
+                      label={currentModelLabel}
+                      options={modelSelectOptions}
+                      onChange={setModel}
+                      disabled={isGenerating}
+                      icon={<Sparkles className="h-3 w-3 text-[#a2dd00]" />}
+                    />
+                    <StudioSelectPill
+                      value={proportion}
+                      label={currentProportionLabel}
+                      options={proportionOptions}
+                      onChange={setProportion}
+                      disabled={isGenerating}
+                      icon={<Maximize2 className="h-3 w-3 opacity-70" />}
+                    />
+                    <StudioSelectPill
+                      value={resolution}
+                      label={currentResolutionLabel}
+                      options={resolutionOptions}
+                      onChange={setResolution}
+                      disabled={isGenerating}
+                    />
+                    {!isKieModel && (
+                      <StudioSelectPill
+                        value={effectiveDuration}
+                        label={effectiveDuration}
+                        options={durationOptions}
+                        onChange={setDuration}
+                        disabled={isGenerating}
+                      />
+                    )}
+                    {!isKieModel && (
+                      <StudioSelectPill
+                        value={String(sampleCount)}
+                        label={`${sampleCount}×`}
+                        options={sampleOptions}
+                        onChange={(v) => setSampleCount(parseInt(v, 10))}
+                        disabled={isGenerating}
+                      />
+                    )}
+                    {showAudioToggle && (
+                      <StudioPill
+                        active={audio}
+                        disabled={isGenerating}
+                        onClick={() => setAudio(!audio)}
+                        icon={audio ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
+                      >
+                        {audio ? 'Audio' : 'Mute'}
+                      </StudioPill>
+                    )}
+                    <StudioPill
+                      active={enhancePrompt}
+                      disabled={isGenerating}
+                      onClick={() => setEnhancePrompt(!enhancePrompt)}
+                      icon={isEnhancing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+                    >
+                      Enhance
+                    </StudioPill>
+                    {!isKieModel && (
+                      <StudioPill
+                        active={editingNegative}
+                        disabled={isGenerating}
+                        onClick={() => setEditingNegative((v) => !v)}
+                        icon={<Ban className="h-3 w-3" />}
+                      >
+                        Negativo
+                      </StudioPill>
+                    )}
+                    <button
+                      onClick={handleGenerate}
+                      disabled={isGenerating || !prompt.trim() || (videoMode === 'image' && !firstFrame)}
+                      title={tCommon('generate')}
+                      className="ml-auto inline-flex items-center gap-1 rounded-full bg-[#a2dd00] px-2.5 py-1 text-[11px] font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                      {isFreeGen ? tCommon('free') : (creditCost || '—')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
+        </TooltipProvider>
+        {plansModalOpen && createPortal(<PlansModal onClose={() => setPlansModalOpen(false)} />, document.body)}
+      </>
+    );
+  }
 
   return (
     <>
@@ -1442,5 +1811,50 @@ function PanelSelect({
         ))}
       </SelectContent>
     </Select>
+  );
+}
+
+function VideoStudioSlot({
+  label,
+  image,
+  onClick,
+  onClear,
+  disabled,
+  optional,
+}: {
+  label: string;
+  image?: string;
+  onClick: () => void;
+  onClear: () => void;
+  disabled?: boolean;
+  optional?: boolean;
+}) {
+  if (image) {
+    return (
+      <div className="group/slot relative aspect-square min-w-0 flex-1 overflow-hidden rounded-xl">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={image} alt={label} className="h-full w-full object-cover" />
+        <span className="absolute left-1.5 top-1.5 rounded-md bg-black/50 px-1.5 py-0.5 text-[9px] font-medium text-[#f3f0ed]/80 backdrop-blur-sm">{label}</span>
+        <button
+          onClick={onClear}
+          disabled={disabled}
+          className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-[#f3f0ed]/80 opacity-0 transition-opacity hover:text-[#f3f0ed] group-hover/slot:opacity-100"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="group/slot flex aspect-square min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl bg-[#0d1011] text-[#f3f0ed]/40 transition-all hover:bg-[#0f1416] hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      <Plus className="h-4 w-4 opacity-70 transition-opacity group-hover/slot:opacity-100" />
+      <span className="max-w-full truncate px-1 text-[10px] font-medium">{label}</span>
+      {optional && <span className="text-[8px] uppercase tracking-wide text-[#f3f0ed]/25">opcional</span>}
+    </button>
   );
 }

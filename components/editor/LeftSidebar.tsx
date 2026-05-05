@@ -28,7 +28,7 @@ export function LeftSidebar() {
     { id: 'imageToPrompt', icon: ImageIcon, label: t('clone'), tooltip: t('cloneTooltip') },
     { id: 'voices', icon: MicVocal, label: t('voices'), tooltip: t('voicesTooltip'), isNew: true },
   ];
-  const { galleryPickerRequest, setLeftPanelOpen } = useEditor();
+  const { galleryPickerRequest, setLeftPanelOpen, studioMode, addPanel } = useEditor();
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [videoEditorOpen, setVideoEditorOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
@@ -128,7 +128,87 @@ export function LeftSidebar() {
 
   return (
     <>
-      <aside className="shrink-0 bg-[#1a2123] border-b border-[#f3f0ed]/[0.07] md:border-b-0 md:border-r md:h-full md:w-[72px]">
+      <aside
+        className={`shrink-0 ${studioMode ? '' : 'border-b border-[#f3f0ed]/[0.07] md:border-b-0 md:border-r'} md:h-full ${studioMode ? 'md:w-0' : 'md:w-[72px]'} ${studioMode ? 'bg-transparent' : 'bg-[#1a2123]'}`}
+      >
+        {studioMode && (
+          <div className="pointer-events-none fixed left-2 top-1/2 z-40 hidden -translate-y-1/2 md:block">
+            <div className="pointer-events-auto flex flex-col items-center gap-1 rounded-2xl bg-[#161a1c]/80 p-1.5 backdrop-blur-xl">
+              {navItems.map(({ id, icon: Icon, label, tooltip, comingSoon }) => {
+                const isActive =
+                  (id === 'gallery' && galleryOpen) ||
+                  (id === 'videoEditor' && videoEditorOpen) ||
+                  (id === 'tutorial' && tutorialOpen) ||
+                  (id === 'prompts' && promptsOpen) ||
+                  (id === 'trending' && trendingOpen) ||
+                  (id === 'imageToPrompt' && imageToPromptOpen) ||
+                  (id === 'voices' && voicesOpen);
+                return (
+                  <Tooltip key={id}>
+                    <TooltipTrigger asChild>
+                      <button
+                        id={id === 'tutorial' ? 'tour-tutorial-btn' : undefined}
+                        onClick={() => handleNavClick(id)}
+                        disabled={comingSoon}
+                        className={`relative flex h-9 w-9 items-center justify-center rounded-xl transition-all ${comingSoon
+                          ? 'text-[#f3f0ed]/15'
+                          : isActive
+                            ? 'bg-[#a2dd00]/12 text-[#a2dd00]'
+                            : 'text-[#f3f0ed]/40 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]'
+                          }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {isActive && (
+                          <span className="absolute -right-1.5 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-[#a2dd00]" />
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="right"
+                      sideOffset={12}
+                      className="bg-[#1a2123]/95 px-2.5 py-1 text-[10px] font-medium tracking-wide text-[#f3f0ed]/90 shadow-2xl backdrop-blur-md"
+                    >
+                      {comingSoon
+                        ? `${tooltip ?? label} · ${t('comingSoonSuffix')}`
+                        : (tooltip ?? label)}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+
+              <span className="my-1 h-px w-6 bg-[#f3f0ed]/[0.06]" />
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => addPanel('image-source')}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl text-[#f3f0ed]/40 transition-all hover:bg-[#f3f0ed]/5 hover:text-[#a2dd00]"
+                  >
+                    <ImageIcon className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={12} className="bg-[#1a2123]/95 px-2.5 py-1 text-[10px] font-medium tracking-wide text-[#f3f0ed]/90 shadow-2xl backdrop-blur-md">
+                  Input Image
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => addPanel('prompt-source')}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl text-[#f3f0ed]/40 transition-all hover:bg-[#f3f0ed]/5 hover:text-[#a2dd00]"
+                  >
+                    <Type className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={12} className="bg-[#1a2123]/95 px-2.5 py-1 text-[10px] font-medium tracking-wide text-[#f3f0ed]/90 shadow-2xl backdrop-blur-md">
+                  Input Text
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+        )}
+        <div className={studioMode ? 'hidden' : 'contents'}>
 
         {/* ── Mobile: dropdown button ── */}
         <div ref={mobileMenuRef} className="relative md:hidden">
@@ -269,6 +349,7 @@ export function LeftSidebar() {
           <div className="mt-auto flex items-center justify-center pb-1">
             <Image src="/logo_2.svg" alt={t('logoAlt')} width={28} height={28} className="opacity-30" />
           </div>
+        </div>
         </div>
       </aside>
 

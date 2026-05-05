@@ -5,15 +5,19 @@ import '@xyflow/react/dist/style.css';
 import {
   Background,
   BackgroundVariant,
+  Edge,
   MiniMap,
   Node,
   NodeTypes,
   ReactFlow,
   ReactFlowProvider,
   SelectionMode,
+  addEdge,
+  useEdgesState,
   useNodesState,
   useReactFlow,
 } from '@xyflow/react';
+import { IMAGE_OUTPUT_TARGETS, TEXT_OUTPUT_TARGETS, getOptionsForSource, getTargetHandleForSource } from './connection-options';
 import { ChevronDown, ChevronRight, LayoutGrid, Map } from 'lucide-react';
 import { PANEL_GROUPS } from '@/lib/panel-groups';
 import {
@@ -45,6 +49,7 @@ const PANEL_NODE_STYLE = {
 } as const;
 
 const STORAGE_NODES_KEY = 'geraew-canvas-nodes';
+const STORAGE_EDGES_KEY = 'geraew-canvas-edges';
 const STORAGE_VIEWPORT_KEY = 'geraew-canvas-viewport';
 
 function loadStoredNodes(): Node[] {
@@ -52,6 +57,16 @@ function loadStoredNodes(): Node[] {
     const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_NODES_KEY) : null;
     if (!raw) return [];
     return JSON.parse(raw) as Node[];
+  } catch {
+    return [];
+  }
+}
+
+function loadStoredEdges(): Edge[] {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_EDGES_KEY) : null;
+    if (!raw) return [];
+    return JSON.parse(raw) as Edge[];
   } catch {
     return [];
   }
@@ -73,7 +88,18 @@ function CanvasContent() {
   const t = useTranslations('editor.canvas');
   const [mounted, setMounted] = useState(false);
   const [initialStoredNodes] = useState<Node[]>(() => loadStoredNodes());
+  const [initialStoredEdges] = useState<Edge[]>(() => loadStoredEdges());
   const [nodes, setNodes, onNodesChange] = useNodesState(initialStoredNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialStoredEdges);
+  const [connectMenu, setConnectMenu] = useState<{
+    x: number;
+    y: number;
+    flowX: number;
+    flowY: number;
+    sourceNodeId: string;
+    sourceHandle: string | null;
+  } | null>(null);
+  const [connectMenuQuery, setConnectMenuQuery] = useState('');
   const { zoomIn, zoomOut, setViewport, fitView, screenToFlowPosition, setCenter, getViewport } = useReactFlow();
   const [zoom, setZoom] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
@@ -87,7 +113,7 @@ function CanvasContent() {
     setIsMobile(mobile);
     setZoom(mobile ? 0.65 : 1);
   }, []);
-  const { selectedNodeId, setSelectedNodeId, setNodePanelType, pendingPromptRef, generatingNodeIds } = useEditor();
+  const { selectedNodeId, setSelectedNodeId, setNodePanelType, pendingPromptRef, generatingNodeIds, studioMode, setImageConnections, setTextConnections, registerAddPanelHandler } = useEditor();
   const viewportSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Restore nodePanelTypes and viewport on mount
@@ -112,12 +138,27 @@ function CanvasContent() {
     localStorage.setItem(STORAGE_NODES_KEY, JSON.stringify(serializable));
   }, [nodes]);
 
+  // Persist edges + sync into editor context (so panels can read incoming connections)
+  useEffect(() => {
+    localStorage.setItem(STORAGE_EDGES_KEY, JSON.stringify(edges));
+    const imgMap: Record<string, string> = {};
+    const txtMap: Record<string, string> = {};
+    for (const e of edges) {
+      if (!e.target || !e.source) continue;
+      const handle = e.targetHandle ?? null;
+      if (handle === 'image-in') imgMap[e.target] = e.source;
+      else if (handle === 'text-in') txtMap[e.target] = e.source;
+    }
+    setImageConnections(imgMap);
+    setTextConnections(txtMap);
+  }, [edges, setImageConnections, setTextConnections]);
+
   const MAX_NODES = 10;
   const [showMaxNodesWarning, setShowMaxNodesWarning] = useState(false);
 
   const handleAddPanel = useCallback(
     (type: string) => {
-      if (type !== 'generate-image' && type !== 'create-influencer' && type !== 'generate-video' && type !== 'motion-control' && type !== 'virtual-try-on' && type !== 'face-swap' && type !== 'upscale' && type !== 'generate-audio' && type !== 'generic') return;
+      if (type !== 'generate-image' && type !== 'create-influencer' && type !== 'generate-video' && type !== 'motion-control' && type !== 'virtual-try-on' && type !== 'face-swap' && type !== 'upscale' && type !== 'generate-audio' && type !== 'generic' && type !== 'image-source' && type !== 'prompt-source') return;
 
       if (nodes.length >= MAX_NODES) {
         setShowMaxNodesWarning(false);
@@ -171,6 +212,140 @@ function CanvasContent() {
     },
     [nodes, screenToFlowPosition, setNodes, setNodePanelType, setSelectedNodeId]
   );
+
+  const handleConnect = useCallback(
+    (params: { source: string | null; target: string | null; sourceHandle?: string | null; targetHandle?: string | null }) => {
+      if (!params.source || !params.target) return;
+      const connection = {
+        source: params.source,
+        target: params.target,
+        sourceHandle: params.sourceHandle ?? null,
+        targetHandle: params.targetHandle ?? null,
+      };
+      setEdges((eds) =>
+        addEdge(
+          {
+            ...connection,
+            id: `${params.source}-${params.target}-${Date.now()}`,
+            animated: true,
+            style: { stroke: '#a2dd00', strokeWidth: 2 },
+          },
+          eds,
+        ),
+      );
+    },
+    [setEdges],
+  );
+
+  const handleConnectEnd = useCallback(
+    (event: unknown, connectionState: unknown) => {
+      const cs = connectionState as { isValid: boolean; fromNode: { id: string } | null; fromHandle: { id: string | null } | null };
+      if (cs.isValid) return;
+      if (!cs.fromNode) return;
+      const ev = event as MouseEvent | TouchEvent;
+      const { clientX, clientY } =
+        'changedTouches' in ev ? ev.changedTouches[0] : (ev as MouseEvent);
+      const sourceHandle = cs.fromHandle?.id ?? null;
+      const targetHandle = getTargetHandleForSource(sourceHandle);
+
+      // If drop landed on a node, try to auto-route to its compatible handle.
+      const dropEl = typeof document !== 'undefined' ? document.elementFromPoint(clientX, clientY) : null;
+      const nodeEl = (dropEl as Element | null)?.closest('.react-flow__node');
+      const targetNodeId = nodeEl?.getAttribute('data-id') ?? null;
+      if (targetHandle && targetNodeId && targetNodeId !== cs.fromNode.id) {
+        const compatiblePanels = sourceHandle === 'text-out'
+          ? new Set(TEXT_OUTPUT_TARGETS.map((o) => o.panelType))
+          : new Set(IMAGE_OUTPUT_TARGETS.map((o) => o.panelType));
+        const targetNode = nodes.find((n) => n.id === targetNodeId);
+        const targetPanelType = (targetNode?.data as { panelType?: string } | undefined)?.panelType;
+        if (targetPanelType && compatiblePanels.has(targetPanelType)) {
+          setEdges((eds) =>
+            addEdge(
+              {
+                id: `${cs.fromNode!.id}-${targetNodeId}-${Date.now()}`,
+                source: cs.fromNode!.id,
+                target: targetNodeId,
+                sourceHandle,
+                targetHandle,
+                animated: true,
+                style: { stroke: '#a2dd00', strokeWidth: 2 },
+              },
+              eds,
+            ),
+          );
+          return;
+        }
+      }
+
+      const flowPos = screenToFlowPosition({ x: clientX, y: clientY });
+      setConnectMenu({
+        x: clientX,
+        y: clientY,
+        flowX: flowPos.x,
+        flowY: flowPos.y,
+        sourceNodeId: cs.fromNode.id,
+        sourceHandle,
+      });
+      setConnectMenuQuery('');
+    },
+    [screenToFlowPosition, nodes, setEdges],
+  );
+
+  const handleConnectMenuSelect = useCallback(
+    (panelType: string) => {
+      if (!connectMenu) return;
+      if (nodes.length >= MAX_NODES) {
+        setShowMaxNodesWarning(false);
+        requestAnimationFrame(() => setShowMaxNodesWarning(true));
+        setConnectMenu(null);
+        return;
+      }
+      const newId = `${panelType}-${Date.now()}`;
+      const newNode: Node = {
+        id: newId,
+        type: 'panel',
+        position: { x: connectMenu.flowX, y: connectMenu.flowY - 40 },
+        data: { panelType },
+        dragHandle: '.panel-drag-handle',
+        style: PANEL_NODE_STYLE,
+      };
+      setNodes((nds) => [...nds, newNode]);
+      setNodePanelType(newId, panelType);
+      const targetHandle = getTargetHandleForSource(connectMenu.sourceHandle) ?? 'image-in';
+      setEdges((eds) =>
+        addEdge(
+          {
+            id: `${connectMenu.sourceNodeId}-${newId}-${Date.now()}`,
+            source: connectMenu.sourceNodeId,
+            target: newId,
+            sourceHandle: connectMenu.sourceHandle,
+            targetHandle,
+            animated: true,
+            style: { stroke: '#a2dd00', strokeWidth: 2 },
+          },
+          eds,
+        ),
+      );
+      setConnectMenu(null);
+    },
+    [connectMenu, nodes.length, setNodes, setNodePanelType, setEdges],
+  );
+
+  // Close connect menu on Escape or outside click
+  useEffect(() => {
+    if (!connectMenu) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setConnectMenu(null);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [connectMenu]);
+
+  // Expose handleAddPanel to other UI (sidebar, etc.) via context
+  useEffect(() => {
+    registerAddPanelHandler(handleAddPanel);
+    return () => registerAddPanelHandler(null);
+  }, [handleAddPanel, registerAddPanelHandler]);
 
   // When a pending prompt is requested (from PromptsDialog), create the panel
   const lastPendingPromptRef = useRef<unknown>(null);
@@ -265,11 +440,15 @@ function CanvasContent() {
         <div className="h-full w-full" style={{ cursor: isSelectMode ? 'default' : 'grab' }}>
           <ReactFlow
             nodes={nodes}
-            edges={[]}
+            edges={edges}
             onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={handleConnect}
+            onConnectEnd={handleConnectEnd}
+            isValidConnection={(c) => getTargetHandleForSource(c.sourceHandle) === c.targetHandle}
             nodeTypes={nodeTypes}
             onNodeClick={(_, node) => setSelectedNodeId(node.id)}
-            onPaneClick={() => setSelectedNodeId(null)}
+            onPaneClick={() => { setSelectedNodeId(null); setConnectMenu(null); }}
             onViewportChange={(vp) => {
               setZoom(vp.zoom);
               if (viewportSaveTimer.current) clearTimeout(viewportSaveTimer.current);
@@ -286,16 +465,16 @@ function CanvasContent() {
             preventScrolling
             minZoom={0.05}
             maxZoom={8}
-            nodesConnectable={false}
+            nodesConnectable={studioMode}
             nodesFocusable={false}
             proOptions={{ hideAttribution: true }}
-            style={{ width: '100%', height: '100%', background: '#1a2123' }}
+            style={{ width: '100%', height: '100%', background: studioMode ? '#0d1011' : '#1a2123' }}
           >
             <Background
               variant={BackgroundVariant.Dots}
               gap={24}
               size={1.5}
-              color="rgba(243, 240, 237, 0.12)"
+              color={studioMode ? 'rgba(243, 240, 237, 0.18)' : 'rgba(243, 240, 237, 0.12)'}
             />
             {isMobile && nodes.length > 0 && minimapOpen && (
               <div onClick={() => setMinimapOpen(false)}>
@@ -333,6 +512,49 @@ function CanvasContent() {
           <Map className="h-4 w-4 text-[#f3f0ed]/60" />
         </button>
       )}
+
+      {connectMenu && (() => {
+        const sourceOptions = getOptionsForSource(connectMenu.sourceHandle);
+        const filteredOptions = sourceOptions.filter((opt) =>
+          opt.label.toLowerCase().includes(connectMenuQuery.toLowerCase()),
+        );
+        return (
+          <div
+            className="absolute z-[100] w-56 overflow-hidden rounded-xl bg-[#1a2123]/95 shadow-2xl backdrop-blur-md"
+            style={{ left: connectMenu.x, top: connectMenu.y }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="px-2.5 py-2">
+              <input
+                autoFocus
+                value={connectMenuQuery}
+                onChange={(e) => setConnectMenuQuery(e.target.value)}
+                placeholder="Buscar..."
+                className="h-7 w-full rounded-lg bg-[#f3f0ed]/[0.04] px-2.5 text-[12px] text-[#f3f0ed]/85 placeholder-[#f3f0ed]/30 outline-none"
+              />
+            </div>
+            <div className="max-h-72 overflow-y-auto py-1">
+              {filteredOptions.length === 0 ? (
+                <p className="px-3 py-2 text-[11px] text-[#f3f0ed]/40">Nada encontrado</p>
+              ) : (
+                filteredOptions.map(({ panelType, label, icon: Icon }) => (
+                  <button
+                    key={panelType}
+                    type="button"
+                    onClick={() => handleConnectMenuSelect(panelType)}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-[#f3f0ed]/[0.04]"
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#a2dd00]/10 text-[#a2dd00]">
+                      <Icon className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="text-[12px] font-medium text-[#f3f0ed]/85">{label}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {showMaxNodesWarning && (
         <div

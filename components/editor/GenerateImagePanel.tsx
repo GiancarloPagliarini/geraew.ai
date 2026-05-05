@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ArrowBigUp, ArrowUpRight, ChevronDown, Coins, Download, FolderOpen, FolderPlus, Image, ImagePlus, Loader2, Plus, Settings, Sparkles, TriangleAlert, Wand2, X } from 'lucide-react';
+import { ArrowBigUp, ArrowUpRight, ChevronDown, Coins, Download, FolderOpen, FolderPlus, Image, ImagePlus, Loader2, Maximize2, Plus, Settings, Sparkles, TriangleAlert, Wand2, X } from 'lucide-react';
 import { EnhancePromptToggle } from './EnhancePromptToggle';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -34,6 +34,10 @@ import { toast } from 'sonner';
 import { GenerationErrorBanner, showGenerationError } from './GenerationError';
 import { GenerationPreview } from './GenerationPreview';
 import { containsNsfwContent } from '@/lib/nsfw-blocklist';
+import { StudioSelectPill } from './studio/StudioControls';
+import { StudioImageInputHandle, StudioImageOutputHandle, StudioTextInputHandle } from './studio/StudioHandles';
+import { useIncomingImage } from '@/lib/use-incoming-image';
+import { useIncomingText } from '@/lib/use-incoming-text';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -98,7 +102,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   const t = useTranslations('editorPanels.image');
   const tCommon = useTranslations('editorPanels.common');
   const LOADING_MESSAGES = t.raw('loadingMessages') as string[];
-  const { setNodeImage, nodeUpscaleStates, setNodeUpscaleState, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker, pendingPromptRef, consumePendingPrompt, setNodeGenerating } =
+  const { setNodeImage, nodeUpscaleStates, setNodeUpscaleState, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker, pendingPromptRef, consumePendingPrompt, setNodeGenerating, studioMode } =
     useEditor();
   const [initialPendingPrompt] = useState(() => {
     if (pendingPromptRef.current?.panelType === 'generate-image') {
@@ -702,6 +706,298 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
 
   const isGenerating = genState === 'generating';
   const dashOffset = CIRCUMFERENCE * (1 - progress / 100);
+
+  const incomingImageUrl = useIncomingImage(nodeId);
+  const lastIncomingRef = useRef<string | null>(null);
+  const lastAttachedPreviewRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!incomingImageUrl) {
+      if (lastIncomingRef.current) {
+        lastIncomingRef.current = null;
+        const toRemove = lastAttachedPreviewRef.current;
+        lastAttachedPreviewRef.current = null;
+        if (toRemove) {
+          setAttachedImages((prev) => prev.filter((img) => img.preview !== toRemove));
+        }
+      }
+      return;
+    }
+    if (incomingImageUrl === lastIncomingRef.current) return;
+    lastIncomingRef.current = incomingImageUrl;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(incomingImageUrl);
+        const blob = await res.blob();
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          if (cancelled) return;
+          const rawDataUrl = ev.target?.result as string;
+          const { dataUrl, mimeType } = await compressImage(rawDataUrl, blob.type || 'image/png');
+          if (cancelled) return;
+          const base64 = dataUrl.split(',')[1];
+          lastAttachedPreviewRef.current = dataUrl;
+          setAttachedImages((prev) => {
+            if (prev.length >= 4) return prev;
+            return [...prev, { base64, mime_type: mimeType, preview: dataUrl }];
+          });
+        };
+        reader.readAsDataURL(blob);
+      } catch (err) {
+        console.error('[image-panel] failed to fetch incoming image', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [incomingImageUrl]);
+
+  const incomingText = useIncomingText(nodeId);
+  const lastIncomingTextRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (incomingText === null) {
+      if (lastIncomingTextRef.current !== null) {
+        lastIncomingTextRef.current = null;
+        setPrompt('');
+      }
+      return;
+    }
+    lastIncomingTextRef.current = incomingText;
+    setPrompt(incomingText);
+  }, [incomingText]);
+
+  if (studioMode) {
+    const PROPORTION_LABELS: Record<string, string> = { '16-9': '16:9', '9-16': '9:16', '1-1': '1:1', '4-3': '4:3' };
+    const QUALITY_LABELS: Record<string, string> = { '4k': '4K', 'hd': '2K', 'sd': '1K' };
+    const PROPORTION_WIDTH: Record<string, number> = { '9-16': 260, '1-1': 320, '4-3': 360, '16-9': 440 };
+    const studioWidth = PROPORTION_WIDTH[proportion] ?? 300;
+    const currentModelLabel = imageModelOptions.find((o) => o.value === model)?.label ?? 'GPT Image 2';
+    const currentProportionLabel = PROPORTION_LABELS[proportion] ?? proportion;
+    const currentQualityLabel = QUALITY_LABELS[quality] ?? quality;
+    const isFreeGen = !!estimate?.canUseFreeGeneration;
+    const creditCost = estimate?.creditsRequired ?? 0;
+    const proportionOptions: { value: string; label: string; suffix?: string }[] = [
+      { value: '9-16', label: t('proportionOptions.portrait'), suffix: '9:16' },
+      { value: '1-1', label: t('proportionOptions.square'), suffix: '1:1' },
+      { value: '4-3', label: t('proportionOptions.43'), suffix: '4:3' },
+      { value: '16-9', label: t('proportionOptions.landscape'), suffix: '16:9' },
+    ];
+    const qualityOptionsRaw: { value: string; label: string }[] =
+      model === 'sem-censura'
+        ? [{ value: '4k', label: '4K' }, { value: 'hd', label: '2K' }]
+        : model === 'gpt-image-2' && proportion === '1-1'
+          ? [{ value: 'hd', label: '2K' }, { value: 'sd', label: '1K' }]
+          : [{ value: '4k', label: '4K' }, { value: 'hd', label: '2K' }, { value: 'sd', label: '1K' }];
+    const modelSelectOptions = imageModelOptions.map((o) => ({ value: o.value, label: o.label, disabled: o.disabled }));
+    const showEnhanceToggle = model !== 'sem-censura';
+
+    return (
+      <>
+        <TooltipProvider>
+          <div className="relative">
+            <StudioImageInputHandle />
+            <StudioTextInputHandle />
+            <StudioImageOutputHandle />
+          <div
+            ref={panelRef}
+            className={`group/studio max-w-[calc(100vw-5rem)] overflow-hidden rounded-2xl bg-[#161a1c] shadow-2xl shadow-black/50 ${isDraggingOver ? 'ring-2 ring-[#a2dd00]/30' : ''}`}
+            style={{ width: studioWidth, transition: 'width 0.4s ease, border-color 0.2s ease' }}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <div className="panel-drag-handle flex cursor-grab items-center justify-between px-3 py-2.5 active:cursor-grabbing">
+              <div className="flex items-center gap-1.5">
+                <Image className="h-3.5 w-3.5 text-[#f3f0ed]/40" />
+                <span className="text-[11px] font-medium text-[#f3f0ed]/60">{t('header')}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <PanelDuplicateButton onClick={onDuplicate} />
+                <button
+                  onClick={() => { localStorage.removeItem(storageKey); idbDelete(`${storageKey}-images`).catch(() => { }); onClose?.(); }}
+                  className="flex h-5 w-5 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2 px-3 pb-3">
+              <GenerationErrorBanner msg={errorMsg} />
+
+              {genState === 'idle' && !generatedImageUrl && (
+                <div
+                  className="rounded-xl bg-[#0d1011]"
+                  style={{
+                    aspectRatio: PROPORTION_LABELS[proportion] ? proportion.replace('-', ' / ') : undefined,
+                    transition: 'aspect-ratio 0.4s ease',
+                  }}
+                />
+              )}
+
+              <GenerationPreview
+                proportion={proportion}
+                genState={genState}
+                imageVisible={imageVisible}
+                onImageLoad={() => setImageVisible(true)}
+                onImageError={handleImageError}
+                progress={progress}
+                generatedImageUrl={generatedImageUrl}
+                imageRef={draggableImgRef}
+                onImageClick={() => window.open(generatedImageUrl!, '_blank')}
+                onImageDragStart={(e) => {
+                  e.stopPropagation();
+                  e.dataTransfer.setData('text/geraew-image-url', generatedImageUrl!);
+                  e.dataTransfer.effectAllowed = 'copy';
+                }}
+                imageFilter={upscaleState === 'done' ? 'blur(0px) brightness(1.06) contrast(1.04) saturate(1.12)' : undefined}
+              >
+                {upscaleState === 'done' && (
+                  <div className="absolute left-2 top-2 flex items-center justify-center rounded-full bg-[#a2dd00] px-2 py-0.5">
+                    <span className="text-[8px] font-black tracking-widest text-[#1a2123]">HD+</span>
+                  </div>
+                )}
+                <ActionButton title={tCommon('expand')} onClick={() => window.open(generatedImageUrl!, '_blank')}>
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </ActionButton>
+                <ActionButton title={tCommon('download')} onClick={() => handleDownload(generatedImageUrl!)}>
+                  <Download className="h-3.5 w-3.5" />
+                </ActionButton>
+                <ActionButton title={tCommon('discard')} onClick={handleDiscard}>
+                  <X className="h-3.5 w-3.5" />
+                </ActionButton>
+              </GenerationPreview>
+
+              {attachedImages.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {attachedImages.map((img, i) => (
+                    <div key={i} className="group/ref relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-[#f3f0ed]/10">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img.preview} alt="" className="h-full w-full object-cover" />
+                      <button
+                        onClick={() => removeAttachedImage(i)}
+                        className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover/ref:opacity-100"
+                      >
+                        <X className="h-3 w-3 text-white" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center gap-1.5 pt-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isGenerating || attachedImages.length >= 4}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 text-[#f3f0ed]/50 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" sideOffset={6}>{tCommon('uploadFromDevice')}</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => openGalleryPicker({ nodeId, remaining: 4 - attachedImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success(tCommon('imageAddedAsReference')); } })}
+                      disabled={isGenerating || attachedImages.length >= 4}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 text-[#f3f0ed]/50 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <FolderOpen className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" sideOffset={6}>{tCommon('pickFromGallery')}</TooltipContent>
+                </Tooltip>
+                <input
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
+                  placeholder={t('promptPlaceholder')}
+                  disabled={isGenerating}
+                  className="min-w-0 flex-1 bg-transparent text-[12px] text-[#f3f0ed]/85 placeholder-[#f3f0ed]/30 outline-none"
+                />
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+
+              <div className="grid grid-rows-[0fr] opacity-0 transition-all duration-300 ease-out group-hover/studio:grid-rows-[1fr] group-hover/studio:opacity-100">
+                <div className="overflow-hidden">
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
+                    <StudioSelectPill
+                      value={model}
+                      label={currentModelLabel}
+                      options={modelSelectOptions}
+                      onChange={setModel}
+                      disabled={isGenerating}
+                      icon={<Sparkles className="h-3 w-3 text-[#a2dd00]" />}
+                    />
+                    <StudioSelectPill
+                      value={proportion}
+                      label={currentProportionLabel}
+                      options={proportionOptions}
+                      onChange={setProportion}
+                      disabled={isGenerating}
+                      icon={<Maximize2 className="h-3 w-3 opacity-70" />}
+                    />
+                    <StudioSelectPill
+                      value={quality}
+                      label={currentQualityLabel}
+                      options={qualityOptionsRaw}
+                      onChange={setQuality}
+                      disabled={isGenerating}
+                    />
+                    {showEnhanceToggle && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => setEnhancePrompt(!enhancePrompt)}
+                            disabled={isGenerating}
+                            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
+                              enhancePrompt
+                                ? 'border-[#a2dd00]/40 bg-[#a2dd00]/10 text-[#a2dd00]'
+                                : 'border-[#f3f0ed]/8 bg-[#f3f0ed]/[0.04] text-[#f3f0ed]/55 hover:border-[#a2dd00]/30 hover:text-[#f3f0ed]'
+                            }`}
+                          >
+                            {isEnhancing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+                            Enhance
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" sideOffset={6}>
+                          {enhancePrompt ? tCommon('hideOptions') : tCommon('showOptions')}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                    <button
+                      onClick={handleGenerate}
+                      disabled={isGenerating || !prompt.trim()}
+                      title={tCommon('generate')}
+                      className="ml-auto inline-flex items-center gap-1 rounded-full bg-[#a2dd00] px-2.5 py-1 text-[11px] font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isGenerating ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3 w-3" />
+                      )}
+                      {isFreeGen ? tCommon('free') : (creditCost || '—')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
+        </TooltipProvider>
+        {plansModalOpen && createPortal(<PlansModal onClose={() => setPlansModalOpen(false)} />, document.body)}
+      </>
+    );
+  }
 
   return (
     <>

@@ -306,7 +306,7 @@ function FaceSwapSection({ generatedImage }: { generatedImage: string }) {
 
 export function RightSidebar() {
   const t = useTranslations('editorChrome.rightSidebar');
-  const { selectedNodeId, setSelectedNodeId, nodeImages, nodeUpscaleStates, nodePanelTypes } = useEditor();
+  const { selectedNodeId, setSelectedNodeId, nodeImages, nodeUpscaleStates, nodePanelTypes, studioMode } = useEditor();
   const panelType = selectedNodeId ? nodePanelTypes[selectedNodeId] : null;
   const selectedImage = selectedNodeId ? nodeImages[selectedNodeId] : null;
   const upscaleDone = selectedNodeId
@@ -316,7 +316,7 @@ export function RightSidebar() {
   // Influencer builder sidebar
   if (panelType === 'create-influencer') {
     return (
-      <aside className="aside-in fixed inset-0 z-50 flex flex-col border-l border-[#f3f0ed]/[0.07] bg-[#1a2123] sm:static sm:h-full sm:w-96 sm:shrink-0">
+      <aside className={`aside-in fixed inset-0 z-50 flex flex-col border-l border-[#f3f0ed]/[0.07] sm:static sm:h-full sm:w-96 sm:shrink-0 ${studioMode ? 'bg-[#0d1011]' : 'bg-[#1a2123]'}`}>
         {/* Header */}
         <div className="flex items-center gap-2.5 border-b border-[#f3f0ed]/[0.05] bg-gradient-to-b from-[#f3f0ed]/[0.02] to-transparent px-4 py-3.5">
           <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#f3f0ed]/[0.05]">

@@ -45,7 +45,7 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
     tLoading('consulting'),
     tLoading('dreaming'),
   ], [tLoading]);
-  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating } = useEditor();
+  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating, studioMode } = useEditor();
   const { accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
   const { selections, referenceImage } = useInfluencerBuilder();
@@ -234,6 +234,70 @@ export function CreateInfluencerPanel({ nodeId, onClose, onDuplicate }: CreateIn
   });
 
   const dashOffset = CIRCUMFERENCE * (1 - progress / 100);
+  const isGenerating = genState === 'generating';
+
+  if (studioMode) {
+    const creditCost = estimate?.creditsRequired ?? 0;
+    return (
+      <div className="group/studio max-w-[calc(100vw-5rem)] overflow-hidden rounded-2xl bg-[#161a1c] shadow-2xl shadow-black/50" style={{ width: 280 }}>
+        <div className="panel-drag-handle flex cursor-grab items-center justify-between px-3 py-2.5 active:cursor-grabbing">
+          <div className="flex items-center gap-1.5">
+            <PersonStanding className="h-3.5 w-3.5 text-[#f3f0ed]/40" />
+            <span className="text-[11px] font-medium text-[#f3f0ed]/60">{t('title')}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <PanelDuplicateButton onClick={onDuplicate} />
+            <button
+              onClick={(e) => { e.stopPropagation(); onClose?.(); }}
+              className="flex h-5 w-5 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2 px-3 pb-3">
+          <GenerationErrorBanner msg={errorMsg} />
+
+          {genState === 'idle' && !generatedImageUrl ? (
+            <div
+              className="flex flex-col items-center justify-center gap-2 rounded-xl bg-[#0d1011] px-3 text-[#f3f0ed]/40"
+              style={{ aspectRatio: '9 / 16' }}
+            >
+              <PersonStanding className="h-6 w-6" />
+              <p className="text-center text-[11px] font-medium">{t('emptyTitle')}</p>
+              <p className="text-center text-[9px] leading-relaxed text-[#f3f0ed]/30">{t('emptySubtitle')}</p>
+            </div>
+          ) : (
+            <GenerationPreview
+              proportion="9-16"
+              genState={genState}
+              imageVisible={imageVisible}
+              onImageLoad={() => setImageVisible(true)}
+              progress={progress}
+              generatedImageUrl={generatedImageUrl}
+            />
+          )}
+
+          <div className="grid grid-rows-[0fr] opacity-0 transition-all duration-300 ease-out group-hover/studio:grid-rows-[1fr] group-hover/studio:opacity-100">
+            <div className="overflow-hidden">
+              <div className="flex items-center justify-end gap-1.5 pt-1.5">
+                <button
+                  onClick={handleGenerate}
+                  disabled={isGenerating}
+                  title={t('generate')}
+                  className="inline-flex items-center gap-1 rounded-full bg-[#a2dd00] px-2.5 py-1 text-[11px] font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                  {creditCost || '—'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-[calc(100vw-5rem)] overflow-hidden rounded-2xl border border-[#f3f0ed]/[0.08] bg-[#1a2123] shadow-2xl shadow-black/50 sm:w-[320px]">

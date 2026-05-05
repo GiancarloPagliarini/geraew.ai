@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { InfiniteData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './auth-context';
 import { api, CreditsBalance, Generation, GalleryItem, PaginatedResponse } from './api';
@@ -52,7 +52,24 @@ interface EditorContextValue {
   /** Incremented whenever the saved voice profiles list changes. Subscribers re-fetch on change. */
   voicesVersion: number;
   bumpVoicesVersion: () => void;
+  studioMode: boolean;
+  toggleStudioMode: () => void;
+  setStudioMode: (enabled: boolean) => void;
+  /** Map of target nodeId → source nodeId for the `image-in` connection. */
+  imageConnections: Record<string, string>;
+  setImageConnections: (next: Record<string, string>) => void;
+  /** Map of target nodeId → source nodeId for the `text-in` connection. */
+  textConnections: Record<string, string>;
+  setTextConnections: (next: Record<string, string>) => void;
+  /** Per-node text/prompt published by source panels. */
+  nodeTexts: Record<string, string>;
+  setNodeText: (nodeId: string, text: string) => void;
+  /** Canvas registers an add-panel callback so other UI (sidebar, etc.) can request a new node. */
+  registerAddPanelHandler: (fn: ((type: string) => void) | null) => void;
+  addPanel: (type: string) => void;
 }
+
+const STUDIO_MODE_STORAGE_KEY = 'geraew-studio-mode';
 
 const EditorContext = createContext<EditorContextValue | null>(null);
 
@@ -69,6 +86,42 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const bumpVoicesVersion = useCallback(() => setVoicesVersion((v) => v + 1), []);
   const [leftPanelOpen, setLeftPanelOpen] = useState(false);
   const [generatingNodeIds, setGeneratingNodeIds] = useState<Set<string>>(new Set());
+  const [studioMode, setStudioModeState] = useState(false);
+  const [imageConnections, setImageConnections] = useState<Record<string, string>>({});
+  const [textConnections, setTextConnections] = useState<Record<string, string>>({});
+  const [nodeTexts, setNodeTexts] = useState<Record<string, string>>({});
+  const addPanelHandlerRef = useRef<((type: string) => void) | null>(null);
+  const registerAddPanelHandler = useCallback((fn: ((type: string) => void) | null) => {
+    addPanelHandlerRef.current = fn;
+  }, []);
+  const addPanel = useCallback((type: string) => {
+    addPanelHandlerRef.current?.(type);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.localStorage.getItem(STUDIO_MODE_STORAGE_KEY) === '1') {
+      setStudioModeState(true);
+    }
+  }, []);
+
+  const setStudioMode = useCallback((enabled: boolean) => {
+    setStudioModeState(enabled);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(STUDIO_MODE_STORAGE_KEY, enabled ? '1' : '0');
+    }
+  }, []);
+
+  const toggleStudioMode = useCallback(() => {
+    setStudioModeState((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(STUDIO_MODE_STORAGE_KEY, next ? '1' : '0');
+      }
+      return next;
+    });
+  }, []);
+
   const setNodeGenerating = useCallback((nodeId: string, generating: boolean) => {
     setGeneratingNodeIds((prev) => {
       const has = prev.has(nodeId);
@@ -220,6 +273,18 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         requestWeeklyClaim: () => setWeeklyClaimRequest((n) => n + 1),
         voicesVersion,
         bumpVoicesVersion,
+        studioMode,
+        toggleStudioMode,
+        setStudioMode,
+        imageConnections,
+        setImageConnections,
+        textConnections,
+        setTextConnections,
+        nodeTexts,
+        setNodeText: (nodeId, text) =>
+          setNodeTexts((prev) => ({ ...prev, [nodeId]: text })),
+        registerAddPanelHandler,
+        addPanel,
       }}
     >
       {children}

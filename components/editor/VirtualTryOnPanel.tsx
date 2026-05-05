@@ -8,15 +8,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  ArrowRight,
   Coins,
   Download,
   Image,
+  Loader2,
+  Maximize2,
   Shirt,
   Sparkles,
   User,
   Wand2,
   X,
 } from 'lucide-react';
+import { StudioSelectPill } from './studio/StudioControls';
+import { StudioImageInputHandle, StudioImageOutputHandle } from './studio/StudioHandles';
+import { useIncomingImage, urlToImagePayload } from '@/lib/use-incoming-image';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -88,7 +94,7 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
   const t = useTranslations('editorPanels.virtualTryOn');
   const tCommon = useTranslations('editorPanels.common');
   const LOADING_MESSAGES = t.raw('loadingMessages') as string[];
-  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating } = useEditor();
+  const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, setNodeGenerating, studioMode } = useEditor();
   const { accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
 
@@ -118,7 +124,7 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
         if (data.influencerImage) setInfluencerImage(data.influencerImage);
         if (data.clothingImage) setClothingImage(data.clothingImage);
       })
-      .catch(() => { });
+      .catch((err) => { console.error('[tryon-panel] failed to fetch incoming image', err); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -488,6 +494,152 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
   // Map aspect ratio to proportion key for GenerationPreview
   const proportionMap: Record<string, string> = { '16:9': '16-9', '9:16': '9-16', '1:1': '1-1', '4:3': '4-3', '3:4': '3-4', '4:5': '4-5' };
   const proportion = proportionMap[aspectRatio] ?? '3-4';
+  const isGenerating = genState === 'generating';
+
+  const incomingImageUrl = useIncomingImage(nodeId);
+  const lastIncomingRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!incomingImageUrl) {
+      if (lastIncomingRef.current) {
+        lastIncomingRef.current = null;
+        setInfluencerImage(null);
+      }
+      return;
+    }
+    if (incomingImageUrl === lastIncomingRef.current) return;
+    lastIncomingRef.current = incomingImageUrl;
+    let cancelled = false;
+    urlToImagePayload(incomingImageUrl)
+      .then((payload) => {
+        if (!cancelled) setInfluencerImage(payload);
+      })
+      .catch((err) => { console.error('[tryon-panel] failed to fetch incoming image', err); });
+    return () => { cancelled = true; };
+  }, [incomingImageUrl]);
+
+  if (studioMode) {
+    const isFreeGen = !!estimate?.canUseFreeGeneration;
+    const creditCost = estimate?.creditsRequired ?? 0;
+    const ready = !!influencerImage && !!clothingImage;
+    const studioWidth = 340;
+
+    return (
+      <TooltipProvider>
+        <div className="relative">
+          <StudioImageInputHandle />
+          <StudioImageOutputHandle />
+        <div
+          ref={panelRef}
+          className={`group/studio max-w-[calc(100vw-5rem)] overflow-hidden rounded-2xl bg-[#161a1c] shadow-2xl shadow-black/50 ${isDraggingOver ? 'ring-2 ring-[#a2dd00]/30' : ''}`}
+          style={{ width: studioWidth, transition: 'width 0.4s ease' }}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <div className="panel-drag-handle flex cursor-grab items-center justify-between px-3 py-2.5 active:cursor-grabbing">
+            <div className="flex items-center gap-1.5">
+              <Shirt className="h-3.5 w-3.5 text-[#f3f0ed]/40" />
+              <span className="text-[11px] font-medium text-[#f3f0ed]/60">{t('header')}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <PanelDuplicateButton onClick={onDuplicate} />
+              <button
+                onClick={() => { localStorage.removeItem(storageKey); idbDelete(`${storageKey}-images`).catch(() => { }); onClose?.(); }}
+                className="flex h-5 w-5 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2 px-3 pb-3">
+            <GenerationErrorBanner msg={errorMsg} />
+
+            {genState === 'idle' && !generatedImageUrl ? (
+              <div className="flex items-center gap-2">
+                <StudioSlot
+                  label="Pessoa"
+                  icon={<User className="h-4 w-4" />}
+                  image={influencerImage?.preview}
+                  onClick={() => influencerInputRef.current?.click()}
+                  onClear={() => setInfluencerImage(null)}
+                  disabled={isGenerating}
+                />
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#f3f0ed]/25" />
+                <StudioSlot
+                  label="Roupa"
+                  icon={<Shirt className="h-4 w-4" />}
+                  image={clothingImage?.preview}
+                  onClick={() => clothingInputRef.current?.click()}
+                  onClear={() => setClothingImage(null)}
+                  disabled={isGenerating}
+                />
+              </div>
+            ) : (
+              <GenerationPreview
+                proportion={proportion}
+                genState={genState}
+                imageVisible={imageVisible}
+                progress={progress}
+                generatedImageUrl={generatedImageUrl}
+                onImageLoad={() => setImageVisible(true)}
+              >
+                <button
+                  onClick={handleDiscard}
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1a2123]/80 text-[#f3f0ed]/70 backdrop-blur-sm transition-all hover:bg-[#1e494b] hover:text-[#a2dd00]"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </GenerationPreview>
+            )}
+
+            <input ref={influencerInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => handleImageSelect(e, setInfluencerImage, t('toasts.influencerLabel'))} />
+            <input ref={clothingInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => handleImageSelect(e, setClothingImage, t('toasts.clothingLabel'))} />
+
+            <input
+              value={additionalInstructions}
+              onChange={(e) => setAdditionalInstructions(e.target.value)}
+              placeholder={t('instructionsPlaceholder')}
+              disabled={isGenerating}
+              className="w-full bg-transparent text-[12px] text-[#f3f0ed]/85 placeholder-[#f3f0ed]/30 outline-none"
+            />
+
+            <div className="grid grid-rows-[0fr] opacity-0 transition-all duration-300 ease-out group-hover/studio:grid-rows-[1fr] group-hover/studio:opacity-100">
+              <div className="overflow-hidden">
+                <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
+                  <StudioSelectPill
+                    value={resolution}
+                    label={RESOLUTION_OPTIONS.find((o) => o.value === resolution)?.label ?? resolution}
+                    options={RESOLUTION_OPTIONS}
+                    onChange={setResolution}
+                    disabled={isGenerating}
+                  />
+                  <StudioSelectPill
+                    value={aspectRatio}
+                    label={aspectRatio}
+                    options={ASPECT_RATIO_OPTIONS}
+                    onChange={setAspectRatio}
+                    disabled={isGenerating}
+                    icon={<Maximize2 className="h-3 w-3 opacity-70" />}
+                  />
+                  <button
+                    onClick={handleGenerate}
+                    disabled={isGenerating || !ready}
+                    title={tCommon('generate')}
+                    className="ml-auto inline-flex items-center gap-1 rounded-full bg-[#a2dd00] px-2.5 py-1 text-[11px] font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {isFreeGen ? tCommon('free') : (creditCost || '—')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </TooltipProvider>
+    );
+  }
 
   return (
     <TooltipProvider>
@@ -740,5 +892,48 @@ export function VirtualTryOnPanel({ nodeId, onClose, onDuplicate }: VirtualTryOn
         </div>
       </div>
     </TooltipProvider>
+  );
+}
+
+function StudioSlot({
+  label,
+  icon,
+  image,
+  onClick,
+  onClear,
+  disabled,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  image?: string;
+  onClick: () => void;
+  onClear: () => void;
+  disabled?: boolean;
+}) {
+  if (image) {
+    return (
+      <div className="group/slot relative aspect-square min-w-0 flex-1 overflow-hidden rounded-xl">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={image} alt={label} className="h-full w-full object-cover" />
+        <button
+          onClick={onClear}
+          disabled={disabled}
+          className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-[#f3f0ed]/80 opacity-0 transition-opacity hover:text-[#f3f0ed] group-hover/slot:opacity-100"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="group/slot flex aspect-square min-w-0 flex-1 flex-col items-center justify-center gap-1.5 rounded-xl bg-[#0d1011] text-[#f3f0ed]/40 transition-all hover:bg-[#0f1416] hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      <span className="opacity-70 transition-opacity group-hover/slot:opacity-100">{icon}</span>
+      <span className="text-[10px] font-medium">{label}</span>
+    </button>
   );
 }

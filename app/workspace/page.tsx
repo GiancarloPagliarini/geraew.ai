@@ -98,20 +98,30 @@ function FeedbackRewardTrigger() {
   return <FeedbackRewardModal open={open} onClose={handleClose} />;
 }
 
+function WorkspaceShell() {
+  const { studioMode } = useEditor();
+  return (
+    <div
+      className={`flex h-screen flex-col overflow-hidden ${studioMode ? 'bg-[#0d1011]' : 'bg-[#1a2123]'}`}
+      data-studio-mode={studioMode ? 'on' : 'off'}
+    >
+      <TopNavbar />
+      <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
+        <LeftSidebar />
+        <div className="flex flex-1 overflow-hidden">
+          <Canvas />
+          <RightSidebar />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   return (
     <EditorProvider>
       <InfluencerBuilderProvider>
-        <div className="flex h-screen flex-col overflow-hidden bg-[#1a2123]">
-          <TopNavbar />
-          <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
-            <LeftSidebar />
-            <div className="flex flex-1 overflow-hidden">
-              <Canvas />
-              <RightSidebar />
-            </div>
-          </div>
-        </div>
+        <WorkspaceShell />
         <OnboardingTour />
         <SupportButton />
         <Suspense><RegisterModalTrigger /></Suspense>
