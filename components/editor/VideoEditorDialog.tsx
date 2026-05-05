@@ -26,6 +26,7 @@ import {
 } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
+import { useEditor } from '@/lib/editor-context';
 import {
   api,
   GalleryItem,
@@ -57,6 +58,7 @@ interface VideoEditorDialogProps {
 export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps) {
   const t = useTranslations('editor.videoDialog');
   const { accessToken } = useAuth();
+  const { studioMode } = useEditor();
   const queryClient = useQueryClient();
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -454,7 +456,7 @@ export function VideoEditorDialog({ open, onOpenChange }: VideoEditorDialogProps
   if (!open) return null;
 
   return (
-    <aside className="aside-in-left fixed inset-0 z-50 flex flex-col border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] text-[#f3f0ed] overflow-hidden relative sm:static sm:h-full sm:w-xl sm:shrink-0">
+    <aside className={`aside-in-left fixed inset-0 z-50 flex flex-col border-r border-[#f3f0ed]/[0.07] ${studioMode ? 'bg-[#0d1011]' : 'bg-[#1a2123]'} text-[#f3f0ed] overflow-hidden relative sm:static sm:h-full sm:w-xl sm:shrink-0`}>
       {/* Under construction overlay */}
       <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 backdrop-blur-sm bg-[#1a2123]/80 pointer-events-auto">
         <div className="flex flex-col items-center gap-3 px-6 text-center">

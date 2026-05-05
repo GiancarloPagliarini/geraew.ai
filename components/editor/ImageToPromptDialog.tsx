@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
 import { useTranslations } from 'next-intl';
+import { useEditor } from '@/lib/editor-context';
 
 interface Props {
   open: boolean;
@@ -20,6 +21,7 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
   const t = useTranslations('editorDialogs.imageToPrompt');
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
+  const { studioMode } = useEditor();
   const [mounted, setMounted] = useState(false);
   const [closing, setClosing] = useState(false);
   const [imageData, setImageData] = useState<string | null>(null);
@@ -84,7 +86,7 @@ export function ImageToPromptDialog({ open, onOpenChange }: Props) {
 
   return (
     <aside
-      className={`${closing ? 'aside-out-left' : 'aside-in-left'} fixed inset-0 z-50 flex flex-col bg-[#171f21] text-[#f3f0ed] overflow-hidden sm:static sm:h-full sm:w-xl sm:shrink-0 border-r border-white/[0.06]`}
+      className={`${closing ? 'aside-out-left' : 'aside-in-left'} fixed inset-0 z-50 flex flex-col ${studioMode ? 'bg-[#0d1011]' : 'bg-[#171f21]'} text-[#f3f0ed] overflow-hidden sm:static sm:h-full sm:w-xl sm:shrink-0 border-r border-white/[0.06]`}
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5">

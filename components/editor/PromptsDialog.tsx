@@ -284,7 +284,7 @@ interface PromptsDialogProps {
 
 export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
   const t = useTranslations('editorDialogs.prompts');
-  const { requestPanelWithPrompt } = useEditor();
+  const { requestPanelWithPrompt, studioMode } = useEditor();
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -457,7 +457,7 @@ export function PromptsDialog({ open, onOpenChange }: PromptsDialogProps) {
   return (
     <>
       <aside
-        className={`${closing ? 'aside-out-left' : 'aside-in-left'} fixed inset-0 z-50 flex flex-col bg-[#171f21] text-[#f3f0ed] overflow-hidden sm:static sm:h-full sm:w-xl sm:shrink-0 border-r border-white/[0.06]`}
+        className={`${closing ? 'aside-out-left' : 'aside-in-left'} fixed inset-0 z-50 flex flex-col ${studioMode ? 'bg-[#0d1011]' : 'bg-[#171f21]'} text-[#f3f0ed] overflow-hidden sm:static sm:h-full sm:w-xl sm:shrink-0 border-r border-white/[0.06]`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3">

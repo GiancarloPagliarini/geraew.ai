@@ -25,7 +25,7 @@ export function VoicesDialog({ open, onOpenChange }: VoicesDialogProps) {
   const t = useTranslations('editorDialogs.voices');
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
-  const { requestPanelWithPrompt, voicesVersion, bumpVoicesVersion } = useEditor();
+  const { requestPanelWithPrompt, voicesVersion, bumpVoicesVersion, studioMode } = useEditor();
 
   const [voices, setVoices] = useState<VoiceProfile[]>([]);
   const [inworldVoices, setInworldVoices] = useState<InworldVoice[]>([]);
@@ -274,7 +274,7 @@ export function VoicesDialog({ open, onOpenChange }: VoicesDialogProps) {
 
   return (
     <aside
-      className={`${closing ? 'aside-out-left' : 'aside-in-left'} fixed inset-0 z-50 flex flex-col bg-[#171f21] text-[#f3f0ed] overflow-hidden sm:static sm:h-full sm:w-xl sm:shrink-0 border-r border-white/[0.06]`}
+      className={`${closing ? 'aside-out-left' : 'aside-in-left'} fixed inset-0 z-50 flex flex-col ${studioMode ? 'bg-[#0d1011]' : 'bg-[#171f21]'} text-[#f3f0ed] overflow-hidden sm:static sm:h-full sm:w-xl sm:shrink-0 border-r border-white/[0.06]`}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">

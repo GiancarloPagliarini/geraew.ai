@@ -3,6 +3,7 @@
 import { ArrowLeft, ChevronRight, GraduationCap, ImageIcon, PersonStanding, PlayCircle, Shirt, Video, X, type LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useEditor } from '@/lib/editor-context';
 
 interface TutorialDialogProps {
   open: boolean;
@@ -29,6 +30,7 @@ const TUTORIAL_IDS: TutorialId[] = ['image', 'video', 'influencer', 'virtualTryO
 
 export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
   const t = useTranslations('editorDialogs.tutorial');
+  const { studioMode } = useEditor();
 
   const [mounted, setMounted] = useState(open);
   const [closing, setClosing] = useState(false);
@@ -47,7 +49,7 @@ export function TutorialDialog({ open, onOpenChange }: TutorialDialogProps) {
   if (!mounted) return null;
 
   return (
-    <aside className={`${closing ? 'aside-out-left' : 'aside-in-left'} fixed inset-0 z-50 flex flex-col border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] text-[#f3f0ed] overflow-hidden sm:static sm:h-full sm:w-xl sm:shrink-0`}>
+    <aside className={`${closing ? 'aside-out-left' : 'aside-in-left'} fixed inset-0 z-50 flex flex-col border-r border-[#f3f0ed]/[0.07] ${studioMode ? 'bg-[#0d1011]' : 'bg-[#1a2123]'} text-[#f3f0ed] overflow-hidden sm:static sm:h-full sm:w-xl sm:shrink-0`}>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#f3f0ed]/[0.05] bg-gradient-to-b from-[#f3f0ed]/[0.02] to-transparent px-4 py-3.5">
         <div className="flex items-center gap-2.5 min-w-0">

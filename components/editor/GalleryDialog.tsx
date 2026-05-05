@@ -76,7 +76,7 @@ interface GalleryDialogProps {
 export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
   const t = useTranslations('editorDialogs.gallery');
   const { accessToken } = useAuth();
-  const { galleryPickerRequest, closeGalleryPicker } = useEditor();
+  const { galleryPickerRequest, closeGalleryPicker, studioMode } = useEditor();
   const [selected, setSelected] = useState<Generation | null>(null);
   const [activeTab, setActiveTab] = useState<GalleryTab>('all');
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
@@ -389,7 +389,7 @@ export function GalleryDialog({ open, onOpenChange }: GalleryDialogProps) {
   if (!mounted) return null;
 
   return (
-    <aside className={`${closing ? 'aside-out-left' : 'aside-in-left'} fixed inset-0 z-50 flex flex-col border-r border-[#f3f0ed]/[0.07] bg-[#1a2123] text-[#f3f0ed] overflow-hidden sm:static sm:h-full sm:w-2xl sm:shrink-0`}>
+    <aside className={`${closing ? 'aside-out-left' : 'aside-in-left'} fixed inset-0 z-50 flex flex-col border-r border-[#f3f0ed]/[0.07] ${studioMode ? 'bg-[#0d1011]' : 'bg-[#1a2123]'} text-[#f3f0ed] overflow-hidden sm:static sm:h-full sm:w-2xl sm:shrink-0`}>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#f3f0ed]/[0.05] bg-gradient-to-b from-[#f3f0ed]/[0.02] to-transparent px-4 py-3.5">
         <div className="flex items-center gap-2.5">

@@ -9,6 +9,7 @@ import {
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
+import { useEditor } from '@/lib/editor-context';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 
@@ -216,6 +217,7 @@ export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsD
   const [activeTab, setActiveTab] = useState<Tab>('sales');
 
   const { accessToken, user } = useAuth();
+  const { studioMode } = useEditor();
 
   const { data: profile } = useQuery({
     queryKey: ['user', 'me'],
@@ -278,7 +280,7 @@ export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsD
   const activeTabSubtitleKey = TAB_I18N_KEY[activeTab].subtitle;
 
   return (
-    <aside className={`${closing ? 'aside-out-left' : 'aside-in-left'} fixed inset-0 z-50 flex flex-col border-r border-landing-text/[0.07] bg-[#171f21] text-landing-text overflow-hidden sm:static sm:h-full sm:w-xl sm:shrink-0`}>
+    <aside className={`${closing ? 'aside-out-left' : 'aside-in-left'} fixed inset-0 z-50 flex flex-col border-r border-landing-text/[0.07] ${studioMode ? 'bg-[#0d1011]' : 'bg-[#171f21]'} text-landing-text overflow-hidden sm:static sm:h-full sm:w-xl sm:shrink-0`}>
 
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#f3f0ed]/[0.05] bg-gradient-to-b from-[#f3f0ed]/[0.02] to-transparent px-4 py-3">
