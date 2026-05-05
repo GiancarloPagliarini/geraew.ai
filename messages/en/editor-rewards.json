@@ -7,7 +7,7 @@
     },
     "weeklyModal": {
       "videosLabel": "videos",
-      "modelName": "Geraew Fast",
+      "modelName": "Veo 3.1 Fast",
       "headline": "<accent>Wednesday boost on Geraew!</accent> Every Wednesday, subscribers get an exclusive <accent>{amount} free videos</accent> to claim.",
       "howItWorks": "How it works",
       "step1Title": "Every Wednesday",
@@ -15,7 +15,7 @@
       "step2Title": "Manual claim",
       "step2Desc": "You need to click claim to receive. Doesn't carry over between weeks.",
       "step3Title": "Straight to your balance",
-      "step3Desc": "Generations become available instantly on Geraew Fast.",
+      "step3Desc": "Generations become available instantly on Veo 3.1 Fast.",
       "nextClaimIn": "Next claim in",
       "unitDays": "DAYS",
       "unitHours": "HOURS",
@@ -23,7 +23,7 @@
       "unitSeconds": "SEC",
       "subscribeCta": "Subscribe to claim",
       "claimCta": "Claim {amount} generations",
-      "successToast": "+{amount} Geraew Fast generations claimed!",
+      "successToast": "+{amount} Veo 3.1 Fast generations claimed!",
       "errorToast": "Couldn't claim right now."
     },
     "announcementModal": {

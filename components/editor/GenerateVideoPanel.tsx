@@ -130,7 +130,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   const [negativePrompt, setNegativePrompt] = useState<string>('');
   const [editingNegative, setEditingNegative] = useState<boolean>(false);
   const [audio, setAudio] = useState<boolean>(stored?.audio ?? true);
-  const [model, setModel] = useState<string>(stored?.model ?? 'geraew-quality');
+  const [model, setModel] = useState<string>(stored?.model ?? 'geraew-fast');
   const [duration, setDuration] = useState<string>(stored?.duration ?? '8s');
   const [proportion, setProportion] = useState<string>(stored?.proportion ?? '9-16');
   const [resolution, setResolution] = useState<string>(stored?.resolution ?? 'RES_1080P');
@@ -167,16 +167,22 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   });
 
   const videoModelOptions = useMemo(() => {
+    const labelOverride: Record<string, string> = {
+      'geraew-quality': 'Veo 3.1 Quality',
+      'geraew-fast': 'Veo 3.1 Fast',
+      'veo3': 'Geraew Quality',
+      'veo3_fast': 'Geraew Fast',
+    };
     const fallback = [
-      { value: 'geraew-quality', label: 'Geraew Quality' },
-      { value: 'geraew-fast', label: 'Geraew Fast' },
-      { value: 'veo3', label: 'Veo 3.1 Quality' },
-      { value: 'veo3_fast', label: 'Veo 3.1 Fast' },
+      { value: 'geraew-quality', label: labelOverride['geraew-quality'] },
+      { value: 'geraew-fast', label: labelOverride['geraew-fast'] },
+      { value: 'veo3', label: labelOverride['veo3'] },
+      { value: 'veo3_fast', label: labelOverride['veo3_fast'] },
     ];
     if (!videoModelsQuery.data) return fallback;
     return videoModelsQuery.data.map((m) => ({
       value: m.slug,
-      label: m.label,
+      label: labelOverride[m.slug] ?? m.label,
       disabled: !m.isActive,
     }));
   }, [videoModelsQuery.data]);

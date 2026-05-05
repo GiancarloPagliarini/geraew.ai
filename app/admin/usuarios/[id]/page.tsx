@@ -12,7 +12,7 @@ function freeGenLabel(type: FreeGenerationType): string {
     case 'NB_PRO': return 'Nano Banana Pro';
     case 'FACE_SWAP': return 'Face Swap';
     case 'VIRTUAL_TRY_ON': return 'Try-On';
-    case 'GERAEW_FAST': return 'Vídeo GeraEW Fast';
+    case 'GERAEW_FAST': return 'Vídeo Veo 3.1 Fast';
     case 'UPSCALE': return 'Upscale';
   }
 }
@@ -81,10 +81,10 @@ function modelLabel(modelUsed: string | null): string | null {
     'sem-censura': 'GeraEW Unlocked',
     'sem-censura-fallback': 'GeraEW Unlocked (fallback)',
     'kling-2.6/motion-control': 'Kling 2.6 Motion Control',
-    'geraew-fast': 'GeraEW Fast',
-    'geraew-quality': 'GeraEW Quality',
-    'veo-3.1-fast-generate-001': 'GeraEW Fast',
-    'veo-3.1-generate-001': 'GeraEW Quality',
+    'geraew-fast': 'Veo 3.1 Fast',
+    'geraew-quality': 'Veo 3.1 Quality',
+    'veo-3.1-fast-generate-001': 'Geraew Fast',
+    'veo-3.1-generate-001': 'Geraew Quality',
   };
   return map[modelUsed] ?? modelUsed;
 }

@@ -301,7 +301,7 @@ function CreditosPageContent() {
             { label: 'Nano Banana Pro', count: fg.NB_PRO },
             { label: 'Face Swap', count: fg.FACE_SWAP },
             { label: 'Try-On', count: fg.VIRTUAL_TRY_ON },
-            { label: 'Vídeo (GeraEW Fast)', count: fg.GERAEW_FAST },
+            { label: 'Vídeo (Veo 3.1 Fast)', count: fg.GERAEW_FAST },
             { label: 'Upscale', count: fg.UPSCALE ?? 0 },
           ].filter((i) => i.count > 0);
           return (

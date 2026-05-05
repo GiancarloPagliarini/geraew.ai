@@ -7,7 +7,7 @@
     },
     "weeklyModal": {
       "videosLabel": "vídeos",
-      "modelName": "Geraew Fast",
+      "modelName": "Veo 3.1 Fast",
       "headline": "<accent>Quartou com Geraew!</accent> Agora, toda quarta-feira o assinante tem a exclusividade de resgatar <accent>{amount} vídeos grátis</accent>.",
       "howItWorks": "Como funciona",
       "step1Title": "Toda quarta-feira",
@@ -15,7 +15,7 @@
       "step2Title": "Resgate manual",
       "step2Desc": "Clique em resgatar para receber. Não acumula entre semanas.",
       "step3Title": "Direto no seu saldo",
-      "step3Desc": "Gerações ficam disponíveis na hora no Geraew Fast.",
+      "step3Desc": "Gerações ficam disponíveis na hora no Veo 3.1 Fast.",
       "nextClaimIn": "Próximo resgate em",
       "unitDays": "DIAS",
       "unitHours": "HORAS",
@@ -23,7 +23,7 @@
       "unitSeconds": "SEG",
       "subscribeCta": "Assinar para resgatar",
       "claimCta": "Resgatar {amount} gerações",
-      "successToast": "+{amount} gerações Geraew Fast resgatadas!",
+      "successToast": "+{amount} gerações Veo 3.1 Fast resgatadas!",
       "errorToast": "Não foi possível resgatar agora."
     },
     "announcementModal": {

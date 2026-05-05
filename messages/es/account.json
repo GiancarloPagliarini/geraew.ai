@@ -64,7 +64,7 @@
       "buyBoost": "Comprar Boost",
       "renewPlan": "Renovar plan",
       "freeVideoGenerations": "Generaciones de Video Gratuitas",
-      "freeVideoGenerationsDescription": "{count, plural, one {# restante} other {# restantes}} · Veo 3.1 Fast o Quality · 1080p",
+      "freeVideoGenerationsDescription": "{count, plural, one {# restante} other {# restantes}} · Geraew Fast o Quality · 1080p",
       "yourCredits": "Tus créditos",
       "available": "DISPONIBLES",
       "fromPlan": "{count} del plan",
