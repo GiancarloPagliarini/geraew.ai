@@ -22,6 +22,13 @@ export interface PendingPrompt {
   audioMode?: 'tts' | 'clone';
 }
 
+export interface PendingPanelImage {
+  panelType: 'generate-image';
+  imageUrl: string;
+  /** Optional title to seed the prompt (e.g., product name from Trending). */
+  productTitle?: string;
+}
+
 interface EditorContextValue {
   selectedNodeId: string | null;
   setSelectedNodeId: (id: string | null) => void;
@@ -43,6 +50,9 @@ interface EditorContextValue {
   pendingPromptRef: React.RefObject<PendingPrompt | null>;
   requestPanelWithPrompt: (req: PendingPrompt) => void;
   consumePendingPrompt: () => PendingPrompt | null;
+  pendingPanelImageRef: React.RefObject<PendingPanelImage | null>;
+  requestPanelWithImage: (req: PendingPanelImage) => void;
+  consumePendingPanelImage: () => PendingPanelImage | null;
   leftPanelOpen: boolean;
   setLeftPanelOpen: (open: boolean) => void;
   generatingNodeIds: Set<string>;
@@ -162,6 +172,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
   const pendingPromptRef = useRef<PendingPrompt | null>(null);
+  const pendingPanelImageRef = useRef<PendingPanelImage | null>(null);
   const [, forceUpdate] = useState(0);
 
   const { data: creditsBalance, isLoading: creditsLoading, refetch: refetchCredits } = useQuery({
@@ -295,6 +306,16 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         consumePendingPrompt: () => {
           const current = pendingPromptRef.current;
           pendingPromptRef.current = null;
+          return current;
+        },
+        pendingPanelImageRef,
+        requestPanelWithImage: (req: PendingPanelImage) => {
+          pendingPanelImageRef.current = req;
+          forceUpdate((n) => n + 1);
+        },
+        consumePendingPanelImage: () => {
+          const current = pendingPanelImageRef.current;
+          pendingPanelImageRef.current = null;
           return current;
         },
         weeklyClaimRequest,

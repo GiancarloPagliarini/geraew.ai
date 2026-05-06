@@ -113,7 +113,7 @@ function CanvasContent() {
     setIsMobile(mobile);
     setZoom(mobile ? 0.65 : 1);
   }, []);
-  const { selectedNodeId, setSelectedNodeId, setNodePanelType, pendingPromptRef, generatingNodeIds, studioMode, setImageConnections, setTextConnections, registerAddPanelHandler } = useEditor();
+  const { selectedNodeId, setSelectedNodeId, setNodePanelType, pendingPromptRef, pendingPanelImageRef, generatingNodeIds, studioMode, setImageConnections, setTextConnections, registerAddPanelHandler } = useEditor();
   const viewportSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Restore nodePanelTypes and viewport on mount
@@ -357,6 +357,17 @@ function CanvasContent() {
     handleAddPanel(pending.panelType);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingPromptRef.current]);
+
+  // When a pending panel image is requested (from TrendingProductsDialog), create the panel
+  const lastPendingImageRef = useRef<unknown>(null);
+  useEffect(() => {
+    const pending = pendingPanelImageRef.current;
+    if (!pending) return;
+    if (lastPendingImageRef.current === pending) return;
+    lastPendingImageRef.current = pending;
+    handleAddPanel(pending.panelType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPanelImageRef.current]);
 
   const handleDelete = useCallback(() => {
     let blocked = false;

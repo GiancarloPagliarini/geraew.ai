@@ -36,7 +36,7 @@ import { GenerationPreview } from './GenerationPreview';
 import { containsNsfwContent } from '@/lib/nsfw-blocklist';
 import { StudioSelectPill } from './studio/StudioControls';
 import { StudioImageInputHandle, StudioImageOutputHandle, StudioTextInputHandle } from './studio/StudioHandles';
-import { useIncomingImage } from '@/lib/use-incoming-image';
+import { useIncomingImage, urlToImagePayload } from '@/lib/use-incoming-image';
 import { useIncomingText } from '@/lib/use-incoming-text';
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -102,11 +102,17 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   const t = useTranslations('editorPanels.image');
   const tCommon = useTranslations('editorPanels.common');
   const LOADING_MESSAGES = t.raw('loadingMessages') as string[];
-  const { setNodeImage, nodeUpscaleStates, setNodeUpscaleState, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker, pendingPromptRef, consumePendingPrompt, setNodeGenerating, studioMode } =
+  const { setNodeImage, nodeUpscaleStates, setNodeUpscaleState, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker, pendingPromptRef, consumePendingPrompt, pendingPanelImageRef, consumePendingPanelImage, setNodeGenerating, studioMode } =
     useEditor();
   const [initialPendingPrompt] = useState(() => {
     if (pendingPromptRef.current?.panelType === 'generate-image') {
       return consumePendingPrompt()!.prompt;
+    }
+    return null;
+  });
+  const [initialPendingImage] = useState(() => {
+    if (pendingPanelImageRef.current?.panelType === 'generate-image') {
+      return consumePendingPanelImage();
     }
     return null;
   });
@@ -151,6 +157,29 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
     idbLoad<{ base64: string; mime_type: string; preview: string }[]>(`${storageKey}-images`)
       .then((imgs) => { if (imgs?.length) setAttachedImages(imgs); })
       .catch(() => { });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Pending image from Trending Products: fetch + compress + attach ──────
+  useEffect(() => {
+    if (!initialPendingImage?.imageUrl) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const payload = await urlToImagePayload(initialPendingImage.imageUrl);
+        if (cancelled) return;
+        const compressed = await compressImage(payload.preview, payload.mime_type);
+        if (cancelled) return;
+        const base64 = compressed.dataUrl.split(',')[1];
+        setAttachedImages((prev) => {
+          if (prev.length >= 4) return prev;
+          return [...prev, { base64, mime_type: compressed.mimeType, preview: compressed.dataUrl }];
+        });
+      } catch (err) {
+        console.error('[image-panel] failed to fetch product image', err);
+      }
+    })();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);

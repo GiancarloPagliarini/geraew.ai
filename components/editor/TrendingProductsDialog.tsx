@@ -8,10 +8,13 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-context';
 import { useEditor } from '@/lib/editor-context';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+
+const PRODUCT_IMAGE_UNAVAILABLE_URL = 'https://s.500fd.com/default/product_default.png';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -82,7 +85,7 @@ function GrowthBadge({ value }: { value?: string }) {
 
 // ── Product Card ───────────────────────────────────────────────────────────────
 
-function ProductCard({ item, rank, highlight }: { item: RankItem; rank: number; highlight?: 'sales' | 'affiliates' }) {
+function ProductCard({ item, rank, highlight, onUse }: { item: RankItem; rank: number; highlight?: 'sales' | 'affiliates'; onUse: (item: RankItem) => void }) {
   const t = useTranslations('editorDialogs.trendingProducts.card');
   const rankColors: Record<number, string> = {
     1: 'text-yellow-400 bg-yellow-400/15 ring-yellow-400/30',
@@ -183,8 +186,11 @@ function ProductCard({ item, rank, highlight }: { item: RankItem; rank: number; 
         )}
 
         {/* CTA */}
-        <button disabled className="cursor-not-allowed mt-1 w-full rounded-lg bg-[#a2dd00]/5 py-1.5 text-[10px] font-black text-[#a2dd00]/40 ring-1 ring-[#a2dd00]/10 transition-all duration-200 disabled:pointer-events-none">
-          {t('useProductSoon')}
+        <button
+          onClick={() => onUse(item)}
+          className="mt-1 w-full rounded-lg bg-[#a2dd00]/10 py-1.5 text-[10px] font-black text-[#a2dd00] ring-1 ring-[#a2dd00]/25 hover:bg-[#a2dd00]/20 transition-all duration-200"
+        >
+          {t('useProduct')}
         </button>
       </div>
     </div>
@@ -217,7 +223,20 @@ export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsD
   const [activeTab, setActiveTab] = useState<Tab>('sales');
 
   const { accessToken, user } = useAuth();
-  const { studioMode } = useEditor();
+  const { studioMode, requestPanelWithImage } = useEditor();
+
+  const handleUseProduct = useCallback((item: RankItem) => {
+    if (!item.cover || item.cover === PRODUCT_IMAGE_UNAVAILABLE_URL) {
+      toast.error(t('imageUnavailable'));
+      return;
+    }
+    requestPanelWithImage({
+      panelType: 'generate-image',
+      imageUrl: item.cover,
+      productTitle: item.title,
+    });
+    toast.success(t('imageAttached'));
+  }, [requestPanelWithImage, t]);
 
   const { data: profile } = useQuery({
     queryKey: ['user', 'me'],
@@ -367,6 +386,7 @@ export function TrendingProductsDialog({ open, onOpenChange }: TrendingProductsD
                   item={item}
                   rank={i + 1}
                   highlight={activeTab === 'sales' ? 'sales' : activeTab === 'recommended' ? 'affiliates' : undefined}
+                  onUse={handleUseProduct}
                 />
               ))}
             </div>

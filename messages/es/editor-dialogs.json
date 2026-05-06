@@ -146,6 +146,8 @@
       "paywallTitle": "Recurso exclusivo para suscriptores",
       "paywallDescription": "Suscríbete al plan Starter o superior para visualizar los productos en tendencia en TikTok Shop.",
       "viewPlans": "Ver planes",
+      "imageUnavailable": "Imagen del producto no disponible",
+      "imageAttached": "Producto adjuntado a las referencias",
       "card": {
         "salesToday": "Ventas hoy",
         "revenue": "Facturación",
@@ -154,7 +156,8 @@
         "commission": "Comisión",
         "totalAccumulated": "Total acumulado",
         "salesSuffix": "ventas",
-        "useProductSoon": "Usar producto (próximamente)"
+        "useProductSoon": "Usar producto (próximamente)",
+        "useProduct": "Usar producto"
       }
     },
     "tutorial": {
