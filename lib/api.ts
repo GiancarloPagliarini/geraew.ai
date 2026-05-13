@@ -566,6 +566,86 @@ export interface VoiceListResponse {
   quota: VoiceQuota;
 }
 
+// ─── Avatars (HeyGen Digital Twin) ──────────────────────────────────────────
+
+export type UserAvatarStatus =
+  | 'PENDING'
+  | 'SUBMITTING'
+  | 'PENDING_CONSENT'
+  | 'TRAINING'
+  | 'READY'
+  | 'FAILED'
+  | 'DELETING';
+
+export type UserAvatarConsentStatus =
+  | 'NOT_REQUIRED'
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED';
+
+export interface UserAvatar {
+  id: string;
+  name: string;
+  status: UserAvatarStatus;
+  consentStatus: UserAvatarConsentStatus;
+  previewImageUrl: string | null;
+  previewVideoUrl: string | null;
+  defaultVoiceId: string | null;
+  supportedEngines: string[];
+  consentUrl: string | null;
+  consentApprovedAt: string | null;
+  errorMessage: string | null;
+  errorCode: string | null;
+  creditsConsumed: number;
+  trainingStartedAt: string | null;
+  trainingCompletedAt: string | null;
+  createdAt: string;
+}
+
+export interface UserAvatarQuota {
+  used: number;
+  limit: number;
+  enabled: boolean;
+  planSlug: string;
+}
+
+export interface UserAvatarListResponse {
+  avatars: UserAvatar[];
+  quota: UserAvatarQuota;
+}
+
+export type CreateUserAvatarType = 'photo' | 'digital_twin';
+
+export interface CreateUserAvatarPayload {
+  name: string;
+  sourceMediaKey: string;
+  /** Default 'photo'. */
+  type?: CreateUserAvatarType;
+}
+
+export type AvatarVideoResolution = '720p' | '1080p' | '4k';
+export type AvatarVideoAspectRatio = '16:9' | '9:16';
+export type AvatarVideoEngine = 'avatar_iv' | 'avatar_v';
+
+export interface GenerateAvatarVideoPayload {
+  script: string;
+  /** HeyGen built-in voice id. Mutually exclusive with voiceProfileId. */
+  voiceId?: string;
+  /** User's cloned VoiceProfile id (Wavespeed/OmniVoice). Backend generates audio + lip-syncs. */
+  voiceProfileId?: string;
+  engine?: AvatarVideoEngine;
+  resolution: AvatarVideoResolution;
+  aspectRatio: AvatarVideoAspectRatio;
+  backgroundColor?: string;
+  backgroundImageUrl?: string;
+}
+
+export interface CreateAvatarVideoResponse {
+  generationId: string;
+  status: GenerationStatus;
+  creditsConsumed: number;
+}
+
 // ─── Inworld voices (preset catalog from inworld.ai direct) ─────────────────
 
 export type InworldVoiceSource = 'SYSTEM' | 'IVC' | 'PVC';
@@ -1049,6 +1129,55 @@ export const api = {
       return authRequest<void>(`/api/v1/voices/${id}`, accessToken, {
         method: 'DELETE',
       });
+    },
+  },
+
+  avatars: {
+    list(accessToken: string) {
+      return authRequest<UserAvatarListResponse>('/api/v1/avatars', accessToken);
+    },
+    get(accessToken: string, id: string) {
+      return authRequest<UserAvatar>(`/api/v1/avatars/${id}`, accessToken);
+    },
+    create(accessToken: string, payload: CreateUserAvatarPayload) {
+      return authRequest<UserAvatar>('/api/v1/avatars', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    delete(accessToken: string, id: string) {
+      return authRequest<void>(`/api/v1/avatars/${id}`, accessToken, {
+        method: 'DELETE',
+      });
+    },
+    generateVideo(
+      accessToken: string,
+      id: string,
+      payload: GenerateAvatarVideoPayload,
+    ) {
+      return authRequest<CreateAvatarVideoResponse>(
+        `/api/v1/avatars/${id}/generate-video`,
+        accessToken,
+        { method: 'POST', body: JSON.stringify(payload) },
+      );
+    },
+    /** SSE URL — pass to new EventSource() with auth via header isn't supported,
+     *  so the page should fetch via SSR endpoint or we expose a one-shot poll. */
+    eventsUrl(id: string): string {
+      return `${BASE_URL}/api/v1/avatars/${id}/events`;
+    },
+  },
+
+  uploads: {
+    presigned(
+      accessToken: string,
+      payload: { filename: string; contentType: string; purpose: 'generation_input' | 'reference_video' | 'avatar_source' },
+    ) {
+      return authRequest<{ uploadUrl: string; fileKey: string }>(
+        '/api/v1/uploads/presigned-url',
+        accessToken,
+        { method: 'POST', body: JSON.stringify(payload) },
+      );
     },
   },
 

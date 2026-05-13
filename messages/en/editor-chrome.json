@@ -55,6 +55,8 @@
       "cloneTooltip": "Prompt Clone",
       "voices": "Voices",
       "voicesTooltip": "My voices",
+      "avatars": "Avatar",
+      "avatarsTooltip": "My avatars",
       "comingSoonSuffix": "COMING SOON",
       "logoAlt": "Geraew",
       "menuLabel": "Menu"

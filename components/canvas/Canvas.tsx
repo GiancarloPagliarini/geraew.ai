@@ -113,7 +113,7 @@ function CanvasContent() {
     setIsMobile(mobile);
     setZoom(mobile ? 0.65 : 1);
   }, []);
-  const { selectedNodeId, setSelectedNodeId, setNodePanelType, pendingPromptRef, pendingPanelImageRef, generatingNodeIds, studioMode, setImageConnections, setTextConnections, registerAddPanelHandler } = useEditor();
+  const { selectedNodeId, setSelectedNodeId, setNodePanelType, pendingPromptRef, pendingPanelImageRef, pendingAvatarVideoRef, generatingNodeIds, studioMode, setImageConnections, setTextConnections, registerAddPanelHandler } = useEditor();
   const viewportSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Restore nodePanelTypes and viewport on mount
@@ -158,7 +158,7 @@ function CanvasContent() {
 
   const handleAddPanel = useCallback(
     (type: string) => {
-      if (type !== 'generate-image' && type !== 'create-influencer' && type !== 'generate-video' && type !== 'motion-control' && type !== 'virtual-try-on' && type !== 'face-swap' && type !== 'upscale' && type !== 'generate-audio' && type !== 'generic' && type !== 'image-source' && type !== 'prompt-source') return;
+      if (type !== 'generate-image' && type !== 'create-influencer' && type !== 'generate-video' && type !== 'motion-control' && type !== 'virtual-try-on' && type !== 'face-swap' && type !== 'upscale' && type !== 'generate-audio' && type !== 'generic' && type !== 'image-source' && type !== 'prompt-source' && type !== 'avatar-video-preview') return;
 
       if (nodes.length >= MAX_NODES) {
         setShowMaxNodesWarning(false);
@@ -368,6 +368,18 @@ function CanvasContent() {
     handleAddPanel(pending.panelType);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingPanelImageRef.current]);
+
+  // When an avatar video generation is requested (from GenerateAvatarVideoModal),
+  // create the inline preview panel so the user can watch / download the result.
+  const lastPendingAvatarVideoRef = useRef<unknown>(null);
+  useEffect(() => {
+    const pending = pendingAvatarVideoRef.current;
+    if (!pending) return;
+    if (lastPendingAvatarVideoRef.current === pending) return;
+    lastPendingAvatarVideoRef.current = pending;
+    handleAddPanel('avatar-video-preview');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingAvatarVideoRef.current]);
 
   const handleDelete = useCallback(() => {
     let blocked = false;

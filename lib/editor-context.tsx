@@ -29,6 +29,15 @@ export interface PendingPanelImage {
   productTitle?: string;
 }
 
+/** Hand-off payload created by GenerateAvatarVideoModal so a new
+ *  `avatar-video-preview` panel can pick up the generation and poll. */
+export interface PendingAvatarVideo {
+  generationId: string;
+  aspectRatio: '9:16' | '16:9';
+  avatarName: string;
+  avatarPreviewImageUrl: string | null;
+}
+
 interface EditorContextValue {
   selectedNodeId: string | null;
   setSelectedNodeId: (id: string | null) => void;
@@ -53,6 +62,9 @@ interface EditorContextValue {
   pendingPanelImageRef: React.RefObject<PendingPanelImage | null>;
   requestPanelWithImage: (req: PendingPanelImage) => void;
   consumePendingPanelImage: () => PendingPanelImage | null;
+  pendingAvatarVideoRef: React.RefObject<PendingAvatarVideo | null>;
+  requestAvatarVideoPanel: (req: PendingAvatarVideo) => void;
+  consumePendingAvatarVideo: () => PendingAvatarVideo | null;
   leftPanelOpen: boolean;
   setLeftPanelOpen: (open: boolean) => void;
   generatingNodeIds: Set<string>;
@@ -173,6 +185,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const pendingPromptRef = useRef<PendingPrompt | null>(null);
   const pendingPanelImageRef = useRef<PendingPanelImage | null>(null);
+  const pendingAvatarVideoRef = useRef<PendingAvatarVideo | null>(null);
   const [, forceUpdate] = useState(0);
 
   const { data: creditsBalance, isLoading: creditsLoading, refetch: refetchCredits } = useQuery({
@@ -316,6 +329,16 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         consumePendingPanelImage: () => {
           const current = pendingPanelImageRef.current;
           pendingPanelImageRef.current = null;
+          return current;
+        },
+        pendingAvatarVideoRef,
+        requestAvatarVideoPanel: (req: PendingAvatarVideo) => {
+          pendingAvatarVideoRef.current = req;
+          forceUpdate((n) => n + 1);
+        },
+        consumePendingAvatarVideo: () => {
+          const current = pendingAvatarVideoRef.current;
+          pendingAvatarVideoRef.current = null;
           return current;
         },
         weeklyClaimRequest,

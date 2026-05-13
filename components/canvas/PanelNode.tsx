@@ -16,6 +16,7 @@ import { UpscalePanel } from '../editor/UpscalePanel';
 import { GenerateAudioPanel } from '../editor/GenerateAudioPanel';
 import { ImageSourcePanel } from '../editor/ImageSourcePanel';
 import { PromptSourcePanel } from '../editor/PromptSourcePanel';
+import { AvatarVideoPreviewPanel } from '../editor/AvatarVideoPreviewPanel';
 
 const PANEL_NODE_STYLE = {
   background: 'transparent',
@@ -113,6 +114,7 @@ export function PanelNode({ id, data, selected }: NodeProps) {
     'generate-audio': <GenerateAudioPanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
     'image-source': <ImageSourcePanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
     'prompt-source': <PromptSourcePanel nodeId={id} onClose={handleClose} onDuplicate={handleDuplicate} />,
+    'avatar-video-preview': <AvatarVideoPreviewPanel nodeId={id} onClose={handleClose} />,
   };
 
   const panel = panelMap[data.panelType as string];
