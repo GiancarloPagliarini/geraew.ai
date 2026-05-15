@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { Announcement, AnnouncementAction } from '@/lib/announcements';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useEditor } from '@/lib/editor-context';
 import { AnnouncementModal } from './AnnouncementModal';
+import { UnlimitedUpgradeModal } from './UnlimitedUpgradeModal';
 
 const STORAGE_PREFIX = 'geraew-announcement-';
 
@@ -38,6 +40,7 @@ export function AnnouncementsManager() {
   /** Snapshot dos avisos não-vistos no momento que abriu o carousel. Não muda durante a navegação. */
   const [carousel, setCarousel] = useState<Announcement[] | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [unlimitedModalOpen, setUnlimitedModalOpen] = useState(false);
 
   const { data: announcements } = useQuery({
     queryKey: ['announcements', 'active'],
@@ -95,6 +98,9 @@ export function AnnouncementsManager() {
       case 'open-weekly-claim':
         requestWeeklyClaim();
         break;
+      case 'open-unlimited-modal':
+        setUnlimitedModalOpen(true);
+        break;
       case 'href':
         window.open(action.url, '_blank', 'noopener,noreferrer');
         break;
@@ -102,15 +108,22 @@ export function AnnouncementsManager() {
   }
 
   return (
-    <AnnouncementModal
-      announcement={current}
-      open={true}
-      onClose={close}
-      onCta={current.ctaAction ? () => dispatchAction(current.ctaAction!) : undefined}
-      currentIndex={currentIndex}
-      total={total}
-      onJumpTo={jumpTo}
-      onNext={next}
-    />
+    <>
+      <AnnouncementModal
+        announcement={current}
+        open={true}
+        onClose={close}
+        onCta={current.ctaAction ? () => dispatchAction(current.ctaAction!) : undefined}
+        currentIndex={currentIndex}
+        total={total}
+        onJumpTo={jumpTo}
+        onNext={next}
+      />
+      {unlimitedModalOpen && typeof document !== 'undefined' &&
+        createPortal(
+          <UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />,
+          document.body,
+        )}
+    </>
   );
 }

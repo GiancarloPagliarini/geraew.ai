@@ -41,6 +41,7 @@ const VARIANT_LABEL: Record<AnnouncementVariant, string> = {
   openai: 'OpenAI',
   gift: 'Presente',
   mic: 'Microfone',
+  unlimited: 'Ilimitado',
 };
 
 const ACTION_LABEL: Record<AnnouncementAction['type'], string> = {
@@ -48,6 +49,7 @@ const ACTION_LABEL: Record<AnnouncementAction['type'], string> = {
   'open-video-panel': 'Abrir painel de vídeo',
   'open-audio-panel': 'Abrir painel de áudio',
   'open-weekly-claim': 'Abrir resgate semanal',
+  'open-unlimited-modal': 'Abrir modal de planos ilimitados',
   href: 'Link externo',
 };
 
@@ -164,6 +166,7 @@ function variantBadge(variant: string | null) {
     promo: 'border-rose-500/30 bg-rose-500/10 text-rose-400',
     openai: 'border-violet-500/30 bg-violet-500/10 text-violet-400',
     gift: 'border-pink-500/30 bg-pink-500/10 text-pink-400',
+    unlimited: 'border-[#a855f7]/40 bg-[#a855f7]/15 text-[#a855f7]',
   };
   return (
     <Badge variant="outline" className={colors[variant] ?? 'border-[#f3f0ed]/10 text-[#f3f0ed]/50'}>
@@ -537,6 +540,7 @@ function AnnouncementEditor({ mode, announcement, accessToken, onClose, onSaved 
                   <option value="openai">OpenAI</option>
                   <option value="gift">Presente</option>
                   <option value="mic">Microfone</option>
+                  <option value="unlimited">Ilimitado</option>
                 </select>
               </Field>
               <Field label="Ordem" hint="Menor número = aparece primeiro.">
@@ -628,6 +632,7 @@ function AnnouncementEditor({ mode, announcement, accessToken, onClose, onSaved 
                   <option value="open-video-panel">Abrir painel de vídeo</option>
                   <option value="open-audio-panel">Abrir painel de áudio</option>
                   <option value="open-weekly-claim">Abrir resgate semanal</option>
+                  <option value="open-unlimited-modal">Abrir modal de planos ilimitados</option>
                   <option value="href">Link externo</option>
                 </select>
               </Field>

@@ -412,6 +412,8 @@ export interface GenerateImageRequest {
   aspect_ratio: string;
   mime_type?: string;
   images?: { base64: string; mime_type: string }[];
+  model_variant?: string;
+  unlimited?: boolean;
 }
 
 export interface UpscaleRequest {
@@ -430,6 +432,95 @@ export interface TextToVideoRequest {
   generate_audio?: boolean;
   sample_count?: number;
   negative_prompt?: string;
+  model_variant?: string;
+  unlimited?: boolean;
+}
+
+export interface UnlimitedModel {
+  modelVariant: string;
+  resolutions: ('RES_1K' | 'RES_2K' | 'RES_4K' | 'RES_720P' | 'RES_1080P')[];
+}
+
+export interface UnlimitedStatus {
+  eligible: boolean;
+  planSlug: string | null;
+  models: UnlimitedModel[];
+  usageCount: number;
+  hasActiveJob: boolean;
+}
+
+export type UnlimitedJobStatus =
+  | 'waiting'
+  | 'active'
+  | 'delayed'
+  | 'completed'
+  | 'failed'
+  | 'paused';
+
+export interface UnlimitedQueueStats {
+  queueName: string;
+  isPaused: boolean;
+  counts: Partial<Record<UnlimitedJobStatus, number>>;
+  total: number;
+}
+
+export interface UnlimitedJobUser {
+  id: string;
+  email: string;
+  name: string;
+  planSlug: string | null;
+  planName: string | null;
+}
+
+export interface UnlimitedJobGeneration {
+  id: string;
+  status: string;
+  type: string;
+  modelUsed: string;
+  resolution: string;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface UnlimitedJobView {
+  jobId: string;
+  jobName: string;
+  priority: number | null;
+  delayUntil: string | null;
+  attemptsMade: number;
+  maxAttempts: number;
+  timestamp: string;
+  processedOn: string | null;
+  finishedOn: string | null;
+  failedReason: string | null;
+  user: UnlimitedJobUser | null;
+  generation: UnlimitedJobGeneration | null;
+  payload: {
+    model: string | null;
+    resolution: string | null;
+    promptPreview: string | null;
+  };
+}
+
+export interface UnlimitedUsageByModel {
+  modelVariant: string;
+  resolution: string;
+  count: number;
+}
+
+export interface UnlimitedTopUser {
+  userId: string;
+  email: string | null;
+  name: string | null;
+  planSlug: string | null;
+  count: number;
+}
+
+export interface UnlimitedUsageOverview {
+  windowHours: number;
+  total: number;
+  byModel: UnlimitedUsageByModel[];
+  topUsers: UnlimitedTopUser[];
 }
 
 export interface VideoWithReferencesRequest extends TextToVideoRequest {
@@ -880,13 +971,14 @@ export interface HealthStats {
   alerts: { level: 'warning' | 'critical'; message: string }[];
 }
 
-export type AnnouncementVariant = 'feature' | 'maintenance' | 'promo' | 'openai' | 'gift' | 'mic';
+export type AnnouncementVariant = 'feature' | 'maintenance' | 'promo' | 'openai' | 'gift' | 'mic' | 'unlimited';
 
 export type AnnouncementAction =
   | { type: 'open-image-panel' }
   | { type: 'open-video-panel' }
   | { type: 'open-audio-panel' }
   | { type: 'open-weekly-claim' }
+  | { type: 'open-unlimited-modal' }
   | { type: 'href'; url: string };
 
 export interface Announcement {
@@ -1166,6 +1258,12 @@ export const api = {
     },
     get(accessToken: string, id: string) {
       return authRequest<Generation>(`/api/v1/generations/${id}`, accessToken);
+    },
+    getUnlimitedStatus(accessToken: string) {
+      return authRequest<UnlimitedStatus>(
+        '/api/v1/generations/unlimited/status',
+        accessToken,
+      );
     },
     delete(accessToken: string, id: string) {
       return authRequest<void>(`/api/v1/generations/${id}`, accessToken, { method: 'DELETE' });
@@ -1490,6 +1588,24 @@ export const api = {
   admin: {
     stats(accessToken: string) {
       return authRequest<AdminStats>('/api/v1/admin/stats', accessToken);
+    },
+    unlimitedQueueStats(accessToken: string) {
+      return authRequest<UnlimitedQueueStats>(
+        '/api/v1/admin/unlimited/queue/stats',
+        accessToken,
+      );
+    },
+    unlimitedQueueJobs(accessToken: string, status: UnlimitedJobStatus, limit = 50) {
+      return authRequest<UnlimitedJobView[]>(
+        `/api/v1/admin/unlimited/queue/jobs?status=${status}&limit=${limit}`,
+        accessToken,
+      );
+    },
+    unlimitedUsageOverview(accessToken: string) {
+      return authRequest<UnlimitedUsageOverview>(
+        '/api/v1/admin/unlimited/usage/overview',
+        accessToken,
+      );
     },
     users(accessToken: string, page = 1, limit = 20, search?: string, subscriptionStatus?: string, excludePlanSlug?: string) {
       const params = new URLSearchParams({
@@ -1867,6 +1983,7 @@ export const api = {
         bodyMarkdown: string;
         subject?: string;
         mergeVars?: Record<string, string>;
+        format?: 'markdown' | 'html';
       },
     ) {
       return authRequest<{ html: string; subject?: string }>(
@@ -1877,7 +1994,7 @@ export const api = {
     },
     sendTest(
       accessToken: string,
-      payload: { subject: string; bodyMarkdown: string },
+      payload: { subject: string; bodyMarkdown: string; format?: 'markdown' | 'html' },
     ) {
       return authRequest<{ ok: boolean; sentTo: string }>(
         '/api/v1/admin/emails/test',
@@ -1892,6 +2009,7 @@ export const api = {
         bodyMarkdown: string;
         recipientType: 'ALL' | 'ALL_PAID' | 'BY_PLAN' | 'CUSTOM_LIST' | 'SINGLE';
         recipientFilter?: { planSlug?: string; emails?: string[]; email?: string };
+        format?: 'markdown' | 'html';
       },
     ) {
       return authRequest<{ id: string; status: string; totalRecipients: number }>(

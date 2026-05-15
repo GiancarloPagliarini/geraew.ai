@@ -177,6 +177,34 @@
         "currentPlanBenefits": "Créditos e funcionalidades do plano atual",
         "creditsLess": "{count, number} créditos mensais a menos"
       }
+    },
+    "unlimited": {
+      "modeBadge": "Modo Ilimitado",
+      "modalTitle": "Gerações Ilimitadas pra você",
+      "modalSubtitlePrefix": "Esqueça créditos. Assine um dos planos abaixo e gere ",
+      "modalSubtitleHighlight": "vídeos e imagens sem limites",
+      "modalSubtitleSuffix": " nos modelos do seu plano.",
+      "mostPopular": "Mais Popular",
+      "subscribe": "Assinar {plan}",
+      "allIncluded": "Tudo incluso do plano {plan}",
+      "checkoutError": "Erro ao iniciar checkout. Tente novamente.",
+      "cancelAnytime": "Cancele a qualquer momento",
+      "noCommitment": "Sem fidelidade",
+      "securePayment": "Pagamento seguro",
+      "taglines": {
+        "creator": "Para quem está começando.",
+        "pro": "Para criadores ativos.",
+        "advanced": "O melhor custo-benefício.",
+        "studio": "Para profissionais."
+      },
+      "features": {
+        "veoFast720": "Vídeos Veo 3.1 Fast em 720p",
+        "veoFast720And1080": "Vídeos Veo 3.1 Fast em 720p e 1080p",
+        "veoBoth720": "Vídeos Veo 3.1 Fast e Quality em 720p",
+        "veoBoth720And1080": "Vídeos Veo 3.1 Fast e Quality em 720p e 1080p",
+        "nb2_1K": "Imagens Nano Banana 2 em 1K",
+        "nbBoth1K": "Imagens Nano Banana 2 e Pro em 1K"
+      }
     }
   }
 }

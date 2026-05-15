@@ -72,8 +72,9 @@ export function PlansModal({ onClose }: PlansModalProps) {
   const sub = profile?.subscription as Record<string, unknown> | null;
   const hasActiveSub = sub?.status === 'ACTIVE' || sub?.status === 'active';
 
+  // Ordena do mais caro para o mais barato.
   const sorted = (plans ?? []).slice().sort(
-    (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),
+    (a, b) => PLAN_ORDER.indexOf(b.slug) - PLAN_ORDER.indexOf(a.slug),
   );
 
   // Currency for packages — use the first plan's currency as a sensible default

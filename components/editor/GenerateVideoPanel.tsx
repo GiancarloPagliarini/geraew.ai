@@ -15,7 +15,9 @@ import {
   Download,
   FolderOpen,
   Image,
-  ImagePlus, Info,
+  ImagePlus,
+  Infinity as InfinityIcon,
+  Info,
   Loader2,
   Maximize2,
   Plus,
@@ -33,6 +35,15 @@ import { StudioImageInputHandle, StudioTextInputHandle } from './studio/StudioHa
 import { useIncomingImage, urlToImagePayload } from '@/lib/use-incoming-image';
 import { useIncomingText } from '@/lib/use-incoming-text';
 import { EnhancePromptToggle } from './EnhancePromptToggle';
+import { UnlimitedToggle } from './UnlimitedToggle';
+import {
+  useUnlimitedStatus,
+  isModelSlugInUnlimitedPlan,
+  getFirstUnlimitedSlugForType,
+  getFirstUnlimitedResolutionForVariant,
+  getModelVariantFromSlug,
+  isUnlimitedModelAllowed,
+} from '@/hooks/use-unlimited-status';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -44,6 +55,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
 import { api, ApiError } from '@/lib/api';
 import { PlansModal } from './PlansModal';
+import { UnlimitedUpgradeModal } from './UnlimitedUpgradeModal';
 import { listenGeneration } from '@/lib/sse';
 import { useGenerationRecovery } from '@/lib/use-generation-recovery';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -105,6 +117,7 @@ interface GenerateVideoPanelProps {
 export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVideoPanelProps) {
   const t = useTranslations('editorPanels.video');
   const tCommon = useTranslations('editorPanels.common');
+  const tUnlimited = useTranslations('editorPanels.unlimited');
   const VIDEO_LOADING_MESSAGES = t.raw('loadingMessages') as string[];
   const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker, pendingPromptRef, consumePendingPrompt, setNodeGenerating, studioMode } = useEditor();
   const [initialPendingPrompt] = useState(() => {
@@ -116,6 +129,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   const { accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
   const [plansModalOpen, setPlansModalOpen] = useState(false);
+  const [unlimitedModalOpen, setUnlimitedModalOpen] = useState(false);
 
   // ── Persistent state (survives page reload) ──────────────────────────────
   const storageKey = `geraew-panel-video-${nodeId}`;
@@ -156,6 +170,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [enhancePrompt, setEnhancePrompt] = useState(stored?.enhancePrompt ?? false);
+  const [unlimited, setUnlimited] = useState(false);
+  const { data: unlimitedStatus, isLoading: isLoadingUnlimited } = useUnlimitedStatus();
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(true);
 
@@ -173,19 +189,24 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       'veo3': 'Geraew Quality',
       'veo3_fast': 'Geraew Fast',
     };
-    const fallback = [
+    const fallback: { value: string; label: string; disabled?: boolean; unlimited?: boolean }[] = [
       { value: 'geraew-quality', label: labelOverride['geraew-quality'] },
       { value: 'geraew-fast', label: labelOverride['geraew-fast'] },
       { value: 'veo3', label: labelOverride['veo3'] },
       { value: 'veo3_fast', label: labelOverride['veo3_fast'] },
     ];
-    if (!videoModelsQuery.data) return fallback;
-    return videoModelsQuery.data.map((m) => ({
-      value: m.slug,
-      label: labelOverride[m.slug] ?? m.label,
-      disabled: !m.isActive,
+    const raw = videoModelsQuery.data
+      ? videoModelsQuery.data.map((m) => ({
+          value: m.slug,
+          label: labelOverride[m.slug] ?? m.label,
+          disabled: !m.isActive,
+        }))
+      : fallback;
+    return raw.map((opt) => ({
+      ...opt,
+      unlimited: unlimited && isModelSlugInUnlimitedPlan(unlimitedStatus, opt.value),
     }));
-  }, [videoModelsQuery.data]);
+  }, [videoModelsQuery.data, unlimited, unlimitedStatus]);
 
   // Se o modelo selecionado ficou indisponível, troca automaticamente pro primeiro ativo
   useEffect(() => {
@@ -197,10 +218,70 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     }
   }, [videoModelsQuery.data, model]);
 
+  // Auto-desliga o toggle ilimitado quando o usuário troca para um modelo fora
+  // do plano. Evita que ele tente gerar e tome 403 do backend.
+  // Importante: NÃO depender de `unlimited` para não desligar imediatamente
+  // após uma ativação onde a troca de modelo é feita no mesmo tick.
+  useEffect(() => {
+    if (!unlimited) return;
+    if (!isModelSlugInUnlimitedPlan(unlimitedStatus, model)) {
+      setUnlimited(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model, unlimitedStatus]);
+
+  // No modo ilimitado, a quantidade de vídeos por geração fica travada em 1.
+  useEffect(() => {
+    if (unlimited && sampleCount !== 1) {
+      setSampleCount(1);
+    }
+  }, [unlimited, sampleCount]);
+
+  // Ao ativar o toggle: garante que modelo + resolução estão no plano,
+  // trocando automaticamente caso o atual esteja fora.
+  const handleToggleUnlimited = (next: boolean) => {
+    if (!next) {
+      setUnlimited(false);
+      return;
+    }
+
+    // 1. Decidir modelo final (o atual ou um fallback)
+    let targetModel = model;
+    if (!isModelSlugInUnlimitedPlan(unlimitedStatus, model)) {
+      const fallbackSlug = getFirstUnlimitedSlugForType(unlimitedStatus, 'video');
+      if (!fallbackSlug) {
+        toast.info(tUnlimited('errors.noVideoPlan'));
+        setUnlimitedModalOpen(true);
+        return;
+      }
+      targetModel = fallbackSlug;
+      setModel(targetModel);
+    }
+
+    // 2. Ajustar resolução se a atual não estiver liberada nesse modelo
+    const targetVariant = getModelVariantFromSlug(targetModel);
+    if (!isUnlimitedModelAllowed(unlimitedStatus, targetVariant, resolution)) {
+      const fallbackResolution = getFirstUnlimitedResolutionForVariant(
+        unlimitedStatus,
+        targetVariant,
+      );
+      if (fallbackResolution) {
+        setResolution(fallbackResolution);
+      }
+    }
+
+    setUnlimited(true);
+  };
+
   // With references (text mode) OR references + 1080P/4K → only 8s allowed
   const forceEightSeconds =
     refImages.length > 0 && (videoMode === 'text' || resolution === 'RES_1080P' || resolution === 'RES_4K');
   const effectiveDuration = forceEightSeconds ? '8s' : duration;
+
+  // Hover dos botões de upload (referências, frames) — violeta em modo ilimitado.
+  const refHoverClass = unlimited
+    ? 'hover:border-[#a855f7]/40 hover:text-[#a855f7]/60'
+    : 'hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60';
   const videoType = videoMode === 'image'
     ? 'IMAGE_TO_VIDEO' as const
     : refImages.length > 0
@@ -632,6 +713,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           generate_audio: audio,
           sample_count: sampleCount,
           ...(negativePrompt.trim() && { negative_prompt: negativePrompt.trim() }),
+          ...(unlimited && { unlimited: true }),
         };
 
         if (videoMode === 'image' && firstFrame) {
@@ -696,6 +778,23 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       clearProgressTimer();
       clearMsgTimer();
       setGenState('idle');
+
+      if (err instanceof ApiError) {
+        if (err.code === 'UNLIMITED_PLAN_REQUIRED' || err.code === 'UNLIMITED_MODEL_NOT_ALLOWED') {
+          setUnlimited(false);
+          setUnlimitedModalOpen(true);
+          return;
+        }
+        if (err.code === 'UNLIMITED_DAILY_CAP_REACHED') {
+          toast.error(tUnlimited('errors.serverBusy'));
+          return;
+        }
+        if (err.code === 'UNLIMITED_LOCK_HELD') {
+          toast.error(tUnlimited('errors.lockHeld'));
+          return;
+        }
+      }
+
       if (err instanceof ApiError && [400, 402, 403].includes(err.status)) {
         setPlansModalOpen(true);
         return;
@@ -836,7 +935,12 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       { value: 'RES_720P', label: '720p' },
       { value: 'RES_1080P', label: '1080p' },
       { value: 'RES_4K', label: '4K' },
-    ];
+    ].map((opt) => ({
+      ...opt,
+      unlimited:
+        unlimited &&
+        isUnlimitedModelAllowed(unlimitedStatus, videoModelVariant, opt.value),
+    }));
     const durationOptions = ['4s', '6s', '8s'].map((d) => ({
       value: d,
       label: d,
@@ -847,6 +951,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       value: o.value,
       label: o.label,
       disabled: 'disabled' in o ? Boolean(o.disabled) : false,
+      unlimited: o.unlimited,
     }));
     const showAudioToggle = !isKieModel;
     const hasMedia = generatedVideoUrls.length > 0;
@@ -897,6 +1002,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                   genState={genState}
                   imageVisible={videosVisible}
                   progress={progress}
+                  accent={unlimited ? 'violet' : undefined}
                   renderMedia={hasMedia ? ((visible) => (
                     <video
                       src={generatedVideoUrls[selectedVideoIdx]}
@@ -1010,6 +1116,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       disabled={isGenerating}
                       onClick={() => setVideoMode('text')}
                       icon={<Type className="h-3 w-3" />}
+                      accent={unlimited ? '#a855f7' : undefined}
                     >
                       {t('modes.text')}
                     </StudioPill>
@@ -1018,6 +1125,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       disabled={isGenerating}
                       onClick={() => setVideoMode('image')}
                       icon={<Image className="h-3 w-3" />}
+                      accent={unlimited ? '#a855f7' : undefined}
                     >
                       {t('modes.image')}
                     </StudioPill>
@@ -1059,7 +1167,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                         label={`${sampleCount}×`}
                         options={sampleOptions}
                         onChange={(v) => setSampleCount(parseInt(v, 10))}
-                        disabled={isGenerating}
+                        disabled={isGenerating || unlimited}
                       />
                     )}
                     {showAudioToggle && (
@@ -1068,6 +1176,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                         disabled={isGenerating}
                         onClick={() => setAudio(!audio)}
                         icon={audio ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
+                        accent={unlimited ? '#a855f7' : undefined}
                       >
                         {audio ? 'Audio' : 'Mute'}
                       </StudioPill>
@@ -1094,10 +1203,16 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       onClick={handleGenerate}
                       disabled={isGenerating || !prompt.trim() || (videoMode === 'image' && !firstFrame)}
                       title={tCommon('generate')}
-                      className="ml-auto inline-flex items-center gap-1 rounded-full bg-[#a2dd00] px-2.5 py-1 text-[11px] font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                      className={`ml-auto inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${unlimited ? 'bg-[#a855f7] text-white' : 'bg-[#a2dd00] text-[#1a2123]'}`}
                     >
-                      {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                      {isFreeGen ? tCommon('free') : (creditCost || '—')}
+                      {isGenerating ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : unlimited ? (
+                        <InfinityIcon className="h-3 w-3" />
+                      ) : (
+                        <Sparkles className="h-3 w-3" />
+                      )}
+                      {unlimited ? tUnlimited('costLabel') : isFreeGen ? tCommon('free') : (creditCost || '—')}
                     </button>
                   </div>
                 </div>
@@ -1107,16 +1222,36 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           </div>
         </TooltipProvider>
         {plansModalOpen && createPortal(<PlansModal onClose={() => setPlansModalOpen(false)} />, document.body)}
+        {unlimitedModalOpen && createPortal(<UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />, document.body)}
       </>
     );
   }
+
+  // Resoluções no modo normal — flag `unlimited` aplicado por resolução
+  // baseado no modelo atual + plano do usuário.
+  const resolutionOptionsForNormalMode = [
+    { value: 'RES_720P', label: '720p' },
+    { value: 'RES_1080P', label: '1080p' },
+    { value: 'RES_4K', label: '4K' },
+  ].map((opt) => ({
+    ...opt,
+    unlimited:
+      unlimited &&
+      isUnlimitedModelAllowed(unlimitedStatus, videoModelVariant, opt.value),
+  }));
 
   return (
     <>
       <TooltipProvider>
         <div
           ref={panelRef}
-          className={`w-[calc(100vw-5rem)] overflow-hidden rounded-2xl border bg-[#1a2123] shadow-2xl shadow-black/50 transition-colors sm:w-[320px] ${isDraggingOver ? 'border-[#a2dd00]/50 ring-2 ring-[#a2dd00]/30' : 'border-[#f3f0ed]/8'}`}
+          className={`w-[calc(100vw-5rem)] overflow-hidden rounded-2xl border bg-[#1a2123] shadow-2xl shadow-black/50 transition-colors sm:w-[320px] ${
+            unlimited
+              ? 'unlimited-shimmer-border border-[#a855f7]/25'
+              : isDraggingOver
+                ? 'border-[#a2dd00]/50 ring-2 ring-[#a2dd00]/30'
+                : 'border-[#f3f0ed]/8'
+          }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -1124,7 +1259,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           {/* Header — drag handle */}
           <div className="panel-drag-handle flex cursor-grab items-center justify-between border-b border-[#f3f0ed]/[0.07] px-4 py-3 active:cursor-grabbing">
             <div className="flex items-center gap-2">
-              <Video className="h-4 w-4 text-[#a2dd00]" />
+              <Video className={`h-4 w-4 ${unlimited ? 'text-[#a855f7]' : 'text-[#a2dd00]'}`} />
               <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
                 {t('header')}
               </span>
@@ -1154,18 +1289,39 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                     onClick={() => setVideoMode(mode)}
                     className="flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 transition-all active:scale-95"
                     style={{
-                      background: active ? 'rgba(162,221,0,0.08)' : 'rgba(30,73,75,0.15)',
-                      border: `1px solid ${active ? 'rgba(162,221,0,0.3)' : 'rgba(243,240,237,0.06)'}`,
-                      boxShadow: active ? '0 0 14px rgba(162,221,0,0.07)' : 'none',
+                      background: active
+                        ? unlimited
+                          ? 'rgba(168,85,247,0.10)'
+                          : 'rgba(162,221,0,0.08)'
+                        : 'rgba(30,73,75,0.15)',
+                      border: `1px solid ${active
+                        ? unlimited
+                          ? 'rgba(168,85,247,0.35)'
+                          : 'rgba(162,221,0,0.3)'
+                        : 'rgba(243,240,237,0.06)'
+                        }`,
+                      boxShadow: active && !unlimited ? '0 0 14px rgba(162,221,0,0.07)' : 'none',
                     }}
                   >
                     <Icon
                       className="h-4 w-4 shrink-0 transition-colors"
-                      style={{ color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)' }}
+                      style={{
+                        color: active
+                          ? unlimited
+                            ? '#a855f7'
+                            : '#a2dd00'
+                          : 'rgba(243,240,237,0.3)',
+                      }}
                     />
                     <span
                       className="text-[11px] font-bold transition-colors"
-                      style={{ color: active ? '#a2dd00' : 'rgba(243,240,237,0.4)' }}
+                      style={{
+                        color: active
+                          ? unlimited
+                            ? '#a855f7'
+                            : '#a2dd00'
+                          : 'rgba(243,240,237,0.4)',
+                      }}
                     >
                       {label}
                     </span>
@@ -1215,9 +1371,19 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 className={
                   editingNegative && !isKieModel
                     ? 'w-full resize-none rounded-xl border border-red-500/35 bg-red-500/8 px-3 py-2.5 text-sm text-red-100/95 placeholder-red-300/35 outline-none transition-all focus:border-red-500/60 focus:bg-red-500/10'
-                    : 'w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30'
+                    : `w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:bg-[#1e494b]/30 ${unlimited ? 'focus:border-[#a855f7]/40' : 'focus:border-[#a2dd00]/40'}`
                 }
                 style={editingNegative && !isKieModel ? { caretColor: '#ef4444' } : undefined}
+              />
+
+              {/* Unlimited mode toggle (vem antes do enhance prompt) */}
+              <UnlimitedToggle
+                enabled={unlimited}
+                onToggle={handleToggleUnlimited}
+                eligible={unlimitedStatus?.eligible ?? false}
+                isLoading={isLoadingUnlimited}
+                disabled={isGenerating || editingNegative}
+                onRequireUpgrade={() => setUnlimitedModalOpen(true)}
               />
 
               {/* Enhance prompt toggle */}
@@ -1227,6 +1393,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 isEnhancing={isEnhancing}
                 disabled={isGenerating || editingNegative}
                 icon={<Wand2 className="h-3 w-3" />}
+                accent={unlimited ? '#a855f7' : undefined}
               />
             </div>
 
@@ -1253,7 +1420,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                     <div className="flex gap-2">
                       <button
                         onClick={() => firstFrameInputRef.current?.click()}
-                        className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                        className={`flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all ${refHoverClass}`}
                       >
                         <ImagePlus className="h-4 w-4" />
                         <span className="text-[10px] font-bold tracking-wider">{t('buttons.upload')}</span>
@@ -1277,7 +1444,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                             },
                           });
                         }}
-                        className="flex h-14 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 px-4 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                        className={`flex h-14 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 px-4 text-[#f3f0ed]/25 transition-all ${refHoverClass}`}
                       >
                         <FolderOpen className="h-4 w-4" />
                       </button>
@@ -1316,7 +1483,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                     <div className="flex gap-2">
                       <button
                         onClick={() => lastFrameInputRef.current?.click()}
-                        className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                        className={`flex h-14 flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all ${refHoverClass}`}
                       >
                         <ImagePlus className="h-4 w-4" />
                         <span className="text-[10px] font-bold tracking-wider">{t('buttons.upload')}</span>
@@ -1339,7 +1506,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                             },
                           });
                         }}
-                        className="flex h-14 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 px-4 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                        className={`flex h-14 items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 px-4 text-[#f3f0ed]/25 transition-all ${refHoverClass}`}
                       >
                         <FolderOpen className="h-4 w-4" />
                       </button>
@@ -1369,6 +1536,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
               genState={genState}
               imageVisible={videosVisible}
               progress={progress}
+              accent={unlimited ? 'violet' : undefined}
               renderMedia={generatedVideoUrls.length > 0 ? () => (
                 <video
                   key={generatedVideoUrls[selectedVideoIdx]}
@@ -1432,7 +1600,10 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => setOptionsOpen((o) => !o)}
-                    className="flex h-6 w-6 items-center justify-center rounded-full text-[#a2dd00]/60 transition-all hover:bg-[#a2dd00]/10 hover:text-[#a2dd00]"
+                    className={`flex h-6 w-6 items-center justify-center rounded-full transition-all ${unlimited
+                      ? 'text-[#a855f7]/60 hover:bg-[#a855f7]/10 hover:text-[#a855f7]'
+                      : 'text-[#a2dd00]/60 hover:bg-[#a2dd00]/10 hover:text-[#a2dd00]'
+                      }`}
                   >
                     <Settings
                       className="h-5 w-5 transition-transform duration-500"
@@ -1461,7 +1632,11 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                     <span className="text-[11px] font-bold text-[#f3f0ed]/60">{t('labels.audio')}</span>
                     {isKieModel && <span className="text-[11px] text-[#a2dd00]/60">{t('labels.audioAlwaysOn')}</span>}
                   </div>
-                  <ToggleSwitch checked={isKieModel ? true : audio} onChange={isKieModel ? () => { } : setAudio} />
+                  <ToggleSwitch
+                    checked={isKieModel ? true : audio}
+                    onChange={isKieModel ? () => { } : setAudio}
+                    accent={unlimited ? '#a855f7' : '#a2dd00'}
+                  />
                 </div>
 
                 {/* Model + Resolution */}
@@ -1484,11 +1659,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                     <PanelSelect
                       value={resolution}
                       onValueChange={setResolution}
-                      options={[
-                        { value: 'RES_720P', label: '720p' },
-                        { value: 'RES_1080P', label: '1080p' },
-                        { value: 'RES_4K', label: '4K' },
-                      ]}
+                      options={resolutionOptionsForNormalMode}
                     />
                   </div>
                 </div>
@@ -1512,10 +1683,23 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                               title={disabled ? t('only8s') : undefined}
                               className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-30"
                               style={{
-                                background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
-                                color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
-                                border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
-                                boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
+                                background: active
+                                  ? unlimited
+                                    ? 'rgba(168,85,247,0.12)'
+                                    : 'rgba(162,221,0,0.1)'
+                                  : 'rgba(30,73,75,0.15)',
+                                color: active
+                                  ? unlimited
+                                    ? '#a855f7'
+                                    : '#a2dd00'
+                                  : 'rgba(243,240,237,0.3)',
+                                border: `1px solid ${active
+                                  ? unlimited
+                                    ? 'rgba(168,85,247,0.35)'
+                                    : 'rgba(162,221,0,0.28)'
+                                  : 'rgba(243,240,237,0.06)'
+                                  }`,
+                                boxShadow: active && !unlimited ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
                               }}
                             >
                               {d}
@@ -1540,10 +1724,23 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                             onClick={() => setProportion(val)}
                             className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95"
                             style={{
-                              background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
-                              color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
-                              border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
-                              boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
+                              background: active
+                                ? unlimited
+                                  ? 'rgba(168,85,247,0.12)'
+                                  : 'rgba(162,221,0,0.1)'
+                                : 'rgba(30,73,75,0.15)',
+                              color: active
+                                ? unlimited
+                                  ? '#a855f7'
+                                  : '#a2dd00'
+                                : 'rgba(243,240,237,0.3)',
+                              border: `1px solid ${active
+                                ? unlimited
+                                  ? 'rgba(168,85,247,0.35)'
+                                  : 'rgba(162,221,0,0.28)'
+                                : 'rgba(243,240,237,0.06)'
+                                }`,
+                              boxShadow: active && !unlimited ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
                             }}
                           >
                             {p}
@@ -1554,25 +1751,50 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                   </div>
                 </div>
 
-                {/* Sample count — hidden for KIE (always 1) */}
+                {/* Sample count — hidden for KIE (always 1), locked at 1 in unlimited mode */}
                 {!isKieModel && (
-                  <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                  <div
+                    className="space-y-1.5"
+                    style={{
+                      opacity: isGenerating ? 0.4 : 1,
+                      pointerEvents: isGenerating ? 'none' : undefined,
+                    }}
+                  >
                     <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
                       {t('labels.quantity')}
                     </label>
                     <div className="flex gap-1.5">
                       {[1, 2, 3, 4].map((n) => {
                         const active = sampleCount === n;
+                        const locked = unlimited && n !== 1;
                         return (
                           <button
                             key={n}
-                            onClick={() => setSampleCount(n)}
-                            className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95"
+                            onClick={() => {
+                              if (locked) return;
+                              setSampleCount(n);
+                            }}
+                            disabled={locked}
+                            className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95 disabled:cursor-not-allowed"
                             style={{
-                              background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
-                              color: active ? '#a2dd00' : 'rgba(243,240,237,0.3)',
-                              border: `1px solid ${active ? 'rgba(162,221,0,0.28)' : 'rgba(243,240,237,0.06)'}`,
-                              boxShadow: active ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
+                              background: active
+                                ? unlimited
+                                  ? 'rgba(168,85,247,0.12)'
+                                  : 'rgba(162,221,0,0.1)'
+                                : 'rgba(30,73,75,0.15)',
+                              color: active
+                                ? unlimited
+                                  ? '#a855f7'
+                                  : '#a2dd00'
+                                : 'rgba(243,240,237,0.3)',
+                              border: `1px solid ${active
+                                ? unlimited
+                                  ? 'rgba(168,85,247,0.35)'
+                                  : 'rgba(162,221,0,0.28)'
+                                : 'rgba(243,240,237,0.06)'
+                                }`,
+                              boxShadow: active && !unlimited ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
+                              opacity: locked ? 0.3 : 1,
                             }}
                           >
                             {n}
@@ -1611,7 +1833,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                             <TooltipTrigger asChild>
                               <button
                                 onClick={() => fileInputRef.current?.click()}
-                                className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                                className={`flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all ${refHoverClass}`}
                               >
                                 <ImagePlus className="h-5 w-5" />
                               </button>
@@ -1622,7 +1844,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                             <TooltipTrigger asChild>
                               <button
                                 onClick={() => openGalleryPicker({ nodeId, remaining: 3 - refImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success(tCommon('imageAddedAsReference')); } })}
-                                className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                                className={`flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all ${refHoverClass}`}
                               >
                                 <FolderOpen className="h-5 w-5" />
                               </button>
@@ -1654,12 +1876,24 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                         </span>
                       </div>
                     )}
-                    <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
+                    <div
+                      className="flex items-center justify-between rounded-xl border px-3 py-2 transition-colors"
+                      style={{
+                        borderColor: unlimited ? 'rgba(168,85,247,0.25)' : 'rgba(243,240,237,0.07)',
+                        background: unlimited ? 'rgba(168,85,247,0.06)' : 'rgba(243,240,237,0.03)',
+                      }}
+                    >
                       <div className="flex items-center gap-1.5">
-                        <Coins className="h-3 w-3 text-[#a2dd00]" />
+                        {unlimited ? (
+                          <InfinityIcon className="h-3 w-3 text-[#a855f7]" />
+                        ) : (
+                          <Coins className="h-3 w-3 text-[#a2dd00]" />
+                        )}
                         <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">{tCommon('cost')}</span>
                       </div>
-                      {estimateLoading ? (
+                      {unlimited ? (
+                        <span className="text-xs font-bold text-[#a855f7]">{tUnlimited('costLabel')}</span>
+                      ) : estimateLoading ? (
                         <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
                       ) : estimate ? (
                         <div className="flex items-center gap-2">
@@ -1681,9 +1915,28 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                   disabled={genState === 'generating' || !prompt.trim() || (videoMode === 'image' && !firstFrame)}
                   className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                   style={{
-                    background: genState === 'generating' ? 'rgba(162,221,0,0.12)' : '#a2dd00',
-                    color: genState === 'generating' ? '#a2dd00' : '#1a2123',
-                    border: genState === 'generating' ? '1px solid rgba(162,221,0,0.2)' : 'none',
+                    background:
+                      genState === 'generating'
+                        ? unlimited
+                          ? 'rgba(168,85,247,0.12)'
+                          : 'rgba(162,221,0,0.12)'
+                        : unlimited
+                          ? '#a855f7'
+                          : '#a2dd00',
+                    color:
+                      genState === 'generating'
+                        ? unlimited
+                          ? '#a855f7'
+                          : '#a2dd00'
+                        : unlimited
+                          ? '#ffffff'
+                          : '#1a2123',
+                    border:
+                      genState === 'generating'
+                        ? unlimited
+                          ? '1px solid rgba(168,85,247,0.25)'
+                          : '1px solid rgba(162,221,0,0.2)'
+                        : 'none',
                   }}
                 >
                   {genState === 'generating' ? (
@@ -1704,6 +1957,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
         </div>
       </TooltipProvider>
       {plansModalOpen && createPortal(<PlansModal onClose={() => setPlansModalOpen(false)} />, document.body)}
+      {unlimitedModalOpen && createPortal(<UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />, document.body)}
     </>
   );
 }
@@ -1757,16 +2011,18 @@ function ActionButton({
 function ToggleSwitch({
   checked,
   onChange,
+  accent = '#a2dd00',
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
+  accent?: string;
 }) {
   return (
     <button
       onClick={() => onChange(!checked)}
       className="relative h-5 w-9 rounded-full transition-colors"
       style={{
-        background: checked ? '#a2dd00' : 'rgba(243,240,237,0.12)',
+        background: checked ? accent : 'rgba(243,240,237,0.12)',
       }}
     >
       <div
@@ -1786,15 +2042,25 @@ function PanelSelect({
   onValueChange,
   options,
   maintenanceLabel,
+  accent,
 }: {
   value: string;
   onValueChange: (v: string) => void;
-  options: { value: string; label: string; disabled?: boolean }[];
+  options: { value: string; label: string; disabled?: boolean; unlimited?: boolean }[];
   maintenanceLabel?: string;
+  /** Tom de destaque para focus/selecionado. Default verde-limão. */
+  accent?: 'violet';
 }) {
+  const isViolet = accent === 'violet';
+  const triggerFocus = isViolet
+    ? 'focus:border-[#a855f7]/40'
+    : 'focus:border-[#a2dd00]/40';
+  const checkedColor = isViolet
+    ? 'data-[state=checked]:text-[#a855f7] [&>span:last-child>svg]:text-[#a855f7]'
+    : 'data-[state=checked]:text-[#a2dd00] [&>span:last-child>svg]:text-[#a2dd00]';
   return (
     <Select value={value} onValueChange={onValueChange}>
-      <SelectTrigger className="h-9 w-full rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 text-xs text-[#f3f0ed]/80 outline-none transition-all focus:border-[#a2dd00]/40 focus:ring-0 data-placeholder:text-[#f3f0ed]/35 [&>svg]:text-[#f3f0ed]/30">
+      <SelectTrigger className={`h-9 w-full rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 text-xs text-[#f3f0ed]/80 outline-none transition-all focus:ring-0 data-placeholder:text-[#f3f0ed]/35 [&>svg]:text-[#f3f0ed]/30 ${triggerFocus}`}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent className="rounded-xl border border-[#f3f0ed]/8 bg-[#1a2123] p-1 shadow-2xl shadow-black/60 backdrop-blur-md">
@@ -1803,10 +2069,13 @@ function PanelSelect({
             key={opt.value}
             value={opt.value}
             disabled={opt.disabled}
-            className="cursor-pointer rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/70 transition-all focus:bg-[#1e494b]/40 focus:text-[#f3f0ed] data-[state=checked]:text-[#a2dd00] data-disabled:cursor-not-allowed data-disabled:opacity-50 [&>span:last-child>svg]:text-[#a2dd00]"
+            className={`cursor-pointer rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/70 transition-all focus:bg-[#1e494b]/40 focus:text-[#f3f0ed] data-disabled:cursor-not-allowed data-disabled:opacity-50 ${checkedColor}`}
           >
             <span className="flex items-center gap-1.5">
               {opt.label}
+              {opt.unlimited && (
+                <InfinityIcon className="h-3 w-3 text-[#a855f7]" />
+              )}
               {opt.disabled && (
                 <span title={maintenanceLabel}>
                   <TriangleAlert className="h-3 w-3 text-amber-400" />

@@ -120,8 +120,7 @@ export function PanelNode({ id, data, selected }: NodeProps) {
 
   return (
     <div
-      className="panel-enter-animate rounded-2xl transition-shadow duration-200"
-      style={isSelected ? { boxShadow: '0 0 0 1.5px rgba(162, 221, 0, 0.45)' } : undefined}
+      className={`panel-enter-animate rounded-2xl transition-shadow duration-200 ${isSelected ? 'panel-selected-outline' : ''}`}
     >
       {panel}
     </div>

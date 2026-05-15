@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Shield, ArrowRight, Lock, Loader2, Sparkles } from "lucide-react";
+import { Check, Shield, ArrowRight, Loader2, Sparkles, Infinity as InfinityIcon } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { cn } from "@/lib/utils";
 import { useScrollReveal } from "./use-scroll-reveal";
@@ -10,10 +10,10 @@ import { useLoginModal } from "@/lib/login-modal-context";
 import { api, Plan } from "@/lib/api";
 import {
   PLAN_ORDER,
-  PLAN_GENERATIONS,
   PLAN_ORIGINAL_PRICES,
   PLAN_DISCOUNT_LABELS,
   PLAN_SOCIAL_PROOF,
+  PLAN_UNLIMITED_FEATURE_KEYS,
   formatPrice,
   formatPriceRaw,
 } from "@/lib/plans";
@@ -61,11 +61,12 @@ function PlanCard({ plan, i }: { plan: Plan; i: number; total: number }) {
   const isLoggedIn = !!user;
   const { ref, isVisible } = useScrollReveal();
   const locale = useLocale();
-  const isPopular = plan.slug === "creator";
+  const isPopular = plan.slug === "pro";
   const isFree = plan.priceCents === 0;
   const { main, sub } = formatPrice(plan.priceCents, plan.currency, locale);
   const features = useTranslatedPlanFeatures(plan);
-  const generationExamples = PLAN_GENERATIONS[plan.slug] ?? [];
+  const unlimitedFeatureKeys = PLAN_UNLIMITED_FEATURE_KEYS[plan.slug];
+  const tUnlimited = useTranslations("editorPlans.unlimited");
   const hasSubtitle = ["ultra-basic", "starter", "basic", "creator", "pro", "advanced", "studio"].includes(plan.slug);
   const subtitle = hasSubtitle ? tPlans(`subtitles.${plan.slug}`) : undefined;
   const originalPrice = PLAN_ORIGINAL_PRICES[plan.slug];
@@ -222,44 +223,34 @@ function PlanCard({ plan, i }: { plan: Plan; i: number; total: number }) {
           ))}
         </ul>
 
-        {/* Generation examples */}
-        {generationExamples.length > 0 && (
-          <div className="mt-6">
-            <div className="rounded-xl bg-[#f3f0ed]/[0.02] p-4">
-              <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#f3f0ed]/25">
-                {t("generationEstimate")}
-              </p>
-              <div className="mt-3 flex flex-col gap-2">
-                {generationExamples.map((ex) => (
-                  <div
-                    key={ex.label}
-                    className="flex items-center justify-between"
-                  >
-                    <span className="text-[11px] text-[#f3f0ed]/40">
-                      {ex.label}
-                    </span>
-                    {ex.blocked ? (
-                      <span className="flex items-center gap-1 text-[11px] text-red-400/40">
-                        <Lock className="h-2.5 w-2.5" />
-                        {t("blocked")}
-                      </span>
-                    ) : (
-                      <span className="text-[11px] font-semibold text-[#f3f0ed]/60">
-                        {ex.count}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <p className="mt-2.5 text-[9px] text-[#f3f0ed]/15">
-                {t("generationFootnote")}
-              </p>
+        {/* Spacer to push CTA + Modo Ilimitado to bottom */}
+        <div className="flex-1" />
+
+        {/* Modo Ilimitado (somente planos elegíveis) — fixado no bottom */}
+        {unlimitedFeatureKeys && unlimitedFeatureKeys.length > 0 && (
+          <div
+            className="unlimited-shimmer-border mt-6 flex flex-col gap-2 rounded-xl border px-3.5 py-2.5"
+            style={{
+              borderColor: 'rgba(168,85,247,0.25)',
+              background: 'rgba(168,85,247,0.06)',
+            }}
+          >
+            <div className="flex items-center gap-1.5">
+              <InfinityIcon className="h-3 w-3 text-[#a855f7]" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#a855f7]">
+                {tUnlimited('modeBadge')}
+              </span>
             </div>
+            <ul className="flex flex-col gap-1">
+              {unlimitedFeatureKeys.map((key) => (
+                <li key={key} className="flex items-start gap-1.5 text-[11.5px] leading-snug text-[#f3f0ed]/75">
+                  <Check className="mt-[2px] h-2.5 w-2.5 shrink-0 text-[#a855f7]" />
+                  <span>{tUnlimited(`features.${key}` as 'features.veoFast720')}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
-
-        {/* Spacer to push CTA to bottom */}
-        <div className="flex-1" />
 
         {/* CTA */}
         {isLoggedIn || isFree ? (
@@ -308,11 +299,12 @@ export function Pricing() {
     api.plans
       .listPublic(currency)
       .then((data) => {
+        // Ordena do mais caro para o mais barato.
         const sorted = data
           .filter((p) => p.slug !== 'free')
           .slice()
           .sort(
-            (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),
+            (a, b) => PLAN_ORDER.indexOf(b.slug) - PLAN_ORDER.indexOf(a.slug),
           );
         setPlans(sorted);
       })
@@ -366,29 +358,7 @@ export function Pricing() {
           </div>
         ) : (
           <div className="mt-10 flex flex-col gap-8 sm:mt-16 lg:mt-20 lg:gap-10">
-            {/* Entry plans: ultra-basic, starter, basic, creator */}
-            {(() => {
-              const entrySlugs = ['ultra-basic', 'starter', 'basic', 'creator'];
-              const entryPlans = plans.filter((p) => entrySlugs.includes(p.slug));
-              if (entryPlans.length === 0) return null;
-              return (
-                <div className="flex flex-col gap-5">
-                  <div className="flex items-center gap-3">
-                    <div className="h-px flex-1 bg-[#f3f0ed]/[0.06]" />
-                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#f3f0ed]/35">
-                      {t("sections.entry")}
-                    </span>
-                    <div className="h-px flex-1 bg-[#f3f0ed]/[0.06]" />
-                  </div>
-                  <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-                    {entryPlans.map((plan, i) => (
-                      <PlanCard key={plan.id} plan={plan} i={i} total={entryPlans.length} />
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-            {/* Monetizer plans: pro, advanced, studio */}
+            {/* Monetizer plans (do mais caro pro mais barato): studio, advanced, pro */}
             {(() => {
               const monetizerSlugs = ['pro', 'advanced', 'studio'];
               const monetizerPlans = plans.filter((p) => monetizerSlugs.includes(p.slug));
@@ -405,6 +375,28 @@ export function Pricing() {
                   <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                     {monetizerPlans.map((plan, i) => (
                       <PlanCard key={plan.id} plan={plan} i={i} total={monetizerPlans.length} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+            {/* Entry plans: creator, basic, starter, ultra-basic */}
+            {(() => {
+              const entrySlugs = ['ultra-basic', 'starter', 'basic', 'creator'];
+              const entryPlans = plans.filter((p) => entrySlugs.includes(p.slug));
+              if (entryPlans.length === 0) return null;
+              return (
+                <div className="flex flex-col gap-5">
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-[#f3f0ed]/[0.06]" />
+                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#f3f0ed]/35">
+                      {t("sections.entry")}
+                    </span>
+                    <div className="h-px flex-1 bg-[#f3f0ed]/[0.06]" />
+                  </div>
+                  <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+                    {entryPlans.map((plan, i) => (
+                      <PlanCard key={plan.id} plan={plan} i={i} total={entryPlans.length} />
                     ))}
                   </div>
                 </div>

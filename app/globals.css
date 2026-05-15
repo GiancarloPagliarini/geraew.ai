@@ -196,6 +196,58 @@
   animation: navbar-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* ─── Unlimited shimmer border (Modo Ilimitado nos cards de plano) ─────── */
+
+@property --unlimited-shimmer-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes unlimited-shimmer-rotate {
+  to { --unlimited-shimmer-angle: 360deg; }
+}
+
+.unlimited-shimmer-border {
+  position: relative;
+  isolation: isolate;
+}
+
+.unlimited-shimmer-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--unlimited-shimmer-angle, 0deg),
+    rgba(168, 85, 247, 0.25) 0deg,
+    rgba(168, 85, 247, 0.25) 70deg,
+    rgba(216, 180, 254, 0.95) 85deg,
+    rgba(255, 255, 255, 1) 95deg,
+    rgba(216, 180, 254, 0.95) 105deg,
+    rgba(168, 85, 247, 0.25) 130deg,
+    rgba(168, 85, 247, 0.25) 360deg
+  );
+  -webkit-mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+          mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: unlimited-shimmer-rotate 3s linear infinite;
+  pointer-events: none;
+}
+
+/* Outline padrão do painel selecionado — verde quando NÃO está em modo ilimitado.
+   Quando o filho tiver .unlimited-shimmer-border, suprime o outline pra não
+   cobrir o shimmer violeta animado. */
+.panel-selected-outline {
+  box-shadow: 0 0 0 1.5px rgba(162, 221, 0, 0.45);
+}
+
+.panel-selected-outline:has(.unlimited-shimmer-border) {
+  box-shadow: 0 0 0 1.5px rgba(168, 85, 247, 0.4);
+}
+
 /* ─── Custom scrollbar ─────────────────────────────────────────────────────── */
 
 .sidebar-scroll {

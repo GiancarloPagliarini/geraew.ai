@@ -373,6 +373,16 @@
       "playPreview": "Tocar prévia",
       "pausePreview": "Pausar prévia",
       "loadingPreview": "Carregando prévia"
+    },
+    "unlimited": {
+      "toggleLabel": "ILIMITADO",
+      "costLabel": "Ilimitado",
+      "errors": {
+        "noImagePlan": "Seu plano não inclui imagens no modo ilimitado. Faça upgrade para gerar imagens sem créditos.",
+        "noVideoPlan": "Seu plano não inclui vídeos no modo ilimitado. Faça upgrade para gerar vídeos sem créditos.",
+        "serverBusy": "Nossos servidores estão sobrecarregados no momento. Tente novamente em alguns minutos.",
+        "lockHeld": "Você já tem uma geração ilimitada em andamento. Aguarde ela terminar."
+      }
     }
   }
 }
