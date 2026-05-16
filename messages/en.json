@@ -10,7 +10,7 @@
   },
   "hero": {
     "badge": "AI-powered content creation platform",
-    "title": "Create AI influencers and dominate any platform.",
+    "title": "Create digital influencers with unlimited video and image generations.",
     "subtitle": "Generate ultra-realistic images, videos, and motion with just a few clicks. No studio, no models, no showing your face. Everything you need to create professional content is here.",
     "cta": "Start Now",
     "microcopy": "Ready in under 2 minutes"
@@ -38,38 +38,32 @@
     "tag": "EVERYTHING YOU NEED",
     "title": "A complete platform to create content that converts.",
     "subtitle": "Photos, videos, motion, and editing — all with AI, all in one place.",
+    "beforeLabel": "BEFORE",
+    "afterLabel": "AFTER",
     "items": {
       "influencers": {
-        "title": "Influencer Creation",
-        "description": "Generate unique personas with professional studio quality. Every detail — skin, expression, lighting — is designed to look real."
-      },
-      "videos": {
-        "title": "Ultra-Realistic Videos",
-        "description": "Turn any image into video with natural motion. Ready for Reels, TikTok, and Stories in seconds."
-      },
-      "audio": {
-        "title": "AI Audio",
-        "description": "Turn text into professional voiceover with voices in 15 languages. Ready for reels, videos, and podcasts."
-      },
-      "voiceClone": {
-        "title": "Voice Cloning",
-        "description": "Clone your voice from a short sample and use it on any script. Your identity in your creatives — no need to record again."
+        "title": "AI Influencers",
+        "description": "Create hyper-realistic avatars with their own face, voice, and personality. Make your influencer talk, gesture, and appear in any scene without recording anything — perfect for UGC, ads, and branded content."
       },
       "motion": {
         "title": "Motion Control",
-        "description": "Copy the motion from any reference video and apply it to your persona. Dances, gestures, expressions — in one click."
+        "description": "Transfer motion from a reference video to any character or avatar. Perfect lip sync, synced facial expressions, and fluid gestures — control every detail of the animation like a director."
       },
-      "faceSwap": {
-        "title": "Face Swap",
-        "description": "Swap faces in any image or video. Perfect for product reviews, UGC, and ad creatives."
+      "skinEnhancer": {
+        "title": "Skin Enhancer",
+        "description": "Remove the artificial look from AI-generated images. Add realistic pores and natural skin texture with a single click."
       },
-      "prompts": {
-        "title": "Prompt Library",
-        "description": "Access hundreds of ready-made prompts by niche. Fashion, fitness, beauty, finance, tech — just pick and generate."
+      "imagesHD": {
+        "title": "Full HD Images",
+        "description": "Generate professional high-definition photos with realistic lighting, cinematic composition, and crisp detail. Ideal for ads, product catalogs, social media, and any content that needs to impress on the first frame."
       },
-      "speed": {
-        "title": "Insane Speed",
-        "description": "From idea to finished content in seconds. No waiting in line, no slow processing. Think it, create it."
+      "videos": {
+        "title": "Ultra-Realistic Videos",
+        "description": "Access the best models on the market in one place — Kling, Veo 3.1, Sora 2 Pro and more. Cinema-grade quality, natural motion, and realistic physics, without juggling five different subscriptions."
+      },
+      "upscale": {
+        "title": "4K Upscale",
+        "description": "Upscale images up to 4K while preserving skin detail, lighting, and facial structure."
       }
     }
   },
@@ -176,26 +170,36 @@
   "comparison": {
     "tag": "Why Geraew",
     "title": "The old way is expensive. The new way costs pennies.",
-    "withoutTitle": "Without Geraew",
-    "withTitle": "With Geraew",
-    "withoutTotal": "Total: $300+ per session",
-    "withTotal": "Starting at $2.90/mo",
-    "cta": "Start saving now",
-    "ctaLoggedIn": "Open Platform",
-    "without": [
-      "Hire a model: $100+",
-      "Photographer: $150+",
-      "Video editor: $60+",
-      "Production time: 3-5 days",
-      "Location and logistics"
-    ],
-    "with": [
-      "Influencer generated in seconds",
-      "Video ready in a few clicks",
-      "Automatic AI editing",
-      "Content ready in minutes",
-      "Publish from anywhere"
-    ]
+    "perMonth": "/mo",
+    "totalTag": "TOTAL IF BOUGHT SEPARATELY",
+    "totalAmount": "~$745/mo",
+    "totalDescription": "That's the monthly bill for anyone who subscribes to each of these platforms on their own. Here you get <strong>everything</strong> in a single plan — for just a fraction of that.",
+    "platforms": {
+      "googleFlow": {
+        "name": "Google Flow Ultra",
+        "desc": "(Veo 3.1 + Nano Banana)"
+      },
+      "chatgpt": {
+        "name": "ChatGPT Pro",
+        "desc": "(Sora 2 + Image 2)"
+      },
+      "kling": {
+        "name": "Kling AI Pro",
+        "desc": "(Kling 2.5, 2.6, 3.0 + Motion Control)"
+      },
+      "xPremium": {
+        "name": "X Premium+",
+        "desc": "(Super Grok Imagine)"
+      },
+      "magnific": {
+        "name": "Magnific AI",
+        "desc": "(Skin Enhancer + Upscale 4K)"
+      },
+      "elevenLabs": {
+        "name": "ElevenLabs Pro",
+        "desc": "(Audio + Voiceovers)"
+      }
+    }
   },
   "useCases": {
     "tag": "Who It's For",
