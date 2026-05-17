@@ -19,8 +19,8 @@ const INTERNAL_TO_URL: Record<string, UrlLocale> = {
   es: 'es',
 };
 
-function detectFromCountry(country: string | null): UrlLocale {
-  if (!country) return 'en';
+function detectFromCountry(country: string | null): UrlLocale | null {
+  if (!country) return null;
   const c = country.toUpperCase();
   if (PT_COUNTRIES.has(c)) return 'pt-br';
   if (ES_COUNTRIES.has(c)) return 'es';
@@ -29,11 +29,13 @@ function detectFromCountry(country: string | null): UrlLocale {
 
 function detectFromAcceptLanguage(header: string | null): UrlLocale | null {
   if (!header) return null;
-  const preferred = header.split(',')[0]?.trim().toLowerCase();
-  if (!preferred) return null;
-  if (preferred.startsWith('pt')) return 'pt-br';
-  if (preferred.startsWith('es')) return 'es';
-  if (preferred.startsWith('en')) return 'en';
+  const tags = header.split(',').map((t) => t.split(';')[0]?.trim().toLowerCase()).filter(Boolean);
+  for (const tag of tags) {
+    if (!tag) continue;
+    if (tag.startsWith('pt')) return 'pt-br';
+    if (tag.startsWith('es')) return 'es';
+    if (tag.startsWith('en')) return 'en';
+  }
   return null;
 }
 
@@ -66,14 +68,22 @@ export function proxy(request: NextRequest) {
   if (cookieLocale && INTERNAL_TO_URL[cookieLocale]) {
     urlLocale = INTERNAL_TO_URL[cookieLocale];
   } else {
-    const country = request.headers.get('x-vercel-ip-country');
-    urlLocale = detectFromCountry(country) ?? detectFromAcceptLanguage(request.headers.get('accept-language')) ?? 'en';
+    const country =
+      request.headers.get('x-vercel-ip-country') ??
+      request.headers.get('cf-ipcountry') ??
+      request.headers.get('x-country-code');
+    urlLocale =
+      detectFromCountry(country) ??
+      detectFromAcceptLanguage(request.headers.get('accept-language')) ??
+      'pt-br';
   }
 
   const target = request.nextUrl.clone();
   target.pathname = `/${urlLocale}${pathname === '/' ? '' : pathname}`;
   target.search = search;
-  return NextResponse.redirect(target);
+  const res = NextResponse.redirect(target);
+  res.headers.set('Cache-Control', 'no-store');
+  return res;
 }
 
 export const config = {
