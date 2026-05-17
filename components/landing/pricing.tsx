@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { cn } from "@/lib/utils";
 import { useScrollReveal } from "./use-scroll-reveal";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { useLoginModal } from "@/lib/login-modal-context";
 import { api, Plan } from "@/lib/api";
@@ -53,12 +54,27 @@ function useTranslatedPlanFeatures(plan: Plan): string[] {
   return features;
 }
 
-function PlanCard({ plan, i }: { plan: Plan; i: number; total: number }) {
+function PlanCard({
+  plan,
+  i,
+  currentPlanSlug,
+  hasActiveSub,
+}: {
+  plan: Plan;
+  i: number;
+  total: number;
+  currentPlanSlug: string | null;
+  hasActiveSub: boolean;
+}) {
   const t = useTranslations("pricing");
   const tPlans = useTranslations("plans");
   const { user } = useAuth();
   const { openLoginModal } = useLoginModal();
   const isLoggedIn = !!user;
+  const targetIdx = PLAN_ORDER.indexOf(plan.slug);
+  const currentIdx = currentPlanSlug ? PLAN_ORDER.indexOf(currentPlanSlug) : -1;
+  const isCurrentPlan = isLoggedIn && hasActiveSub && currentIdx >= 0 && targetIdx === currentIdx;
+  const isLowerPlan = isLoggedIn && hasActiveSub && currentIdx >= 0 && targetIdx < currentIdx;
   const { ref, isVisible } = useScrollReveal();
   const locale = useLocale();
   const isPopular = plan.slug === "pro";
@@ -253,19 +269,43 @@ function PlanCard({ plan, i }: { plan: Plan; i: number; total: number }) {
         )}
 
         {/* CTA */}
-        {isLoggedIn || isFree ? (
+        {isFree ? (
           <a
             href="/workspace"
             className={cn(
               "mt-7 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[13px] font-bold transition-all duration-300",
-              isPopular
-                ? "bg-landing-accent text-[#141a1c] shadow-[0_0_0_1px_rgba(162,221,0,0.3)] hover:shadow-[0_0_28px_rgba(162,221,0,0.25)] hover:brightness-110"
-                : isFree
-                  ? "bg-[#f3f0ed]/[0.06] text-[#f3f0ed]/70 hover:bg-[#f3f0ed]/[0.1] hover:text-[#f3f0ed]"
-                  : "border border-[#f3f0ed]/[0.08] text-[#f3f0ed]/70 hover:border-[#f3f0ed]/[0.15] hover:bg-[#f3f0ed]/[0.03] hover:text-[#f3f0ed]",
+              "bg-[#f3f0ed]/[0.06] text-[#f3f0ed]/70 hover:bg-[#f3f0ed]/[0.1] hover:text-[#f3f0ed]",
             )}
           >
-            {isLoggedIn ? t("accessPlatform") : t("startFree")}
+            {t("startFree")}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </a>
+        ) : isCurrentPlan ? (
+          <button
+            disabled
+            className="mt-7 flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-landing-accent/30 bg-landing-accent/10 py-3.5 text-[13px] font-bold text-landing-accent/80"
+          >
+            <Check className="h-3.5 w-3.5" />
+            {t("currentPlan")}
+          </button>
+        ) : isLowerPlan ? (
+          <button
+            disabled
+            className="mt-7 flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/[0.05] py-3.5 text-[13px] font-bold text-[#f3f0ed]/25"
+          >
+            {t("downgradeBlocked")}
+          </button>
+        ) : isLoggedIn ? (
+          <a
+            href={`/checkout?plan=${plan.slug}`}
+            className={cn(
+              "mt-7 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[13px] font-bold transition-all duration-300",
+              isPopular
+                ? "bg-landing-accent text-[#141a1c] shadow-[0_0_0_1px_rgba(162,221,0,0.3)] hover:shadow-[0_0_28px_rgba(162,221,0,0.25)] hover:brightness-110"
+                : "border border-[#f3f0ed]/[0.08] text-[#f3f0ed]/70 hover:border-[#f3f0ed]/[0.15] hover:bg-[#f3f0ed]/[0.03] hover:text-[#f3f0ed]",
+            )}
+          >
+            {t("subscribe", { plan: plan.name })}
             <ArrowRight className="h-3.5 w-3.5" />
           </a>
         ) : (
@@ -294,6 +334,18 @@ export function Pricing() {
   const { ref, isVisible } = useScrollReveal();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
+  const { accessToken } = useAuth();
+
+  const { data: profile } = useQuery({
+    queryKey: ['user', 'me'],
+    queryFn: () => api.users.me(accessToken!),
+    enabled: !!accessToken,
+    staleTime: 60_000,
+  });
+
+  const currentPlanSlug = (profile?.plan as { slug?: string } | null)?.slug ?? null;
+  const subStatus = (profile?.subscription as { status?: string } | null)?.status;
+  const hasActiveSub = subStatus === 'ACTIVE' || subStatus === 'active';
 
   useEffect(() => {
     api.plans
@@ -374,7 +426,14 @@ export function Pricing() {
                   </div>
                   <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                     {monetizerPlans.map((plan, i) => (
-                      <PlanCard key={plan.id} plan={plan} i={i} total={monetizerPlans.length} />
+                      <PlanCard
+                        key={plan.id}
+                        plan={plan}
+                        i={i}
+                        total={monetizerPlans.length}
+                        currentPlanSlug={currentPlanSlug}
+                        hasActiveSub={hasActiveSub}
+                      />
                     ))}
                   </div>
                 </div>
@@ -396,7 +455,14 @@ export function Pricing() {
                   </div>
                   <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
                     {entryPlans.map((plan, i) => (
-                      <PlanCard key={plan.id} plan={plan} i={i} total={entryPlans.length} />
+                      <PlanCard
+                        key={plan.id}
+                        plan={plan}
+                        i={i}
+                        total={entryPlans.length}
+                        currentPlanSlug={currentPlanSlug}
+                        hasActiveSub={hasActiveSub}
+                      />
                     ))}
                   </div>
                 </div>

@@ -171,7 +171,7 @@ export function HeroSection() {
               <div className="h-12 w-44 animate-pulse rounded-xl bg-landing-text/8 sm:h-[52px] sm:w-48" />
             ) : (
               <a
-                href="/workspace"
+                href="#precos"
                 className="group inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-7 py-3.5 text-[14px] font-bold text-landing-bg-secondary shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-colors duration-200 hover:bg-[#b5e82d] active:scale-[0.98] sm:px-8 sm:py-4 sm:text-[15px]"
               >
                 {isLoggedIn ? tNav("tryFree") : t("cta")}

@@ -142,20 +142,41 @@ function CreditosPageContent() {
   const planFromUrl = searchParams.get('plan');
   useEffect(() => {
     if (
-      planFromUrl &&
-      !autoSubscribeTriggered.current &&
-      accessToken &&
-      !plansLoading &&
-      plans &&
-      plans.length > 0
-    ) {
-      const targetPlan = plans.find((p) => p.slug === planFromUrl);
-      if (targetPlan && targetPlan.priceCents > 0) {
-        autoSubscribeTriggered.current = true;
-        handleSubscribe(targetPlan.slug);
+      !planFromUrl ||
+      autoSubscribeTriggered.current ||
+      !accessToken ||
+      plansLoading ||
+      profileLoading ||
+      !plans ||
+      plans.length === 0
+    ) return;
+
+    const targetPlan = plans.find((p) => p.slug === planFromUrl);
+    if (!targetPlan || targetPlan.priceCents <= 0) return;
+
+    autoSubscribeTriggered.current = true;
+    setSubscribingSlug(targetPlan.slug);
+
+    (async () => {
+      try {
+        const res = await api.subscriptions.create(accessToken, targetPlan.slug);
+        window.location.href = res.checkoutUrl;
+      } catch (err: unknown) {
+        const status = (err as { status?: number })?.status;
+        if (status === 409) {
+          try {
+            const res = await api.subscriptions.upgrade(accessToken, targetPlan.slug);
+            window.location.href = res.checkoutUrl;
+            return;
+          } catch {
+            // fall through to error toast
+          }
+        }
+        toast.error(t('changePlanErrorTitle'), { description: t('changePlanErrorDescription') });
+        setSubscribingSlug(null);
       }
-    }
-  }, [planFromUrl, accessToken, plansLoading, plans]);
+    })();
+  }, [planFromUrl, accessToken, plansLoading, profileLoading, plans, t]);
 
   const isLoading = authLoading || balanceLoading || plansLoading || profileLoading || packagesLoading;
 

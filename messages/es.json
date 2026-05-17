@@ -77,6 +77,8 @@
     "creditsForTesting": "créditos para probar",
     "creditsMonthly": "créditos por mes",
     "subscribe": "Suscribirse a {plan}",
+    "currentPlan": "Plan Actual",
+    "downgradeBlocked": "Plan inferior",
     "startFree": "Comenzar Ahora",
     "accessPlatform": "Acceder a la Plataforma",
     "generationEstimate": "Estimación de generaciones",
