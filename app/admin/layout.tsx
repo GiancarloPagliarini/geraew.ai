@@ -22,6 +22,7 @@ import {
   Megaphone,
   Mail,
   Infinity as InfinityIcon,
+  Link2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -40,6 +41,7 @@ const NAV_ITEMS = [
   { href: '/admin/afiliados', label: 'Afiliados', icon: Handshake },
   { href: '/admin/feedback', label: 'Feedback', icon: MessageSquareHeart },
   { href: '/admin/uploads', label: 'Uploads', icon: Upload },
+  { href: '/admin/utm', label: 'UTM Builder', icon: Link2 },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
