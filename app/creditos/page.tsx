@@ -28,7 +28,6 @@ import { PLAN_ORDER, getPlanFeatures } from '@/lib/plans';
 import { CreditPackagesGrid } from '@/components/editor/CreditPackagesGrid';
 import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 import { PlansGrid } from '@/components/editor/PlansGrid';
-import { LocaleSwitcher } from '@/components/locale-switcher';
 import { useLocale, useTranslations } from 'next-intl';
 
 function CreditosPageContent() {
@@ -273,7 +272,6 @@ function CreditosPageContent() {
           <ArrowLeft className="h-4 w-4" />
           {tCommon('backToEditor')}
         </button>
-        <LocaleSwitcher compact />
       </header>
 
       {/* Low credits banner */}

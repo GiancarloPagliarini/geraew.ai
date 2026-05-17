@@ -1,6 +1,7 @@
 
 import type { Metadata } from "next";
 import { Sora, DM_Sans } from "next/font/google";
+import { TrackingCapture } from "@/components/TrackingCapture";
 
 const sora = Sora({
   variable: "--font-sora",
@@ -42,6 +43,7 @@ export default function LandingLayout({
     <div
       className={`${sora.variable} ${dmSans.variable} font-dm bg-landing-bg text-landing-text min-h-screen overflow-x-hidden`}
     >
+      <TrackingCapture />
       {children}
     </div>
   );

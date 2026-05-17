@@ -1,3 +1,5 @@
+import { readAttribution } from './tracking';
+
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface AuthUser {
@@ -2097,9 +2099,16 @@ export const api = {
     },
 
     register(email: string, name: string, password: string, referralCode?: string) {
+      const tracking = readAttribution();
       return request<AuthResponse>('/api/v1/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email, name, password, ...(referralCode && { referralCode }) }),
+        body: JSON.stringify({
+          email,
+          name,
+          password,
+          ...(referralCode && { referralCode }),
+          ...(tracking && { tracking }),
+        }),
       });
     },
 
@@ -2111,9 +2120,14 @@ export const api = {
     },
 
     google(googleToken: string, referralCode?: string) {
+      const tracking = readAttribution();
       return request<AuthResponse>('/api/v1/auth/google', {
         method: 'POST',
-        body: JSON.stringify({ googleToken, ...(referralCode && { referralCode }) }),
+        body: JSON.stringify({
+          googleToken,
+          ...(referralCode && { referralCode }),
+          ...(tracking && { tracking }),
+        }),
       });
     },
 

@@ -18,7 +18,6 @@ import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 import { CreditPackagesGrid } from '@/components/editor/CreditPackagesGrid';
 import { PlansGrid } from '@/components/editor/PlansGrid';
 import { PLAN_ORDER, getPlanFeatureKeys } from '@/lib/plans';
-import { LocaleSwitcher } from '@/components/locale-switcher';
 
 interface PlansModalProps {
   onClose: () => void;
@@ -150,9 +149,8 @@ export function PlansModal({ onClose }: PlansModalProps) {
     >
       <div className="relative mx-4 flex max-h-[88vh] w-full max-w-6xl flex-col gap-3 overflow-y-auto sidebar-scroll rounded-[20px] border border-[#f3f0ed]/[0.06] bg-[#1a2123] p-4 shadow-2xl sm:p-5">
 
-        {/* Close + locale */}
+        {/* Close */}
         <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
-          <LocaleSwitcher />
           <button
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-full text-landing-text/30 transition-all hover:bg-landing-text/8 hover:text-landing-text/80"

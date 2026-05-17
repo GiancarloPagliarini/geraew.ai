@@ -32,7 +32,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { LocaleSwitcher } from '@/components/locale-switcher';
 import { toast } from 'sonner';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://geraew.com.br';
@@ -250,9 +249,6 @@ export default function PainelAfiliadoPage() {
   if (!data || error) {
     return (
       <div className="relative flex min-h-screen flex-col items-center justify-center gap-4 bg-[#111618] px-4 py-10">
-        <div className="absolute right-4 top-4">
-          <LocaleSwitcher />
-        </div>
         <div className="w-full max-w-md rounded-2xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/2 p-8">
           <div className="text-center">
             <Users className="mx-auto h-10 w-10 text-[#a2dd00]/50" />
@@ -330,7 +326,6 @@ export default function PainelAfiliadoPage() {
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
               </button>
-              <LocaleSwitcher />
             </div>
           </div>
 
