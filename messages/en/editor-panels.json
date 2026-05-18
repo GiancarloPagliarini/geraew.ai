@@ -373,6 +373,16 @@
       "playPreview": "Play preview",
       "pausePreview": "Pause preview",
       "loadingPreview": "Loading preview"
+    },
+    "unlimited": {
+      "toggleLabel": "UNLIMITED",
+      "costLabel": "Unlimited",
+      "errors": {
+        "noImagePlan": "Your plan doesn't include images in unlimited mode. Upgrade to generate images without using credits.",
+        "noVideoPlan": "Your plan doesn't include videos in unlimited mode. Upgrade to generate videos without using credits.",
+        "serverBusy": "Our servers are currently overloaded. Please try again in a few minutes.",
+        "lockHeld": "You already have an unlimited generation in progress. Wait for it to finish."
+      }
     }
   }
 }

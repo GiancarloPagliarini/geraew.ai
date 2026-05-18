@@ -8,6 +8,7 @@ import {
   Flame,
   Flower2,
   Gem,
+  Infinity as InfinityIcon,
   Loader2,
   Mountain,
   Pickaxe,
@@ -18,10 +19,10 @@ import { useTranslations, useLocale } from 'next-intl';
 import type { Plan } from '@/lib/api';
 import {
   PLAN_DISCOUNT_LABELS,
-  PLAN_GENERATION_ENTRIES,
   PLAN_ORDER,
   PLAN_ORIGINAL_PRICES,
   PLAN_SOCIAL_PROOF_ICONS,
+  PLAN_UNLIMITED_FEATURE_KEYS,
   formatCurrency,
   getPlanFeatureKeys,
 } from '@/lib/plans';
@@ -64,6 +65,7 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
   const isFree = plan.priceCents === 0;
   const isCreator = plan.slug === 'creator';
   const isPro = plan.slug === 'pro';
+  const isRecommended = plan.slug === 'pro';
   const isStudio = plan.slug === 'studio';
 
   const mainPrice = isFree
@@ -74,7 +76,7 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
   const isSubscribing = subscribingSlug === plan.slug;
   const featureEntries = getPlanFeatureKeys(plan);
   const isDowngrade = planAction === 'downgrade';
-  const generationExamples = PLAN_GENERATION_ENTRIES[plan.slug] ?? [];
+  const unlimitedFeatureKeys = PLAN_UNLIMITED_FEATURE_KEYS[plan.slug];
   const originalPrice = PLAN_ORIGINAL_PRICES[plan.slug];
   const discountLabel = PLAN_DISCOUNT_LABELS[plan.slug];
   const socialProofIcon = PLAN_SOCIAL_PROOF_ICONS[plan.slug];
@@ -102,13 +104,13 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
         ? 'border-[#f3f0ed]/5 bg-[#1c2527]/60 opacity-40 pointer-events-none'
         : isCurrent
           ? 'border-[#f3f0ed]/25 bg-[#1e2325] ring-1 ring-[#f3f0ed]/10'
-          : isCreator
+          : isRecommended
             ? 'border-[#a2dd00]/30 bg-gradient-to-b from-[#1f2d20] to-[#1a2523] ring-1 ring-[#a2dd00]/15 shadow-[0_0_40px_rgba(162,221,0,0.08)] hover:shadow-[0_0_60px_rgba(162,221,0,0.12)]'
             : 'border-[#f3f0ed]/[0.06] bg-[#171e20] hover:border-[#f3f0ed]/[0.12] hover:bg-[#1a1f21]'
         }`}
     >
       {/* Creator top glow */}
-      {isCreator && !isDowngrade && (
+      {isRecommended && !isDowngrade && (
         <>
           <div
             className={`pointer-events-none absolute -inset-px ${radius}`}
@@ -122,7 +124,7 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
       )}
 
       {/* Current plan glow */}
-      {isCurrent && !isCreator && (
+      {isCurrent && !isRecommended && (
         <div
           className={`pointer-events-none absolute -inset-px ${radius} opacity-40`}
           style={{ background: 'linear-gradient(180deg, rgba(243,240,237,0.06) 0%, rgba(243,240,237,0) 35%)' }}
@@ -140,7 +142,7 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
       )}
 
       {/* Badge — popular */}
-      {isCreator && !isCurrent && (
+      {isRecommended && !isCurrent && (
         <div className={`absolute left-1/2 z-10 -translate-x-1/2 ${compact ? '-top-2.5' : '-top-3.5'}`}>
           <div className={`flex items-center gap-1 rounded-full bg-[#a2dd00] shadow-[0_0_30px_rgba(162,221,0,0.4)] ${compact ? 'px-3 py-1' : 'px-3.5 py-1.5'}`}>
             <Flame className={`${compact ? 'h-2.5 w-2.5' : 'h-3.5 w-3.5'} text-[#141a1c]`} />
@@ -152,9 +154,9 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
       <div className={`relative flex flex-1 flex-col ${compact ? 'p-3' : 'p-5 sm:p-6'}`}>
         {/* Icon + name */}
         <div className={`flex items-center ${compact ? 'gap-1.5' : 'gap-2.5'}`}>
-          <div className={`flex items-center justify-center rounded-lg ${compact ? 'h-6 w-6' : 'h-8 w-8'} ${isCreator ? 'bg-[#a2dd00]/15' : isCurrent ? 'bg-[#f3f0ed]/10' : 'bg-[#f3f0ed]/[0.05]'
+          <div className={`flex items-center justify-center rounded-lg ${compact ? 'h-6 w-6' : 'h-8 w-8'} ${isRecommended ? 'bg-[#a2dd00]/15' : isCurrent ? 'bg-[#f3f0ed]/10' : 'bg-[#f3f0ed]/[0.05]'
             }`}>
-            <PlanIcon className={`${compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} ${isCreator ? 'text-[#a2dd00]' : isCurrent ? 'text-[#f3f0ed]/70' : 'text-[#f3f0ed]/40'
+            <PlanIcon className={`${compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} ${isRecommended ? 'text-[#a2dd00]' : isCurrent ? 'text-[#f3f0ed]/70' : 'text-[#f3f0ed]/40'
               }`} />
           </div>
           <div>
@@ -184,7 +186,7 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
             </div>
           )}
           <div className="flex items-baseline gap-0.5">
-            <span className={`text-[22px] font-extrabold leading-none tracking-tight ${isFree ? 'text-[#a2dd00]' : isCreator ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'
+            <span className={`text-[22px] font-extrabold leading-none tracking-tight ${isFree ? 'text-[#a2dd00]' : isRecommended ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'
               }`}>
               {mainPrice}
             </span>
@@ -193,11 +195,11 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
         </div>
 
         {/* Credits */}
-        <div className={`flex items-center gap-1.5 rounded-lg border ${compact ? 'mt-2 px-2.5 py-1.5' : 'mt-4 rounded-xl px-3.5 py-2.5'} ${isCreator ? 'bg-[#a2dd00]/10 border-[#a2dd00]/15' : 'bg-[#f3f0ed]/[0.03] border-[#f3f0ed]/[0.05]'
+        <div className={`flex items-center gap-1.5 rounded-lg border ${compact ? 'mt-2 px-2.5 py-1.5' : 'mt-4 rounded-xl px-3.5 py-2.5'} ${isRecommended ? 'bg-[#a2dd00]/10 border-[#a2dd00]/15' : 'bg-[#f3f0ed]/[0.03] border-[#f3f0ed]/[0.05]'
           }`}>
-          <Coins className={`${compact ? 'h-3 w-3' : 'h-4 w-4'} ${isCreator ? 'text-[#a2dd00]' : 'text-[#f3f0ed]/40'}`} />
+          <Coins className={`${compact ? 'h-3 w-3' : 'h-4 w-4'} ${isRecommended ? 'text-[#a2dd00]' : 'text-[#f3f0ed]/40'}`} />
           <div>
-            <span className={`font-extrabold tabular-nums ${compact ? 'text-[15px]' : 'text-[16px]'} ${isCreator ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'
+            <span className={`font-extrabold tabular-nums ${compact ? 'text-[15px]' : 'text-[16px]'} ${isRecommended ? 'text-[#a2dd00]' : 'text-[#f3f0ed]'
               }`}>
               {plan.creditsPerMonth.toLocaleString(locale)}
             </span>
@@ -206,6 +208,7 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
             </span>
           </div>
         </div>
+
 
         {/* Social proof */}
         {SocialProofIcon && !isDowngrade && (
@@ -228,9 +231,9 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
             return (
               <li key={entry.key} className={`flex items-start ${compact ? 'gap-1.5' : 'gap-2.5'}`}>
                 <div className={`shrink-0 flex items-center justify-center rounded-full ${compact ? 'mt-[1px] h-[12px] w-[12px]' : 'mt-[2px] h-[16px] w-[16px]'
-                  } ${isCreator ? 'bg-[#a2dd00]/20' : isCurrent ? 'bg-[#f3f0ed]/10' : 'bg-[#f3f0ed]/[0.06]'
+                  } ${isRecommended ? 'bg-[#a2dd00]/20' : isCurrent ? 'bg-[#f3f0ed]/10' : 'bg-[#f3f0ed]/[0.06]'
                   }`}>
-                  <Check className={`${compact ? 'h-1.5 w-1.5' : 'h-2.5 w-2.5'} ${isCreator ? 'text-[#a2dd00]' : isCurrent ? 'text-[#f3f0ed]/60' : 'text-[#f3f0ed]/45'
+                  <Check className={`${compact ? 'h-1.5 w-1.5' : 'h-2.5 w-2.5'} ${isRecommended ? 'text-[#a2dd00]' : isCurrent ? 'text-[#f3f0ed]/60' : 'text-[#f3f0ed]/45'
                     }`} />
                 </div>
                 <span className="text-[12px] leading-snug text-[#f3f0ed]/55">{label}</span>
@@ -239,40 +242,36 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
           })}
         </ul>
 
-        {/* Generation examples */}
-        <div className={`flex flex-col gap-0.5 ${compact ? 'mt-2 min-h-[65px]' : 'mt-4 min-h-[100px]'}`}>
-          {generationExamples.length > 0 && (
-            <>
-              <p className={`font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/20 ${compact ? 'text-[10px]' : 'text-[9px]'}`}>
-                {t('whatYouCanCreate')}
-              </p>
-              {generationExamples.map((ex) => {
-                let countLabel: string;
-                if (ex.blocked) {
-                  countLabel = t('units.blocked');
-                } else if (plan.slug === 'free' && ex.unit === 'video') {
-                  countLabel = t('units.videoFree', { count: ex.countNumber });
-                } else {
-                  countLabel = t(
-                    `units.${ex.unit}` as 'units.image',
-                    { count: ex.countNumber },
-                  );
-                }
-                return (
-                  <div key={ex.label} className="flex items-center justify-between">
-                    <span className={`text-[#f3f0ed]/35 ${compact ? 'text-[11px]' : 'text-[10px]'}`}>{ex.label}</span>
-                    <span className={`font-semibold ${compact ? 'text-[11px]' : 'text-[10px]'} ${isCreator ? 'text-[#a2dd00]/60' : isCurrent ? 'text-[#f3f0ed]/55' : 'text-[#f3f0ed]/45'
-                      }`}>
-                      {countLabel}
-                    </span>
-                  </div>
-                );
-              })}
-            </>
-          )}
-        </div>
-
         <div className="flex-1" />
+
+        {/* Modo Ilimitado (somente planos elegíveis) — fixado no bottom */}
+        {unlimitedFeatureKeys && unlimitedFeatureKeys.length > 0 && (
+          <div
+            className={`unlimited-shimmer-border flex flex-col gap-1.5 rounded-xl border px-3 py-2 ${compact ? 'mt-2' : 'mt-3'}`}
+            style={{
+              borderColor: 'rgba(168,85,247,0.25)',
+              background: 'rgba(168,85,247,0.06)',
+            }}
+          >
+            <div className="flex items-center gap-1.5">
+              <InfinityIcon className="h-3 w-3 text-[#a855f7]" />
+              <span className={`font-bold uppercase tracking-[0.1em] text-[#a855f7] ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
+                {t('unlimited.modeBadge')}
+              </span>
+            </div>
+            <ul className="flex flex-col gap-0.5">
+              {unlimitedFeatureKeys.map((key) => (
+                <li
+                  key={key}
+                  className={`flex items-start gap-1 text-[#f3f0ed]/75 ${compact ? 'text-[10.5px]' : 'text-[11px]'}`}
+                >
+                  <Check className="mt-[2px] h-2.5 w-2.5 shrink-0 text-[#a855f7]" />
+                  <span>{t(`unlimited.features.${key}` as 'unlimited.features.veoFast720')}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* CTA */}
         {isFree && <div className={compact ? 'mt-3 h-8' : 'mt-6 h-11'} />}
@@ -283,7 +282,7 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, subscribingSlug, c
             className={`flex w-full items-center justify-center gap-1.5 rounded-xl font-bold transition-all duration-300 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 ${compact ? 'mt-3 h-8 text-[13px]' : 'mt-6 h-11 text-[13px]'
               } ${isCurrent
                 ? 'bg-[#f3f0ed]/10 text-[#f3f0ed]/60'
-                : isCreator
+                : isRecommended
                   ? 'bg-[#a2dd00] text-[#141a1c] shadow-[0_4px_20px_rgba(162,221,0,0.3)] hover:shadow-[0_4px_30px_rgba(162,221,0,0.4)] hover:brightness-110'
                   : 'border border-[#f3f0ed]/[0.1] bg-[#f3f0ed]/[0.03] text-[#f3f0ed]/80 hover:border-[#f3f0ed]/[0.2] hover:bg-[#f3f0ed]/[0.06] hover:text-[#f3f0ed]'
               }`}
@@ -402,10 +401,11 @@ export function PlansGrid({
     );
   }
 
+  // Ordena do mais caro para o mais barato.
   const sorted = plans
     .filter((p) => p.slug !== 'free')
     .slice()
-    .sort((a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug));
+    .sort((a, b) => PLAN_ORDER.indexOf(b.slug) - PLAN_ORDER.indexOf(a.slug));
 
   if (sorted.length === 0) return null;
 
@@ -414,18 +414,6 @@ export function PlansGrid({
 
   return (
     <div className={`flex flex-col ${compact ? 'gap-4' : 'gap-6'}`}>
-      {entryPlans.length > 0 && (
-        <PlanSection
-          sectionKey="entry"
-          plans={entryPlans}
-          currentPlanSlug={currentPlanSlug}
-          hasActiveSub={hasActiveSub}
-          subscribingSlug={subscribingSlug}
-          onSubscribe={onSubscribe}
-          compact={compact}
-          cols={4}
-        />
-      )}
       {monetizerPlans.length > 0 && (
         <PlanSection
           sectionKey="monetizer"
@@ -436,6 +424,18 @@ export function PlansGrid({
           onSubscribe={onSubscribe}
           compact={compact}
           cols={3}
+        />
+      )}
+      {entryPlans.length > 0 && (
+        <PlanSection
+          sectionKey="entry"
+          plans={entryPlans}
+          currentPlanSlug={currentPlanSlug}
+          hasActiveSub={hasActiveSub}
+          subscribingSlug={subscribingSlug}
+          onSubscribe={onSubscribe}
+          compact={compact}
+          cols={4}
         />
       )}
     </div>

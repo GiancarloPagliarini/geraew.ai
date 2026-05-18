@@ -121,6 +121,37 @@ export const PLAN_GENERATION_ENTRIES: Record<string, PlanGenerationEntry[]> = {
 };
 
 /**
+ * Quantidade estimada de gerações inclusas no plano via créditos
+ * (vídeos = Veo Fast 720p sem áudio; imagens = NB2 1K). Exibido no
+ * dialog de planos para o usuário ter ideia do volume.
+ */
+export interface PlanGenerationsIncluded {
+  videos: number;
+  images: number;
+}
+export const PLAN_GENERATIONS_INCLUDED: Record<string, PlanGenerationsIncluded> = {
+  'ultra-basic': { videos: 16, images: 7 },
+  starter: { videos: 29, images: 44 },
+  basic: { videos: 39, images: 77 },
+  creator: { videos: 56, images: 133 },
+  pro: { videos: 116, images: 333 },
+  advanced: { videos: 182, images: 555 },
+  studio: { videos: 282, images: 888 },
+};
+
+/**
+ * Resumo dos modelos liberados no modo ilimitado por plano (somente
+ * Creator/Pro/Advanced/Studio têm modo ilimitado). Os valores são
+ * chaves i18n dentro de `editorPlans.unlimited.features.*`.
+ */
+export const PLAN_UNLIMITED_FEATURE_KEYS: Record<string, string[]> = {
+  creator: ['veoFast720'],
+  pro: ['veoFast720And1080'],
+  advanced: ['veoBoth720', 'nb2_1K'],
+  studio: ['veoBoth720And1080', 'nbBoth1K'],
+};
+
+/**
  * Quantidade máxima de vozes salvas por plano (mirror do backend
  * `voices.constants.ts` → VOICE_PROFILE_QUOTAS).
  */

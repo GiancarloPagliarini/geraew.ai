@@ -28,7 +28,6 @@ import { PLAN_ORDER, getPlanFeatures } from '@/lib/plans';
 import { CreditPackagesGrid } from '@/components/editor/CreditPackagesGrid';
 import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 import { PlansGrid } from '@/components/editor/PlansGrid';
-import { LocaleSwitcher } from '@/components/locale-switcher';
 import { useLocale, useTranslations } from 'next-intl';
 
 function CreditosPageContent() {
@@ -142,20 +141,41 @@ function CreditosPageContent() {
   const planFromUrl = searchParams.get('plan');
   useEffect(() => {
     if (
-      planFromUrl &&
-      !autoSubscribeTriggered.current &&
-      accessToken &&
-      !plansLoading &&
-      plans &&
-      plans.length > 0
-    ) {
-      const targetPlan = plans.find((p) => p.slug === planFromUrl);
-      if (targetPlan && targetPlan.priceCents > 0) {
-        autoSubscribeTriggered.current = true;
-        handleSubscribe(targetPlan.slug);
+      !planFromUrl ||
+      autoSubscribeTriggered.current ||
+      !accessToken ||
+      plansLoading ||
+      profileLoading ||
+      !plans ||
+      plans.length === 0
+    ) return;
+
+    const targetPlan = plans.find((p) => p.slug === planFromUrl);
+    if (!targetPlan || targetPlan.priceCents <= 0) return;
+
+    autoSubscribeTriggered.current = true;
+    setSubscribingSlug(targetPlan.slug);
+
+    (async () => {
+      try {
+        const res = await api.subscriptions.create(accessToken, targetPlan.slug);
+        window.location.href = res.checkoutUrl;
+      } catch (err: unknown) {
+        const status = (err as { status?: number })?.status;
+        if (status === 409) {
+          try {
+            const res = await api.subscriptions.upgrade(accessToken, targetPlan.slug);
+            window.location.href = res.checkoutUrl;
+            return;
+          } catch {
+            // fall through to error toast
+          }
+        }
+        toast.error(t('changePlanErrorTitle'), { description: t('changePlanErrorDescription') });
+        setSubscribingSlug(null);
       }
-    }
-  }, [planFromUrl, accessToken, plansLoading, plans]);
+    })();
+  }, [planFromUrl, accessToken, plansLoading, profileLoading, plans, t]);
 
   const isLoading = authLoading || balanceLoading || plansLoading || profileLoading || packagesLoading;
 
@@ -252,7 +272,6 @@ function CreditosPageContent() {
           <ArrowLeft className="h-4 w-4" />
           {tCommon('backToEditor')}
         </button>
-        <LocaleSwitcher compact />
       </header>
 
       {/* Low credits banner */}

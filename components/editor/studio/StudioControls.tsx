@@ -10,22 +10,31 @@ export function StudioPill({
   onClick,
   active,
   disabled,
+  accent,
 }: {
   children: React.ReactNode;
   icon?: React.ReactNode;
   onClick?: () => void;
   active?: boolean;
   disabled?: boolean;
+  /** Cor de destaque quando active=true. Padrão verde-limão. */
+  accent?: string;
 }) {
+  const activeStyle = accent
+    ? { background: `${accent}1a`, color: accent } // 0x1a = ~10% alpha
+    : undefined;
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
+      style={active && accent ? activeStyle : undefined}
       className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
-        active
+        active && !accent
           ? 'bg-[#a2dd00]/10 text-[#a2dd00]'
-          : 'bg-[#f3f0ed]/[0.04] text-[#f3f0ed]/75 hover:text-[#f3f0ed]'
+          : !active
+            ? 'bg-[#f3f0ed]/[0.04] text-[#f3f0ed]/75 hover:text-[#f3f0ed]'
+            : ''
       }`}
     >
       {icon}

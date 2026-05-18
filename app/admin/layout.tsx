@@ -21,6 +21,8 @@ import {
   BrainCircuit,
   Megaphone,
   Mail,
+  Infinity as InfinityIcon,
+  Link2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -28,6 +30,7 @@ const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/usuarios', label: 'Usuários', icon: Users },
   { href: '/admin/geracoes', label: 'Gerações', icon: Image },
+  { href: '/admin/filas-ilimitado', label: 'Fila Ilimitada', icon: InfinityIcon },
   { href: '/admin/modelos', label: 'Modelos', icon: BrainCircuit },
   { href: '/admin/prompts', label: 'Prompts', icon: FileText },
   { href: '/admin/prompt-posts', label: 'Posts Públicos', icon: ThumbsUp },
@@ -38,6 +41,7 @@ const NAV_ITEMS = [
   { href: '/admin/afiliados', label: 'Afiliados', icon: Handshake },
   { href: '/admin/feedback', label: 'Feedback', icon: MessageSquareHeart },
   { href: '/admin/uploads', label: 'Uploads', icon: Upload },
+  { href: '/admin/utm', label: 'UTM Builder', icon: Link2 },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

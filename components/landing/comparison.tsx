@@ -1,18 +1,64 @@
 "use client";
 
+import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { X, Check, ArrowRight } from "lucide-react";
 import { useScrollReveal } from "./use-scroll-reveal";
-import { useAuth } from "@/lib/auth-context";
+
+type Platform = { key: string; price: string; logo: string };
+
+const PLATFORMS: Platform[] = [
+  {
+    key: "chatgpt",
+    price: "R$ 1.100",
+    logo: "https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/admin_assets/landing/24068788-cb91-4365-9fe0-7f7420944c24/output_0__15_.png",
+  },
+  {
+    key: "googleFlow",
+    price: "R$ 1.375",
+    logo: "https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/admin_assets/landing/a2f2f9e2-4783-412e-8052-795f99de108c/output_0__10_.png",
+  },
+  {
+    key: "magnific",
+    price: "R$ 540",
+    logo: "https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/admin_assets/landing/ae29d1c1-65ba-45fc-9338-e6786fce20c3/output_0__12_.png",
+  },
+  {
+    key: "kling",
+    price: "R$ 200",
+    logo: "https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/admin_assets/landing/87533535-09ba-4048-84eb-237184c7e896/output_0__14_.png",
+  },
+  {
+    key: "elevenLabs",
+    price: "R$ 540",
+    logo: "https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/admin_assets/landing/b2f95bd9-ee8c-4eef-859d-cd4876acc86c/output_0__11_.png",
+  },
+  {
+    key: "xPremium",
+    price: "R$ 220",
+    logo: "https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/admin_assets/landing/c1ae7d1b-374a-4555-a97d-df49ccb703f2/output_0__13_.png",
+  },
+];
+
+function PlatformBadge({ logo, name }: { logo: string; name: string }) {
+  return (
+    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full">
+      <Image
+        src={logo}
+        alt={name}
+        fill
+        sizes="40px"
+        className="object-cover"
+      />
+    </div>
+  );
+}
 
 export function Comparison() {
   const t = useTranslations("comparison");
-  const { user } = useAuth();
-  const isLoggedIn = !!user;
   const { ref, isVisible } = useScrollReveal();
-
-  const withoutItems = t.raw("without") as string[];
-  const withItems = t.raw("with") as string[];
+  const { ref: refList, isVisible: listVisible } = useScrollReveal();
+  const { ref: refTotal, isVisible: totalVisible } = useScrollReveal();
+  const perMonth = t("perMonth");
 
   return (
     <section className="py-16 sm:py-28 lg:py-36">
@@ -34,66 +80,64 @@ export function Comparison() {
           </h2>
         </div>
 
-        {/* Cards */}
-        <div className="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-4 sm:mt-16 sm:gap-5 md:grid-cols-2 lg:mt-20 lg:gap-6">
-          {/* Without */}
-          <div className="rounded-2xl border border-red-500/15 bg-red-500/[0.04] p-5 sm:p-8">
-            <h3 className="font-sora text-[17px] font-semibold text-landing-text">
-              {t("withoutTitle")}
-            </h3>
-            <ul className="mt-5 space-y-3 sm:mt-7 sm:space-y-4">
-              {withoutItems.map((item) => (
-                <li key={item} className="flex items-start gap-3">
-                  <div className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-500/10">
-                    <X className="h-3 w-3 text-red-400" />
+        {/* Platform list card */}
+        <div
+          ref={refList}
+          className="mx-auto mt-10 max-w-3xl rounded-2xl border border-[#f3f0ed]/[0.06] bg-landing-card p-1.5 transition-all duration-700 sm:mt-16 sm:p-2 lg:mt-20"
+          style={{
+            opacity: listVisible ? 1 : 0,
+            transform: listVisible ? "translateY(0)" : "translateY(28px)",
+          }}
+        >
+          <ul className="divide-y divide-[#f3f0ed]/[0.05]">
+            {PLATFORMS.map((p) => (
+              <li
+                key={p.key}
+                className="flex items-center gap-3.5 px-3 py-3 sm:px-4 sm:py-3.5"
+              >
+                <PlatformBadge logo={p.logo} name={t(`platforms.${p.key}.name`)} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline gap-x-1.5">
+                    <span className="font-sora text-[13px] font-semibold text-landing-text sm:text-[14px]">
+                      {t(`platforms.${p.key}.name`)}
+                    </span>
+                    <span className="text-[12px] text-landing-text-secondary">
+                      {t(`platforms.${p.key}.desc`)}
+                    </span>
                   </div>
-                  <span className="text-[14px] text-landing-text-secondary">
-                    {item}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-6 border-t border-red-500/10 pt-5 sm:mt-8 sm:pt-6">
-              <p className="font-sora text-[17px] font-bold text-landing-text">
-                {t("withoutTotal")}
-              </p>
-            </div>
-          </div>
-
-          {/* With */}
-          <div className="rounded-2xl border border-landing-accent/20 bg-landing-accent/[0.04] p-5 sm:p-8">
-            <h3 className="font-sora text-[17px] font-semibold text-landing-text">
-              {t("withTitle")}
-            </h3>
-            <ul className="mt-5 space-y-3 sm:mt-7 sm:space-y-4">
-              {withItems.map((item) => (
-                <li key={item} className="flex items-start gap-3">
-                  <div className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-landing-accent/10">
-                    <Check className="h-3 w-3 text-landing-accent" />
-                  </div>
-                  <span className="text-[14px] text-landing-text-secondary">
-                    {item}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-6 border-t border-landing-accent/15 pt-5 sm:mt-8 sm:pt-6">
-              <p className="font-sora text-[17px] font-bold text-landing-accent">
-                {t("withTotal")}
-              </p>
-            </div>
-          </div>
+                </div>
+                <span className="shrink-0 text-[12px] font-medium text-landing-text-muted line-through sm:text-[13px]">
+                  {p.price}
+                  {perMonth}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        {/* CTA */}
-        <div className="mt-10 flex justify-center sm:mt-14">
-          <a
-            href="/workspace"
-            className="group inline-flex items-center gap-2.5 rounded-xl bg-landing-accent px-7 py-3.5 text-[14px] font-bold text-landing-bg-secondary shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-colors duration-200 hover:bg-[#b5e82d] active:scale-[0.98]"
-          >
-            {isLoggedIn ? t("ctaLoggedIn") : t("cta")}
-            <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-          </a>
+        {/* Total card */}
+        <div
+          ref={refTotal}
+          className="mx-auto mt-3 max-w-3xl rounded-2xl border border-[#f3f0ed]/[0.06] bg-landing-card p-5 text-center transition-all duration-700 sm:mt-4 sm:p-7"
+          style={{
+            opacity: totalVisible ? 1 : 0,
+            transform: totalVisible ? "translateY(0)" : "translateY(28px)",
+            transitionDelay: "120ms",
+          }}
+        >
+          <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-landing-text-muted sm:text-[11px]">
+            {t("totalTag")}
+          </span>
+          <p className="mt-2.5 font-sora text-[24px] font-bold tracking-tight text-landing-text-muted line-through decoration-landing-text-muted/70 decoration-[2.5px] sm:text-[30px] lg:text-[34px]">
+            {t("totalAmount")}
+          </p>
+          <p className="mx-auto mt-3 max-w-xl text-[13px] leading-relaxed text-landing-text-secondary sm:mt-3.5 sm:text-[14px]">
+            {t.rich("totalDescription", {
+              strong: (chunks) => (
+                <strong className="font-semibold text-landing-text">{chunks}</strong>
+              ),
+            })}
+          </p>
         </div>
       </div>
     </section>

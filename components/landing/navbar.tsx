@@ -7,7 +7,6 @@ import { useAuth } from "@/lib/auth-context";
 import { useLoginModal } from "@/lib/login-modal-context";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { LocaleSwitcher } from "@/components/locale-switcher";
 
 export function Navbar() {
   const { user, loading } = useAuth();
@@ -87,10 +86,6 @@ export function Navbar() {
 
           {/* desktop CTAs */}
           <div className="hidden items-center gap-3 md:flex">
-            {loading
-              ? <div className="h-8 w-24 animate-pulse rounded-xl bg-landing-text/8" />
-              : <LocaleSwitcher />
-            }
             {loading ? (
               <>
                 <div className="h-9 w-20 animate-pulse rounded-xl bg-landing-text/8" />
@@ -175,10 +170,6 @@ export function Navbar() {
 
         {/* CTAs */}
         <div className="flex flex-col gap-3 border-t border-[#f3f0ed]/[0.06] px-4 py-6">
-          {loading
-            ? <div className="h-8 w-24 animate-pulse rounded-xl bg-landing-text/8" />
-            : <LocaleSwitcher className="self-start" />
-          }
           {loading ? (
             <>
               <div className="h-12 w-full animate-pulse rounded-xl bg-landing-text/8" />

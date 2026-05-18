@@ -13,7 +13,6 @@ import { PlansModal } from './PlansModal';
 import { AffiliateProgramModal } from './AffiliateProgramModal';
 import { WeeklyClaimWidget } from './WeeklyClaimWidget';
 import { useLoginModal } from '@/lib/login-modal-context';
-import { LocaleSwitcher } from '@/components/locale-switcher';
 
 function formatCents(cents: number, locale: string) {
   const intlLocale = locale === 'pt-BR' ? 'pt-BR' : locale === 'es' ? 'es' : 'en-US';
@@ -211,8 +210,6 @@ export function TopNavbar() {
                     </div>
                   )}
                 </div>
-
-                <LocaleSwitcher compact />
 
                 <button
                   onClick={toggleStudioMode}
@@ -498,8 +495,6 @@ export function TopNavbar() {
             </button>
           )}
 
-          <LocaleSwitcher />
-
           {/* Settings dropdown — only for logged-in users */}
           {user && <div ref={menuRef} className="relative">
             <button
@@ -564,7 +559,6 @@ export function TopNavbar() {
                   <div className="flex-1 min-w-0">
                     <DropdownItem icon={LogOut} label={tMenu('logout')} danger onClick={() => { setMenuOpen(false); handleLogout(); }} />
                   </div>
-                  <LocaleSwitcher compact />
                 </div>
               </div>
             )}
@@ -654,7 +648,6 @@ export function TopNavbar() {
               <div className="flex-1 min-w-0">
                 <DropdownItem icon={LogOut} label={tMenu('logout')} danger onClick={() => { setMenuOpen(false); handleLogout(); }} />
               </div>
-              <LocaleSwitcher compact />
             </div>
           </aside>
         </div>

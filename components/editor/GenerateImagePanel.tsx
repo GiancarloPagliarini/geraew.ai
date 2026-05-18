@@ -15,8 +15,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ArrowBigUp, ArrowUpRight, ChevronDown, Coins, Download, FolderOpen, FolderPlus, Image, ImagePlus, Loader2, Maximize2, Plus, Settings, Sparkles, TriangleAlert, Wand2, X } from 'lucide-react';
+import { ArrowBigUp, ArrowUpRight, ChevronDown, Coins, Download, FolderOpen, FolderPlus, Image, ImagePlus, Infinity as InfinityIcon, Loader2, Maximize2, Plus, Settings, Sparkles, TriangleAlert, Wand2, X } from 'lucide-react';
 import { EnhancePromptToggle } from './EnhancePromptToggle';
+import { UnlimitedToggle } from './UnlimitedToggle';
+import {
+  useUnlimitedStatus,
+  isModelSlugInUnlimitedPlan,
+  getFirstUnlimitedSlugForType,
+  getFirstUnlimitedResolutionForVariant,
+  getModelVariantFromSlug,
+  isUnlimitedModelAllowed,
+} from '@/hooks/use-unlimited-status';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -28,6 +37,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
 import { api, ApiError, Folder } from '@/lib/api';
 import { PlansModal } from './PlansModal';
+import { UnlimitedUpgradeModal } from './UnlimitedUpgradeModal';
 import { listenGeneration } from '@/lib/sse';
 import { useGenerationRecovery } from '@/lib/use-generation-recovery';
 import { toast } from 'sonner';
@@ -80,6 +90,12 @@ function qualityToResolution(q: string): 'RES_1K' | 'RES_2K' | 'RES_4K' {
   return 'RES_1K';
 }
 
+function resolutionToQuality(res: string): string {
+  if (res === 'RES_4K') return '4k';
+  if (res === 'RES_2K') return 'hd';
+  return 'sd'; // RES_1K
+}
+
 function proportionToAspectRatio(p: string): string {
   const map: Record<string, string> = {
     '16-9': '16:9',
@@ -101,6 +117,7 @@ interface GenerateImagePanelProps {
 export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateImagePanelProps) {
   const t = useTranslations('editorPanels.image');
   const tCommon = useTranslations('editorPanels.common');
+  const tUnlimited = useTranslations('editorPanels.unlimited');
   const LOADING_MESSAGES = t.raw('loadingMessages') as string[];
   const { setNodeImage, nodeUpscaleStates, setNodeUpscaleState, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker, pendingPromptRef, consumePendingPrompt, pendingPanelImageRef, consumePendingPanelImage, setNodeGenerating, studioMode } =
     useEditor();
@@ -121,6 +138,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   const queryClient = useQueryClient();
   const upscaleState = nodeUpscaleStates[nodeId] ?? 'idle';
   const [plansModalOpen, setPlansModalOpen] = useState(false);
+  const [unlimitedModalOpen, setUnlimitedModalOpen] = useState(false);
 
   // ── Persistent state (survives page reload) ──────────────────────────────
   const storageKey = `geraew-panel-image-${nodeId}`;
@@ -185,6 +203,8 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [enhancePrompt, setEnhancePrompt] = useState(stored?.enhancePrompt ?? false);
+  const [unlimited, setUnlimited] = useState(false);
+  const { data: unlimitedStatus, isLoading: isLoadingUnlimited } = useUnlimitedStatus();
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(true);
 
@@ -199,7 +219,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
     const dbBySlug = new Map(
       (imageModelsQuery.data ?? []).map((m) => [m.slug, m]),
     );
-    const base: { value: string; label: string; disabled?: boolean; badge?: string }[] = [
+    const base: { value: string; label: string; disabled?: boolean; badge?: string; unlimited?: boolean }[] = [
       { value: 'gpt-image-2', label: 'GPT Image 2', badge: tCommon('newBadge') },
       { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2' },
       { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
@@ -207,9 +227,62 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
     ];
     return base.map((opt) => {
       const dbModel = dbBySlug.get(opt.value);
-      return dbModel ? { ...opt, label: dbModel.label, disabled: !dbModel.isActive } : opt;
+      const merged = dbModel ? { ...opt, label: dbModel.label, disabled: !dbModel.isActive } : opt;
+      return {
+        ...merged,
+        unlimited: unlimited && isModelSlugInUnlimitedPlan(unlimitedStatus, opt.value),
+      };
     });
-  }, [imageModelsQuery.data]);
+  }, [imageModelsQuery.data, unlimited, unlimitedStatus]);
+
+  // Auto-desliga o toggle ilimitado quando o usuário troca para um modelo fora
+  // do plano. Evita que ele tente gerar e tome 403 do backend.
+  // Importante: NÃO depender de `unlimited` para não desligar imediatamente
+  // após uma ativação onde a troca de modelo é feita no mesmo tick.
+  useEffect(() => {
+    if (!unlimited) return;
+    if (!isModelSlugInUnlimitedPlan(unlimitedStatus, model)) {
+      setUnlimited(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model, unlimitedStatus]);
+
+  // Ao ativar o toggle: garante que modelo + qualidade estão no plano,
+  // trocando automaticamente caso o atual esteja fora.
+  const handleToggleUnlimited = (next: boolean) => {
+    if (!next) {
+      setUnlimited(false);
+      return;
+    }
+
+    // 1. Decidir modelo final (o atual ou um fallback)
+    let targetModel = model;
+    if (!isModelSlugInUnlimitedPlan(unlimitedStatus, model)) {
+      const fallbackSlug = getFirstUnlimitedSlugForType(unlimitedStatus, 'image');
+      if (!fallbackSlug) {
+        toast.info(tUnlimited('errors.noImagePlan'));
+        setUnlimitedModalOpen(true);
+        return;
+      }
+      targetModel = fallbackSlug;
+      setModel(targetModel);
+    }
+
+    // 2. Ajustar qualidade se a atual não estiver liberada nesse modelo
+    const targetVariant = getModelVariantFromSlug(targetModel);
+    const currentResolution = qualityToResolution(quality);
+    if (!isUnlimitedModelAllowed(unlimitedStatus, targetVariant, currentResolution)) {
+      const fallbackResolution = getFirstUnlimitedResolutionForVariant(
+        unlimitedStatus,
+        targetVariant,
+      );
+      if (fallbackResolution) {
+        setQuality(resolutionToQuality(fallbackResolution));
+      }
+    }
+
+    setUnlimited(true);
+  };
 
   // Se o modelo selecionado ficou indisponível, troca automaticamente pro primeiro ativo
   useEffect(() => {
@@ -543,6 +616,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
           resolution: qualityToResolution(quality),
           aspect_ratio: proportionToAspectRatio(proportion),
           mime_type: 'image/png',
+          ...(unlimited && { unlimited: true }),
           ...(attachedImages.length > 0 && {
             images: attachedImages.map(({ base64, mime_type }) => ({ base64, mime_type })),
           }),
@@ -575,6 +649,32 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
         });
         return; // Success — exit the retry loop
       } catch (err) {
+        // Unlimited-mode specific errors — não retry, mostra mensagem clara
+        if (err instanceof ApiError) {
+          if (err.code === 'UNLIMITED_PLAN_REQUIRED' || err.code === 'UNLIMITED_MODEL_NOT_ALLOWED') {
+            clearProgressTimer();
+            clearMsgTimer();
+            setGenState('idle');
+            setUnlimited(false);
+            setUnlimitedModalOpen(true);
+            return;
+          }
+          if (err.code === 'UNLIMITED_DAILY_CAP_REACHED') {
+            clearProgressTimer();
+            clearMsgTimer();
+            setGenState('idle');
+            toast.error(tUnlimited('errors.serverBusy'));
+            return;
+          }
+          if (err.code === 'UNLIMITED_LOCK_HELD') {
+            clearProgressTimer();
+            clearMsgTimer();
+            setGenState('idle');
+            toast.error(tUnlimited('errors.lockHeld'));
+            return;
+          }
+        }
+
         // 429 MAX_CONCURRENT_REACHED — wait for a slot and retry automatically
         if (err instanceof ApiError && err.status === 429 && attempt < MAX_QUEUE_RETRIES) {
           setLoadingMsg(t('queueWaiting'));
@@ -809,13 +909,19 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
       { value: '4-3', label: t('proportionOptions.43'), suffix: '4:3' },
       { value: '16-9', label: t('proportionOptions.landscape'), suffix: '16:9' },
     ];
-    const qualityOptionsRaw: { value: string; label: string }[] =
+    const qualityOptionsBase: { value: string; label: string }[] =
       model === 'sem-censura'
         ? [{ value: '4k', label: '4K' }, { value: 'hd', label: '2K' }]
         : model === 'gpt-image-2' && proportion === '1-1'
           ? [{ value: 'hd', label: '2K' }, { value: 'sd', label: '1K' }]
           : [{ value: '4k', label: '4K' }, { value: 'hd', label: '2K' }, { value: 'sd', label: '1K' }];
-    const modelSelectOptions = imageModelOptions.map((o) => ({ value: o.value, label: o.label, disabled: o.disabled }));
+    const qualityOptionsRaw = qualityOptionsBase.map((opt) => ({
+      ...opt,
+      unlimited:
+        unlimited &&
+        isUnlimitedModelAllowed(unlimitedStatus, imageModelVariant, qualityToResolution(opt.value)),
+    }));
+    const modelSelectOptions = imageModelOptions.map((o) => ({ value: o.value, label: o.label, disabled: o.disabled, unlimited: o.unlimited }));
     const showEnhanceToggle = model !== 'sem-censura';
 
     return (
@@ -871,6 +977,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                 progress={progress}
                 generatedImageUrl={generatedImageUrl}
                 imageRef={draggableImgRef}
+                accent={unlimited ? 'violet' : undefined}
                 onImageClick={() => window.open(generatedImageUrl!, '_blank')}
                 onImageDragStart={(e) => {
                   e.stopPropagation();
@@ -1007,14 +1114,16 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                       onClick={handleGenerate}
                       disabled={isGenerating || !prompt.trim()}
                       title={tCommon('generate')}
-                      className="ml-auto inline-flex items-center gap-1 rounded-full bg-[#a2dd00] px-2.5 py-1 text-[11px] font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                      className={`ml-auto inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${unlimited ? 'bg-[#a855f7] text-white' : 'bg-[#a2dd00] text-[#1a2123]'}`}
                     >
                       {isGenerating ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : unlimited ? (
+                        <InfinityIcon className="h-3 w-3" />
                       ) : (
                         <Sparkles className="h-3 w-3" />
                       )}
-                      {isFreeGen ? tCommon('free') : (creditCost || '—')}
+                      {unlimited ? tUnlimited('costLabel') : isFreeGen ? tCommon('free') : (creditCost || '—')}
                     </button>
                   </div>
                 </div>
@@ -1024,16 +1133,43 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
           </div>
         </TooltipProvider>
         {plansModalOpen && createPortal(<PlansModal onClose={() => setPlansModalOpen(false)} />, document.body)}
+        {unlimitedModalOpen && createPortal(<UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />, document.body)}
       </>
     );
   }
+
+  // Quality options compartilhadas com modo normal — exibem ícone Infinity
+  // ao lado das resoluções liberadas no plano ilimitado do usuário.
+  // Hover dos botões de upload (referências) — violeta em modo ilimitado.
+  const refHoverClass = unlimited
+    ? 'hover:border-[#a855f7]/40 hover:text-[#a855f7]/60'
+    : 'hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60';
+
+  const qualityOptionsForNormalMode = (
+    model === 'sem-censura'
+      ? [{ value: '4k', label: '4K' }, { value: 'hd', label: '2K' }]
+      : model === 'gpt-image-2' && proportion === '1-1'
+        ? [{ value: 'hd', label: '2K' }, { value: 'sd', label: '1K' }]
+        : [{ value: '4k', label: '4K' }, { value: 'hd', label: '2K' }, { value: 'sd', label: '1K' }]
+  ).map((opt) => ({
+    ...opt,
+    unlimited:
+      unlimited &&
+      isUnlimitedModelAllowed(unlimitedStatus, imageModelVariant, qualityToResolution(opt.value)),
+  }));
 
   return (
     <>
       <TooltipProvider>
         <div
           ref={panelRef}
-          className={`w-[calc(100vw-5rem)] overflow-hidden rounded-2xl border bg-[#1a2123] shadow-2xl shadow-black/50 transition-colors sm:w-[320px] ${isDraggingOver ? 'border-[#a2dd00]/50 ring-2 ring-[#a2dd00]/30' : 'border-[#f3f0ed]/8'}`}
+          className={`w-[calc(100vw-5rem)] overflow-hidden rounded-2xl border bg-[#1a2123] shadow-2xl shadow-black/50 transition-colors sm:w-[360px] ${
+            unlimited
+              ? 'unlimited-shimmer-border border-[#a855f7]/25'
+              : isDraggingOver
+                ? 'border-[#a2dd00]/50 ring-2 ring-[#a2dd00]/30'
+                : 'border-[#f3f0ed]/8'
+          }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -1041,7 +1177,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
           {/* Header — drag handle */}
           <div className="panel-drag-handle flex cursor-grab items-center justify-between border-b border-[#f3f0ed]/[0.07] px-4 py-3 active:cursor-grabbing">
             <div className="flex items-center gap-2">
-              <Image className="h-4 w-4 text-[#a2dd00]" />
+              <Image className={`h-4 w-4 ${unlimited ? 'text-[#a855f7]' : 'text-[#a2dd00]'}`} />
               <span className="text-xs font-bold tracking-[0.15em] text-[#f3f0ed]/90">
                 {t('header')}
               </span>
@@ -1064,16 +1200,27 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
               onChange={(e) => setPrompt(e.target.value)}
               rows={3}
               placeholder={t('promptPlaceholder')}
-              className="w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30"
+              className={`w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:bg-[#1e494b]/30 ${unlimited ? 'focus:border-[#a855f7]/40' : 'focus:border-[#a2dd00]/40'}`}
             />
 
-            {/* Enhance prompt toggle */}
+            {/* Unlimited toggle (sempre aparece) */}
+            <UnlimitedToggle
+              enabled={unlimited}
+              onToggle={handleToggleUnlimited}
+              eligible={unlimitedStatus?.eligible ?? false}
+              isLoading={isLoadingUnlimited}
+              disabled={isGenerating}
+              onRequireUpgrade={() => setUnlimitedModalOpen(true)}
+            />
+
+            {/* Enhance prompt toggle (não aparece em sem-censura) */}
             {model !== 'sem-censura' && (
               <EnhancePromptToggle
                 enabled={enhancePrompt}
                 onToggle={setEnhancePrompt}
                 isEnhancing={isEnhancing}
                 disabled={isGenerating}
+                accent={unlimited ? '#a855f7' : undefined}
               />
             )}
 
@@ -1089,6 +1236,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
               onImageError={handleImageError}
               progress={progress}
               generatedImageUrl={generatedImageUrl}
+              accent={unlimited ? 'violet' : undefined}
               imageRef={draggableImgRef}
               onImageClick={() => window.open(generatedImageUrl!, '_blank')}
               onImageDragStart={(e) => {
@@ -1148,7 +1296,10 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => setOptionsOpen((o) => !o)}
-                    className="flex h-6 w-6 items-center justify-center rounded-full text-[#a2dd00]/60 transition-all hover:bg-[#a2dd00]/10 hover:text-[#a2dd00]"
+                    className={`flex h-6 w-6 items-center justify-center rounded-full transition-all ${unlimited
+                      ? 'text-[#a855f7]/60 hover:bg-[#a855f7]/10 hover:text-[#a855f7]'
+                      : 'text-[#a2dd00]/60 hover:bg-[#a2dd00]/10 hover:text-[#a2dd00]'
+                      }`}
                   >
                     <Settings
                       className="h-5 w-5 transition-transform duration-500"
@@ -1196,6 +1347,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                         { value: '1-1', label: t('proportionOptions.square') },
                         { value: '4-3', label: t('proportionOptions.43') },
                       ]}
+                      accent={unlimited ? 'violet' : undefined}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -1205,23 +1357,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                     <PanelSelect
                       value={quality}
                       onValueChange={setQuality}
-                      options={
-                        model === 'sem-censura'
-                          ? [
-                            { value: '4k', label: '4K' },
-                            { value: 'hd', label: '2K' },
-                          ]
-                          : model === 'gpt-image-2' && proportion === '1-1'
-                            ? [
-                              { value: 'hd', label: '2K' },
-                              { value: 'sd', label: '1K' },
-                            ]
-                            : [
-                              { value: '4k', label: '4K' },
-                              { value: 'hd', label: '2K' },
-                              { value: 'sd', label: '1K' },
-                            ]
-                      }
+                      options={qualityOptionsForNormalMode}
                     />
                   </div>
                 </div>
@@ -1253,7 +1389,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                           <TooltipTrigger asChild>
                             <button
                               onClick={() => fileInputRef.current?.click()}
-                              className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                              className={`flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all ${refHoverClass}`}
                             >
                               <ImagePlus className="h-5 w-5" />
                             </button>
@@ -1264,7 +1400,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                           <TooltipTrigger asChild>
                             <button
                               onClick={() => openGalleryPicker({ nodeId, remaining: 4 - attachedImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success(tCommon('imageAddedAsReference')); } })}
-                              className="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60"
+                              className={`flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all ${refHoverClass}`}
                             >
                               <FolderOpen className="h-5 w-5" />
                             </button>
@@ -1296,12 +1432,24 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                         </span>
                       </div>
                     )}
-                    <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/7 bg-[#f3f0ed]/3 px-3 py-2">
+                    <div
+                      className="flex items-center justify-between rounded-xl border px-3 py-2 transition-colors"
+                      style={{
+                        borderColor: unlimited ? 'rgba(168,85,247,0.25)' : 'rgba(243,240,237,0.07)',
+                        background: unlimited ? 'rgba(168,85,247,0.06)' : 'rgba(243,240,237,0.03)',
+                      }}
+                    >
                       <div className="flex items-center gap-1.5">
-                        <Coins className="h-3 w-3 text-[#a2dd00]" />
+                        {unlimited ? (
+                          <InfinityIcon className="h-3 w-3 text-[#a855f7]" />
+                        ) : (
+                          <Coins className="h-3 w-3 text-[#a2dd00]" />
+                        )}
                         <span className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/40 uppercase">{tCommon('cost')}</span>
                       </div>
-                      {estimateLoading ? (
+                      {unlimited ? (
+                        <span className="text-xs font-bold text-[#a855f7]">{tUnlimited('costLabel')}</span>
+                      ) : estimateLoading ? (
                         <div className="h-3.5 w-16 animate-pulse rounded bg-[#f3f0ed]/8" />
                       ) : estimate ? (
                         <div className="flex items-center gap-2">
@@ -1323,9 +1471,28 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                   disabled={genState === 'generating' || !prompt.trim()}
                   className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                   style={{
-                    background: genState === 'generating' ? 'rgba(162,221,0,0.12)' : '#a2dd00',
-                    color: genState === 'generating' ? '#a2dd00' : '#1a2123',
-                    border: genState === 'generating' ? '1px solid rgba(162,221,0,0.2)' : 'none',
+                    background:
+                      genState === 'generating'
+                        ? unlimited
+                          ? 'rgba(168,85,247,0.12)'
+                          : 'rgba(162,221,0,0.12)'
+                        : unlimited
+                          ? '#a855f7'
+                          : '#a2dd00',
+                    color:
+                      genState === 'generating'
+                        ? unlimited
+                          ? '#a855f7'
+                          : '#a2dd00'
+                        : unlimited
+                          ? '#ffffff'
+                          : '#1a2123',
+                    border:
+                      genState === 'generating'
+                        ? unlimited
+                          ? '1px solid rgba(168,85,247,0.25)'
+                          : '1px solid rgba(162,221,0,0.2)'
+                        : 'none',
                   }}
                 >
                   {genState === 'generating' ? (
@@ -1346,6 +1513,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
         </div>
       </TooltipProvider>
       {plansModalOpen && createPortal(<PlansModal onClose={() => setPlansModalOpen(false)} />, document.body)}
+      {unlimitedModalOpen && createPortal(<UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />, document.body)}
     </>
   );
 }
@@ -1486,15 +1654,25 @@ function PanelSelect({
   onValueChange,
   options,
   maintenanceLabel,
+  accent,
 }: {
   value: string;
   onValueChange: (v: string) => void;
-  options: { value: string; label: string; disabled?: boolean; badge?: string }[];
+  options: { value: string; label: string; disabled?: boolean; badge?: string; unlimited?: boolean }[];
   maintenanceLabel?: string;
+  /** Tom de destaque para focus/selecionado. Default verde-limão. */
+  accent?: 'violet';
 }) {
+  const isViolet = accent === 'violet';
+  const triggerFocus = isViolet
+    ? 'focus:border-[#a855f7]/40'
+    : 'focus:border-[#a2dd00]/40';
+  const checkedColor = isViolet
+    ? 'data-[state=checked]:text-[#a855f7] [&>span:last-child>svg]:text-[#a855f7]'
+    : 'data-[state=checked]:text-[#a2dd00] [&>span:last-child>svg]:text-[#a2dd00]';
   return (
     <Select value={value} onValueChange={onValueChange}>
-      <SelectTrigger className="h-9 w-full rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 text-xs text-[#f3f0ed]/80 outline-none transition-all focus:border-[#a2dd00]/40 focus:ring-0 data-[placeholder]:text-[#f3f0ed]/35 [&>svg]:text-[#f3f0ed]/30">
+      <SelectTrigger className={`h-9 w-full rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 text-xs text-[#f3f0ed]/80 outline-none transition-all focus:ring-0 data-[placeholder]:text-[#f3f0ed]/35 [&>svg]:text-[#f3f0ed]/30 ${triggerFocus}`}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent className="rounded-xl border border-[#f3f0ed]/8 bg-[#1a2123] p-1 shadow-2xl shadow-black/60 backdrop-blur-md">
@@ -1503,10 +1681,13 @@ function PanelSelect({
             key={opt.value}
             value={opt.value}
             disabled={opt.disabled}
-            className="cursor-pointer rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/70 transition-all focus:bg-[#1e494b]/40 focus:text-[#f3f0ed] data-[state=checked]:text-[#a2dd00] data-disabled:cursor-not-allowed data-disabled:opacity-50 [&>span:last-child>svg]:text-[#a2dd00]"
+            className={`cursor-pointer rounded-lg px-3 py-2 text-xs text-[#f3f0ed]/70 transition-all focus:bg-[#1e494b]/40 focus:text-[#f3f0ed] data-disabled:cursor-not-allowed data-disabled:opacity-50 ${checkedColor}`}
           >
             <span className="flex items-center gap-1.5">
               {opt.label}
+              {opt.unlimited && (
+                <InfinityIcon className="h-3 w-3 text-[#a855f7]" />
+              )}
               {opt.badge && (
                 <span className="ml-2 rounded-full border border-[#a2dd00]/40 bg-[#a2dd00]/15 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-[#a2dd00]">
                   {opt.badge}

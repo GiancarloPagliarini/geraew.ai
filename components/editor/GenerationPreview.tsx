@@ -48,6 +48,9 @@ interface GenerationPreviewProps {
   /** e.g. '16-9' | '9-16' | '1-1' | '4-3'. Omit for natural/auto height. */
   proportion?: string;
 
+  /** Tom dos blobs do aurora loading. Default verde-limão. */
+  accent?: 'violet';
+
   /** Hover overlay content (action buttons, badges, etc.) */
   children?: React.ReactNode;
 }
@@ -67,10 +70,31 @@ export function GenerationPreview({
   imageFilter,
   renderMedia,
   proportion,
+  accent,
   children,
 }: GenerationPreviewProps) {
   const t = useTranslations('editorChrome.preview');
   const hasMedia = !!(generatedImageUrl || renderMedia);
+  // Paleta dos blobs do aurora loading.
+  const palette = accent === 'violet'
+    ? {
+      strong: 'rgba(168,85,247,0.28)',
+      medium: 'rgba(168,85,247,0.18)',
+      faint: 'rgba(168,85,247,0.12)',
+      base: 'rgba(168,85,247,0.20)',
+      neutralDark: 'rgba(60,30,80,0.9)',
+      neutralMid: 'rgba(60,30,80,0.5)',
+      neutralBg: 'rgba(30,15,50,0.95)',
+    }
+    : {
+      strong: 'rgba(162,221,0,0.28)',
+      medium: 'rgba(162,221,0,0.18)',
+      faint: 'rgba(162,221,0,0.12)',
+      base: 'rgba(162,221,0,0.20)',
+      neutralDark: 'rgba(30,73,75,0.9)',
+      neutralMid: 'rgba(30,73,75,0.5)',
+      neutralBg: 'rgba(20,40,42,0.95)',
+    };
 
   // Only render something when actively generating or media exists
   if (genState === 'idle' && !hasMedia) return null;
@@ -99,25 +123,25 @@ export function GenerationPreview({
             <div style={{
               position: 'absolute', top: '-30%', left: '-20%',
               width: '80%', height: '80%',
-              background: 'radial-gradient(ellipse, rgba(162,221,0,0.28) 0%, transparent 70%)',
+              background: `radial-gradient(ellipse, ${palette.strong} 0%, transparent 70%)`,
               animation: 'fluid-blob-1 5s ease-in-out infinite',
             }} />
             <div style={{
               position: 'absolute', bottom: '-25%', right: '-20%',
               width: '75%', height: '75%',
-              background: 'radial-gradient(ellipse, rgba(30,73,75,0.9) 0%, rgba(162,221,0,0.18) 50%, transparent 70%)',
+              background: `radial-gradient(ellipse, ${palette.neutralDark} 0%, ${palette.medium} 50%, transparent 70%)`,
               animation: 'fluid-blob-2 5s ease-in-out infinite',
             }} />
             <div style={{
               position: 'absolute', top: '15%', right: '-15%',
               width: '65%', height: '65%',
-              background: 'radial-gradient(ellipse, rgba(20,40,42,0.95) 0%, rgba(162,221,0,0.12) 60%, transparent 80%)',
+              background: `radial-gradient(ellipse, ${palette.neutralBg} 0%, ${palette.faint} 60%, transparent 80%)`,
               animation: 'fluid-blob-3 7s ease-in-out infinite',
             }} />
             <div style={{
               position: 'absolute', bottom: '-10%', left: '10%',
               width: '60%', height: '60%',
-              background: 'radial-gradient(ellipse, rgba(162,221,0,0.2) 0%, rgba(30,73,75,0.5) 45%, transparent 70%)',
+              background: `radial-gradient(ellipse, ${palette.base} 0%, ${palette.neutralMid} 45%, transparent 70%)`,
               animation: 'fluid-blob-4 9s ease-in-out infinite',
             }} />
           </div>

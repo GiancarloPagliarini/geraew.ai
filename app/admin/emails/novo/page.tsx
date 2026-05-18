@@ -63,6 +63,7 @@ export default function NewEmailBroadcastPage() {
   }, [user]);
 
   const [subject, setSubject] = useState('');
+  const [format, setFormat] = useState<'markdown' | 'html'>('markdown');
   const [bodyMarkdown, setBodyMarkdown] = useState(`# Olá!\n\nEscreva sua mensagem aqui em **markdown**.\n\n- Item 1\n- Item 2\n\n[Link de exemplo](https://geraew.com.br)`);
   const [recipientType, setRecipientType] = useState<RecipientType>('BY_PLAN');
   const [planSlug, setPlanSlug] = useState('pro');
@@ -116,7 +117,7 @@ export default function NewEmailBroadcastPage() {
   useEffect(() => {
     const t = setTimeout(() => setHtmlQueryKey((n) => n + 1), 600);
     return () => clearTimeout(t);
-  }, [bodyMarkdown, subject, previewMergeVars]);
+  }, [bodyMarkdown, subject, previewMergeVars, format]);
 
   const htmlPreview = useQuery({
     queryKey: ['admin', 'emails', 'render-preview', htmlQueryKey],
@@ -125,6 +126,7 @@ export default function NewEmailBroadcastPage() {
         bodyMarkdown,
         subject,
         mergeVars: previewMergeVars,
+        format,
       }),
     enabled: !!accessToken && bodyMarkdown.length >= 1,
     retry: false,
@@ -155,7 +157,7 @@ export default function NewEmailBroadcastPage() {
   // ─── Mutations ─────────────────────────────────────────────────────
   const sendTestMutation = useMutation({
     mutationFn: () =>
-      api.adminEmails.sendTest(accessToken!, { subject, bodyMarkdown }),
+      api.adminEmails.sendTest(accessToken!, { subject, bodyMarkdown, format }),
     onSuccess: (data) => {
       toast.success(`Email de teste enviado pra ${data.sentTo}`);
     },
@@ -171,6 +173,7 @@ export default function NewEmailBroadcastPage() {
         bodyMarkdown,
         recipientType,
         recipientFilter,
+        format,
       }),
     onSuccess: (data) => {
       toast.success(`Broadcast enfileirado — ${data.totalRecipients} destinatários`);
@@ -330,17 +333,44 @@ export default function NewEmailBroadcastPage() {
 
             <div className="mb-1.5 flex items-center justify-between">
               <label className="text-xs font-medium text-[#f3f0ed]/60">
-                Corpo (Markdown)
+                Corpo ({format === 'markdown' ? 'Markdown' : 'HTML'})
               </label>
-              <a
-                href="https://www.markdownguide.org/cheat-sheet/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-[#a2dd00]/70 hover:text-[#a2dd00]"
-              >
-                Cheat sheet
-              </a>
+              {format === 'markdown' && (
+                <a
+                  href="https://www.markdownguide.org/cheat-sheet/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-[#a2dd00]/70 hover:text-[#a2dd00]"
+                >
+                  Cheat sheet
+                </a>
+              )}
             </div>
+
+            {/* Toggle de formato */}
+            <div className="mb-2 flex items-center gap-1.5 rounded-lg border border-[#f3f0ed]/8 bg-[#111618] p-1">
+              {(['markdown', 'html'] as const).map((opt) => {
+                const active = format === opt;
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setFormat(opt)}
+                    className={`flex-1 rounded-md px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all ${active
+                      ? 'bg-[#a2dd00]/15 text-[#a2dd00]'
+                      : 'text-[#f3f0ed]/40 hover:text-[#f3f0ed]/70'
+                      }`}
+                  >
+                    {opt === 'markdown' ? 'Markdown' : 'HTML (avançado)'}
+                  </button>
+                );
+              })}
+            </div>
+            {format === 'html' && (
+              <p className="mb-2 text-[11px] text-amber-400/70">
+                Modo HTML: o corpo é usado <strong>como está</strong> (sem parser Markdown e sem o template padrão). Você controla 100% do visual — use tabelas, inline styles e cores como quiser. Merge tags (<code>{'{{firstName}}'}</code>, etc.) continuam funcionando.
+              </p>
+            )}
             <textarea
               ref={bodyRef}
               value={bodyMarkdown}
