@@ -6,6 +6,7 @@ import {
   AlertCircle,
   Camera,
   CheckCircle2,
+  ChevronRight,
   Clock,
   Loader2,
   Upload,
@@ -50,6 +51,10 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [source, setSource] = useState<FileSource>('upload');
+  // Consent must be re-checked for every new file — mirrors the voice clone
+  // pattern in GenerateAudioPanel. Reset whenever the file changes.
+  const [consent, setConsent] = useState(false);
+  const [consentExpanded, setConsentExpanded] = useState(false);
 
   // Reset state shortly after close so the close animation doesn't flash empty
   useEffect(() => {
@@ -64,6 +69,8 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
       setUploadProgress(null);
       setIsDragging(false);
       setSource('upload');
+      setConsent(false);
+      setConsentExpanded(false);
       if (filePreview) {
         URL.revokeObjectURL(filePreview);
         setFilePreview(null);
@@ -111,6 +118,8 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
     setFile(null);
     setFileError(null);
     setFileDuration(null);
+    // Re-confirm consent for every new sample.
+    setConsent(false);
     if (filePreview) URL.revokeObjectURL(filePreview);
     setFilePreview(null);
 
@@ -183,6 +192,7 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
     setFileError(null);
     setFileDuration(null);
     setSource('upload');
+    setConsent(false);
     if (filePreview) URL.revokeObjectURL(filePreview);
     setFilePreview(null);
   }
@@ -192,7 +202,7 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
       openLoginModal();
       return;
     }
-    if (!name.trim() || !file) return;
+    if (!name.trim() || !file || !consent) return;
 
     setSubmitting(true);
     setUploadProgress(0);
@@ -367,6 +377,17 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
             <TipList kind={avatarKind} />
           </div>
 
+          {/* Consent — required before submit. Only shown once a file is
+              chosen (no point asking before there's something to consent to). */}
+          {file && (
+            <ConsentBox
+              consent={consent}
+              expanded={consentExpanded}
+              onToggleConsent={() => setConsent((v) => !v)}
+              onToggleExpand={() => setConsentExpanded((v) => !v)}
+            />
+          )}
+
           {/* Progress */}
           {uploadProgress !== null && <StageProgress progress={uploadProgress} />}
         </div>
@@ -386,7 +407,7 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
           </div>
           <button
             onClick={handleSubmitCreate}
-            disabled={submitting || !name.trim() || !file}
+            disabled={submitting || !name.trim() || !file || !consent}
             className="flex h-10 items-center gap-1.5 rounded-lg bg-[#a2dd00] px-5 text-[12px] font-extrabold text-black shadow-[0_4px_18px_-4px_rgba(162,221,0,0.5)] transition-all hover:bg-[#b6ec1f] hover:shadow-[0_6px_22px_-4px_rgba(162,221,0,0.6)] disabled:cursor-not-allowed disabled:bg-white/[0.06] disabled:text-white/35 disabled:shadow-none"
           >
             {submitting ? (
@@ -475,6 +496,75 @@ function TypeCard({
         {timeLabel}
       </span>
     </button>
+  );
+}
+
+interface ConsentBoxProps {
+  consent: boolean;
+  expanded: boolean;
+  onToggleConsent: () => void;
+  onToggleExpand: () => void;
+}
+function ConsentBox({ consent, expanded, onToggleConsent, onToggleExpand }: ConsentBoxProps) {
+  const t = useTranslations('editorDialogs.avatars.create');
+  return (
+    <div
+      className={`overflow-hidden rounded-xl border transition-all ${
+        consent
+          ? 'border-[#a2dd00]/40 bg-[#a2dd00]/[0.06]'
+          : 'border-[#f3f0ed]/[0.07] bg-[#1e494b]/15'
+      }`}
+    >
+      <div className="flex items-center gap-2 px-2.5 py-2">
+        <button
+          type="button"
+          onClick={onToggleConsent}
+          className="flex flex-1 items-center gap-2 text-left"
+        >
+          <span
+            className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-all ${
+              consent
+                ? 'border-[#a2dd00] bg-[#a2dd00]'
+                : 'border-[#f3f0ed]/30 bg-transparent'
+            }`}
+          >
+            {consent && (
+              <svg
+                viewBox="0 0 12 12"
+                className="h-2.5 w-2.5 text-[#1a2123]"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="2.5,6.5 5,9 9.5,3.5" />
+              </svg>
+            )}
+          </span>
+          <span className="text-[11px] font-medium text-[#f3f0ed]/80">
+            {t('consentLabel')}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={onToggleExpand}
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-[#f3f0ed]/40 transition-colors hover:bg-[#f3f0ed]/[0.06] hover:text-[#f3f0ed]/80"
+          aria-label={expanded ? t('consentCollapse') : t('consentExpand')}
+        >
+          <ChevronRight
+            className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-90' : ''}`}
+          />
+        </button>
+      </div>
+      {expanded && (
+        <div className="border-t border-[#f3f0ed]/[0.06] px-2.5 py-2">
+          <p className="text-[10px] leading-relaxed text-[#f3f0ed]/55">
+            {t('consentDetails')}
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
 

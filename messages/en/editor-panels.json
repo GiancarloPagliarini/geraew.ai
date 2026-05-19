@@ -297,6 +297,7 @@
         "cloneText": "Write the text the cloned voice should say...",
         "voiceName": "E.g.: My voice, Commercial voice..."
       },
+      "defaultCloneText": "Hello! This is a preview of my cloned voice. In a few seconds you'll hear how it sounds.",
       "states": {
         "generating": "Generating audio",
         "audioGenerated": "Audio generated",

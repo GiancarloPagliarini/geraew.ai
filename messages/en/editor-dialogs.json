@@ -342,7 +342,7 @@
         "waitGenerating": "Wait for the generation to finish",
         "errorGenerate": "Couldn't generate the video.",
         "errorGenericFail": "Generation failed. Please try again.",
-        "queuedToast": "Video queued! ~{credits} credits (adjusted to real duration)."
+        "queuedToast": "Video generating! {credits} credits charged."
       },
       "create": {
         "title": "Create new avatar",
@@ -401,7 +401,11 @@
         "webcamErrorNotFound": "No camera found on this device.",
         "webcamErrorNotSupported": "Your browser doesn't support webcam capture.",
         "webcamErrorGeneric": "Couldn't access the camera.",
-        "webcamErrorNoRecording": "Your browser doesn't support video recording."
+        "webcamErrorNoRecording": "Your browser doesn't support video recording.",
+        "consentLabel": "I confirm I have authorization to clone this person",
+        "consentDetails": "By checking this you confirm you have legal consent or authorization to clone this image/video. Cloning someone else's likeness without authorization violates our terms of service and may have legal consequences.",
+        "consentExpand": "View details",
+        "consentCollapse": "Collapse details"
       }
     }
   }

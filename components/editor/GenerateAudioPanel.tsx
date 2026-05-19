@@ -166,7 +166,18 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
   })();
 
   const [mode, setMode] = useState<Mode>(initialMode);
-  const [text, setText] = useState<string>(stored?.text ?? '');
+  const [text, setText] = useState<string>(
+    // Seed the clone-mode textarea with a default preview sentence so the user
+    // can hit "generate" right after picking a voice — no typing required.
+    stored?.text ?? (initialMode === 'clone' ? t('defaultCloneText') : ''),
+  );
+  // Clone-mode textarea starts locked (readOnly) with the default preview text;
+  // a click anywhere in the field unlocks it for editing. Only locked on first
+  // load when there's no saved text — if the user already had typed content,
+  // start unlocked so we don't surprise them.
+  const [cloneTextLocked, setCloneTextLocked] = useState<boolean>(
+    initialMode === 'clone' && !stored?.text,
+  );
   const [voiceId, setVoiceId] = useState<string>(
     pendingPrompt?.voiceId ?? stored?.voiceId ?? '',
   );
@@ -196,6 +207,17 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
     setErrorMsg(next.errorMsg);
     setProgress(0);
     setMode(newMode);
+
+    // Auto-fill the default preview text when entering clone mode with an
+    // empty textarea — saves the user from typing just to hear how the
+    // clone sounds. Re-lock the field so the seeded text doesn't get
+    // accidentally edited; click unlocks it.
+    if (newMode === 'clone' && text.trim().length === 0) {
+      setText(t('defaultCloneText'));
+      setCloneTextLocked(true);
+    } else if (newMode !== 'clone') {
+      setCloneTextLocked(false);
+    }
   }
 
   const [referenceAudio, setReferenceAudio] = useState<ReferenceAudio | null>(null);
@@ -887,11 +909,22 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder={mode === 'tts' ? 'Digite o texto que será falado...' : 'Digite o texto que sua voz clonada vai falar...'}
+                onClick={() => {
+                  if (mode === 'clone' && cloneTextLocked) setCloneTextLocked(false);
+                }}
+                onBlur={() => {
+                  if (mode === 'clone' && !cloneTextLocked) setCloneTextLocked(true);
+                }}
+                placeholder={mode === 'tts' ? t('placeholders.ttsText') : t('placeholders.cloneText')}
                 disabled={isGenerating}
+                readOnly={mode === 'clone' && cloneTextLocked}
                 rows={3}
                 maxLength={MAX_TEXT_LENGTH}
-                className="min-h-[80px] w-full resize-none rounded-xl bg-[#0d1011] px-3 py-2.5 text-[12px] text-[#f3f0ed]/85 placeholder-[#f3f0ed]/30 outline-none disabled:opacity-50"
+                className={`min-h-[80px] w-full resize-none rounded-xl bg-[#0d1011] px-3 py-2.5 text-[12px] text-[#f3f0ed]/85 placeholder-[#f3f0ed]/30 outline-none disabled:opacity-50 ${
+                  mode === 'clone' && cloneTextLocked
+                    ? 'cursor-pointer ring-1 ring-[#f3f0ed]/8 hover:ring-[#a2dd00]/30'
+                    : ''
+                }`}
               />
             )}
 
@@ -1263,17 +1296,30 @@ export function GenerateAudioPanel({ nodeId, onClose, onDuplicate }: GenerateAud
                   <textarea
                     value={text}
                     onChange={(e) => setText(e.target.value.slice(0, MAX_TEXT_LENGTH))}
+                    onClick={() => {
+                      if (mode === 'clone' && cloneTextLocked) setCloneTextLocked(false);
+                    }}
+                    onBlur={() => {
+                      if (mode === 'clone' && !cloneTextLocked) setCloneTextLocked(true);
+                    }}
+                    readOnly={mode === 'clone' && cloneTextLocked}
                     rows={3}
                     placeholder={
                       mode === 'tts'
                         ? t('placeholders.ttsText')
                         : t('placeholders.cloneText')
                     }
-                    className="w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/15 px-3 py-2 pb-6 text-sm leading-snug text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30"
+                    className={`w-full resize-none rounded-xl border bg-[#1e494b]/15 px-3 py-2 pb-6 text-sm leading-snug text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30 ${
+                      mode === 'clone' && cloneTextLocked
+                        ? 'cursor-pointer border-[#f3f0ed]/[0.07] hover:border-[#a2dd00]/40'
+                        : 'border-[#f3f0ed]/[0.07]'
+                    }`}
                   />
-                  <span className="absolute bottom-1.5 right-3 text-[10px] text-[#f3f0ed]/30">
-                    {text.length}/{MAX_TEXT_LENGTH}
-                  </span>
+                  {mode !== 'clone' && (
+                    <span className="absolute bottom-1.5 right-3 text-[10px] text-[#f3f0ed]/30">
+                      {text.length}/{MAX_TEXT_LENGTH}
+                    </span>
+                  )}
                 </div>
               </div>
 
