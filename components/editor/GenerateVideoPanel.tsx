@@ -196,11 +196,13 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       { value: 'veo3_fast', label: labelOverride['veo3_fast'] },
     ];
     const raw = videoModelsQuery.data
-      ? videoModelsQuery.data.map((m) => ({
-          value: m.slug,
-          label: labelOverride[m.slug] ?? m.label,
-          disabled: !m.isActive,
-        }))
+      ? videoModelsQuery.data
+          .filter((m) => !m.isGateway)
+          .map((m) => ({
+            value: m.slug,
+            label: labelOverride[m.slug] ?? m.label,
+            disabled: !m.isActive,
+          }))
       : fallback;
     return raw.map((opt) => ({
       ...opt,
@@ -213,7 +215,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     if (!videoModelsQuery.data) return;
     const current = videoModelsQuery.data.find((m) => m.slug === model);
     if (current && !current.isActive) {
-      const firstActive = videoModelsQuery.data.find((m) => m.isActive);
+      const firstActive = videoModelsQuery.data.find((m) => m.isActive && !m.isGateway);
       if (firstActive) setModel(firstActive.slug);
     }
   }, [videoModelsQuery.data, model]);

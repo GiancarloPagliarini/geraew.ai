@@ -163,6 +163,8 @@ export interface AiModelPublic {
   isActive: boolean;
   statusMessage: string | null;
   sortOrder: number;
+  /** Admin-only feature flag — don't show in generation panel dropdowns. */
+  isGateway: boolean;
 }
 
 export interface AiModelAdmin {
