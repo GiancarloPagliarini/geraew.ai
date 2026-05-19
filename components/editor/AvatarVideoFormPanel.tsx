@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import {
   api,
   ApiError,
@@ -44,9 +45,10 @@ const RESOLUTIONS: { value: AvatarVideoResolution; label: string }[] = [
   { value: '4k', label: '4K' },
 ];
 
-const ASPECT_RATIOS: { value: AvatarVideoAspectRatio; label: string; hint: string }[] = [
-  { value: '9:16', label: '9:16', hint: 'Reels / TikTok' },
-  { value: '16:9', label: '16:9', hint: 'YouTube / horizontal' },
+/** `hintKey` is resolved against `editorDialogs.avatars.form` at render time. */
+const ASPECT_RATIOS: { value: AvatarVideoAspectRatio; label: string; hintKey: 'ratioReels' | 'ratioYoutube' }[] = [
+  { value: '9:16', label: '9:16', hintKey: 'ratioReels' },
+  { value: '16:9', label: '16:9', hintKey: 'ratioYoutube' },
 ];
 
 /**
@@ -85,6 +87,10 @@ interface AvatarVideoFormPanelProps {
 export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelProps) {
   const { accessToken } = useAuth();
   const { consumePendingAvatarVideoForm, setNodeGenerating } = useEditor();
+  const t = useTranslations('editorDialogs.avatars.form');
+  const tMaint = useTranslations('editorDialogs.avatars.maintenance');
+  const tRoot = useTranslations('editorDialogs.avatars');
+  const tCommon = useTranslations('editorPanels.common');
 
   // Avatar to generate for — comes from the pending request on mount.
   const [avatar, setAvatar] = useState<UserAvatar | null>(null);
@@ -176,7 +182,7 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
           return;
         }
         if (gen.status === 'FAILED') {
-          setErrorMsg(gen.errorMessage || 'A geração falhou. Tente novamente.');
+          setErrorMsg(gen.errorMessage || t('errorGenericFail'));
           setGenState('idle');
           return;
         }
@@ -204,7 +210,7 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
           <div className="panel-drag-handle flex cursor-grab items-center justify-between px-3 py-2.5 active:cursor-grabbing">
             <div className="flex items-center gap-1.5">
               <Video className="h-3.5 w-3.5 text-[#f3f0ed]/40" />
-              <span className="text-[11px] font-medium text-[#f3f0ed]/60">Gerar vídeo</span>
+              <span className="text-[11px] font-medium text-[#f3f0ed]/60">{t('headerTagline')}</span>
             </div>
             <button
               type="button"
@@ -215,10 +221,10 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
             </button>
           </div>
           <div className="px-3 pb-3">
-            <p className="text-center text-[11px] leading-relaxed text-white/45">
-              Reabra esse painel clicando em <strong>Gerar vídeo</strong> no card do avatar em
-              "Meus Avatares".
-            </p>
+            <p
+              className="text-center text-[11px] leading-relaxed text-white/45"
+              dangerouslySetInnerHTML={{ __html: t.raw('headerHint') as string }}
+            />
           </div>
         </div>
       </TooltipProvider>
@@ -234,7 +240,7 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
   const avatarVideoModel = videoModels?.find((m) => m.slug === 'avatar-video');
   const featureDisabled = avatarVideoModel?.isActive === false;
   const featureDisabledMessage =
-    avatarVideoModel?.statusMessage ?? 'Em manutenção — voltamos em breve.';
+    avatarVideoModel?.statusMessage ?? tMaint('defaultMessage');
 
   const canSubmit =
     isReady &&
@@ -271,7 +277,7 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
         aspectRatio,
         ...voiceFields,
       });
-      toast.success(`Vídeo enfileirado! ~${res.creditsConsumed} créditos (ajustado pela duração real).`);
+      toast.success(t('queuedToast', { credits: res.creditsConsumed }));
       setGenerationId(res.generationId);
       setVideoUrl(null);
       setVideoVisible(false);
@@ -282,7 +288,7 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
           ? err.message
           : err instanceof Error
             ? err.message
-            : 'Falha ao gerar vídeo.';
+            : t('errorGenerate');
       toast.error(msg);
       setErrorMsg(msg);
     } finally {
@@ -337,7 +343,7 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
               </button>
             </TooltipTrigger>
             <TooltipContent side="top" sideOffset={6}>
-              {isGenerating ? 'Aguarde a geração terminar' : 'Fechar'}
+              {isGenerating ? t('waitGenerating') : tRoot('close')}
             </TooltipContent>
           </Tooltip>
         </div>
@@ -345,11 +351,11 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
         <div className="space-y-2 px-3 pb-3">
           {/* ── 1. Roteiro ────────────────────────────────────────────── */}
           <div>
-            <FieldLabel label="Roteiro" />
+            <FieldLabel label={t('scriptLabel')} />
             <textarea
               value={script}
               onChange={(e) => setScript(e.target.value)}
-              placeholder="Ex.: Olá pessoal, hoje vou falar sobre..."
+              placeholder={t('scriptPlaceholder')}
               maxLength={3000}
               rows={3}
               disabled={isGenerating}
@@ -387,15 +393,15 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
               {videoUrl && genState === 'done' && (
                 <>
                   <ActionButton
-                    title="Abrir em nova aba"
+                    title={t('openInTab')}
                     onClick={() => window.open(videoUrl, '_blank')}
                   >
                     <ArrowUpRight className="h-3.5 w-3.5" />
                   </ActionButton>
-                  <ActionButton title="Baixar" onClick={() => handleDownload(videoUrl)}>
+                  <ActionButton title={t('download')} onClick={() => handleDownload(videoUrl)}>
                     <Download className="h-3.5 w-3.5" />
                   </ActionButton>
-                  <ActionButton title="Descartar" onClick={handleDiscard}>
+                  <ActionButton title={t('discard')} onClick={handleDiscard}>
                     <X className="h-3.5 w-3.5" />
                   </ActionButton>
                 </>
@@ -432,7 +438,7 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
                 </button>
               </TooltipTrigger>
               <TooltipContent side="left" sideOffset={6}>
-                {optionsOpen ? 'Esconder opções' : 'Mostrar opções'}
+                {optionsOpen ? tCommon('hideOptions') : tCommon('showOptions')}
               </TooltipContent>
             </Tooltip>
           </div>
@@ -447,7 +453,7 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
           >
             <div className="space-y-2 pt-0.5">
               <div>
-                <FieldLabel label="Voz" />
+                <FieldLabel label={t('voiceLabel')} />
                 <VoicePickerButton
                   value={voiceId}
                   savedVoices={voices}
@@ -467,7 +473,7 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
               >
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#f3f0ed]/35">
-                    Resolução
+                    {t('resolutionLabel')}
                   </label>
                   <PanelSelect
                     value={resolution}
@@ -477,7 +483,7 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#f3f0ed]/35">
-                    Proporção
+                    {t('ratioLabel')}
                   </label>
                   <div className="flex gap-1.5">
                     {ASPECT_RATIOS.map((a) => {
@@ -487,7 +493,7 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
                           key={a.value}
                           type="button"
                           onClick={() => setAspectRatio(a.value)}
-                          title={a.hint}
+                          title={t(a.hintKey)}
                           className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-30"
                           style={{
                             background: active ? 'rgba(162,221,0,0.1)' : 'rgba(30,73,75,0.15)',
@@ -517,18 +523,18 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
                   <div className="flex items-center gap-1.5">
                     <Coins className="h-3 w-3 text-[#a2dd00]" />
                     <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#f3f0ed]/40">
-                      Estimativa
+                      {t('estimateLabel')}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-[#f3f0ed]/70">
-                      {estimatedCost.toLocaleString('pt-BR')} créditos
+                      {t('estimateValue', { credits: estimatedCost.toLocaleString() })}
                     </span>
                     <div className="h-1.5 w-1.5 rounded-full bg-[#a2dd00]" />
                   </div>
                 </div>
                 <p className="mt-1 text-[9.5px] leading-relaxed text-[#f3f0ed]/30">
-                  Cobrado conforme a duração real do vídeo
+                  {t('estimateHint', { seconds: estimatedSeconds })}
                 </p>
               </div>
 
@@ -539,7 +545,7 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
                 <div className="flex w-full flex-col items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 py-3 text-center">
                   <div className="flex items-center gap-1.5 text-sm font-bold text-amber-300/90">
                     <Wrench className="h-4 w-4" />
-                    Em manutenção
+                    {tMaint('title')}
                   </div>
                   <p className="px-3 text-[10.5px] leading-relaxed text-amber-200/70">
                     {featureDisabledMessage}
@@ -560,12 +566,12 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
                   {isGenerating ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Gerando…
+                      {t('generating')}
                     </>
                   ) : (
                     <>
                       <Video className="h-4 w-4" />
-                      {genState === 'done' ? 'Gerar outro' : 'Gerar vídeo'}
+                      {genState === 'done' ? t('generateAnother') : t('generate')}
                     </>
                   )}
                 </button>
@@ -644,6 +650,7 @@ function VoicePickerButton({
   disabled?: boolean;
   onClick: () => void;
 }) {
+  const t = useTranslations('editorDialogs.avatars.form');
   const selectedClonedVoice = value.startsWith('clone:')
     ? savedVoices.find((v) => v.id === value.slice('clone:'.length))
     : null;
@@ -657,8 +664,8 @@ function VoicePickerButton({
     : selectedInworldVoice
       ? selectedInworldVoice.displayName
       : loading
-        ? 'Carregando vozes…'
-        : 'Selecione uma voz';
+        ? t('voiceLoading')
+        : t('voiceSelect');
 
   return (
     <button
@@ -670,7 +677,7 @@ function VoicePickerButton({
       <MicVocal className="h-3.5 w-3.5 shrink-0 text-[#a2dd00]" />
       <span className="flex-1 truncate text-left">{label}</span>
       <span className="flex shrink-0 items-center gap-0.5 text-[10px] font-bold uppercase tracking-wider text-[#a2dd00]/80">
-        Vozes
+        {t('voicesAction')}
         <ChevronRight className="h-3 w-3" />
       </span>
     </button>

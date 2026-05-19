@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import {
   api,
@@ -35,6 +36,8 @@ const POLL_INTERVAL_MS = 8_000;
 export function AvatarsDialog({ open, onOpenChange }: AvatarsDialogProps) {
   const { user, accessToken } = useAuth();
   const { studioMode, requestAvatarVideoForm } = useEditor();
+  const t = useTranslations('editorDialogs.avatars');
+  const locale = useLocale();
 
   const [avatars, setAvatars] = useState<UserAvatar[]>([]);
   const [quota, setQuota] = useState<UserAvatarQuota | null>(null);
@@ -56,8 +59,7 @@ export function AvatarsDialog({ open, onOpenChange }: AvatarsDialogProps) {
   const avatarVideoModel = videoModels?.find((m) => m.slug === 'avatar-video');
   const avatarVideoEnabled = avatarVideoModel?.isActive !== false;
   const avatarVideoDisabledMessage =
-    avatarVideoModel?.statusMessage ??
-    'Em manutenção — voltamos em breve.';
+    avatarVideoModel?.statusMessage ?? t('maintenance.defaultMessage');
 
   const hasFetchedRef = useRef(false);
   const fetchRef = useRef(0);
@@ -151,9 +153,9 @@ export function AvatarsDialog({ open, onOpenChange }: AvatarsDialogProps) {
       await api.avatars.delete(accessToken, avatarId);
       setAvatars((prev) => prev.filter((a) => a.id !== avatarId));
       fetchAvatars(true);
-      toast.success('Avatar excluído.');
+      toast.success(t('deleteSuccess'));
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Falha ao excluir avatar.';
+      const msg = err instanceof ApiError ? err.message : t('deleteError');
       toast.error(msg);
     } finally {
       setDeletingId(null);
@@ -173,7 +175,7 @@ export function AvatarsDialog({ open, onOpenChange }: AvatarsDialogProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <span className="text-sm font-semibold tracking-tight text-white/85">Meus Avatares</span>
+          <span className="text-sm font-semibold tracking-tight text-white/85">{t('header')}</span>
           {!loading && quota && (
             <span className="text-[10px] font-bold text-[#a2dd00]/80 bg-[#a2dd00]/[0.08] px-2 py-0.5 rounded-full tabular-nums">
               {quota.used}/{quota.limit || '—'}
@@ -185,7 +187,7 @@ export function AvatarsDialog({ open, onOpenChange }: AvatarsDialogProps) {
             onClick={() => fetchAvatars()}
             disabled={loading}
             className="flex h-7 w-7 items-center justify-center rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.05] transition-colors disabled:opacity-40"
-            title="Atualizar"
+            title={t('refresh')}
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -204,17 +206,17 @@ export function AvatarsDialog({ open, onOpenChange }: AvatarsDialogProps) {
           <div className="flex items-center justify-center py-24">
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="h-5 w-5 animate-spin text-white/15" />
-              <span className="animate-pulse text-xs font-semibold text-white/50">Carregando…</span>
+              <span className="animate-pulse text-xs font-semibold text-white/50">{t('loading')}</span>
             </div>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center gap-2 py-12 text-center text-white/40">
-            <span className="text-xs">Não foi possível carregar os avatares.</span>
+            <span className="text-xs">{t('errorLoad')}</span>
             <button
               onClick={() => fetchAvatars()}
               className="rounded-md bg-white/[0.04] px-3 py-1 text-[11px] font-semibold text-white/70 hover:bg-white/[0.08]"
             >
-              Tentar de novo
+              {t('retry')}
             </button>
           </div>
         ) : (
@@ -225,10 +227,10 @@ export function AvatarsDialog({ open, onOpenChange }: AvatarsDialogProps) {
                 <AlertCircle className="h-4 w-4 shrink-0 text-yellow-400/80 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-[11px] font-semibold text-yellow-400/90 leading-relaxed">
-                    Clonagem de avatar não está disponível no seu plano atual.
+                    {t('planBanner.title')}
                   </p>
                   <p className="text-[10px] text-yellow-400/60 mt-0.5">
-                    Faça upgrade para um plano pago e desbloqueie esta funcionalidade.
+                    {t('planBanner.description')}
                   </p>
                 </div>
               </div>
@@ -237,81 +239,103 @@ export function AvatarsDialog({ open, onOpenChange }: AvatarsDialogProps) {
             {/* Section header */}
             <div className="px-1 pt-2 pb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#a2dd00]/75">
               <span className="h-1 w-1 rounded-full bg-[#a2dd00]/70" />
-              Avatares
+              {t('sectionTitle')}
               <span className="ml-auto rounded-full bg-[#a2dd00]/[0.08] px-1.5 py-px text-[9px] font-bold tabular-nums text-[#a2dd00]/80">
                 {avatars.length}
               </span>
             </div>
 
-            {/* Avatar grid */}
-            <div className="grid grid-cols-2 gap-2">
-              {/* Create card — opens CreateAvatarModal. When the avatar-video
-                  gateway is disabled, swap for a maintenance state so users
-                  can't create clones they won't be able to use. */}
-              {canCreate && (avatarVideoEnabled ? (
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(true)}
-                  className="group relative flex min-h-[180px] flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border border-dashed border-[#a2dd00]/30 bg-gradient-to-br from-[#a2dd00]/[0.08] via-[#a2dd00]/[0.02] to-transparent p-4 text-[#a2dd00]/85 transition-all hover:border-[#a2dd00]/55 hover:from-[#a2dd00]/[0.14] hover:text-[#a2dd00] hover:shadow-[0_0_28px_-8px_rgba(162,221,0,0.45)]"
-                >
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 opacity-[0.045] [background-image:linear-gradient(to_right,#a2dd00_1px,transparent_1px),linear-gradient(to_bottom,#a2dd00_1px,transparent_1px)] [background-size:16px_16px]"
-                  />
-                  <span className="relative flex h-11 w-11 items-center justify-center rounded-full bg-[#a2dd00]/15 ring-1 ring-[#a2dd00]/30 transition-transform group-hover:scale-110">
-                    <Plus className="h-5 w-5" strokeWidth={2} />
-                  </span>
-                  <span className="relative text-[12px] font-bold">Criar seu clone</span>
-                </button>
-              ) : (
-                <div
-                  title={avatarVideoDisabledMessage}
-                  className="flex min-h-[180px] cursor-not-allowed flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-amber-500/30 bg-amber-500/[0.05] p-4 text-center"
-                >
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-amber-500/15 ring-1 ring-amber-400/30">
-                    <Wrench className="h-5 w-5 text-amber-400" />
-                  </span>
-                  <span className="text-[12px] font-bold text-amber-300/90">Em manutenção</span>
-                  <span className="line-clamp-2 px-1 text-[10px] leading-snug text-amber-200/60">
-                    {avatarVideoDisabledMessage}
-                  </span>
-                </div>
-              ))}
-
-              {/* Limit reached card */}
-              {quota?.enabled && !canCreate && (
-                <div className="flex min-h-[180px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.02] p-4 text-white/40">
-                  <AlertCircle className="h-5 w-5" />
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-center">
-                    Limite atingido
-                  </span>
-                  <span className="text-[10px] text-center text-white/30 leading-tight">
-                    Exclua um avatar ou faça upgrade
-                  </span>
-                </div>
-              )}
-
-              {avatars.map((avatar) => (
-                <AvatarCard
-                  key={avatar.id}
-                  avatar={avatar}
-                  isConfirming={confirmDeleteId === avatar.id}
-                  isDeleting={deletingId === avatar.id}
-                  onConfirmDelete={() => setConfirmDeleteId(avatar.id)}
-                  onCancelDelete={() => setConfirmDeleteId(null)}
-                  onDelete={() => handleDelete(avatar.id)}
-                  onGenerateVideo={() => requestAvatarVideoForm({ avatar })}
-                  videoDisabled={!avatarVideoEnabled}
-                  videoDisabledMessage={avatarVideoDisabledMessage}
+            {/* Empty state — when the user has no avatars yet, show one big
+                hero card with the helpful copy embedded, instead of the tiny
+                grid card + redundant banner below. */}
+            {!hasAnyAvatar && canCreate && avatarVideoEnabled ? (
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(true)}
+                className="group relative flex w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border border-dashed border-[#a2dd00]/30 bg-gradient-to-br from-[#a2dd00]/[0.08] via-[#a2dd00]/[0.02] to-transparent p-6 text-center text-[#a2dd00]/85 transition-all hover:border-[#a2dd00]/55 hover:from-[#a2dd00]/[0.14] hover:text-[#a2dd00] hover:shadow-[0_0_28px_-8px_rgba(162,221,0,0.45)]"
+              >
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 opacity-[0.045] [background-image:linear-gradient(to_right,#a2dd00_1px,transparent_1px),linear-gradient(to_bottom,#a2dd00_1px,transparent_1px)] [background-size:16px_16px]"
                 />
-              ))}
-            </div>
+                <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-[#a2dd00]/15 ring-1 ring-[#a2dd00]/30 transition-transform group-hover:scale-110">
+                  <Plus className="h-7 w-7" strokeWidth={2} />
+                </span>
+                <div className="relative space-y-1.5">
+                  <div className="text-[14px] font-extrabold text-[#a2dd00]">
+                    {t('createCard.emptyTitle')}
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-white/55">
+                    {t('createCard.emptyDescription')}
+                  </p>
+                </div>
+                <div className="relative mt-1 inline-flex items-center gap-1.5 rounded-full bg-[#a2dd00]/12 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] ring-1 ring-[#a2dd00]/30 transition-all group-hover:bg-[#a2dd00]/20">
+                  <Plus className="h-3 w-3" strokeWidth={2.5} />
+                  {t('createCard.label')}
+                </div>
+              </button>
+            ) : (
+              /* Regular grid — user has avatars OR can't create */
+              <div className="grid grid-cols-2 gap-2">
+                {/* Create card — only when user can create. */}
+                {canCreate && (avatarVideoEnabled ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(true)}
+                    className="group relative flex min-h-[180px] flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border border-dashed border-[#a2dd00]/30 bg-gradient-to-br from-[#a2dd00]/[0.08] via-[#a2dd00]/[0.02] to-transparent p-4 text-[#a2dd00]/85 transition-all hover:border-[#a2dd00]/55 hover:from-[#a2dd00]/[0.14] hover:text-[#a2dd00] hover:shadow-[0_0_28px_-8px_rgba(162,221,0,0.45)]"
+                  >
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 opacity-[0.045] [background-image:linear-gradient(to_right,#a2dd00_1px,transparent_1px),linear-gradient(to_bottom,#a2dd00_1px,transparent_1px)] [background-size:16px_16px]"
+                    />
+                    <span className="relative flex h-11 w-11 items-center justify-center rounded-full bg-[#a2dd00]/15 ring-1 ring-[#a2dd00]/30 transition-transform group-hover:scale-110">
+                      <Plus className="h-5 w-5" strokeWidth={2} />
+                    </span>
+                    <span className="relative text-[12px] font-bold">{t('createCard.label')}</span>
+                  </button>
+                ) : (
+                  <div
+                    title={avatarVideoDisabledMessage}
+                    className="flex min-h-[180px] cursor-not-allowed flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-amber-500/30 bg-amber-500/[0.05] p-4 text-center"
+                  >
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-amber-500/15 ring-1 ring-amber-400/30">
+                      <Wrench className="h-5 w-5 text-amber-400" />
+                    </span>
+                    <span className="text-[12px] font-bold text-amber-300/90">{t('maintenance.title')}</span>
+                    <span className="line-clamp-2 px-1 text-[10px] leading-snug text-amber-200/60">
+                      {avatarVideoDisabledMessage}
+                    </span>
+                  </div>
+                ))}
 
-            {!hasAnyAvatar && (
-              <div className="mt-2 rounded-xl border border-dashed border-white/[0.07] bg-white/[0.015] px-4 py-3 text-center">
-                <p className="text-[11px] text-white/45 leading-relaxed">
-                  Você ainda não tem avatares. Clique em &quot;Criar seu clone&quot; para começar — uma foto sua já basta.
-                </p>
+                {/* Limit reached card */}
+                {quota?.enabled && !canCreate && (
+                  <div className="flex min-h-[180px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.02] p-4 text-white/40">
+                    <AlertCircle className="h-5 w-5" />
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-center">
+                      {t('quotaCard.title')}
+                    </span>
+                    <span className="text-[10px] text-center text-white/30 leading-tight">
+                      {t('quotaCard.description')}
+                    </span>
+                  </div>
+                )}
+
+                {avatars.map((avatar) => (
+                  <AvatarCard
+                    key={avatar.id}
+                    avatar={avatar}
+                    isConfirming={confirmDeleteId === avatar.id}
+                    isDeleting={deletingId === avatar.id}
+                    onConfirmDelete={() => setConfirmDeleteId(avatar.id)}
+                    onCancelDelete={() => setConfirmDeleteId(null)}
+                    onDelete={() => handleDelete(avatar.id)}
+                    onGenerateVideo={() => requestAvatarVideoForm({ avatar })}
+                    videoDisabled={!avatarVideoEnabled}
+                    videoDisabledMessage={avatarVideoDisabledMessage}
+                    locale={locale}
+                  />
+                ))}
               </div>
             )}
           </>
@@ -339,6 +363,7 @@ interface AvatarCardProps {
   onGenerateVideo: () => void;
   videoDisabled?: boolean;
   videoDisabledMessage?: string;
+  locale: string;
 }
 
 function AvatarCard({
@@ -351,7 +376,10 @@ function AvatarCard({
   videoDisabled,
   videoDisabledMessage,
   onGenerateVideo,
+  locale,
 }: AvatarCardProps) {
+  const t = useTranslations('editorDialogs.avatars.card');
+  const tConfirm = useTranslations('editorDialogs.avatars.deleteConfirm');
   const status = avatar.status;
   const isReady = status === 'READY';
   const isFailed = status === 'FAILED';
@@ -411,7 +439,7 @@ function AvatarCard({
               <User className="h-6 w-6 text-white/25" strokeWidth={1.5} />
             </span>
             <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/25">
-              Sem preview
+              {t('noPreview')}
             </span>
           </div>
         )}
@@ -433,7 +461,7 @@ function AvatarCard({
               <span className="relative h-1.5 w-1.5 rounded-full bg-[#a2dd00]" />
             </span>
             <span className="text-[8.5px] font-extrabold uppercase tracking-[0.16em] text-[#a2dd00]">
-              Pronto
+              {t('ready')}
             </span>
           </div>
         )}
@@ -443,10 +471,10 @@ function AvatarCard({
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-[#0f1414]/85 backdrop-blur-sm">
             <Loader2 className="h-6 w-6 animate-spin text-[#a2dd00]/85" />
             <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/75">
-              {status === 'TRAINING' ? 'Treinando' : 'Iniciando'}
+              {status === 'TRAINING' ? t('trainingTitle') : t('initiatingTitle')}
             </span>
             <span className="px-3 text-center text-[9px] leading-tight text-white/40">
-              {status === 'TRAINING' ? 'Pode levar alguns minutos' : 'Quase lá…'}
+              {status === 'TRAINING' ? t('trainingSubtitle') : t('initiatingSubtitle')}
             </span>
           </div>
         )}
@@ -458,7 +486,7 @@ function AvatarCard({
               <AlertCircle className="h-4 w-4 text-yellow-300" />
             </span>
             <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-yellow-300">
-              Aguardando você
+              {t('pendingConsent')}
             </span>
           </div>
         )}
@@ -470,7 +498,7 @@ function AvatarCard({
               <AlertCircle className="h-4 w-4 text-red-400" />
             </span>
             <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-red-400">
-              Falhou
+              {t('failed')}
             </span>
           </div>
         )}
@@ -484,7 +512,7 @@ function AvatarCard({
               onConfirmDelete();
             }}
             className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white/70 backdrop-blur-md transition-all hover:bg-red-500/45 hover:text-red-200 sm:opacity-0 group-hover:opacity-100"
-            title="Excluir"
+            title={t('delete')}
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -499,14 +527,14 @@ function AvatarCard({
           </div>
           <div className="mt-0.5 truncate text-[10px] text-white/35">
             {isReady
-              ? `Pronto ${formatRelative(avatar.trainingCompletedAt ?? avatar.createdAt)}`
+              ? t('readyAt', { time: formatRelative(avatar.trainingCompletedAt ?? avatar.createdAt, locale) })
               : isFailed
-                ? 'Treinamento falhou'
+                ? t('trainingFailed')
                 : isPendingConsent
-                  ? 'Consentimento pendente'
+                  ? t('pendingConsentLabel')
                   : status === 'TRAINING'
-                    ? 'Treinando…'
-                    : 'Iniciando…'}
+                    ? t('training')
+                    : t('initiating')}
           </div>
         </div>
 
@@ -524,7 +552,7 @@ function AvatarCard({
             className="mt-auto flex h-8 w-full cursor-not-allowed items-center justify-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-[10.5px] font-extrabold text-amber-300/90"
           >
             <Wrench className="h-3 w-3" />
-            Em manutenção
+            {t('maintenance')}
           </button>
         ) : (
           <button
@@ -533,7 +561,7 @@ function AvatarCard({
             className="mt-auto flex h-8 w-full items-center justify-center gap-1.5 rounded-lg bg-[#a2dd00] text-[10.5px] font-extrabold text-black shadow-[0_2px_10px_-2px_rgba(162,221,0,0.4)] transition-all hover:bg-[#b6ec1f] hover:shadow-[0_4px_14px_-2px_rgba(162,221,0,0.55)]"
           >
             <Video className="h-3 w-3" />
-            Gerar vídeo
+            {t('generateVideo')}
           </button>
         ))}
 
@@ -544,7 +572,7 @@ function AvatarCard({
             rel="noopener noreferrer"
             className="mt-auto flex h-8 w-full items-center justify-center gap-1.5 rounded-lg bg-yellow-400/20 text-[10.5px] font-extrabold text-yellow-300 ring-1 ring-yellow-400/35 transition-colors hover:bg-yellow-400/30"
           >
-            Aprovar consentimento
+            {t('approveConsent')}
           </a>
         )}
       </div>
@@ -555,9 +583,9 @@ function AvatarCard({
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-500/15 ring-1 ring-red-400/35">
             <Trash2 className="h-4 w-4 text-red-400" />
           </span>
-          <p className="text-center text-[11.5px] font-bold text-white/85">Excluir avatar?</p>
+          <p className="text-center text-[11.5px] font-bold text-white/85">{tConfirm('title')}</p>
           <p className="text-center text-[10px] leading-tight text-white/45">
-            Os créditos não serão devolvidos.
+            {tConfirm('subtitle')}
           </p>
           <div className="mt-1 flex gap-1.5">
             <button
@@ -567,7 +595,7 @@ function AvatarCard({
               className="flex h-7 items-center gap-1 rounded-md bg-red-500/25 px-2.5 text-[10px] font-extrabold text-red-300 transition-colors hover:bg-red-500/35 disabled:opacity-60"
             >
               {isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-              Excluir
+              {tConfirm('confirm')}
             </button>
             <button
               type="button"
@@ -575,7 +603,7 @@ function AvatarCard({
               onClick={onCancelDelete}
               className="flex h-7 items-center rounded-md px-2.5 text-[10px] font-extrabold text-white/65 transition-colors hover:bg-white/[0.06] hover:text-white/90 disabled:opacity-60"
             >
-              Cancelar
+              {tConfirm('cancel')}
             </button>
           </div>
         </div>
@@ -585,20 +613,54 @@ function AvatarCard({
 }
 
 /**
- * Compact pt-BR relative time formatter. "agora" | "há 5 min" | "há 2 h" | "há 3 d" | "há 1 sem"
- * Kept tiny on purpose — full Intl.RelativeTimeFormat output is too verbose for the card label.
+ * Compact relative time formatter. Uses pre-localized templates from the
+ * "relativeTime" namespace so each locale can format naturally (e.g. "há 5 min"
+ * vs "5 min ago" vs "hace 5 min"). Kept tiny on purpose — full
+ * Intl.RelativeTimeFormat output is too verbose for the card label.
  */
-function formatRelative(iso: string): string {
+const RELATIVE_DICT: Record<string, Record<string, string>> = {
+  'pt-BR': {
+    now: 'agora',
+    min: 'há {n} min',
+    hour: 'há {n} h',
+    day: 'há {n} d',
+    week: 'há {n} sem',
+    month: 'há {n} mês',
+    year: 'há {n} a',
+  },
+  en: {
+    now: 'just now',
+    min: '{n} min ago',
+    hour: '{n} h ago',
+    day: '{n} d ago',
+    week: '{n} w ago',
+    month: '{n} mo ago',
+    year: '{n} y ago',
+  },
+  es: {
+    now: 'ahora',
+    min: 'hace {n} min',
+    hour: 'hace {n} h',
+    day: 'hace {n} d',
+    week: 'hace {n} sem',
+    month: 'hace {n} mes',
+    year: 'hace {n} a',
+  },
+};
+
+function formatRelative(iso: string, locale: string): string {
+  const dict = RELATIVE_DICT[locale] ?? RELATIVE_DICT['pt-BR'];
+  const fmt = (key: string, n: number) => dict[key].replace('{n}', String(n));
   const diff = Date.now() - new Date(iso).getTime();
-  if (diff < 0) return 'agora';
+  if (diff < 0) return dict.now;
   const minutes = Math.floor(diff / 60_000);
-  if (minutes < 1) return 'agora';
-  if (minutes < 60) return `há ${minutes} min`;
+  if (minutes < 1) return dict.now;
+  if (minutes < 60) return fmt('min', minutes);
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `há ${hours} h`;
+  if (hours < 24) return fmt('hour', hours);
   const days = Math.floor(hours / 24);
-  if (days < 7) return `há ${days} d`;
-  if (days < 30) return `há ${Math.floor(days / 7)} sem`;
-  if (days < 365) return `há ${Math.floor(days / 30)} mês`;
-  return `há ${Math.floor(days / 365)} a`;
+  if (days < 7) return fmt('day', days);
+  if (days < 30) return fmt('week', Math.floor(days / 7));
+  if (days < 365) return fmt('month', Math.floor(days / 30));
+  return fmt('year', Math.floor(days / 365));
 }

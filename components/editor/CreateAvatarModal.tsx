@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { api, ApiError, UserAvatar } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
@@ -37,6 +38,7 @@ interface CreateAvatarModalProps {
 export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModalProps) {
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
+  const t = useTranslations('editorDialogs.avatars.create');
 
   const [avatarKind, setAvatarKind] = useState<AvatarKind>('photo');
   const [name, setName] = useState('');
@@ -116,11 +118,11 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
 
     if (avatarKind === 'photo') {
       if (!ACCEPTED_IMAGE_TYPES.includes(f.type)) {
-        setFileError('Use uma imagem PNG, JPG ou WEBP.');
+        setFileError(t('errorImageType'));
         return;
       }
       if (f.size > MAX_IMAGE_BYTES) {
-        setFileError('Imagem muito grande. Máximo 10 MB.');
+        setFileError(t('errorImageSize'));
         return;
       }
       setFile(f);
@@ -130,11 +132,11 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
 
     // digital_twin → vídeo
     if (!ACCEPTED_VIDEO_TYPES.includes(f.type)) {
-      setFileError('Use um vídeo MP4, MOV ou WEBM.');
+      setFileError(t('errorVideoType'));
       return;
     }
     if (f.size > MAX_VIDEO_BYTES) {
-      setFileError('Vídeo muito grande. Máximo 500 MB.');
+      setFileError(t('errorVideoSize'));
       return;
     }
 
@@ -162,11 +164,11 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
     }
 
     if (duration < MIN_VIDEO_DURATION_S) {
-      setFileError(`Vídeo muito curto. Mínimo ${MIN_VIDEO_DURATION_S}s.`);
+      setFileError(t('errorVideoTooShort', { min: MIN_VIDEO_DURATION_S }));
       return;
     }
     if (duration > MAX_VIDEO_DURATION_S) {
-      setFileError(`Vídeo muito longo. Máximo ${MAX_VIDEO_DURATION_S}s (5 min).`);
+      setFileError(t('errorVideoTooLong', { max: MAX_VIDEO_DURATION_S }));
       return;
     }
     setFile(f);
@@ -215,9 +217,7 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
       });
 
       toast.success(
-        avatarKind === 'photo'
-          ? 'Avatar criado! Em alguns segundos ele vai ficar pronto.'
-          : 'Avatar criado! Aprove o consentimento na próxima janela.',
+        avatarKind === 'photo' ? t('toastSuccessPhoto') : t('toastSuccessVideo'),
       );
       onCreated(created);
       onClose();
@@ -227,7 +227,7 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
           ? err.message
           : err instanceof Error
             ? err.message
-            : 'Falha ao criar avatar.';
+            : t('toastErrorCreate');
       toast.error(msg);
     } finally {
       setSubmitting(false);
@@ -250,7 +250,7 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
               <Wand2 className="h-3 w-3 text-[#a2dd00]" />
             </span>
             <span className="text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#a2dd00]">
-              Criar novo avatar
+              {t('title')}
             </span>
           </div>
           <button
@@ -266,39 +266,39 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
         <div className="sidebar-scroll flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
           {/* 1. Tipo */}
           <div>
-            <FieldLabel index={1} label="Tipo de avatar" />
+            <FieldLabel index={1} label={t('typeLabel')} />
             <div className="grid grid-cols-2 gap-2">
               <TypeCard
                 selected={avatarKind === 'photo'}
                 disabled={submitting}
                 onClick={() => handleSwitchKind('photo')}
                 icon={Camera}
-                title="Photo"
-                badge="Rápido"
-                timeLabel="~1 min"
-                desc="Uma foto frontal"
+                title={t('typePhoto')}
+                badge={t('typePhotoBadge')}
+                timeLabel={t('typePhotoTime')}
+                desc={t('typePhotoDesc')}
               />
               <TypeCard
                 selected={avatarKind === 'digital_twin'}
                 disabled={submitting}
                 onClick={() => handleSwitchKind('digital_twin')}
                 icon={Video}
-                title="Digital Twin"
-                badge="Realista"
-                timeLabel="~5 min"
-                desc="Vídeo do seu rosto"
+                title={t('typeVideo')}
+                badge={t('typeVideoBadge')}
+                timeLabel={t('typeVideoTime')}
+                desc={t('typeVideoDesc')}
               />
             </div>
           </div>
 
           {/* 2. Nome */}
           <div>
-            <FieldLabel index={2} label="Nome do avatar" />
+            <FieldLabel index={2} label={t('nameLabel')} />
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ex.: João Pedro"
+              placeholder={t('namePlaceholder')}
               maxLength={60}
               disabled={submitting}
               className="w-full rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2.5 text-[13px] text-white/90 placeholder:text-white/25 transition-all focus:border-[#a2dd00]/40 focus:bg-white/[0.04] focus:outline-none focus:ring-2 focus:ring-[#a2dd00]/15 disabled:opacity-60"
@@ -309,7 +309,7 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
           <div>
             <FieldLabel
               index={3}
-              label={avatarKind === 'photo' ? 'Sua foto' : 'Seu vídeo'}
+              label={avatarKind === 'photo' ? t('fileLabelPhoto') : t('fileLabelVideo')}
             />
             {file ? (
               <FilePreview
@@ -375,13 +375,13 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
         <div className="flex shrink-0 items-center gap-3 border-t border-white/[0.05] bg-[#171f21]/95 px-4 py-3 sm:px-5 sm:py-4">
           <div className="flex-1">
             <div className="text-[9.5px] font-bold uppercase tracking-[0.18em] text-white/35">
-              Custo
+              {t('costLabel')}
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-[18px] font-extrabold tabular-nums text-[#a2dd00]">
-                {(avatarKind === 'photo' ? 1250 : 2000).toLocaleString('pt-BR')}
+                {(avatarKind === 'photo' ? 1250 : 2000).toLocaleString()}
               </span>
-              <span className="text-[10.5px] font-semibold text-white/45">créditos</span>
+              <span className="text-[10.5px] font-semibold text-white/45">{t('credits')}</span>
             </div>
           </div>
           <button
@@ -392,10 +392,10 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
             {submitting ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Enviando…
+                {t('submitting')}
               </>
             ) : (
-              'Criar avatar'
+              t('submit')
             )}
           </button>
         </div>
@@ -446,8 +446,8 @@ function TypeCard({
       disabled={disabled}
       onClick={onClick}
       className={`relative flex flex-col items-start gap-1 overflow-hidden rounded-lg border p-3 text-left transition-all disabled:opacity-50 ${selected
-          ? 'border-[#a2dd00]/50 bg-[#a2dd00]/10 shadow-[inset_0_0_0_1px_rgba(162,221,0,0.2)]'
-          : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.14] hover:bg-white/[0.04]'
+        ? 'border-[#a2dd00]/50 bg-[#a2dd00]/10 shadow-[inset_0_0_0_1px_rgba(162,221,0,0.2)]'
+        : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.14] hover:bg-white/[0.04]'
         }`}
     >
       <div className="flex w-full items-center justify-between">
@@ -479,18 +479,11 @@ function TypeCard({
 }
 
 function TipList({ kind }: { kind: AvatarKind }) {
+  const t = useTranslations('editorDialogs.avatars.create');
   const tips =
     kind === 'photo'
-      ? [
-        'Foto frontal, rosto bem centralizado',
-        'Boa iluminação e fundo neutro',
-        'Sem óculos escuros ou chapéu',
-      ]
-      : [
-        'Olhe para a câmera e fale naturalmente',
-        'Cabeça relativamente parada, fundo neutro',
-        '20 segundos a 5 minutos de vídeo',
-      ];
+      ? [t('tipsPhoto1'), t('tipsPhoto2'), t('tipsPhoto3')]
+      : [t('tipsVideo1'), t('tipsVideo2'), t('tipsVideo3')];
   return (
     <ul className="mt-2.5 space-y-1">
       {tips.map((tip) => (
@@ -507,12 +500,13 @@ function TipList({ kind }: { kind: AvatarKind }) {
 }
 
 function StageProgress({ progress }: { progress: number }) {
+  const t = useTranslations('editorDialogs.avatars.create');
   const inUpload = progress < 100;
   return (
     <div className="rounded-lg border border-[#a2dd00]/15 bg-[#a2dd00]/[0.03] p-3">
       <div className="mb-2 flex items-center justify-between">
         <span className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/55">
-          {inUpload ? 'Enviando arquivo' : 'Iniciando treinamento'}
+          {inUpload ? t('stageUpload') : t('stageTraining')}
         </span>
         <span className="text-[10.5px] font-extrabold tabular-nums text-[#a2dd00]">
           {progress}%
@@ -532,7 +526,7 @@ function StageProgress({ progress }: { progress: number }) {
           <span
             className={`h-1 w-1 rounded-full ${inUpload ? 'bg-[#a2dd00]/85' : 'bg-white/30'}`}
           />
-          Enviar
+          {t('stageStepUpload')}
         </span>
         <span className="h-px w-3 bg-white/10" />
         <span
@@ -542,7 +536,7 @@ function StageProgress({ progress }: { progress: number }) {
           <span
             className={`h-1 w-1 rounded-full ${!inUpload ? 'bg-[#a2dd00]/85' : 'bg-white/15'}`}
           />
-          Treinar
+          {t('stageStepTrain')}
         </span>
       </div>
     </div>
@@ -557,6 +551,7 @@ interface SourceTabsProps {
   disabled?: boolean;
 }
 function SourceTabs({ source, onChange, disabled }: SourceTabsProps) {
+  const t = useTranslations('editorDialogs.avatars.create');
   return (
     <div className="mb-2 inline-flex w-full rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
       <button
@@ -564,24 +559,24 @@ function SourceTabs({ source, onChange, disabled }: SourceTabsProps) {
         disabled={disabled}
         onClick={() => onChange('upload')}
         className={`flex h-7 flex-1 items-center justify-center gap-1.5 rounded-md text-[10.5px] font-bold uppercase tracking-[0.1em] transition-all disabled:opacity-50 ${source === 'upload'
-            ? 'bg-white/[0.07] text-white/90 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]'
-            : 'text-white/40 hover:text-white/70'
+          ? 'bg-white/[0.07] text-white/90 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]'
+          : 'text-white/40 hover:text-white/70'
           }`}
       >
         <Upload className="h-3 w-3" />
-        Upload
+        {t('sourceUpload')}
       </button>
       <button
         type="button"
         disabled={disabled}
         onClick={() => onChange('webcam')}
         className={`flex h-7 flex-1 items-center justify-center gap-1.5 rounded-md text-[10.5px] font-bold uppercase tracking-[0.1em] transition-all disabled:opacity-50 ${source === 'webcam'
-            ? 'bg-white/[0.07] text-white/90 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]'
-            : 'text-white/40 hover:text-white/70'
+          ? 'bg-white/[0.07] text-white/90 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]'
+          : 'text-white/40 hover:text-white/70'
           }`}
       >
         <Camera className="h-3 w-3" />
-        Webcam
+        {t('sourceWebcam')}
       </button>
     </div>
   );
@@ -609,16 +604,17 @@ function UploadDropzone({
   onDrop,
   onChange,
 }: UploadDropzoneProps) {
+  const t = useTranslations('editorDialogs.avatars.create');
   return (
     <label
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       className={`group/drop relative flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed px-6 py-7 transition-all ${hasError
-          ? 'border-red-400/40 bg-red-400/[0.04]'
-          : isDragging
-            ? 'scale-[1.01] border-[#a2dd00]/70 bg-[#a2dd00]/[0.08] shadow-[0_0_28px_-6px_rgba(162,221,0,0.45)]'
-            : 'border-white/[0.08] bg-white/[0.015] hover:border-white/[0.18] hover:bg-white/[0.03]'
+        ? 'border-red-400/40 bg-red-400/[0.04]'
+        : isDragging
+          ? 'scale-[1.01] border-[#a2dd00]/70 bg-[#a2dd00]/[0.08] shadow-[0_0_28px_-6px_rgba(162,221,0,0.45)]'
+          : 'border-white/[0.08] bg-white/[0.015] hover:border-white/[0.18] hover:bg-white/[0.03]'
         } ${submitting ? 'pointer-events-none opacity-60' : ''}`}
     >
       <input
@@ -630,23 +626,21 @@ function UploadDropzone({
       />
       <span
         className={`flex h-12 w-12 items-center justify-center rounded-full transition-all ${isDragging
-            ? 'bg-[#a2dd00]/20 text-[#a2dd00]'
-            : 'bg-white/[0.04] text-white/40 group-hover/drop:bg-white/[0.06] group-hover/drop:text-white/55'
+          ? 'bg-[#a2dd00]/20 text-[#a2dd00]'
+          : 'bg-white/[0.04] text-white/40 group-hover/drop:bg-white/[0.06] group-hover/drop:text-white/55'
           }`}
       >
         <Upload className="h-5 w-5" />
       </span>
       <span className="text-[12.5px] font-bold text-white/85">
         {isDragging
-          ? 'Solte para enviar'
+          ? t('dropDrop')
           : kind === 'photo'
-            ? 'Arraste a foto ou clique aqui'
-            : 'Arraste o vídeo ou clique aqui'}
+            ? t('dropPhotoIdle')
+            : t('dropVideoIdle')}
       </span>
       <span className="text-center text-[10.5px] text-white/35">
-        {kind === 'photo'
-          ? 'PNG, JPG ou WEBP · até 10 MB'
-          : 'MP4, MOV ou WEBM · 20s a 5 min · até 500 MB'}
+        {kind === 'photo' ? t('dropPhotoHint') : t('dropVideoHint')}
       </span>
     </label>
   );
@@ -660,6 +654,7 @@ interface WebcamCaptureProps {
   onFileReady: (file: File, durationSec?: number) => void;
 }
 function WebcamCapture({ kind, disabled, onFileReady }: WebcamCaptureProps) {
+  const t = useTranslations('editorDialogs.avatars.create');
   const videoRef = useRef<HTMLVideoElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
@@ -699,13 +694,13 @@ function WebcamCapture({ kind, disabled, onFileReady }: WebcamCaptureProps) {
         const name = err instanceof Error ? err.name : '';
         const msg = err instanceof Error ? err.message : '';
         if (name === 'NotAllowedError' || msg.includes('denied') || msg.includes('Permission')) {
-          setError('Permissão negada. Libere o acesso à câmera no navegador.');
+          setError(t('webcamErrorDenied'));
         } else if (name === 'NotFoundError' || msg.includes('not found') || msg.includes('NotFound')) {
-          setError('Nenhuma câmera encontrada no dispositivo.');
+          setError(t('webcamErrorNotFound'));
         } else if (msg === 'not_supported') {
-          setError('Seu navegador não suporta captura por webcam.');
+          setError(t('webcamErrorNotSupported'));
         } else {
-          setError('Não foi possível acessar a câmera.');
+          setError(t('webcamErrorGeneric'));
         }
       }
     }
@@ -754,7 +749,7 @@ function WebcamCapture({ kind, disabled, onFileReady }: WebcamCaptureProps) {
     try {
       recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
     } catch {
-      setError('Seu navegador não suporta gravação de vídeo.');
+      setError(t('webcamErrorNoRecording'));
       return;
     }
     recorderRef.current = recorder;
@@ -825,7 +820,7 @@ function WebcamCapture({ kind, disabled, onFileReady }: WebcamCaptureProps) {
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/60">
             <Loader2 className="h-5 w-5 animate-spin text-white/45" />
             <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45">
-              Pedindo acesso à câmera…
+              {t('webcamRequesting')}
             </span>
           </div>
         )}
@@ -847,7 +842,7 @@ function WebcamCapture({ kind, disabled, onFileReady }: WebcamCaptureProps) {
         {!isPhoto && !isRecording && streamReady && (
           <div className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-1 backdrop-blur-md">
             <span className="text-[10px] font-semibold text-white/65">
-              Mín. {MIN_VIDEO_DURATION_S}s · Máx. {Math.floor(MAX_VIDEO_DURATION_S / 60)} min
+              {t('webcamDurationHint', { min: MIN_VIDEO_DURATION_S, max: Math.floor(MAX_VIDEO_DURATION_S / 60) })}
             </span>
           </div>
         )}
@@ -863,7 +858,7 @@ function WebcamCapture({ kind, disabled, onFileReady }: WebcamCaptureProps) {
             className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-[#a2dd00] text-[11.5px] font-extrabold text-black shadow-[0_2px_10px_-2px_rgba(162,221,0,0.4)] transition-all hover:bg-[#b6ec1f] hover:shadow-[0_4px_14px_-2px_rgba(162,221,0,0.55)] disabled:cursor-not-allowed disabled:bg-white/[0.06] disabled:text-white/35 disabled:shadow-none"
           >
             <Camera className="h-3.5 w-3.5" />
-            Capturar foto
+            {t('webcamCapturePhoto')}
           </button>
         ) : isRecording ? (
           <button
@@ -871,19 +866,19 @@ function WebcamCapture({ kind, disabled, onFileReady }: WebcamCaptureProps) {
             disabled={disabled}
             onClick={handleStopRecording}
             className={`flex h-9 w-full items-center justify-center gap-1.5 rounded-lg text-[11.5px] font-extrabold transition-all ${minReached
-                ? 'bg-red-500/25 text-red-200 ring-1 ring-red-500/45 hover:bg-red-500/35'
-                : 'bg-red-500/15 text-red-300/85 ring-1 ring-red-500/30 hover:bg-red-500/25'
+              ? 'bg-red-500/25 text-red-200 ring-1 ring-red-500/45 hover:bg-red-500/35'
+              : 'bg-red-500/15 text-red-300/85 ring-1 ring-red-500/30 hover:bg-red-500/25'
               }`}
             title={
               minReached
-                ? 'Parar gravação'
-                : `Aguarde ${MIN_VIDEO_DURATION_S - recordingSec}s para atingir o mínimo`
+                ? t('webcamStopRecording')
+                : t('webcamWaitForMin', { s: MIN_VIDEO_DURATION_S - recordingSec })
             }
           >
             <span className="h-2.5 w-2.5 rounded-sm bg-current" />
             {minReached
-              ? 'Parar gravação'
-              : `Parar (mín. ${MIN_VIDEO_DURATION_S - recordingSec}s)`}
+              ? t('webcamStopRecording')
+              : t('webcamStopWait', { s: MIN_VIDEO_DURATION_S - recordingSec })}
           </button>
         ) : (
           <button
@@ -893,7 +888,7 @@ function WebcamCapture({ kind, disabled, onFileReady }: WebcamCaptureProps) {
             className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-red-500/20 text-[11.5px] font-extrabold text-red-200 ring-1 ring-red-500/40 transition-all hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-            Iniciar gravação
+            {t('webcamStartRecording')}
           </button>
         )}
       </div>
@@ -919,6 +914,7 @@ function FilePreview({
   disabled,
   onReset,
 }: FilePreviewProps) {
+  const t = useTranslations('editorDialogs.avatars.create');
   const isVideo = kind === 'digital_twin';
   return (
     <div className="overflow-hidden rounded-xl border border-[#a2dd00]/35 bg-[#a2dd00]/[0.04]">
@@ -964,7 +960,7 @@ function FilePreview({
           onClick={onReset}
           className="shrink-0 rounded-md border border-white/[0.1] bg-white/[0.04] px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-white/70 transition-colors hover:border-white/[0.18] hover:bg-white/[0.08] hover:text-white/90 disabled:opacity-60"
         >
-          Trocar
+          {t('filePreviewReset')}
         </button>
       </div>
     </div>
