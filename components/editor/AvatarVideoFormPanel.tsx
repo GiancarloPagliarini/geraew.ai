@@ -92,36 +92,60 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
   const tRoot = useTranslations('editorDialogs.avatars');
   const tCommon = useTranslations('editorPanels.common');
 
-  // Avatar to generate for — comes from the pending request on mount.
-  const [avatar, setAvatar] = useState<UserAvatar | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
-  const [script, setScript] = useState('');
-  const [resolution, setResolution] = useState<AvatarVideoResolution>('1080p');
-  const [aspectRatio, setAspectRatio] = useState<AvatarVideoAspectRatio>('9:16');
+  // ── Persistent state (survives page reload) ──────────────────────────────
+  const storageKey = `geraew-panel-avatar-video-${nodeId}`;
+  const [stored] = useState(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  });
+
+  // Avatar to generate for — comes from the pending request on mount, or
+  // rehydrated from localStorage on reload.
+  const [avatar, setAvatar] = useState<UserAvatar | null>(stored?.avatar ?? null);
+
+  const [script, setScript] = useState<string>(stored?.script ?? '');
+  const [resolution, setResolution] = useState<AvatarVideoResolution>(stored?.resolution ?? '1080p');
+  const [aspectRatio, setAspectRatio] = useState<AvatarVideoAspectRatio>(stored?.aspectRatio ?? '9:16');
   /** Unified voice id from VoicePickerModal — 'clone:<id>' | 'inworld:<voiceId>'. */
-  const [voiceId, setVoiceId] = useState<string>('');
+  const [voiceId, setVoiceId] = useState<string>(stored?.voiceId ?? '');
   const [voicePickerOpen, setVoicePickerOpen] = useState(false);
 
   const [voices, setVoices] = useState<VoiceProfile[]>([]);
   const [voicesLoading, setVoicesLoading] = useState(false);
   const [inworldVoices, setInworldVoices] = useState<InworldVoice[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [optionsOpen, setOptionsOpen] = useState(true);
+  const [optionsOpen, setOptionsOpen] = useState<boolean>(stored?.optionsOpen ?? true);
 
   // ── Generation lifecycle ───────────────────────────────────────────────
-  const [genState, setGenState] = useState<GenState>('idle');
-  const [generationId, setGenerationId] = useState<string | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [genState, setGenState] = useState<GenState>(stored?.genState ?? 'idle');
+  const [generationId, setGenerationId] = useState<string | null>(stored?.generationId ?? null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(stored?.videoUrl ?? null);
   const [videoVisible, setVideoVisible] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(stored?.errorMsg ?? null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Consume the pending avatar payload on mount
+  // Consume the pending avatar payload on mount (skip if already rehydrated
+  // from localStorage — reload case).
   useEffect(() => {
+    if (avatar) return;
     const pending = consumePendingAvatarVideoForm();
     if (pending) setAvatar(pending.avatar);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Persist form + generation state on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({
+        avatar, script, resolution, aspectRatio, voiceId, optionsOpen,
+        genState, generationId, videoUrl, errorMsg,
+      }));
+    } catch { /* ignore quota errors */ }
+  }, [storageKey, avatar, script, resolution, aspectRatio, voiceId, optionsOpen, genState, generationId, videoUrl, errorMsg]);
 
   // Mark node as generating during submit / polling so user can't accidentally
   // close it mid-flight (Canvas/PanelNode blocks deletion of generating nodes).
@@ -166,6 +190,23 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
     staleTime: 60_000,
   });
 
+  // Block wheel events from reaching ReactFlow when scrolling inside form fields.
+  // Depends on `avatar` because the early-return JSX (when avatar is null) doesn't
+  // mount panelRef — the effect must re-run once the main JSX renders.
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const onWheel = (e: WheelEvent) => {
+      const target = e.target as HTMLElement;
+      const tag = target.tagName;
+      if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') {
+        e.stopPropagation();
+      }
+    };
+    panel.addEventListener('wheel', onWheel, { capture: true });
+    return () => panel.removeEventListener('wheel', onWheel, { capture: true });
+  }, [avatar]);
+
   // Poll generation status while generating
   useEffect(() => {
     if (genState !== 'generating' || !generationId || !accessToken) return;
@@ -202,8 +243,14 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
     };
   }, [genState, generationId, accessToken]);
 
+  function handleCloseAndClear() {
+    try { localStorage.removeItem(storageKey); } catch { /* ignore */ }
+    onClose?.();
+  }
+
   if (!avatar) {
-    // Panel mounted but the pending payload wasn't consumed (e.g. page reload).
+    // Panel mounted but the pending payload wasn't consumed (e.g. page reload
+    // after the user closed/cleared this panel's storage).
     return (
       <TooltipProvider>
         <div className="w-[calc(100vw-5rem)] overflow-hidden rounded-2xl border border-[#f3f0ed]/8 bg-[#1a2123] shadow-2xl shadow-black/50 sm:w-[320px]">
@@ -214,7 +261,7 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
             </div>
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleCloseAndClear}
               className="flex h-5 w-5 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80"
             >
               <X className="h-3 w-3" />
@@ -306,7 +353,7 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
 
   return (
     <TooltipProvider>
-      <div className="w-[calc(100vw-5rem)] overflow-hidden rounded-2xl border border-[#f3f0ed]/8 bg-[#1a2123] shadow-2xl shadow-black/50 sm:w-[320px]">
+      <div ref={panelRef} className="w-[calc(100vw-5rem)] overflow-hidden rounded-2xl border border-[#f3f0ed]/8 bg-[#1a2123] shadow-2xl shadow-black/50 sm:w-[320px]">
         {/* Drag handle / header */}
         <div className="panel-drag-handle flex cursor-grab items-center justify-between gap-2 px-3 py-3 active:cursor-grabbing">
           <div className="flex min-w-0 items-center gap-2.5">
@@ -335,7 +382,7 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
             <TooltipTrigger asChild>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleCloseAndClear}
                 disabled={isGenerating}
                 className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#f3f0ed]/30 transition-all hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]/80 disabled:opacity-40"
               >
