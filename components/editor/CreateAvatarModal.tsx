@@ -379,7 +379,7 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-[18px] font-extrabold tabular-nums text-[#a2dd00]">
-                5.000
+                {(avatarKind === 'photo' ? 1250 : 2000).toLocaleString('pt-BR')}
               </span>
               <span className="text-[10.5px] font-semibold text-white/45">créditos</span>
             </div>

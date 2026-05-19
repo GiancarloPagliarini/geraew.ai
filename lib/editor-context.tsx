@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { InfiniteData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './auth-context';
-import { api, CreditsBalance, Generation, GalleryItem, PaginatedResponse } from './api';
+import { api, CreditsBalance, Generation, GalleryItem, PaginatedResponse, UserAvatar } from './api';
 
 type UpscaleState = 'idle' | 'upscaling' | 'done';
 
@@ -29,13 +29,11 @@ export interface PendingPanelImage {
   productTitle?: string;
 }
 
-/** Hand-off payload created by GenerateAvatarVideoModal so a new
- *  `avatar-video-preview` panel can pick up the generation and poll. */
-export interface PendingAvatarVideo {
-  generationId: string;
-  aspectRatio: '9:16' | '16:9';
-  avatarName: string;
-  avatarPreviewImageUrl: string | null;
+/** Hand-off payload created when the user clicks "Gerar vídeo" on an avatar card.
+ *  Opens a new `avatar-video-form` panel on the canvas with the chosen avatar
+ *  pre-loaded — the form replaces the old modal. */
+export interface PendingAvatarVideoForm {
+  avatar: UserAvatar;
 }
 
 interface EditorContextValue {
@@ -62,9 +60,9 @@ interface EditorContextValue {
   pendingPanelImageRef: React.RefObject<PendingPanelImage | null>;
   requestPanelWithImage: (req: PendingPanelImage) => void;
   consumePendingPanelImage: () => PendingPanelImage | null;
-  pendingAvatarVideoRef: React.RefObject<PendingAvatarVideo | null>;
-  requestAvatarVideoPanel: (req: PendingAvatarVideo) => void;
-  consumePendingAvatarVideo: () => PendingAvatarVideo | null;
+  pendingAvatarVideoFormRef: React.RefObject<PendingAvatarVideoForm | null>;
+  requestAvatarVideoForm: (req: PendingAvatarVideoForm) => void;
+  consumePendingAvatarVideoForm: () => PendingAvatarVideoForm | null;
   leftPanelOpen: boolean;
   setLeftPanelOpen: (open: boolean) => void;
   generatingNodeIds: Set<string>;
@@ -185,7 +183,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const pendingPromptRef = useRef<PendingPrompt | null>(null);
   const pendingPanelImageRef = useRef<PendingPanelImage | null>(null);
-  const pendingAvatarVideoRef = useRef<PendingAvatarVideo | null>(null);
+  const pendingAvatarVideoFormRef = useRef<PendingAvatarVideoForm | null>(null);
   const [, forceUpdate] = useState(0);
 
   const { data: creditsBalance, isLoading: creditsLoading, refetch: refetchCredits } = useQuery({
@@ -331,14 +329,14 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
           pendingPanelImageRef.current = null;
           return current;
         },
-        pendingAvatarVideoRef,
-        requestAvatarVideoPanel: (req: PendingAvatarVideo) => {
-          pendingAvatarVideoRef.current = req;
+        pendingAvatarVideoFormRef,
+        requestAvatarVideoForm: (req: PendingAvatarVideoForm) => {
+          pendingAvatarVideoFormRef.current = req;
           forceUpdate((n) => n + 1);
         },
-        consumePendingAvatarVideo: () => {
-          const current = pendingAvatarVideoRef.current;
-          pendingAvatarVideoRef.current = null;
+        consumePendingAvatarVideoForm: () => {
+          const current = pendingAvatarVideoFormRef.current;
+          pendingAvatarVideoFormRef.current = null;
           return current;
         },
         weeklyClaimRequest,

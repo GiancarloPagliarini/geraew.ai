@@ -722,10 +722,12 @@ export type AvatarVideoEngine = 'avatar_iv' | 'avatar_v';
 
 export interface GenerateAvatarVideoPayload {
   script: string;
-  /** HeyGen built-in voice id. Mutually exclusive with voiceProfileId. */
+  /** HeyGen built-in voice id. Mutually exclusive with voiceProfileId / inworldVoiceId. */
   voiceId?: string;
   /** User's cloned VoiceProfile id (Wavespeed/OmniVoice). Backend generates audio + lip-syncs. */
   voiceProfileId?: string;
+  /** Public Inworld catalog voice id (ex: "Heitor", "Sarah"). Backend synthesizes via Wavespeed + lip-syncs. */
+  inworldVoiceId?: string;
   engine?: AvatarVideoEngine;
   resolution: AvatarVideoResolution;
   aspectRatio: AvatarVideoAspectRatio;

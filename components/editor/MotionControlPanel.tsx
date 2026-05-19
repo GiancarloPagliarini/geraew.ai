@@ -16,6 +16,7 @@ import {
   Sparkles,
   Video,
   Wand2,
+  Wrench,
   X
 } from 'lucide-react';
 import { StudioSelectPill } from './studio/StudioControls';
@@ -136,6 +137,18 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
     enabled: !!accessToken && genState !== 'generating',
     staleTime: 60_000,
   });
+
+  // Feature gate — admin can disable the motion-control feature via
+  // /admin/modelos. When off, the Gerar button shows a maintenance icon.
+  const { data: videoModels } = useQuery({
+    queryKey: ['models', 'video'],
+    queryFn: () => api.models.listVideos(),
+    staleTime: 60_000,
+  });
+  const motionControlModel = videoModels?.find((m) => m.slug === 'motion-control');
+  const featureDisabled = motionControlModel?.isActive === false;
+  const featureDisabledMessage =
+    motionControlModel?.statusMessage ?? 'Em manutenção — voltamos em breve.';
 
   const [progress, setProgress] = useState(0);
   const [videoVisible, setVideoVisible] = useState(false);
@@ -654,15 +667,26 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
                       {videoDuration}s
                     </span>
                   )}
-                  <button
-                    onClick={handleGenerate}
-                    disabled={isGenerating || !ready}
-                    title={tCommon('generate')}
-                    className="ml-auto inline-flex items-center gap-1 rounded-full bg-[#a2dd00] px-2.5 py-1 text-[11px] font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                    {isFreeGen ? tCommon('free') : (creditCost || '—')}
-                  </button>
+                  {featureDisabled ? (
+                    <button
+                      disabled
+                      title={featureDisabledMessage}
+                      className="ml-auto inline-flex cursor-not-allowed items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-300/90"
+                    >
+                      <Wrench className="h-3 w-3" />
+                      Manutenção
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleGenerate}
+                      disabled={isGenerating || !ready}
+                      title={tCommon('generate')}
+                      className="ml-auto inline-flex items-center gap-1 rounded-full bg-[#a2dd00] px-2.5 py-1 text-[11px] font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                      {isFreeGen ? tCommon('free') : (creditCost || '—')}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -883,19 +907,32 @@ export function MotionControlPanel({ nodeId, onClose, onDuplicate }: MotionContr
                 </div>
               )}
 
-              {/* Generate button */}
-              <button
-                disabled={!videoFile || !imageFile}
-                onClick={handleGenerate}
-                className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-                style={{
-                  background: '#a2dd00',
-                  color: '#1a2123',
-                }}
-              >
-                <Wand2 className="h-4 w-4" />
-                {tCommon('generate')}
-              </button>
+              {/* Generate button. When the motion-control feature gate is
+                  off, render as a maintenance block with the admin's message. */}
+              {featureDisabled ? (
+                <div className="flex w-full flex-col items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 py-3 text-center">
+                  <div className="flex items-center gap-1.5 text-sm font-bold text-amber-300/90">
+                    <Wrench className="h-4 w-4" />
+                    Em manutenção
+                  </div>
+                  <p className="px-3 text-[10.5px] leading-relaxed text-amber-200/70">
+                    {featureDisabledMessage}
+                  </p>
+                </div>
+              ) : (
+                <button
+                  disabled={!videoFile || !imageFile}
+                  onClick={handleGenerate}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    background: '#a2dd00',
+                    color: '#1a2123',
+                  }}
+                >
+                  <Wand2 className="h-4 w-4" />
+                  {tCommon('generate')}
+                </button>
+              )}
 
               <p className="text-center text-[10px] text-[#f3f0ed]/25">
                 {t('footnote')}

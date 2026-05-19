@@ -27,7 +27,7 @@ export function LeftSidebar() {
     { id: 'prompts', icon: Type, label: t('prompts'), tooltip: t('promptsTooltip') },
     { id: 'trending', icon: Flame, label: t('trending'), tooltip: t('trendingTooltip') },
     { id: 'imageToPrompt', icon: ImageIcon, label: t('clone'), tooltip: t('cloneTooltip') },
-    { id: 'voices', icon: MicVocal, label: t('voices'), tooltip: t('voicesTooltip'), isNew: true },
+    { id: 'voices', icon: MicVocal, label: t('voices'), tooltip: t('voicesTooltip') },
     { id: 'avatars', icon: Users, label: t('avatars'), tooltip: t('avatarsTooltip'), isNew: true },
   ];
   const { galleryPickerRequest, setLeftPanelOpen, studioMode, addPanel, registerOpenVoicesDialog } = useEditor();

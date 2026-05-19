@@ -10,8 +10,10 @@ import {
   Trash2,
   User,
   Video,
+  Wrench,
   X,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   api,
@@ -22,7 +24,6 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { useEditor } from '@/lib/editor-context';
 import { CreateAvatarModal } from './CreateAvatarModal';
-import { GenerateAvatarVideoModal } from './GenerateAvatarVideoModal';
 
 interface AvatarsDialogProps {
   open: boolean;
@@ -33,7 +34,7 @@ const POLL_INTERVAL_MS = 8_000;
 
 export function AvatarsDialog({ open, onOpenChange }: AvatarsDialogProps) {
   const { user, accessToken } = useAuth();
-  const { studioMode } = useEditor();
+  const { studioMode, requestAvatarVideoForm } = useEditor();
 
   const [avatars, setAvatars] = useState<UserAvatar[]>([]);
   const [quota, setQuota] = useState<UserAvatarQuota | null>(null);
@@ -43,7 +44,20 @@ export function AvatarsDialog({ open, onOpenChange }: AvatarsDialogProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [generateVideoFor, setGenerateVideoFor] = useState<UserAvatar | null>(null);
+
+  // Check if the avatar-video feature gate is on; admin can disable it via
+  // the /admin/modelos page. When off, the "Gerar vídeo" button on each card
+  // shows a maintenance icon and the panel can't be opened.
+  const { data: videoModels } = useQuery({
+    queryKey: ['models', 'video'],
+    queryFn: () => api.models.listVideos(),
+    staleTime: 60_000,
+  });
+  const avatarVideoModel = videoModels?.find((m) => m.slug === 'avatar-video');
+  const avatarVideoEnabled = avatarVideoModel?.isActive !== false;
+  const avatarVideoDisabledMessage =
+    avatarVideoModel?.statusMessage ??
+    'Em manutenção — voltamos em breve.';
 
   const hasFetchedRef = useRef(false);
   const fetchRef = useRef(0);
@@ -231,8 +245,10 @@ export function AvatarsDialog({ open, onOpenChange }: AvatarsDialogProps) {
 
             {/* Avatar grid */}
             <div className="grid grid-cols-2 gap-2">
-              {/* Create card — opens CreateAvatarModal */}
-              {canCreate && (
+              {/* Create card — opens CreateAvatarModal. When the avatar-video
+                  gateway is disabled, swap for a maintenance state so users
+                  can't create clones they won't be able to use. */}
+              {canCreate && (avatarVideoEnabled ? (
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(true)}
@@ -247,7 +263,20 @@ export function AvatarsDialog({ open, onOpenChange }: AvatarsDialogProps) {
                   </span>
                   <span className="relative text-[12px] font-bold">Criar seu clone</span>
                 </button>
-              )}
+              ) : (
+                <div
+                  title={avatarVideoDisabledMessage}
+                  className="flex min-h-[180px] cursor-not-allowed flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-amber-500/30 bg-amber-500/[0.05] p-4 text-center"
+                >
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-amber-500/15 ring-1 ring-amber-400/30">
+                    <Wrench className="h-5 w-5 text-amber-400" />
+                  </span>
+                  <span className="text-[12px] font-bold text-amber-300/90">Em manutenção</span>
+                  <span className="line-clamp-2 px-1 text-[10px] leading-snug text-amber-200/60">
+                    {avatarVideoDisabledMessage}
+                  </span>
+                </div>
+              ))}
 
               {/* Limit reached card */}
               {quota?.enabled && !canCreate && (
@@ -271,7 +300,9 @@ export function AvatarsDialog({ open, onOpenChange }: AvatarsDialogProps) {
                   onConfirmDelete={() => setConfirmDeleteId(avatar.id)}
                   onCancelDelete={() => setConfirmDeleteId(null)}
                   onDelete={() => handleDelete(avatar.id)}
-                  onGenerateVideo={() => setGenerateVideoFor(avatar)}
+                  onGenerateVideo={() => requestAvatarVideoForm({ avatar })}
+                  videoDisabled={!avatarVideoEnabled}
+                  videoDisabledMessage={avatarVideoDisabledMessage}
                 />
               ))}
             </div>
@@ -292,11 +323,6 @@ export function AvatarsDialog({ open, onOpenChange }: AvatarsDialogProps) {
         onClose={() => setShowCreateModal(false)}
         onCreated={handleAvatarCreated}
       />
-
-      <GenerateAvatarVideoModal
-        avatar={generateVideoFor}
-        onClose={() => setGenerateVideoFor(null)}
-      />
     </aside>
   );
 }
@@ -311,6 +337,8 @@ interface AvatarCardProps {
   onCancelDelete: () => void;
   onDelete: () => void;
   onGenerateVideo: () => void;
+  videoDisabled?: boolean;
+  videoDisabledMessage?: string;
 }
 
 function AvatarCard({
@@ -320,6 +348,8 @@ function AvatarCard({
   onConfirmDelete,
   onCancelDelete,
   onDelete,
+  videoDisabled,
+  videoDisabledMessage,
   onGenerateVideo,
 }: AvatarCardProps) {
   const status = avatar.status;
@@ -328,6 +358,18 @@ function AvatarCard({
   const isProcessing =
     status === 'PENDING' || status === 'SUBMITTING' || status === 'TRAINING';
   const isPendingConsent = status === 'PENDING_CONSENT';
+
+  // Track media load failures so we fall back to the placeholder instead of
+  // leaving a broken <img> with the alt text showing (HeyGen URLs expire).
+  const [imgError, setImgError] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  useEffect(() => {
+    setImgError(false);
+    setVideoError(false);
+  }, [avatar.previewImageUrl, avatar.previewVideoUrl]);
+
+  const showVideo = !!avatar.previewVideoUrl && !videoError;
+  const showImage = !showVideo && !!avatar.previewImageUrl && !imgError;
 
   return (
     <div
@@ -343,32 +385,39 @@ function AvatarCard({
     >
       {/* Preview */}
       <div className="relative aspect-square w-full overflow-hidden bg-[#0f1414]">
-        {avatar.previewVideoUrl ? (
+        {showVideo ? (
           <video
-            src={avatar.previewVideoUrl}
-            poster={avatar.previewImageUrl ?? undefined}
+            src={avatar.previewVideoUrl ?? undefined}
+            poster={!imgError ? avatar.previewImageUrl ?? undefined : undefined}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             muted
             loop
             playsInline
             onMouseEnter={(e) => e.currentTarget.play().catch(() => {})}
             onMouseLeave={(e) => e.currentTarget.pause()}
+            onError={() => setVideoError(true)}
           />
-        ) : avatar.previewImageUrl ? (
+        ) : showImage ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
-            src={avatar.previewImageUrl}
-            alt={avatar.name}
+            src={avatar.previewImageUrl ?? undefined}
+            alt=""
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            onError={() => setImgError(true)}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#243032] via-[#1a2123] to-[#0f1414]">
-            <User className="h-9 w-9 text-white/15" strokeWidth={1.5} />
+          <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-[#243032] via-[#1a2123] to-[#0f1414]">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/[0.04] ring-1 ring-white/[0.06]">
+              <User className="h-6 w-6 text-white/25" strokeWidth={1.5} />
+            </span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/25">
+              Sem preview
+            </span>
           </div>
         )}
 
         {/* Play hint overlay on hover for READY cards with video */}
-        {isReady && avatar.previewVideoUrl && (
+        {isReady && showVideo && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/45 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-black shadow-[0_4px_14px_rgba(0,0,0,0.4)]">
               <Play className="ml-0.5 h-4 w-4" fill="currentColor" strokeWidth={0} />
@@ -467,7 +516,17 @@ function AvatarCard({
           </p>
         )}
 
-        {isReady && (
+        {isReady && (videoDisabled ? (
+          <button
+            type="button"
+            disabled
+            title={videoDisabledMessage}
+            className="mt-auto flex h-8 w-full cursor-not-allowed items-center justify-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-[10.5px] font-extrabold text-amber-300/90"
+          >
+            <Wrench className="h-3 w-3" />
+            Em manutenção
+          </button>
+        ) : (
           <button
             type="button"
             onClick={onGenerateVideo}
@@ -476,7 +535,7 @@ function AvatarCard({
             <Video className="h-3 w-3" />
             Gerar vídeo
           </button>
-        )}
+        ))}
 
         {isPendingConsent && avatar.consentUrl && (
           <a
