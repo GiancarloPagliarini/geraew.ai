@@ -17,7 +17,6 @@ import { ChevronDown, Clock, Flame, FolderOpen, GraduationCap, Image as ImageIco
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useEditor } from '@/lib/editor-context';
-import Image from 'next/image';
 
 export function LeftSidebar() {
   const t = useTranslations('editorChrome.leftSidebar');
@@ -141,7 +140,7 @@ export function LeftSidebar() {
   return (
     <>
       <aside
-        className={`shrink-0 ${studioMode ? '' : 'border-b border-[#f3f0ed]/[0.07] md:border-b-0 md:border-r'} md:h-full ${studioMode ? 'md:w-0' : 'md:w-[72px]'} ${studioMode ? 'bg-transparent' : 'bg-[#1a2123]'}`}
+        className={`shrink-0 md:h-full md:w-0 ${studioMode ? 'bg-transparent' : 'border-b border-[#f3f0ed]/[0.07] md:border-b-0 bg-[#1a2123] md:bg-transparent'}`}
       >
         {studioMode && (
           <div className="pointer-events-none fixed left-2 top-1/2 z-40 hidden -translate-y-1/2 md:block">
@@ -307,8 +306,8 @@ export function LeftSidebar() {
             )}
           </div>
 
-          {/* ── Desktop: vertical sidebar ── */}
-          <div className="hidden md:flex md:h-full md:flex-col md:items-stretch md:gap-1.5 md:py-3 md:px-1.5">
+          {/* ── Desktop: floating buttons over canvas ── */}
+          <div className="hidden md:pointer-events-none md:fixed md:left-2 md:top-1/2 md:-translate-y-1/2 md:z-40 md:flex md:w-14 md:flex-col md:items-center md:gap-2">
             {navItems.map(({ id, icon: Icon, label, tooltip, isNew, comingSoon }) => {
               const isActive =
                 (id === 'gallery' && galleryOpen) ||
@@ -326,23 +325,22 @@ export function LeftSidebar() {
                       id={id === 'tutorial' ? 'tour-tutorial-btn' : undefined}
                       onClick={() => handleNavClick(id)}
                       disabled={comingSoon}
-                      className={`group relative flex w-full flex-col items-center gap-0.5 rounded-md py-1.5 px-1 transition-all ${comingSoon
-                        ? 'opacity-50 text-[#f3f0ed]/30'
+                      className={`group pointer-events-auto relative flex h-11 w-11 items-center justify-center rounded-2xl ring-1 ring-inset backdrop-blur-xl backdrop-saturate-150 transition-all duration-200 active:scale-95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_8px_24px_-8px_rgba(0,0,0,0.55)] ${comingSoon
+                        ? 'opacity-50 bg-white/[0.02] text-[#f3f0ed]/30 ring-white/[0.04]'
                         : isActive
-                          ? 'bg-[#a2dd00]/15 text-[#a2dd00]'
-                          : 'text-[#f3f0ed]/30 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/70'
+                          ? 'bg-[#a2dd00]/15 text-[#a2dd00] ring-[#a2dd00]/30 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.10),0_8px_24px_-6px_rgba(162,221,0,0.30)]'
+                          : 'bg-white/[0.05] text-[#f3f0ed]/70 ring-white/[0.07] hover:bg-white/[0.09] hover:text-[#f3f0ed] hover:ring-white/[0.12]'
                         }`}
                     >
-                      <Icon className="h-4.5 w-4.5 shrink-0" />
-                      <span className="text-[10px] font-bold tracking-wide text-center leading-tight">{label}</span>
+                      <Icon className="h-5 w-5 shrink-0" />
                       {comingSoon ? (
-                        <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#a2dd00]/20 text-[#a2dd00] select-none">
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#a2dd00]/25 ring-2 ring-[#1a2123] text-[#a2dd00] select-none">
                           <Clock className="h-2.5 w-2.5" />
-                        </div>
+                        </span>
                       ) : isNew ? (
-                        <div className="absolute group-hover:animate-pulse -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-400 text-black select-none">
+                        <span className="absolute group-hover:animate-pulse -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-400 ring-2 ring-[#1a2123] text-black select-none">
                           <Star className="h-2.5 w-2.5" />
-                        </div>
+                        </span>
                       ) : null}
                     </button>
                   </TooltipTrigger>
@@ -359,11 +357,6 @@ export function LeftSidebar() {
               );
             })}
 
-            <div className="my-1 h-px w-full bg-landing-text/[0.07]" />
-
-            <div className="mt-auto flex items-center justify-center pb-1">
-              <Image src="/logo_2.svg" alt={t('logoAlt')} width={28} height={28} className="opacity-30" />
-            </div>
           </div>
         </div>
       </aside>

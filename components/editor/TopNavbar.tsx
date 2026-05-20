@@ -98,8 +98,8 @@ export function TopNavbar() {
   if (studioMode) {
     return (
       <>
-        <header className="relative z-50 flex h-10 shrink-0 items-center justify-between bg-[#0d1011] px-3">
-          <div className="flex items-center gap-2">
+        <header className="relative md:pointer-events-none md:fixed md:top-1 md:left-0 md:right-0 z-50 flex h-10 shrink-0 items-center justify-between px-3">
+          <div className="pointer-events-auto flex items-center gap-2">
             <Image
               src="/logo_2.svg"
               alt={t('logoAlt')}
@@ -110,7 +110,7 @@ export function TopNavbar() {
             <span className="text-[12px] font-medium tracking-wide text-[#f3f0ed]/70">{t('brand')}</span>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="pointer-events-auto flex items-center gap-1">
             {authLoading ? (
               <div className="h-6 w-40 animate-pulse rounded-full bg-[#f3f0ed]/5" />
             ) : user ? (
@@ -289,9 +289,9 @@ export function TopNavbar() {
 
   return (
     <>
-      <header className={`relative z-50 flex h-12 shrink-0 items-center justify-between border-b border-[#f3f0ed]/[0.07] px-2 sm:px-4 ${studioMode ? 'bg-[#0d1011]' : 'bg-[#1a2123]'}`}>
+      <header className="relative md:pointer-events-none md:fixed md:top-1 md:left-0 md:right-0 z-50 flex h-12 shrink-0 items-center justify-between px-2 sm:px-4">
         {/* Logo */}
-        <div className="flex items-center gap-2.5">
+        <div className="pointer-events-auto flex items-center gap-2.5">
           <Image
             src="/logo_2.svg"
             alt={t('logoAlt')}
@@ -305,7 +305,7 @@ export function TopNavbar() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
           {authLoading ? (
             /* Skeleton while auth state is loading */
             <div className="flex items-center gap-2">
@@ -316,7 +316,7 @@ export function TopNavbar() {
           ) : user ? (
             <div className="navbar-fade-in flex items-center gap-1.5 sm:gap-2">
               {/* Credit badge */}
-              <div className="flex items-center gap-1.5 rounded-full border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 px-2 py-1.5 sm:px-3">
+              <div className="flex items-center gap-1.5 rounded-full bg-white/[0.05] ring-1 ring-inset ring-white/[0.07] backdrop-blur-xl backdrop-saturate-150 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_4px_12px_-4px_rgba(0,0,0,0.4)] px-2 py-1.5 sm:px-3">
                 <Coins className="h-3.5 w-3.5 text-[#a2dd00]" />
                 {creditsLoading ? (
                   <div className="h-3 w-10 animate-pulse rounded-full bg-[#f3f0ed]/10" />
@@ -328,7 +328,7 @@ export function TopNavbar() {
               {/* Buy button — accent lime (icon-only on mobile) */}
               <button
                 onClick={() => setPlansModalOpen(true)}
-                className="flex items-center gap-1.5 rounded-full bg-[#a2dd00] p-2 text-xs font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95 sm:px-4 sm:py-1.5"
+                className="flex items-center gap-1.5 rounded-full bg-[#a2dd00] p-2 text-xs font-bold text-[#1a2123] transition-all hover:brightness-110 active:scale-95 sm:px-4 sm:py-1.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35),0_4px_14px_-4px_rgba(162,221,0,0.55)]"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">{t('buyCredits')}</span>
@@ -346,7 +346,7 @@ export function TopNavbar() {
                       setAffiliateModalOpen(true);
                     }
                   }}
-                  className="flex items-center gap-1.5 rounded-full border border-[#1e494b] px-4 py-1.5 text-xs font-semibold text-[#f3f0ed]/80 transition-all hover:border-[#a2dd00]/50 hover:text-[#f3f0ed]"
+                  className="flex items-center gap-1.5 rounded-full bg-white/[0.04] ring-1 ring-inset ring-white/[0.07] backdrop-blur-xl backdrop-saturate-150 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_4px_12px_-4px_rgba(0,0,0,0.4)] px-4 py-1.5 text-xs font-semibold text-[#f3f0ed]/80 transition-all hover:bg-white/[0.08] hover:ring-white/[0.12] hover:text-[#f3f0ed]"
                 >
                   <Users className="h-3.5 w-3.5" />
                   {t('becomeAffiliate')}
@@ -416,7 +416,7 @@ export function TopNavbar() {
               {showFeedbackReward && (
                 <button
                   onClick={() => router.push('/feedback')}
-                  className="group relative hidden items-center gap-1.5 overflow-hidden rounded-full border border-[#a2dd00]/40 bg-[#a2dd00]/10 px-3 py-1.5 text-xs font-semibold text-[#a2dd00] transition-all hover:border-[#a2dd00]/70 hover:bg-[#a2dd00]/15 sm:flex"
+                  className="group relative hidden items-center gap-1.5 overflow-hidden rounded-full bg-[#a2dd00]/15 ring-1 ring-inset ring-[#a2dd00]/30 backdrop-blur-xl backdrop-saturate-150 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_4px_14px_-4px_rgba(162,221,0,0.30)] px-3 py-1.5 text-xs font-semibold text-[#a2dd00] transition-all hover:bg-[#a2dd00]/20 hover:ring-[#a2dd00]/45 sm:flex"
                 >
                   <span className="pointer-events-none absolute -inset-x-6 -inset-y-2 bg-[radial-gradient(ellipse_at_center,rgba(162,221,0,0.25),transparent_70%)] opacity-60 blur-md transition-opacity group-hover:opacity-100" />
                   <span className="relative flex h-2 w-2 shrink-0 items-center justify-center">
@@ -488,7 +488,7 @@ export function TopNavbar() {
               onClick={toggleStudioMode}
               aria-pressed={studioMode}
               title="Studio Mode"
-              className="hidden h-8 items-center gap-1.5 rounded-full border border-[#1e494b] bg-[#a2dd00]/10 px-3 text-xs font-semibold text-[#a2dd00] transition-all hover:bg-[#a2dd00]/15 md:flex"
+              className="hidden h-8 items-center gap-1.5 rounded-full bg-[#a2dd00]/15 ring-1 ring-inset ring-[#a2dd00]/25 backdrop-blur-xl backdrop-saturate-150 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_4px_12px_-4px_rgba(162,221,0,0.25)] px-3 text-xs font-semibold text-[#a2dd00] transition-all hover:bg-[#a2dd00]/20 hover:ring-[#a2dd00]/40 md:flex"
             >
               <Clapperboard className="h-3.5 w-3.5" />
               Studio
