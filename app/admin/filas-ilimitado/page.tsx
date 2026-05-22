@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   AlertCircle,
   Clock,
@@ -11,6 +12,8 @@ import {
   PauseCircle,
   Play,
   RefreshCw,
+  Timer,
+  X,
   XCircle,
   CheckCircle2,
 } from 'lucide-react';
@@ -24,7 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAuth } from '@/lib/auth-context';
-import { api, UnlimitedJobStatus } from '@/lib/api';
+import { api, UnlimitedJobStatus, UnlimitedTopUser } from '@/lib/api';
 
 const STATUS_TABS: { key: UnlimitedJobStatus; label: string; icon: typeof Clock }[] = [
   { key: 'waiting', label: 'Aguardando', icon: Hourglass },
@@ -81,7 +84,52 @@ function fmtRelative(s: string | Date | null): string {
 
 export default function FilasIlimitadoPage() {
   const { accessToken } = useAuth();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<UnlimitedJobStatus>('waiting');
+  const [delayModalUser, setDelayModalUser] = useState<UnlimitedTopUser | null>(null);
+  const [delayInput, setDelayInput] = useState<string>('60');
+  const [ttlInput, setTtlInput] = useState<string>('60');
+
+  const setDelayMutation = useMutation({
+    mutationFn: ({
+      userId,
+      delaySeconds,
+      ttlMinutes,
+    }: {
+      userId: string;
+      delaySeconds: number;
+      ttlMinutes: number;
+    }) =>
+      api.admin.unlimitedSetManualDelay(accessToken!, userId, {
+        delaySeconds,
+        ttlMinutes,
+      }),
+    onSuccess: () => {
+      toast.success('Delay manual aplicado.');
+      setDelayModalUser(null);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'unlimited', 'usage'] });
+    },
+    onError: (err: Error) => {
+      toast.error(err?.message ?? 'Erro ao aplicar delay.');
+    },
+  });
+
+  const clearDelayMutation = useMutation({
+    mutationFn: (userId: string) => api.admin.unlimitedClearManualDelay(accessToken!, userId),
+    onSuccess: () => {
+      toast.success('Delay manual removido.');
+      queryClient.invalidateQueries({ queryKey: ['admin', 'unlimited', 'usage'] });
+    },
+    onError: (err: Error) => {
+      toast.error(err?.message ?? 'Erro ao remover delay.');
+    },
+  });
+
+  const openDelayModal = (user: UnlimitedTopUser) => {
+    setDelayInput(user.manualDelay ? String(Math.round(user.manualDelay.delayMs / 1000)) : '60');
+    setTtlInput(user.manualDelay ? String(Math.max(1, Math.round(user.manualDelay.ttlSeconds / 60))) : '60');
+    setDelayModalUser(user);
+  };
 
   const { data: stats, refetch: refetchStats } = useQuery({
     queryKey: ['admin', 'unlimited', 'stats'],
@@ -353,7 +401,16 @@ export default function FilasIlimitadoPage() {
                       <span className="text-[10px] text-[#f3f0ed]/40">{u.email ?? '—'}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2">
+                    {u.manualDelay && (
+                      <Badge
+                        variant="outline"
+                        className="border-[#a855f7]/40 bg-[#a855f7]/10 text-[9px] font-semibold uppercase text-[#a855f7]"
+                        title={`Expira em ${Math.round(u.manualDelay.ttlSeconds / 60)}min`}
+                      >
+                        +{Math.round(u.manualDelay.delayMs / 1000)}s
+                      </Badge>
+                    )}
                     {u.planSlug && (
                       <Badge
                         variant="outline"
@@ -370,6 +427,25 @@ export default function FilasIlimitadoPage() {
                     <span className="w-8 text-right text-[12px] font-bold text-[#f3f0ed]">
                       {u.count}
                     </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => openDelayModal(u)}
+                        className="flex h-6 w-6 items-center justify-center rounded-md border border-[#f3f0ed]/10 bg-[#f3f0ed]/[0.03] text-[#f3f0ed]/60 transition-colors hover:border-[#a855f7]/40 hover:bg-[#a855f7]/10 hover:text-[#a855f7]"
+                        title={u.manualDelay ? 'Editar delay manual' : 'Adicionar delay manual'}
+                      >
+                        <Timer className="h-3 w-3" />
+                      </button>
+                      {u.manualDelay && (
+                        <button
+                          onClick={() => clearDelayMutation.mutate(u.userId)}
+                          disabled={clearDelayMutation.isPending}
+                          className="flex h-6 w-6 items-center justify-center rounded-md border border-[#f3f0ed]/10 bg-[#f3f0ed]/[0.03] text-[#f3f0ed]/60 transition-colors hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
+                          title="Remover delay manual"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -382,6 +458,124 @@ export default function FilasIlimitadoPage() {
       {stats && (
         <div className="text-center text-[10px] text-[#f3f0ed]/30">
           Atualiza automaticamente a cada 5s · Última atualização: {fmtDate(new Date())}
+        </div>
+      )}
+
+      {/* Modal de delay manual */}
+      {delayModalUser && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          onClick={() => setDelayModalUser(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-2xl border border-[#a855f7]/30 bg-[#0c1012] p-6 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Timer className="h-4 w-4 text-[#a855f7]" />
+                  <h3 className="text-[14px] font-bold text-[#f3f0ed]">
+                    Delay manual
+                  </h3>
+                </div>
+                <p className="mt-1 text-[11px] text-[#f3f0ed]/50">
+                  {delayModalUser.name ?? delayModalUser.email ?? delayModalUser.userId}
+                </p>
+              </div>
+              <button
+                onClick={() => setDelayModalUser(null)}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-[#f3f0ed]/40 hover:bg-[#f3f0ed]/[0.06] hover:text-[#f3f0ed]"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-4">
+              <div>
+                <label className="mb-1.5 block text-[11px] font-semibold text-[#f3f0ed]/70">
+                  Delay extra (segundos)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={delayInput}
+                  onChange={(e) => setDelayInput(e.target.value)}
+                  className="w-full rounded-lg border border-[#f3f0ed]/10 bg-[#f3f0ed]/[0.03] px-3 py-2 text-[12px] text-[#f3f0ed] outline-none focus:border-[#a855f7]/50"
+                  placeholder="60"
+                />
+                <p className="mt-1 text-[10px] text-[#f3f0ed]/40">
+                  Será somado ao delay da curva. Ex: 60 = +1min em cada geração.
+                </p>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[11px] font-semibold text-[#f3f0ed]/70">
+                  Duração do delay (minutos)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={ttlInput}
+                  onChange={(e) => setTtlInput(e.target.value)}
+                  className="w-full rounded-lg border border-[#f3f0ed]/10 bg-[#f3f0ed]/[0.03] px-3 py-2 text-[12px] text-[#f3f0ed] outline-none focus:border-[#a855f7]/50"
+                  placeholder="60"
+                />
+                <p className="mt-1 text-[10px] text-[#f3f0ed]/40">
+                  Por quanto tempo o delay continua aplicado. Depois disso, volta ao normal.
+                </p>
+              </div>
+
+              {delayModalUser.manualDelay && (
+                <div className="flex items-center gap-2 rounded-lg border border-[#a855f7]/20 bg-[#a855f7]/[0.06] px-3 py-2 text-[11px] text-[#a855f7]">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    Já tem delay ativo de +
+                    {Math.round(delayModalUser.manualDelay.delayMs / 1000)}s
+                    {' '}(expira em {Math.round(delayModalUser.manualDelay.ttlSeconds / 60)}min). Salvar
+                    irá substituir.
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-2">
+              <button
+                onClick={() => setDelayModalUser(null)}
+                className="rounded-lg border border-[#f3f0ed]/10 bg-transparent px-3 py-1.5 text-[11px] font-medium text-[#f3f0ed]/70 transition-colors hover:bg-[#f3f0ed]/[0.06]"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  const delaySeconds = parseInt(delayInput, 10);
+                  const ttlMinutes = parseInt(ttlInput, 10);
+                  if (!Number.isFinite(delaySeconds) || delaySeconds < 0) {
+                    toast.error('Delay inválido.');
+                    return;
+                  }
+                  if (!Number.isFinite(ttlMinutes) || ttlMinutes <= 0) {
+                    toast.error('Duração inválida.');
+                    return;
+                  }
+                  setDelayMutation.mutate({
+                    userId: delayModalUser.userId,
+                    delaySeconds,
+                    ttlMinutes,
+                  });
+                }}
+                disabled={setDelayMutation.isPending}
+                className="flex items-center gap-1.5 rounded-lg border border-[#a855f7]/40 bg-[#a855f7]/15 px-3 py-1.5 text-[11px] font-semibold text-[#a855f7] transition-colors hover:bg-[#a855f7]/25 disabled:opacity-50"
+              >
+                {setDelayMutation.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Timer className="h-3 w-3" />
+                )}
+                Aplicar delay
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -518,6 +518,7 @@ export interface UnlimitedTopUser {
   name: string | null;
   planSlug: string | null;
   count: number;
+  manualDelay: { delayMs: number; ttlSeconds: number } | null;
 }
 
 export interface UnlimitedUsageOverview {
@@ -1740,6 +1741,24 @@ export const api = {
       return authRequest<UnlimitedUsageOverview>(
         '/api/v1/admin/unlimited/usage/overview',
         accessToken,
+      );
+    },
+    unlimitedSetManualDelay(
+      accessToken: string,
+      userId: string,
+      payload: { delaySeconds: number; ttlMinutes: number },
+    ) {
+      return authRequest<{ ok: boolean; userId: string; delayMs: number; ttlSeconds: number }>(
+        `/api/v1/admin/unlimited/users/${userId}/manual-delay`,
+        accessToken,
+        { method: 'POST', body: JSON.stringify(payload) },
+      );
+    },
+    unlimitedClearManualDelay(accessToken: string, userId: string) {
+      return authRequest<{ ok: boolean; userId: string }>(
+        `/api/v1/admin/unlimited/users/${userId}/manual-delay`,
+        accessToken,
+        { method: 'DELETE' },
       );
     },
     users(accessToken: string, page = 1, limit = 20, search?: string, subscriptionStatus?: string, excludePlanSlug?: string) {
