@@ -106,6 +106,16 @@ function proportionToAspectRatio(p: string): string {
   return map[p] ?? '16:9';
 }
 
+// KIE Veo aceita apenas 16:9, 9:16, Auto — mapeia 1:1 → Auto.
+function proportionToAspectRatioKie(p: string): string {
+  const map: Record<string, string> = {
+    '16-9': '16:9',
+    '9-16': '9:16',
+    '1-1': 'Auto',
+  };
+  return map[p] ?? 'Auto';
+}
+
 // ─── component ────────────────────────────────────────────────────────────────
 
 interface GenerateVideoPanelProps {
@@ -652,7 +662,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           type: 'video',
           model,
           resolution,
-          aspectRatio: proportionToAspectRatio(proportion),
+          aspectRatio: isKieModel ? proportionToAspectRatioKie(proportion) : proportionToAspectRatio(proportion),
           durationSeconds: durationToSeconds(effectiveDuration),
           hasAudio: audio,
           hasReferenceImages: refImages.length > 0,
@@ -680,7 +690,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           prompt: finalPrompt,
           model,
           resolution,
-          aspect_ratio: proportionToAspectRatio(proportion),
+          aspect_ratio: proportionToAspectRatioKie(proportion),
           generate_audio: true,
           model_variant: videoModelVariant,
         };
@@ -1720,6 +1730,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       {['16:9', '9:16', '1:1'].map((p) => {
                         const val = p.replace(':', '-');
                         const active = proportion === val;
+                        const label = isKieModel && p === '1:1' ? 'Auto' : p;
                         return (
                           <button
                             key={p}
@@ -1745,7 +1756,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                               boxShadow: active && !unlimited ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
                             }}
                           >
-                            {p}
+                            {label}
                           </button>
                         );
                       })}
