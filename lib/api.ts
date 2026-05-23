@@ -724,13 +724,23 @@ export type AvatarVideoAspectRatio = '16:9' | '9:16';
 export type AvatarVideoEngine = 'avatar_iv' | 'avatar_v';
 
 export interface GenerateAvatarVideoPayload {
-  script: string;
+  /** Required when customAudioUrl is NOT provided. */
+  script?: string;
   /** HeyGen built-in voice id. Mutually exclusive with voiceProfileId / inworldVoiceId. */
   voiceId?: string;
   /** User's cloned VoiceProfile id (Wavespeed/OmniVoice). Backend generates audio + lip-syncs. */
   voiceProfileId?: string;
   /** Public Inworld catalog voice id (ex: "Heitor", "Sarah"). Backend synthesizes via Wavespeed + lip-syncs. */
   inworldVoiceId?: string;
+  /**
+   * R2 fileKey (returned by /uploads/presigned-url with purpose "avatar_audio")
+   * of a user-supplied audio file (uploaded or recorded). When present, the
+   * backend skips TTS and feeds HeyGen directly. Mutually exclusive with
+   * script/voiceId/voiceProfileId/inworldVoiceId.
+   */
+  customAudioKey?: string;
+  /** Duration of the custom audio in seconds — required when customAudioKey is set. */
+  audioDurationSeconds?: number;
   engine?: AvatarVideoEngine;
   resolution: AvatarVideoResolution;
   aspectRatio: AvatarVideoAspectRatio;
@@ -1270,7 +1280,7 @@ export const api = {
   uploads: {
     presigned(
       accessToken: string,
-      payload: { filename: string; contentType: string; purpose: 'generation_input' | 'reference_video' | 'avatar_source' },
+      payload: { filename: string; contentType: string; purpose: 'generation_input' | 'reference_video' | 'avatar_source' | 'avatar_audio' },
     ) {
       return authRequest<{ uploadUrl: string; fileKey: string }>(
         '/api/v1/uploads/presigned-url',

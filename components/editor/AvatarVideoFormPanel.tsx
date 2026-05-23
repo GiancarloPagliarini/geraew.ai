@@ -8,8 +8,12 @@ import {
   Coins,
   Download,
   Loader2,
+  Mic,
   MicVocal,
   Settings,
+  Square,
+  Trash2,
+  Upload,
   Video,
   Wrench,
   X,
@@ -77,7 +81,43 @@ function estimateAvatarVideoCost(
   return { credits: Math.ceil(seconds * rate), seconds };
 }
 
+/** Exact cost from a known audio duration (custom audio mode). */
+function actualAvatarVideoCost(
+  resolution: AvatarVideoResolution,
+  audioDurationSec: number,
+): { credits: number; seconds: number } {
+  const rate = AVATAR_VIDEO_CREDITS_PER_SECOND[resolution];
+  const seconds = Math.max(AVATAR_VIDEO_MIN_DURATION_SEC, Math.ceil(audioDurationSec));
+  return { credits: Math.ceil(seconds * rate), seconds };
+}
+
 type GenState = 'idle' | 'generating' | 'done';
+type InputMode = 'voice' | 'audio';
+
+const MAX_CUSTOM_AUDIO_BYTES = 25 * 1024 * 1024; // 25 MB
+const MAX_CUSTOM_AUDIO_SECONDS = 600; // 10 min — backend cap
+const ACCEPTED_AUDIO_MIMES = [
+  'audio/mpeg',
+  'audio/mp4',
+  'audio/wav',
+  'audio/x-wav',
+  'audio/webm',
+  'audio/x-m4a',
+] as const;
+const PRESIGN_AUDIO_MIMES: Record<string, 'audio/mpeg' | 'audio/mp4' | 'audio/wav' | 'audio/webm' | 'audio/x-m4a'> = {
+  'audio/mpeg': 'audio/mpeg',
+  'audio/mp4': 'audio/mp4',
+  'audio/wav': 'audio/wav',
+  'audio/x-wav': 'audio/wav',
+  'audio/webm': 'audio/webm',
+  'audio/x-m4a': 'audio/x-m4a',
+};
+
+function formatTime(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
 
 interface AvatarVideoFormPanelProps {
   nodeId: string;
@@ -120,6 +160,22 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
   const [submitting, setSubmitting] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState<boolean>(stored?.optionsOpen ?? true);
 
+  // ── Input mode (voice TTS vs. custom audio) ───────────────────────────
+  const [inputMode, setInputMode] = useState<InputMode>(stored?.inputMode ?? 'voice');
+  // Object URL (local preview) + meta of the loaded custom audio. We DON'T
+  // persist the file itself in localStorage — too large; user re-uploads on reload.
+  const [customAudio, setCustomAudio] = useState<{
+    file: File;
+    previewUrl: string;
+    durationSeconds: number;
+    sizeBytes: number;
+  } | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordSeconds, setRecordSeconds] = useState(0);
+  const audioInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // ── Generation lifecycle ───────────────────────────────────────────────
   const [genState, setGenState] = useState<GenState>(stored?.genState ?? 'idle');
   const [generationId, setGenerationId] = useState<string | null>(stored?.generationId ?? null);
@@ -141,11 +197,11 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
   useEffect(() => {
     try {
       localStorage.setItem(storageKey, JSON.stringify({
-        avatar, script, resolution, aspectRatio, voiceId, optionsOpen,
+        avatar, script, resolution, aspectRatio, voiceId, optionsOpen, inputMode,
         genState, generationId, videoUrl, errorMsg,
       }));
     } catch { /* ignore quota errors */ }
-  }, [storageKey, avatar, script, resolution, aspectRatio, voiceId, optionsOpen, genState, generationId, videoUrl, errorMsg]);
+  }, [storageKey, avatar, script, resolution, aspectRatio, voiceId, optionsOpen, inputMode, genState, generationId, videoUrl, errorMsg]);
 
   // Mark node as generating during submit / polling so user can't accidentally
   // close it mid-flight (Canvas/PanelNode blocks deletion of generating nodes).
@@ -248,6 +304,129 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
     onClose?.();
   }
 
+  // ── Custom audio handlers (file upload + mic recording) ────────────────
+
+  async function probeAudioDuration(file: File): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const el = document.createElement('audio');
+      el.preload = 'metadata';
+      el.onloadedmetadata = () => {
+        const d = el.duration;
+        URL.revokeObjectURL(url);
+        if (Number.isFinite(d) && d > 0) resolve(d);
+        else reject(new Error('invalid_duration'));
+      };
+      el.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('load_error'));
+      };
+      el.src = url;
+    });
+  }
+
+  async function handleAudioFilePicked(file: File) {
+    if (file.size > MAX_CUSTOM_AUDIO_BYTES) {
+      toast.error(t('audioTooLarge'));
+      return;
+    }
+    if (!ACCEPTED_AUDIO_MIMES.includes(file.type as typeof ACCEPTED_AUDIO_MIMES[number])) {
+      toast.error(t('audioInvalidFormat'));
+      return;
+    }
+    let duration: number;
+    try {
+      duration = await probeAudioDuration(file);
+    } catch {
+      toast.error(t('audioInvalidFormat'));
+      return;
+    }
+    if (duration > MAX_CUSTOM_AUDIO_SECONDS) {
+      toast.error(t('audioTooLong'));
+      return;
+    }
+    // Replace any previous preview
+    if (customAudio?.previewUrl) URL.revokeObjectURL(customAudio.previewUrl);
+    setCustomAudio({
+      file,
+      previewUrl: URL.createObjectURL(file),
+      durationSeconds: duration,
+      sizeBytes: file.size,
+    });
+  }
+
+  function clearCustomAudio() {
+    if (customAudio?.previewUrl) URL.revokeObjectURL(customAudio.previewUrl);
+    setCustomAudio(null);
+  }
+
+  async function startCustomAudioRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : MediaRecorder.isTypeSupported('audio/mp4')
+          ? 'audio/mp4'
+          : '';
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      const chunks: BlobPart[] = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      let elapsed = 0;
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blobType = mimeType || 'audio/webm';
+        const blob = new Blob(chunks, { type: blobType });
+        const ext = blobType.includes('mp4') ? 'm4a' : 'webm';
+        const file = new File([blob], `recording-${Date.now()}.${ext}`, { type: blobType });
+        // Reuse the validation pipeline — also probes the real duration so we
+        // don't trust the wall-clock timer if the browser miscounts.
+        await handleAudioFilePicked(file).catch(() => {});
+        // Fallback duration if probe fails on some webm blobs
+        setCustomAudio((cur) =>
+          cur && !Number.isFinite(cur.durationSeconds) ? { ...cur, durationSeconds: elapsed } : cur,
+        );
+      };
+
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setIsRecording(true);
+      setRecordSeconds(0);
+      recordTimerRef.current = setInterval(() => {
+        elapsed += 1;
+        setRecordSeconds(elapsed);
+        if (elapsed >= MAX_CUSTOM_AUDIO_SECONDS) stopCustomAudioRecording();
+      }, 1000);
+    } catch {
+      toast.error(t('audioMicAccess'));
+    }
+  }
+
+  function stopCustomAudioRecording() {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    mediaRecorderRef.current = null;
+    if (recordTimerRef.current) {
+      clearInterval(recordTimerRef.current);
+      recordTimerRef.current = null;
+    }
+    setIsRecording(false);
+  }
+
+  // Free the preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (customAudio?.previewUrl) URL.revokeObjectURL(customAudio.previewUrl);
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try { mediaRecorderRef.current.stop(); } catch { /* ignore */ }
+      }
+      if (recordTimerRef.current) clearInterval(recordTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (!avatar) {
     // Panel mounted but the pending payload wasn't consumed (e.g. page reload
     // after the user closed/cleared this panel's storage).
@@ -279,10 +458,11 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
   }
 
   const isReady = avatar.status === 'READY';
-  const { credits: estimatedCost, seconds: estimatedSeconds } = estimateAvatarVideoCost(
-    resolution,
-    script.length,
-  );
+  // Cost: exact in audio mode (we know the duration), estimate in voice mode.
+  const { credits: estimatedCost, seconds: estimatedSeconds } =
+    inputMode === 'audio' && customAudio
+      ? actualAvatarVideoCost(resolution, customAudio.durationSeconds)
+      : estimateAvatarVideoCost(resolution, script.length);
 
   const avatarVideoModel = videoModels?.find((m) => m.slug === 'avatar-video');
   const featureDisabled = avatarVideoModel?.isActive === false;
@@ -291,23 +471,16 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
 
   const canSubmit =
     isReady &&
-    script.trim().length > 0 &&
-    !!voiceId &&
     !isGenerating &&
-    !featureDisabled;
+    !featureDisabled &&
+    (inputMode === 'voice'
+      ? script.trim().length > 0 && !!voiceId
+      : !!customAudio);
   const proportion = aspectRatio === '9:16' ? '9-16' : '16-9';
 
   async function handleSubmit() {
     if (!accessToken || !avatar) return;
     if (!canSubmit) return;
-
-    // Decode the unified voiceId picked from VoicePickerModal.
-    const voiceFields: { voiceProfileId?: string; inworldVoiceId?: string } = {};
-    if (voiceId.startsWith('clone:')) {
-      voiceFields.voiceProfileId = voiceId.slice('clone:'.length);
-    } else if (voiceId.startsWith('inworld:')) {
-      voiceFields.inworldVoiceId = voiceId.slice('inworld:'.length);
-    }
 
     // Collapse the options block so the panel shrinks while generating —
     // same pattern used in GenerateVideoPanel. 320ms matches the max-height
@@ -318,12 +491,51 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
     setSubmitting(true);
     setErrorMsg(null);
     try {
-      const res = await api.avatars.generateVideo(accessToken, avatar.id, {
-        script: script.trim(),
-        resolution,
-        aspectRatio,
-        ...voiceFields,
-      });
+      // Build the payload differently per mode. Custom audio mode requires
+      // uploading the file first; the resulting fileKey goes into the body.
+      let payload: Parameters<typeof api.avatars.generateVideo>[2];
+
+      if (inputMode === 'audio' && customAudio) {
+        const presignType = PRESIGN_AUDIO_MIMES[customAudio.file.type] ?? 'audio/mpeg';
+        const ext = customAudio.file.name.split('.').pop()?.toLowerCase() || 'mp3';
+        const safeFilename = `audio-${Date.now()}.${ext}`;
+        const presigned = await api.uploads.presigned(accessToken, {
+          filename: safeFilename,
+          contentType: presignType,
+          purpose: 'avatar_audio',
+        });
+        // Straight PUT — no progress UI for this short request (audio ≤25MB)
+        const putRes = await fetch(presigned.uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': customAudio.file.type },
+          body: customAudio.file,
+        });
+        if (!putRes.ok) {
+          throw new Error('Falha ao enviar o áudio.');
+        }
+        payload = {
+          customAudioKey: presigned.fileKey,
+          audioDurationSeconds: Math.ceil(customAudio.durationSeconds),
+          resolution,
+          aspectRatio,
+        };
+      } else {
+        // Voice mode — decode unified voice id and send the script
+        const voiceFields: { voiceProfileId?: string; inworldVoiceId?: string } = {};
+        if (voiceId.startsWith('clone:')) {
+          voiceFields.voiceProfileId = voiceId.slice('clone:'.length);
+        } else if (voiceId.startsWith('inworld:')) {
+          voiceFields.inworldVoiceId = voiceId.slice('inworld:'.length);
+        }
+        payload = {
+          script: script.trim(),
+          resolution,
+          aspectRatio,
+          ...voiceFields,
+        };
+      }
+
+      const res = await api.avatars.generateVideo(accessToken, avatar.id, payload);
       toast.success(t('queuedToast', { credits: res.creditsConsumed }));
       setGenerationId(res.generationId);
       setVideoUrl(null);
@@ -396,24 +608,142 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
         </div>
 
         <div className="space-y-2 px-3 pb-3">
-          {/* ── 1. Roteiro ────────────────────────────────────────────── */}
-          <div>
-            <FieldLabel label={t('scriptLabel')} />
-            <textarea
-              value={script}
-              onChange={(e) => setScript(e.target.value)}
-              placeholder={t('scriptPlaceholder')}
-              maxLength={3000}
-              rows={3}
-              disabled={isGenerating}
-              className="w-full resize-none rounded-lg border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-[12.5px] leading-relaxed text-[#f3f0ed]/90 placeholder:text-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30 disabled:opacity-60"
-            />
-            <div className="mt-1 flex justify-end">
-              <span className="text-[10px] tabular-nums text-[#f3f0ed]/30">
-                {script.length}/3000
-              </span>
-            </div>
+          {/* ── Input mode switch (Voz ↔ Áudio) ─────────────────────── */}
+          <div className="grid grid-cols-2 gap-1 rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/10 p-0.5">
+            {(['voice', 'audio'] as const).map((mode) => {
+              const active = inputMode === mode;
+              const label = mode === 'voice' ? t('modeVoice') : t('modeAudio');
+              const Icon = mode === 'voice' ? MicVocal : Mic;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setInputMode(mode)}
+                  disabled={isGenerating}
+                  className="flex items-center justify-center gap-1.5 rounded-lg py-2 text-[11px] font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                  style={{
+                    background: active ? 'rgba(162,221,0,0.12)' : 'transparent',
+                    color: active ? '#a2dd00' : 'rgba(243,240,237,0.45)',
+                    boxShadow: active ? '0 0 0 1px rgba(162,221,0,0.25)' : 'none',
+                  }}
+                >
+                  <Icon className="h-3 w-3" />
+                  {label}
+                </button>
+              );
+            })}
           </div>
+
+          {/* ── 1a. Roteiro (modo voz) ───────────────────────────────── */}
+          {inputMode === 'voice' && (
+            <div>
+              <FieldLabel label={t('scriptLabel')} />
+              <textarea
+                value={script}
+                onChange={(e) => setScript(e.target.value)}
+                placeholder={t('scriptPlaceholder')}
+                maxLength={3000}
+                rows={3}
+                disabled={isGenerating}
+                className="w-full resize-none rounded-lg border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-[12.5px] leading-relaxed text-[#f3f0ed]/90 placeholder:text-[#f3f0ed]/25 outline-none transition-all focus:border-[#a2dd00]/40 focus:bg-[#1e494b]/30 disabled:opacity-60"
+              />
+              <div className="mt-1 flex justify-end">
+                <span className="text-[10px] tabular-nums text-[#f3f0ed]/30">
+                  {script.length}/3000
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* ── 1b. Áudio (modo áudio) ────────────────────────────────── */}
+          {inputMode === 'audio' && (
+            <div>
+              <FieldLabel label={t('audioInputLabel')} />
+              {customAudio ? (
+                <div className="flex flex-col gap-2 rounded-lg border border-[#a2dd00]/30 bg-[#a2dd00]/[0.05] px-3 py-2.5">
+                  <audio src={customAudio.previewUrl} controls className="h-8 w-full" />
+                  <div className="flex items-center justify-between text-[10.5px] text-[#f3f0ed]/55">
+                    <span className="tabular-nums">
+                      {t('audioReady', { duration: formatTime(customAudio.durationSeconds) })}
+                    </span>
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => audioInputRef.current?.click()}
+                        disabled={isGenerating}
+                        className="flex h-6 items-center gap-1 rounded-md bg-[#f3f0ed]/[0.06] px-2 text-[10px] font-bold text-[#f3f0ed]/70 transition-colors hover:bg-[#f3f0ed]/[0.1] disabled:opacity-50"
+                      >
+                        <Upload className="h-2.5 w-2.5" />
+                        {t('audioReplace')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={clearCustomAudio}
+                        disabled={isGenerating}
+                        className="flex h-6 items-center gap-1 rounded-md bg-red-500/15 px-2 text-[10px] font-bold text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-50"
+                      >
+                        <Trash2 className="h-2.5 w-2.5" />
+                        {t('audioRemove')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : isRecording ? (
+                <div className="flex items-center gap-2 rounded-lg border border-red-400/30 bg-red-500/[0.08] px-3 py-2.5">
+                  <span className="relative flex h-2 w-2 shrink-0">
+                    <span className="absolute inset-0 animate-ping rounded-full bg-red-400/60" />
+                    <span className="relative h-2 w-2 rounded-full bg-red-400" />
+                  </span>
+                  <span className="text-[10.5px] font-bold tracking-[0.15em] text-red-400">
+                    {t('audioRec')}
+                  </span>
+                  <span className="ml-auto font-mono text-[11px] tabular-nums text-red-400/80">
+                    {formatTime(recordSeconds)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={stopCustomAudioRecording}
+                    className="flex h-7 w-7 items-center justify-center rounded-md bg-red-500/25 text-red-300 transition-colors hover:bg-red-500/35"
+                    title={t('audioStopRecording')}
+                  >
+                    <Square className="h-3 w-3 fill-current" />
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => audioInputRef.current?.click()}
+                    disabled={isGenerating}
+                    className="flex h-16 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#f3f0ed]/15 text-[10.5px] font-medium text-[#f3f0ed]/50 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    {t('audioUpload')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={startCustomAudioRecording}
+                    disabled={isGenerating}
+                    className="flex h-16 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#f3f0ed]/15 text-[10.5px] font-medium text-[#f3f0ed]/50 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Mic className="h-3.5 w-3.5" />
+                    {t('audioStartRecording')}
+                  </button>
+                </div>
+              )}
+              <input
+                ref={audioInputRef}
+                type="file"
+                accept="audio/mpeg,audio/mp4,audio/wav,audio/webm,audio/x-m4a,.mp3,.wav,.m4a,.webm"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleAudioFilePicked(f);
+                  e.target.value = ''; // allow re-selecting same file
+                }}
+              />
+            </div>
+          )}
 
           {/* ── Preview area (aurora while generating, video when done) ── */}
           {genState !== 'idle' && (
@@ -499,17 +829,21 @@ export function AvatarVideoFormPanel({ nodeId, onClose }: AvatarVideoFormPanelPr
             }}
           >
             <div className="space-y-2 pt-0.5">
-              <div>
-                <FieldLabel label={t('voiceLabel')} />
-                <VoicePickerButton
-                  value={voiceId}
-                  savedVoices={voices}
-                  inworldVoices={inworldVoices}
-                  loading={voicesLoading}
-                  disabled={isGenerating}
-                  onClick={() => setVoicePickerOpen(true)}
-                />
-              </div>
+              {/* Voice picker only applies to TTS mode. In custom-audio mode
+                  the audio was already supplied by the user. */}
+              {inputMode === 'voice' && (
+                <div>
+                  <FieldLabel label={t('voiceLabel')} />
+                  <VoicePickerButton
+                    value={voiceId}
+                    savedVoices={voices}
+                    inworldVoices={inworldVoices}
+                    loading={voicesLoading}
+                    disabled={isGenerating}
+                    onClick={() => setVoicePickerOpen(true)}
+                  />
+                </div>
+              )}
 
               <div
                 className="grid grid-cols-2 gap-3"
