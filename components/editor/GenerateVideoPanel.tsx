@@ -329,6 +329,11 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     if (isKieModel && editingNegative) setEditingNegative(false);
   }, [isKieModel, editingNegative]);
 
+  // Vertex (geraew) não suporta 1:1 — reseta para 16:9 se estiver selecionado
+  useEffect(() => {
+    if (!isKieModel && proportion === '1-1') setProportion('16-9');
+  }, [isKieModel, proportion]);
+
   const { data: estimate, isLoading: estimateLoading } = useQuery({
     queryKey: ['credits', 'estimate', videoType, resolution, effectiveAudio, effectiveSampleCount, videoModelVariant],
     queryFn: () => api.credits.estimate(accessToken!, {
@@ -1730,30 +1735,40 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       {['16:9', '9:16', '1:1'].map((p) => {
                         const val = p.replace(':', '-');
                         const active = proportion === val;
-                        const label = isKieModel && p === '1:1' ? 'Auto' : p;
+                        const isOneToOne = p === '1:1';
+                        const disabled = isOneToOne && !isKieModel;
+                        const label = isKieModel && isOneToOne ? 'Auto' : p;
                         return (
                           <button
                             key={p}
-                            onClick={() => setProportion(val)}
-                            className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95"
+                            disabled={disabled}
+                            onClick={() => { if (!disabled) setProportion(val); }}
+                            title={disabled ? 'Este modelo não suporta 1:1' : undefined}
+                            className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95 disabled:cursor-not-allowed disabled:active:scale-100"
                             style={{
-                              background: active
-                                ? unlimited
-                                  ? 'rgba(168,85,247,0.12)'
-                                  : 'rgba(162,221,0,0.1)'
-                                : 'rgba(30,73,75,0.15)',
-                              color: active
-                                ? unlimited
-                                  ? '#a855f7'
-                                  : '#a2dd00'
-                                : 'rgba(243,240,237,0.3)',
-                              border: `1px solid ${active
-                                ? unlimited
-                                  ? 'rgba(168,85,247,0.35)'
-                                  : 'rgba(162,221,0,0.28)'
-                                : 'rgba(243,240,237,0.06)'
+                              background: disabled
+                                ? 'rgba(30,73,75,0.08)'
+                                : active
+                                  ? unlimited
+                                    ? 'rgba(168,85,247,0.12)'
+                                    : 'rgba(162,221,0,0.1)'
+                                  : 'rgba(30,73,75,0.15)',
+                              color: disabled
+                                ? 'rgba(243,240,237,0.15)'
+                                : active
+                                  ? unlimited
+                                    ? '#a855f7'
+                                    : '#a2dd00'
+                                  : 'rgba(243,240,237,0.3)',
+                              border: `1px solid ${disabled
+                                ? 'rgba(243,240,237,0.03)'
+                                : active
+                                  ? unlimited
+                                    ? 'rgba(168,85,247,0.35)'
+                                    : 'rgba(162,221,0,0.28)'
+                                  : 'rgba(243,240,237,0.06)'
                                 }`,
-                              boxShadow: active && !unlimited ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
+                              boxShadow: active && !unlimited && !disabled ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
                             }}
                           >
                             {label}
