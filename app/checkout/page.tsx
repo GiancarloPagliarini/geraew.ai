@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { clearRecoveryPromo, getStoredRecoveryPromo } from '@/lib/recovery-promo';
 
 function CheckoutRedirectContent() {
   const router = useRouter();
@@ -32,8 +33,10 @@ function CheckoutRedirectContent() {
     triggered.current = true;
 
     (async () => {
+      const recoveryPromo = getStoredRecoveryPromo();
       try {
-        const res = await api.subscriptions.create(accessToken, planSlug);
+        const res = await api.subscriptions.create(accessToken, planSlug, undefined, recoveryPromo);
+        if (recoveryPromo) clearRecoveryPromo();
         window.location.href = res.checkoutUrl;
       } catch (err: unknown) {
         const status = (err as { status?: number })?.status;

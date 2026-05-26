@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { clearRecoveryPromo, getStoredRecoveryPromo } from '@/lib/recovery-promo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useLoadingMessage } from '@/lib/loading-messages';
@@ -80,7 +81,9 @@ function CreditosPageContent() {
 
       let checkoutUrl: string;
       if (action === 'create') {
-        const res = await api.subscriptions.create(accessToken, planSlug);
+        const recoveryPromo = getStoredRecoveryPromo();
+        const res = await api.subscriptions.create(accessToken, planSlug, undefined, recoveryPromo);
+        if (recoveryPromo) clearRecoveryPromo();
         checkoutUrl = res.checkoutUrl;
       } else {
         const res = await api.subscriptions.upgrade(accessToken, planSlug);
@@ -157,8 +160,10 @@ function CreditosPageContent() {
     setSubscribingSlug(targetPlan.slug);
 
     (async () => {
+      const recoveryPromo = getStoredRecoveryPromo();
       try {
-        const res = await api.subscriptions.create(accessToken, targetPlan.slug);
+        const res = await api.subscriptions.create(accessToken, targetPlan.slug, undefined, recoveryPromo);
+        if (recoveryPromo) clearRecoveryPromo();
         window.location.href = res.checkoutUrl;
       } catch (err: unknown) {
         const status = (err as { status?: number })?.status;

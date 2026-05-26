@@ -1625,10 +1625,14 @@ export const api = {
   },
 
   subscriptions: {
-    create(accessToken: string, planSlug: string, currency?: string) {
+    create(accessToken: string, planSlug: string, currency?: string, recoveryPromoCode?: string) {
       return authRequest<{ checkoutUrl: string }>('/api/v1/subscriptions', accessToken, {
         method: 'POST',
-        body: JSON.stringify({ planSlug, ...(currency ? { currency } : {}) }),
+        body: JSON.stringify({
+          planSlug,
+          ...(currency ? { currency } : {}),
+          ...(recoveryPromoCode ? { recoveryPromoCode } : {}),
+        }),
       });
     },
     current(accessToken: string) {

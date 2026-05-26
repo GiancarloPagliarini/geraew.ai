@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { clearRecoveryPromo, getStoredRecoveryPromo } from '@/lib/recovery-promo';
 import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 import { CreditPackagesGrid } from '@/components/editor/CreditPackagesGrid';
 import { PlansGrid } from '@/components/editor/PlansGrid';
@@ -118,7 +119,9 @@ export function PlansModal({ onClose }: PlansModalProps) {
     try {
       let checkoutUrl: string;
       if (action === 'create') {
-        const res = await api.subscriptions.create(accessToken, planSlug, uiCurrency);
+        const recoveryPromo = getStoredRecoveryPromo();
+        const res = await api.subscriptions.create(accessToken, planSlug, uiCurrency, recoveryPromo);
+        if (recoveryPromo) clearRecoveryPromo();
         checkoutUrl = res.checkoutUrl;
       } else {
         const res = await api.subscriptions.upgrade(accessToken, planSlug, uiCurrency);

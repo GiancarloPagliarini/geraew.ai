@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, AuthUser, setRefreshHandler } from './api';
+import { captureRecoveryPromoFromUrl } from './recovery-promo';
 
 interface AuthState {
   user: AuthUser | null;
@@ -120,6 +121,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginMutation = useLoginMutation(handleAuthSuccess);
   const registerMutation = useRegisterMutation(handleAuthSuccess);
   const googleLoginMutation = useGoogleLoginMutation(handleAuthSuccess);
+
+  // Captura ?recovery_promo=RECOVERY20 da URL e persiste em sessionStorage
+  // por 48h. Acionado em qualquer página onde o AuthProvider monte.
+  useEffect(() => {
+    captureRecoveryPromoFromUrl();
+  }, []);
 
   // Register the 401 refresh handler so authRequest can auto-retry
   useEffect(() => {
