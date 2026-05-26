@@ -153,6 +153,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   const [refImages, setRefImages] = useState<{ base64: string; mime_type: string; preview: string }[]>([]);
   const [firstFrame, setFirstFrame] = useState<{ base64: string; mime_type: string; preview: string } | null>(null);
   const [lastFrame, setLastFrame] = useState<{ base64: string; mime_type: string; preview: string } | null>(null);
+  // Vídeo de referência do Gemini Omni (opcional). duration usada pra calcular trim auto (ends=min(duration, 10)).
+  const [omniVideoFile, setOmniVideoFile] = useState<{ base64: string; mime_type: string; duration: number; filename: string } | null>(null);
 
   // Load reference images from IndexedDB on mount (too large for localStorage)
   useEffect(() => {
@@ -187,13 +189,15 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       'veo3': 'Geraew Quality',
       'veo3_fast': 'Geraew Fast',
       'grok-imagine': 'Grok Imagine',
+      'gemini-omni-video': 'Gemini Omni',
     };
     const fallback: { value: string; label: string; disabled?: boolean; unlimited?: boolean }[] = [
+      { value: 'gemini-omni-video', label: labelOverride['gemini-omni-video'] },
+      { value: 'grok-imagine', label: labelOverride['grok-imagine'] },
       { value: 'geraew-quality', label: labelOverride['geraew-quality'] },
       { value: 'geraew-fast', label: labelOverride['geraew-fast'] },
       { value: 'veo3', label: labelOverride['veo3'] },
       { value: 'veo3_fast', label: labelOverride['veo3_fast'] },
-      { value: 'grok-imagine', label: labelOverride['grok-imagine'] },
     ];
     const raw = videoModelsQuery.data
       ? videoModelsQuery.data
@@ -207,6 +211,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     return raw.map((opt) => ({
       ...opt,
       unlimited: unlimited && isModelSlugInUnlimitedPlan(unlimitedStatus, opt.value),
+      isNew: opt.value === 'grok-imagine' || opt.value === 'gemini-omni-video',
     }));
   }, [videoModelsQuery.data, unlimited, unlimitedStatus]);
 
@@ -304,6 +309,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   const isGenerating = genState === 'generating';
   const isKieModel = model === 'veo3_fast' || model === 'veo3';
   const isGrokModel = model === 'grok-imagine';
+  const isOmniModel = model === 'gemini-omni-video';
   const caps = useMemo(() => getVideoModelCapabilities(model), [model]);
   const videoModelVariant = ({
     'geraew-fast': 'GERAEW_FAST',
@@ -311,6 +317,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     'veo3_fast': 'VEO_FAST',
     'veo3': 'VEO_MAX',
     'grok-imagine': 'GROK_IMAGINE',
+    'gemini-omni-video': 'GEMINI_OMNI',
   } as Record<string, string>)[model] ?? 'GERAEW_QUALITY';
 
   const effectiveAudio = caps.audio === 'always-on' ? true : caps.audio === 'always-off' ? false : audio;
@@ -337,18 +344,25 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     }
     if (videoMode === 'text' && !caps.supportsTextMode) setVideoMode('image');
     if (videoMode === 'image' && !caps.supportsImageMode) setVideoMode('text');
+    // Limpa vídeo de referência quando sai do Omni (outros modelos não usam).
+    if (!isOmniModel && omniVideoFile) setOmniVideoFile(null);
     if (!caps.supportsNegativePrompt && editingNegative) setEditingNegative(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [caps]);
 
+  const estimateDurationSeconds = durationToSeconds(duration);
+  // Pricing do Gemini Omni muda se tem vídeo de referência — pricing flat por resolution.
+  const estimateHasVideoInput = isOmniModel && !!omniVideoFile;
   const { data: estimate, isLoading: estimateLoading } = useQuery({
-    queryKey: ['credits', 'estimate', videoType, resolution, effectiveAudio, effectiveSampleCount, videoModelVariant],
+    queryKey: ['credits', 'estimate', videoType, resolution, effectiveAudio, effectiveSampleCount, videoModelVariant, estimateDurationSeconds, estimateHasVideoInput],
     queryFn: () => api.credits.estimate(accessToken!, {
       type: videoType,
       resolution,
+      durationSeconds: estimateDurationSeconds,
       hasAudio: effectiveAudio,
       sampleCount: effectiveSampleCount,
       modelVariant: videoModelVariant,
+      hasVideoInput: estimateHasVideoInput,
     }),
     enabled: !!accessToken && genState !== 'generating',
     staleTime: 30_000,
@@ -437,6 +451,59 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const firstFrameInputRef = useRef<HTMLInputElement | null>(null);
   const lastFrameInputRef = useRef<HTMLInputElement | null>(null);
+  const omniVideoInputRef = useRef<HTMLInputElement | null>(null);
+
+  async function processOmniVideoFile(file: File) {
+    if (!file.type.startsWith('video/')) {
+      toast.error(t('errors.mustBeVideo'));
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error(t('errors.videoTooLarge', { maxMB: 100 }));
+      return;
+    }
+    const duration = await new Promise<number>((resolve) => {
+      const url = URL.createObjectURL(file);
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(url);
+        resolve(video.duration);
+      };
+      video.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(0);
+      };
+      video.src = url;
+    });
+    if (duration > 30) {
+      toast.error(t('errors.videoTooLong', { maxSeconds: 30 }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      const base64 = dataUrl.split(',')[1];
+      setOmniVideoFile({
+        base64,
+        mime_type: file.type,
+        duration,
+        filename: file.name,
+      });
+      if (duration > 10) {
+        toast.info(t('toasts.videoTruncated', { duration: duration.toFixed(1), limit: 10 }));
+      } else {
+        toast.success(t('toasts.videoAttached'));
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleOmniVideoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) void processOmniVideoFile(file);
+    e.target.value = '';
+  }
 
   function processFiles(files: File[]) {
     const remaining = 3 - refImages.length;
@@ -696,19 +763,60 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     try {
       let result: { id: string; creditsConsumed: number };
 
-      if (isGrokModel) {
-        if (videoMode !== 'image' || !firstFrame) {
-          throw new Error('Grok Imagine requer uma imagem inicial (image-to-video).');
+      if (isOmniModel) {
+        if (!finalPrompt) {
+          throw new Error(t('errors.omniRequiresPrompt'));
         }
-        result = await api.generations.imageToVideoGrok(accessToken, {
-          prompt: finalPrompt || undefined,
+        // Omni só aceita image_urls como refs múltiplas (sem first/last frame).
+        // KIE quota: imagens + 2*vídeos ≤ 7. Com 1 vídeo (2u), sobram 5 imagens.
+        const maxImages = omniVideoFile ? 5 : 7;
+        const omniImages = refImages
+          .slice(0, maxImages)
+          .map((ref) => ({ base64: ref.base64, mime_type: ref.mime_type }));
+        const omniDuration = durationToSeconds(duration) as 4 | 6 | 8 | 10;
+        result = await api.generations.omniVideo(accessToken, {
+          prompt: finalPrompt,
           resolution,
-          duration_seconds: durationToSeconds(duration),
-          aspect_ratio: proportionToApiAspectRatio(caps, proportion),
-          first_frame: firstFrame.base64,
-          first_frame_mime_type: firstFrame.mime_type,
+          duration_seconds: omniDuration,
+          aspect_ratio: proportionToApiAspectRatio(caps, proportion) as '16:9' | '9:16',
+          images: omniImages.length ? omniImages : undefined,
+          video: omniVideoFile
+            ? {
+                base64: omniVideoFile.base64,
+                mime_type: omniVideoFile.mime_type,
+                duration_seconds: omniVideoFile.duration,
+              }
+            : undefined,
           model_variant: videoModelVariant,
         });
+      } else if (isGrokModel) {
+        if (videoMode === 'image') {
+          if (!firstFrame) {
+            throw new Error(t('errors.grokImageRequiresFirstFrame'));
+          }
+          result = await api.generations.imageToVideoGrok(accessToken, {
+            prompt: finalPrompt || undefined,
+            resolution,
+            duration_seconds: durationToSeconds(duration),
+            aspect_ratio: proportionToApiAspectRatio(caps, proportion),
+            first_frame: firstFrame.base64,
+            first_frame_mime_type: firstFrame.mime_type,
+            model_variant: videoModelVariant,
+          });
+        } else if (videoMode === 'text') {
+          if (!finalPrompt) {
+            throw new Error(t('errors.grokTextRequiresPrompt'));
+          }
+          result = await api.generations.textToVideoGrok(accessToken, {
+            prompt: finalPrompt,
+            resolution,
+            duration_seconds: durationToSeconds(duration),
+            aspect_ratio: proportionToApiAspectRatio(caps, proportion),
+            model_variant: videoModelVariant,
+          });
+        } else {
+          throw new Error(t('errors.grokUnsupportedMode'));
+        }
       } else if (isKieModel) {
         // KIE API — always audio, sampleCount=1
         const kiePayload = {
@@ -985,6 +1093,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       label: o.label,
       disabled: 'disabled' in o ? Boolean(o.disabled) : false,
       unlimited: o.unlimited,
+      isNew: o.isNew,
     }));
     const showAudioToggle = caps.audio === 'toggle';
     const hasMedia = generatedVideoUrls.length > 0;
@@ -1090,6 +1199,42 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 </div>
               )}
 
+              {/* Gemini Omni: vídeo de referência (opcional, máx 30s) */}
+              {isOmniModel && genState === 'idle' && !hasMedia && (
+                <button
+                  type="button"
+                  onClick={() => omniVideoInputRef.current?.click()}
+                  disabled={isGenerating}
+                  className="mt-1 flex w-full items-center justify-between gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 bg-[#0d1011] px-3 py-2 text-left text-[11px] text-[#f3f0ed]/50 transition-all hover:border-[#a2dd00]/40 hover:text-[#f3f0ed]/80 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {omniVideoFile ? (
+                    <>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Video className="h-3.5 w-3.5 shrink-0 text-[#a2dd00]" />
+                        <span className="truncate">{omniVideoFile.filename}</span>
+                        <span className="shrink-0 text-[10px] text-[#f3f0ed]/40">
+                          {omniVideoFile.duration.toFixed(1)}s
+                        </span>
+                      </span>
+                      <span
+                        onClick={(e) => { e.stopPropagation(); setOmniVideoFile(null); }}
+                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[#f3f0ed]/40 hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]"
+                      >
+                        <X className="h-3 w-3" />
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="flex items-center gap-2">
+                        <Video className="h-3.5 w-3.5" />
+                        <span>{t('buttons.attachVideoReference')}</span>
+                      </span>
+                      <span className="text-[9px] uppercase tracking-wide text-[#f3f0ed]/25">{t('labels.videoReferenceOptionalShort')}</span>
+                    </>
+                  )}
+                </button>
+              )}
+
               <div className="flex items-center gap-1.5 pt-1">
                 {videoMode === 'text' && (
                   <>
@@ -1140,28 +1285,33 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
               <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileSelect} />
               <input ref={firstFrameInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) processFrameFile(f, setFirstFrame); e.target.value = ''; }} />
               <input ref={lastFrameInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) processFrameFile(f, setLastFrame); e.target.value = ''; }} />
+              <input ref={omniVideoInputRef} type="file" accept="video/mp4,video/quicktime,video/webm" className="hidden" onChange={handleOmniVideoSelect} />
 
               <div className="grid grid-rows-[0fr] opacity-0 transition-all duration-300 ease-out group-hover/studio:grid-rows-[1fr] group-hover/studio:opacity-100">
                 <div className="overflow-hidden">
                   <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
-                    <StudioPill
-                      active={videoMode === 'text'}
-                      disabled={isGenerating}
-                      onClick={() => setVideoMode('text')}
-                      icon={<Type className="h-3 w-3" />}
-                      accent={unlimited ? '#a855f7' : undefined}
-                    >
-                      {t('modes.text')}
-                    </StudioPill>
-                    <StudioPill
-                      active={videoMode === 'image'}
-                      disabled={isGenerating}
-                      onClick={() => setVideoMode('image')}
-                      icon={<Image className="h-3 w-3" />}
-                      accent={unlimited ? '#a855f7' : undefined}
-                    >
-                      {t('modes.image')}
-                    </StudioPill>
+                    {!isOmniModel && (
+                      <>
+                        <StudioPill
+                          active={videoMode === 'text'}
+                          disabled={isGenerating}
+                          onClick={() => setVideoMode('text')}
+                          icon={<Type className="h-3 w-3" />}
+                          accent={unlimited ? '#a855f7' : undefined}
+                        >
+                          {t('modes.text')}
+                        </StudioPill>
+                        <StudioPill
+                          active={videoMode === 'image'}
+                          disabled={isGenerating}
+                          onClick={() => setVideoMode('image')}
+                          icon={<Image className="h-3 w-3" />}
+                          accent={unlimited ? '#a855f7' : undefined}
+                        >
+                          {t('modes.image')}
+                        </StudioPill>
+                      </>
+                    )}
                     <StudioSelectPill
                       value={model}
                       label={currentModelLabel}
@@ -1169,6 +1319,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       onChange={setModel}
                       disabled={isGenerating}
                       icon={<Sparkles className="h-3 w-3 text-[#a2dd00]" />}
+                      newLabel={tCommon('newBadge')}
                     />
                     <StudioSelectPill
                       value={proportion}
@@ -1322,7 +1473,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           </div>
 
           <div className="space-y-3.5 p-4">
-            {/* Mode selector */}
+            {/* Mode selector — escondido pro Omni (multimodal por natureza) */}
+            {!isOmniModel && (
             <div className="flex gap-2">
               {([
                 ['text', t('modes.text'), Type],
@@ -1375,6 +1527,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 );
               })}
             </div>
+            )}
 
             {/* Prompt / Negative prompt toggle */}
             <div className="space-y-1.5">
@@ -1573,6 +1726,49 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
               </div>
             )}
 
+            {/* Gemini Omni: vídeo de referência (opcional, máx 30s) */}
+            {isOmniModel && (
+              <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                  {t('labels.videoReference')} <span className="text-[#f3f0ed]/20">{t('labels.videoReferenceMax')}</span>
+                </label>
+                {omniVideoFile ? (
+                  <div className="group relative flex h-14 w-full items-center gap-3 overflow-hidden rounded-xl border border-[#f3f0ed]/10 bg-[#0d1011] px-3">
+                    <Video className="h-4 w-4 shrink-0 text-[#a2dd00]" />
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <span className="truncate text-[11px] text-[#f3f0ed]/80">{omniVideoFile.filename}</span>
+                      <span className="text-[10px] text-[#f3f0ed]/40">
+                        {omniVideoFile.duration.toFixed(1)}s
+                        {omniVideoFile.duration > 10 ? ` · ${t('labels.videoTruncateNote')}` : ''}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setOmniVideoFile(null)}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#f3f0ed]/40 hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => omniVideoInputRef.current?.click()}
+                    className={`flex h-14 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all ${refHoverClass}`}
+                  >
+                    <Video className="h-4 w-4" />
+                    <span className="text-[10px] font-bold tracking-wider">{t('buttons.attachVideo')}</span>
+                  </button>
+                )}
+                <input
+                  ref={omniVideoInputRef}
+                  type="file"
+                  accept="video/mp4,video/quicktime,video/webm"
+                  className="hidden"
+                  onChange={handleOmniVideoSelect}
+                />
+              </div>
+            )}
+
             {/* Error message */}
             <GenerationErrorBanner msg={errorMsg} />
 
@@ -1706,6 +1902,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       onValueChange={setModel}
                       options={videoModelOptions}
                       maintenanceLabel={t('modelMaintenance')}
+                      newLabel={tCommon('newBadge')}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -1720,11 +1917,54 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                   </div>
                 </div>
 
+                {/* Duration em linha cheia (Omni tem 4 presets — não cabe inline com proportion) */}
+                {isOmniModel && caps.duration.type === 'preset' && (
+                  <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                    <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                      {t('labels.duration')}
+                    </label>
+                    <div className="flex gap-1.5">
+                      {(caps.duration as { type: 'preset'; options: string[]; default: string }).options.map((d) => {
+                        const active = effectiveDuration === d;
+                        return (
+                          <button
+                            key={d}
+                            onClick={() => setDuration(d)}
+                            className="flex-1 rounded-xl py-2 text-[11px] font-bold transition-all active:scale-95"
+                            style={{
+                              background: active
+                                ? unlimited
+                                  ? 'rgba(168,85,247,0.12)'
+                                  : 'rgba(162,221,0,0.1)'
+                                : 'rgba(30,73,75,0.15)',
+                              color: active
+                                ? unlimited
+                                  ? '#a855f7'
+                                  : '#a2dd00'
+                                : 'rgba(243,240,237,0.3)',
+                              border: `1px solid ${active
+                                ? unlimited
+                                  ? 'rgba(168,85,247,0.35)'
+                                  : 'rgba(162,221,0,0.28)'
+                                : 'rgba(243,240,237,0.06)'
+                                }`,
+                              boxShadow: active && !unlimited ? '0 0 12px rgba(162,221,0,0.08)' : 'none',
+                            }}
+                          >
+                            {d}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Duration + Proportion */}
                 {(() => {
                   const showInlineDuration =
                     caps.duration.type === 'preset' &&
-                    caps.duration.options.length > 1;
+                    caps.duration.options.length > 1 &&
+                    !isOmniModel; // Omni renderiza duration em linha separada acima
                   const gridCols = showInlineDuration ? 'grid-cols-2' : 'grid-cols-1';
                   return (
                 <div className={`grid ${gridCols} gap-3`} style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
@@ -2151,13 +2391,16 @@ function PanelSelect({
   options,
   maintenanceLabel,
   accent,
+  newLabel = 'New',
 }: {
   value: string;
   onValueChange: (v: string) => void;
-  options: { value: string; label: string; disabled?: boolean; unlimited?: boolean }[];
+  options: { value: string; label: string; disabled?: boolean; unlimited?: boolean; isNew?: boolean }[];
   maintenanceLabel?: string;
   /** Tom de destaque para focus/selecionado. Default verde-limão. */
   accent?: 'violet';
+  /** Label do badge "New" — passe a versão traduzida do consumer. */
+  newLabel?: string;
 }) {
   const isViolet = accent === 'violet';
   const triggerFocus = isViolet
@@ -2181,6 +2424,11 @@ function PanelSelect({
           >
             <span className="flex items-center gap-1.5">
               {opt.label}
+              {opt.isNew && (
+                <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-px text-[8px] font-bold uppercase tracking-[0.1em] text-[#a2dd00] [[data-slot=select-trigger]_&]:hidden">
+                  {newLabel}
+                </span>
+              )}
               {opt.unlimited && (
                 <InfinityIcon className="h-3 w-3 text-[#a855f7]" />
               )}

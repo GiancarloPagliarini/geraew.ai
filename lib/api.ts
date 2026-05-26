@@ -399,6 +399,7 @@ export interface CreditsEstimateRequest {
   sampleCount?: number;
   modelVariant?: string;
   freeGenerationType?: FreeGenerationType;
+  hasVideoInput?: boolean;
 }
 
 export interface CreditsEstimateResponse {
@@ -599,6 +600,36 @@ export interface ImageToVideoGrokRequest {
   first_frame_mime_type?: string;
   model_variant?: string;
 }
+
+export interface TextToVideoGrokRequest {
+  prompt: string;
+  resolution: string; // 'RES_480P' | 'RES_720P'
+  duration_seconds: number; // 6-30
+  aspect_ratio?: string;
+  model_variant?: string;
+}
+
+export interface OmniVideoImageInput {
+  base64: string;
+  mime_type?: string;
+}
+
+export interface OmniVideoVideoInput {
+  base64: string;
+  mime_type?: string;
+  duration_seconds?: number;
+}
+
+export interface OmniVideoRequest {
+  prompt: string;
+  resolution: string; // 'RES_720P' | 'RES_1080P' | 'RES_4K'
+  duration_seconds: 4 | 6 | 8 | 10;
+  aspect_ratio?: '16:9' | '9:16';
+  images?: OmniVideoImageInput[]; // até 7
+  video?: OmniVideoVideoInput;
+  model_variant?: string;
+}
+
 
 export interface TextToSpeechRequest {
   text: string;
@@ -1402,6 +1433,18 @@ export const api = {
     },
     imageToVideoGrok(accessToken: string, payload: ImageToVideoGrokRequest) {
       return authRequest<CreateGenerationResponse>('/api/v1/generations/image-to-video-grok', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    textToVideoGrok(accessToken: string, payload: TextToVideoGrokRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/text-to-video-grok', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    omniVideo(accessToken: string, payload: OmniVideoRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/omni-video', accessToken, {
         method: 'POST',
         body: JSON.stringify(payload),
       });

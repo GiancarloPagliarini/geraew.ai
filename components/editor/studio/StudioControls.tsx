@@ -48,6 +48,7 @@ export interface StudioSelectOption {
   label: string;
   suffix?: string;
   disabled?: boolean;
+  isNew?: boolean;
 }
 
 export function StudioSelectPill({
@@ -57,6 +58,7 @@ export function StudioSelectPill({
   onChange,
   icon,
   disabled,
+  newLabel = 'New',
 }: {
   value: string;
   label: string;
@@ -64,6 +66,8 @@ export function StudioSelectPill({
   onChange: (next: string) => void;
   icon?: React.ReactNode;
   disabled?: boolean;
+  /** Label do badge "New" — passe a versão traduzida do consumer. */
+  newLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -134,7 +138,14 @@ export function StudioSelectPill({
                   : 'text-[#f3f0ed]/70 hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]'
               }`}
             >
-              <span className="truncate">{opt.label}</span>
+              <span className="flex min-w-0 items-center gap-1.5 truncate">
+                <span className="truncate">{opt.label}</span>
+                {opt.isNew && (
+                  <span className="shrink-0 rounded-full bg-[#a2dd00]/15 px-1.5 py-px text-[8px] font-bold uppercase tracking-[0.1em] text-[#a2dd00]">
+                    {newLabel}
+                  </span>
+                )}
+              </span>
               {opt.suffix && <span className="font-mono text-[10px] opacity-60">{opt.suffix}</span>}
             </button>
           ))}

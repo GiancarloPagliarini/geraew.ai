@@ -84,14 +84,16 @@ async function compressImage(dataUrl: string, mimeType: string): Promise<{ dataU
   });
 }
 
-function qualityToResolution(q: string): 'RES_1K' | 'RES_2K' | 'RES_4K' {
+function qualityToResolution(q: string): 'RES_1K' | 'RES_2K' | 'RES_3K' | 'RES_4K' {
   if (q === '4k') return 'RES_4K';
+  if (q === '3k') return 'RES_3K';
   if (q === 'hd') return 'RES_2K';
   return 'RES_1K';
 }
 
 function resolutionToQuality(res: string): string {
   if (res === 'RES_4K') return '4k';
+  if (res === 'RES_3K') return '3k';
   if (res === 'RES_2K') return 'hd';
   return 'sd'; // RES_1K
 }
@@ -102,6 +104,10 @@ function proportionToAspectRatio(p: string): string {
     '9-16': '9:16',
     '1-1': '1:1',
     '4-3': '4:3',
+    '3-4': '3:4',
+    '2-3': '2:3',
+    '3-2': '3:2',
+    '21-9': '21:9',
   };
   return map[p] ?? '1:1';
 }
@@ -220,6 +226,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
       (imageModelsQuery.data ?? []).map((m) => [m.slug, m]),
     );
     const base: { value: string; label: string; disabled?: boolean; badge?: string; unlimited?: boolean }[] = [
+      { value: 'seedream-5-lite', label: 'Seedream Lite', badge: tCommon('newBadge') },
       { value: 'gpt-image-2', label: 'GPT Image 2', badge: tCommon('newBadge') },
       { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2' },
       { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
@@ -758,6 +765,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
     return () => panel.removeEventListener('wheel', onWheel, { capture: true });
   }, []);
 
+  const isSeedreamLite = model === 'seedream-5-lite';
   const imageType = attachedImages.length > 0 ? 'IMAGE_TO_IMAGE' as const : 'TEXT_TO_IMAGE' as const;
   const imageModelVariant =
     model === 'gemini-3-pro-image-preview'
@@ -766,13 +774,35 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
         ? 'SEM_CENSURA'
         : model === 'gpt-image-2'
           ? 'GPT_IMAGE_2'
-          : 'NB2';
+          : isSeedreamLite
+            ? 'SEEDREAM_LITE'
+            : 'NB2';
 
   useEffect(() => {
     if (model === 'sem-censura' && quality === 'sd') {
       setQuality('hd');
     }
   }, [model, quality]);
+
+  // Seedream Lite suporta apenas 2K (basic) e 3K (high) — coerce sd→hd e 4k→3k.
+  // Para outros modelos, 3k não existe — coerce 3k→4k.
+  useEffect(() => {
+    if (isSeedreamLite) {
+      if (quality === 'sd') setQuality('hd');
+      else if (quality === '4k') setQuality('3k');
+    } else if (quality === '3k') {
+      setQuality('4k');
+    }
+  }, [isSeedreamLite, quality]);
+
+  // Proportions extras do seedream (3-4, 2-3, 3-2, 21-9) não existem em outros
+  // modelos — coerce para 1-1 quando o usuário troca de modelo.
+  useEffect(() => {
+    const extras = new Set(['3-4', '2-3', '3-2', '21-9']);
+    if (!isSeedreamLite && extras.has(proportion)) {
+      setProportion('1-1');
+    }
+  }, [isSeedreamLite, proportion]);
 
   // GPT Image 2 não suporta 4K com proporção 1:1 — força 2K nesse caso
   useEffect(() => {
@@ -894,34 +924,53 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   }, [incomingText]);
 
   if (studioMode) {
-    const PROPORTION_LABELS: Record<string, string> = { '16-9': '16:9', '9-16': '9:16', '1-1': '1:1', '4-3': '4:3' };
-    const QUALITY_LABELS: Record<string, string> = { '4k': '4K', 'hd': '2K', 'sd': '1K' };
-    const PROPORTION_WIDTH: Record<string, number> = { '9-16': 260, '1-1': 320, '4-3': 360, '16-9': 440 };
+    const PROPORTION_LABELS: Record<string, string> = {
+      '16-9': '16:9', '9-16': '9:16', '1-1': '1:1', '4-3': '4:3',
+      '3-4': '3:4', '2-3': '2:3', '3-2': '3:2', '21-9': '21:9',
+    };
+    const QUALITY_LABELS: Record<string, string> = { '4k': '4K', '3k': '3K', 'hd': '2K', 'sd': '1K' };
+    const PROPORTION_WIDTH: Record<string, number> = {
+      '9-16': 260, '1-1': 320, '4-3': 360, '16-9': 440,
+      '3-4': 280, '2-3': 280, '3-2': 400, '21-9': 460,
+    };
     const studioWidth = PROPORTION_WIDTH[proportion] ?? 300;
     const currentModelLabel = imageModelOptions.find((o) => o.value === model)?.label ?? 'GPT Image 2';
     const currentProportionLabel = PROPORTION_LABELS[proportion] ?? proportion;
     const currentQualityLabel = QUALITY_LABELS[quality] ?? quality;
     const isFreeGen = !!estimate?.canUseFreeGeneration;
     const creditCost = estimate?.creditsRequired ?? 0;
-    const proportionOptions: { value: string; label: string; suffix?: string }[] = [
-      { value: '9-16', label: t('proportionOptions.portrait'), suffix: '9:16' },
-      { value: '1-1', label: t('proportionOptions.square'), suffix: '1:1' },
-      { value: '4-3', label: t('proportionOptions.43'), suffix: '4:3' },
-      { value: '16-9', label: t('proportionOptions.landscape'), suffix: '16:9' },
-    ];
+    const proportionOptions: { value: string; label: string; suffix?: string }[] = isSeedreamLite
+      ? [
+          { value: '1-1', label: '1:1', suffix: '1:1' },
+          { value: '4-3', label: '4:3', suffix: '4:3' },
+          { value: '3-4', label: '3:4', suffix: '3:4' },
+          { value: '16-9', label: '16:9', suffix: '16:9' },
+          { value: '9-16', label: '9:16', suffix: '9:16' },
+          { value: '2-3', label: '2:3', suffix: '2:3' },
+          { value: '3-2', label: '3:2', suffix: '3:2' },
+          { value: '21-9', label: '21:9', suffix: '21:9' },
+        ]
+      : [
+          { value: '9-16', label: t('proportionOptions.portrait'), suffix: '9:16' },
+          { value: '1-1', label: t('proportionOptions.square'), suffix: '1:1' },
+          { value: '4-3', label: t('proportionOptions.43'), suffix: '4:3' },
+          { value: '16-9', label: t('proportionOptions.landscape'), suffix: '16:9' },
+        ];
     const qualityOptionsBase: { value: string; label: string }[] =
-      model === 'sem-censura'
-        ? [{ value: '4k', label: '4K' }, { value: 'hd', label: '2K' }]
-        : model === 'gpt-image-2' && proportion === '1-1'
-          ? [{ value: 'hd', label: '2K' }, { value: 'sd', label: '1K' }]
-          : [{ value: '4k', label: '4K' }, { value: 'hd', label: '2K' }, { value: 'sd', label: '1K' }];
+      isSeedreamLite
+        ? [{ value: '3k', label: '3K' }, { value: 'hd', label: '2K' }]
+        : model === 'sem-censura'
+          ? [{ value: '4k', label: '4K' }, { value: 'hd', label: '2K' }]
+          : model === 'gpt-image-2' && proportion === '1-1'
+            ? [{ value: 'hd', label: '2K' }, { value: 'sd', label: '1K' }]
+            : [{ value: '4k', label: '4K' }, { value: 'hd', label: '2K' }, { value: 'sd', label: '1K' }];
     const qualityOptionsRaw = qualityOptionsBase.map((opt) => ({
       ...opt,
       unlimited:
         unlimited &&
         isUnlimitedModelAllowed(unlimitedStatus, imageModelVariant, qualityToResolution(opt.value)),
     }));
-    const modelSelectOptions = imageModelOptions.map((o) => ({ value: o.value, label: o.label, disabled: o.disabled, unlimited: o.unlimited }));
+    const modelSelectOptions = imageModelOptions.map((o) => ({ value: o.value, label: o.label, disabled: o.disabled, unlimited: o.unlimited, isNew: !!o.badge }));
     const showEnhanceToggle = model !== 'sem-censura';
 
     return (
@@ -1072,6 +1121,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                       onChange={setModel}
                       disabled={isGenerating}
                       icon={<Sparkles className="h-3 w-3 text-[#a2dd00]" />}
+                      newLabel={tCommon('newBadge')}
                     />
                     <StudioSelectPill
                       value={proportion}
@@ -1146,11 +1196,13 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
     : 'hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60';
 
   const qualityOptionsForNormalMode = (
-    model === 'sem-censura'
-      ? [{ value: '4k', label: '4K' }, { value: 'hd', label: '2K' }]
-      : model === 'gpt-image-2' && proportion === '1-1'
-        ? [{ value: 'hd', label: '2K' }, { value: 'sd', label: '1K' }]
-        : [{ value: '4k', label: '4K' }, { value: 'hd', label: '2K' }, { value: 'sd', label: '1K' }]
+    isSeedreamLite
+      ? [{ value: '3k', label: '3K' }, { value: 'hd', label: '2K' }]
+      : model === 'sem-censura'
+        ? [{ value: '4k', label: '4K' }, { value: 'hd', label: '2K' }]
+        : model === 'gpt-image-2' && proportion === '1-1'
+          ? [{ value: 'hd', label: '2K' }, { value: 'sd', label: '1K' }]
+          : [{ value: '4k', label: '4K' }, { value: 'hd', label: '2K' }, { value: 'sd', label: '1K' }]
   ).map((opt) => ({
     ...opt,
     unlimited:
@@ -1341,12 +1393,25 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
                     <PanelSelect
                       value={proportion}
                       onValueChange={setProportion}
-                      options={[
-                        { value: '16-9', label: t('proportionOptions.landscape') },
-                        { value: '9-16', label: t('proportionOptions.portrait') },
-                        { value: '1-1', label: t('proportionOptions.square') },
-                        { value: '4-3', label: t('proportionOptions.43') },
-                      ]}
+                      options={
+                        isSeedreamLite
+                          ? [
+                              { value: '1-1', label: '1:1' },
+                              { value: '4-3', label: '4:3' },
+                              { value: '3-4', label: '3:4' },
+                              { value: '16-9', label: '16:9' },
+                              { value: '9-16', label: '9:16' },
+                              { value: '2-3', label: '2:3' },
+                              { value: '3-2', label: '3:2' },
+                              { value: '21-9', label: '21:9' },
+                            ]
+                          : [
+                              { value: '16-9', label: t('proportionOptions.landscape') },
+                              { value: '9-16', label: t('proportionOptions.portrait') },
+                              { value: '1-1', label: t('proportionOptions.square') },
+                              { value: '4-3', label: t('proportionOptions.43') },
+                            ]
+                      }
                       accent={unlimited ? 'violet' : undefined}
                     />
                   </div>

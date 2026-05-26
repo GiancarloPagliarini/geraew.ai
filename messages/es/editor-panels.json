@@ -104,7 +104,11 @@
         "quantity": "CANTIDAD",
         "referenceImages": "IMÁGENES DE REFERENCIA (opcional)",
         "audio": "Audio",
-        "audioAlwaysOn": "(siempre activo)"
+        "audioAlwaysOn": "(siempre activo)",
+        "videoReference": "Video de referencia",
+        "videoReferenceMax": "opcional · máx 30s",
+        "videoReferenceOptionalShort": "opcional",
+        "videoTruncateNote": "recorta a 10s"
       },
       "proportionOptions": {
         "landscape": "Horizontal",
@@ -112,7 +116,22 @@
         "square": "Cuadrado"
       },
       "buttons": {
-        "upload": "SUBIR"
+        "upload": "SUBIR",
+        "attachVideo": "Adjuntar video",
+        "attachVideoReference": "Adjuntar video de referencia"
+      },
+      "toasts": {
+        "videoAttached": "Video de referencia adjuntado.",
+        "videoTruncated": "Video de {duration}s — solo se usarán los primeros {limit}s."
+      },
+      "errors": {
+        "mustBeVideo": "El archivo debe ser un video.",
+        "videoTooLarge": "El video excede {maxMB}MB.",
+        "videoTooLong": "El video excede {maxSeconds}s. Usa uno más corto.",
+        "omniRequiresPrompt": "Gemini Omni requiere un prompt.",
+        "grokImageRequiresFirstFrame": "Grok Imagine image-to-video requiere una imagen inicial.",
+        "grokTextRequiresPrompt": "Grok Imagine text-to-video requiere un prompt.",
+        "grokUnsupportedMode": "Grok Imagine no admite este modo."
       },
       "only8s": "Solo 8s disponible con referencias",
       "freeGeneration": "¡Generación gratuita!",

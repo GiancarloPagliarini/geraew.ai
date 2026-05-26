@@ -83,6 +83,28 @@ const KIE_VEO: VideoModelCapabilities = {
   supportsReferenceMode: true,
 };
 
+const GEMINI_OMNI: VideoModelCapabilities = {
+  resolutions: [
+    { value: 'RES_720P', label: '720p' },
+    { value: 'RES_1080P', label: '1080p' },
+    { value: 'RES_4K', label: '4K' },
+  ],
+  aspectRatios: [
+    { value: '16-9', apiValue: '16:9', label: '16:9' },
+    { value: '9-16', apiValue: '9:16', label: '9:16' },
+  ],
+  duration: { type: 'preset', options: ['4s', '6s', '8s', '10s'], default: '8s' },
+  audio: 'always-off',
+  samples: 'single',
+  supportsNegativePrompt: false,
+  supportsTextMode: true,
+  // Omni não tem conceito de first_frame/last_frame (não interpola entre eles
+  // como o Veo). Usa apenas image_urls como refs múltiplas (até 7), expostas
+  // via refImages no modo text. Desliga image mode pra evitar UI enganosa.
+  supportsImageMode: false,
+  supportsReferenceMode: true,
+};
+
 const GROK_IMAGINE: VideoModelCapabilities = {
   resolutions: [
     { value: 'RES_480P', label: '480p' },
@@ -99,7 +121,7 @@ const GROK_IMAGINE: VideoModelCapabilities = {
   audio: 'always-off',
   samples: 'single',
   supportsNegativePrompt: false,
-  supportsTextMode: false,
+  supportsTextMode: true,
   supportsImageMode: true,
   supportsReferenceMode: false,
 };
@@ -110,6 +132,7 @@ const VIDEO_MODEL_CAPABILITIES: Record<string, VideoModelCapabilities> = {
   'veo3_fast': KIE_VEO,
   'veo3': KIE_VEO,
   'grok-imagine': GROK_IMAGINE,
+  'gemini-omni-video': GEMINI_OMNI,
 };
 
 export function getVideoModelCapabilities(slug: string): VideoModelCapabilities {
