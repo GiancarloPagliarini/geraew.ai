@@ -2470,6 +2470,27 @@ export const api = {
     },
   },
 
+  adminCrons: {
+    list(accessToken: string) {
+      return authRequest<AdminCronSummary[]>('/api/v1/admin/crons', accessToken);
+    },
+    executions(
+      accessToken: string,
+      opts: { cronName?: string; status?: string; page?: number; limit?: number } = {},
+    ) {
+      const qs = new URLSearchParams();
+      if (opts.cronName) qs.set('cronName', opts.cronName);
+      if (opts.status) qs.set('status', opts.status);
+      if (opts.page) qs.set('page', String(opts.page));
+      if (opts.limit) qs.set('limit', String(opts.limit));
+      const suffix = qs.toString() ? `?${qs.toString()}` : '';
+      return authRequest<AdminCronExecutionsResponse>(
+        `/api/v1/admin/crons/executions${suffix}`,
+        accessToken,
+      );
+    },
+  },
+
   adminStripe: {
     overview(accessToken: string) {
       return authRequest<StripeOverview>('/api/v1/admin/stripe/overview', accessToken);
@@ -2801,6 +2822,48 @@ export interface StripeInvoice {
   created: number;
   period_start: number;
   period_end: number;
+}
+
+export interface AdminCronExecutionSummary {
+  id: string;
+  status: string;
+  startedAt: string;
+  finishedAt: string | null;
+  durationMs: number | null;
+  error: string | null;
+  metadata: unknown;
+}
+
+export interface AdminCronSummary {
+  cronName: string;
+  schedule: string;
+  scheduleHuman: string;
+  nextRunAt: string | null;
+  totalExecutions: number;
+  successCount: number;
+  errorCount: number;
+  runningCount: number;
+  avgDurationMs: number | null;
+  lastExecution: AdminCronExecutionSummary | null;
+}
+
+export interface AdminCronExecutionItem {
+  id: string;
+  cronName: string;
+  schedule: string;
+  status: string;
+  startedAt: string;
+  finishedAt: string | null;
+  durationMs: number | null;
+  error: string | null;
+  metadata: unknown;
+}
+
+export interface AdminCronExecutionsResponse {
+  items: AdminCronExecutionItem[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export interface StripeOverview {

@@ -23,6 +23,7 @@ import {
   Mail,
   Infinity as InfinityIcon,
   Link2,
+  Clock,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -42,6 +43,7 @@ const NAV_ITEMS = [
   { href: '/admin/feedback', label: 'Feedback', icon: MessageSquareHeart },
   { href: '/admin/uploads', label: 'Uploads', icon: Upload },
   { href: '/admin/utm', label: 'UTM Builder', icon: Link2 },
+  { href: '/admin/crons', label: 'Crons', icon: Clock },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
