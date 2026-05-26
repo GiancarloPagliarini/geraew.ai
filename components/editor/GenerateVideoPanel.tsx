@@ -44,6 +44,10 @@ import {
   getModelVariantFromSlug,
   isUnlimitedModelAllowed,
 } from '@/hooks/use-unlimited-status';
+import {
+  getVideoModelCapabilities,
+  proportionToApiAspectRatio,
+} from '@/lib/video-models';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -97,24 +101,8 @@ function durationToSeconds(d: string): number {
   return parseInt(d.replace('s', ''), 10);
 }
 
-function proportionToAspectRatio(p: string): string {
-  const map: Record<string, string> = {
-    '16-9': '16:9',
-    '9-16': '9:16',
-    '1-1': '1:1',
-  };
-  return map[p] ?? '16:9';
-}
-
-// KIE Veo aceita apenas 16:9, 9:16, Auto — mapeia 1:1 → Auto.
-function proportionToAspectRatioKie(p: string): string {
-  const map: Record<string, string> = {
-    '16-9': '16:9',
-    '9-16': '9:16',
-    '1-1': 'Auto',
-  };
-  return map[p] ?? 'Auto';
-}
+// Conversão proporção interna ('16-9') → apiValue de cada provider é feita
+// via `proportionToApiAspectRatio(caps, proportion)` em lib/video-models.ts.
 
 // ─── component ────────────────────────────────────────────────────────────────
 
@@ -198,12 +186,14 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       'geraew-fast': 'Veo 3.1 Fast',
       'veo3': 'Geraew Quality',
       'veo3_fast': 'Geraew Fast',
+      'grok-imagine': 'Grok Imagine',
     };
     const fallback: { value: string; label: string; disabled?: boolean; unlimited?: boolean }[] = [
       { value: 'geraew-quality', label: labelOverride['geraew-quality'] },
       { value: 'geraew-fast', label: labelOverride['geraew-fast'] },
       { value: 'veo3', label: labelOverride['veo3'] },
       { value: 'veo3_fast', label: labelOverride['veo3_fast'] },
+      { value: 'grok-imagine', label: labelOverride['grok-imagine'] },
     ];
     const raw = videoModelsQuery.data
       ? videoModelsQuery.data
@@ -313,26 +303,43 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
   const isGenerating = genState === 'generating';
   const isKieModel = model === 'veo3_fast' || model === 'veo3';
+  const isGrokModel = model === 'grok-imagine';
+  const caps = useMemo(() => getVideoModelCapabilities(model), [model]);
   const videoModelVariant = ({
     'geraew-fast': 'GERAEW_FAST',
     'geraew-quality': 'GERAEW_QUALITY',
     'veo3_fast': 'VEO_FAST',
     'veo3': 'VEO_MAX',
+    'grok-imagine': 'GROK_IMAGINE',
   } as Record<string, string>)[model] ?? 'GERAEW_QUALITY';
 
-  // KIE always has audio and sampleCount=1
-  const effectiveAudio = isKieModel ? true : audio;
-  const effectiveSampleCount = isKieModel ? 1 : sampleCount;
+  const effectiveAudio = caps.audio === 'always-on' ? true : caps.audio === 'always-off' ? false : audio;
+  const effectiveSampleCount = caps.samples === 'single' ? 1 : sampleCount;
 
-  // Negative prompt is only supported on geraew models — exit negative mode if user switches to KIE
+  // Normaliza o estado quando o modelo muda, baseado nas capabilities.
+  // Cobre: resolução, aspect ratio, duração, modo de input, negative prompt.
   useEffect(() => {
-    if (isKieModel && editingNegative) setEditingNegative(false);
-  }, [isKieModel, editingNegative]);
-
-  // Vertex (geraew) não suporta 1:1 — reseta para 16:9 se estiver selecionado
-  useEffect(() => {
-    if (!isKieModel && proportion === '1-1') setProportion('16-9');
-  }, [isKieModel, proportion]);
+    if (!caps.resolutions.some((r) => r.value === resolution)) {
+      setResolution(caps.resolutions[0].value);
+    }
+    if (!caps.aspectRatios.some((a) => a.value === proportion)) {
+      setProportion(caps.aspectRatios[0].value);
+    }
+    if (caps.duration.type === 'slider') {
+      const secs = durationToSeconds(duration);
+      if (Number.isNaN(secs) || secs < caps.duration.min || secs > caps.duration.max) {
+        setDuration(caps.duration.default);
+      }
+    } else {
+      if (!caps.duration.options.includes(duration)) {
+        setDuration(caps.duration.default);
+      }
+    }
+    if (videoMode === 'text' && !caps.supportsTextMode) setVideoMode('image');
+    if (videoMode === 'image' && !caps.supportsImageMode) setVideoMode('text');
+    if (!caps.supportsNegativePrompt && editingNegative) setEditingNegative(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caps]);
 
   const { data: estimate, isLoading: estimateLoading } = useQuery({
     queryKey: ['credits', 'estimate', videoType, resolution, effectiveAudio, effectiveSampleCount, videoModelVariant],
@@ -667,7 +674,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           type: 'video',
           model,
           resolution,
-          aspectRatio: isKieModel ? proportionToAspectRatioKie(proportion) : proportionToAspectRatio(proportion),
+          aspectRatio: proportionToApiAspectRatio(caps, proportion),
           durationSeconds: durationToSeconds(effectiveDuration),
           hasAudio: audio,
           hasReferenceImages: refImages.length > 0,
@@ -689,13 +696,26 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     try {
       let result: { id: string; creditsConsumed: number };
 
-      if (isKieModel) {
+      if (isGrokModel) {
+        if (videoMode !== 'image' || !firstFrame) {
+          throw new Error('Grok Imagine requer uma imagem inicial (image-to-video).');
+        }
+        result = await api.generations.imageToVideoGrok(accessToken, {
+          prompt: finalPrompt || undefined,
+          resolution,
+          duration_seconds: durationToSeconds(duration),
+          aspect_ratio: proportionToApiAspectRatio(caps, proportion),
+          first_frame: firstFrame.base64,
+          first_frame_mime_type: firstFrame.mime_type,
+          model_variant: videoModelVariant,
+        });
+      } else if (isKieModel) {
         // KIE API — always audio, sampleCount=1
         const kiePayload = {
           prompt: finalPrompt,
           model,
           resolution,
-          aspect_ratio: proportionToAspectRatioKie(proportion),
+          aspect_ratio: proportionToApiAspectRatio(caps, proportion),
           generate_audio: true,
           model_variant: videoModelVariant,
         };
@@ -726,7 +746,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           model,
           resolution,
           duration_seconds: durationToSeconds(effectiveDuration),
-          aspect_ratio: proportionToAspectRatio(proportion),
+          aspect_ratio: proportionToApiAspectRatio(caps, proportion),
           generate_audio: audio,
           sample_count: sampleCount,
           ...(negativePrompt.trim() && { negative_prompt: negativePrompt.trim() }),
@@ -934,8 +954,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   }, [connectionPayload, videoMode]);
 
   if (studioMode) {
-    const PROPORTION_LABELS: Record<string, string> = { '16-9': '16:9', '9-16': '9:16', '1-1': '1:1' };
-    const RESOLUTION_LABELS: Record<string, string> = { 'RES_720P': '720p', 'RES_1080P': '1080p', 'RES_4K': '4K' };
+    const PROPORTION_LABELS: Record<string, string> = { '16-9': '16:9', '9-16': '9:16', '1-1': '1:1', '2-3': '2:3', '3-2': '3:2' };
+    const RESOLUTION_LABELS: Record<string, string> = { 'RES_480P': '480p', 'RES_720P': '720p', 'RES_1080P': '1080p', 'RES_4K': '4K' };
     const PROPORTION_WIDTH: Record<string, number> = { '9-16': 280, '1-1': 340, '16-9': 460 };
     const studioWidth = PROPORTION_WIDTH[proportion] ?? 320;
     const currentModelLabel = videoModelOptions.find((o) => o.value === model)?.label ?? model;
@@ -943,16 +963,12 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     const currentResolutionLabel = RESOLUTION_LABELS[resolution] ?? resolution;
     const isFreeGen = !!estimate?.canUseFreeGeneration;
     const creditCost = estimate?.creditsRequired ?? 0;
-    const proportionOptions = [
-      { value: '9-16', label: t('proportionOptions.portrait'), suffix: '9:16' },
-      { value: '1-1', label: t('proportionOptions.square'), suffix: '1:1' },
-      { value: '16-9', label: t('proportionOptions.landscape'), suffix: '16:9' },
-    ];
-    const resolutionOptions = [
-      { value: 'RES_720P', label: '720p' },
-      { value: 'RES_1080P', label: '1080p' },
-      { value: 'RES_4K', label: '4K' },
-    ].map((opt) => ({
+    const proportionOptions = caps.aspectRatios.map((a) => ({
+      value: a.value,
+      label: a.label,
+      suffix: a.apiValue,
+    }));
+    const resolutionOptions = caps.resolutions.map((opt) => ({
       ...opt,
       unlimited:
         unlimited &&
@@ -970,7 +986,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       disabled: 'disabled' in o ? Boolean(o.disabled) : false,
       unlimited: o.unlimited,
     }));
-    const showAudioToggle = !isKieModel;
+    const showAudioToggle = caps.audio === 'toggle';
     const hasMedia = generatedVideoUrls.length > 0;
 
     return (
@@ -1104,21 +1120,21 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                   </>
                 )}
                 <input
-                  value={editingNegative && !isKieModel ? negativePrompt : prompt}
+                  value={editingNegative && caps.supportsNegativePrompt ? negativePrompt : prompt}
                   onChange={(e) =>
-                    editingNegative && !isKieModel
+                    editingNegative && caps.supportsNegativePrompt
                       ? setNegativePrompt(e.target.value)
                       : setPrompt(e.target.value)
                   }
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
-                  placeholder={editingNegative && !isKieModel ? 'O que você NÃO quer no vídeo' : t('promptPlaceholder')}
+                  placeholder={editingNegative && caps.supportsNegativePrompt ? 'O que você NÃO quer no vídeo' : t('promptPlaceholder')}
                   disabled={isGenerating}
                   className={
-                    editingNegative && !isKieModel
+                    editingNegative && caps.supportsNegativePrompt
                       ? 'min-w-0 flex-1 bg-transparent text-[12px] text-red-100/95 placeholder-red-300/35 outline-none'
                       : 'min-w-0 flex-1 bg-transparent text-[12px] text-[#f3f0ed]/85 placeholder-[#f3f0ed]/30 outline-none'
                   }
-                  style={editingNegative && !isKieModel ? { caretColor: '#ef4444' } : undefined}
+                  style={editingNegative && caps.supportsNegativePrompt ? { caretColor: '#ef4444' } : undefined}
                 />
               </div>
               <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileSelect} />
@@ -1169,7 +1185,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       onChange={setResolution}
                       disabled={isGenerating}
                     />
-                    {!isKieModel && (
+                    {caps.duration.type === 'preset' && caps.duration.options.length > 1 && (
                       <StudioSelectPill
                         value={effectiveDuration}
                         label={effectiveDuration}
@@ -1178,7 +1194,24 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                         disabled={isGenerating}
                       />
                     )}
-                    {!isKieModel && (
+                    {caps.duration.type === 'slider' && (
+                      <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                        <span className="text-[11px] font-medium text-white/60">
+                          {durationToSeconds(duration)}s
+                        </span>
+                        <input
+                          type="range"
+                          min={caps.duration.min}
+                          max={caps.duration.max}
+                          step={caps.duration.step}
+                          value={durationToSeconds(duration)}
+                          disabled={isGenerating}
+                          onChange={(e) => setDuration(`${e.target.value}s`)}
+                          className="h-1 w-24 cursor-pointer appearance-none rounded-full bg-white/10 accent-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-50"
+                        />
+                      </div>
+                    )}
+                    {caps.samples === 'multi' && (
                       <StudioSelectPill
                         value={String(sampleCount)}
                         label={`${sampleCount}×`}
@@ -1206,7 +1239,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                     >
                       Enhance
                     </StudioPill>
-                    {!isKieModel && (
+                    {caps.supportsNegativePrompt && (
                       <StudioPill
                         active={editingNegative}
                         disabled={isGenerating}
@@ -1246,11 +1279,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
   // Resoluções no modo normal — flag `unlimited` aplicado por resolução
   // baseado no modelo atual + plano do usuário.
-  const resolutionOptionsForNormalMode = [
-    { value: 'RES_720P', label: '720p' },
-    { value: 'RES_1080P', label: '1080p' },
-    { value: 'RES_4K', label: '4K' },
-  ].map((opt) => ({
+  const resolutionOptionsForNormalMode = caps.resolutions.map((opt) => ({
     ...opt,
     unlimited:
       unlimited &&
@@ -1349,7 +1378,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
             {/* Prompt / Negative prompt toggle */}
             <div className="space-y-1.5">
-              {!isKieModel && (
+              {caps.supportsNegativePrompt && (
                 <div className="flex justify-end">
                   <button
                     type="button"
@@ -1373,24 +1402,24 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
               )}
 
               <textarea
-                value={editingNegative && !isKieModel ? negativePrompt : prompt}
+                value={editingNegative && caps.supportsNegativePrompt ? negativePrompt : prompt}
                 onChange={(e) =>
-                  editingNegative && !isKieModel
+                  editingNegative && caps.supportsNegativePrompt
                     ? setNegativePrompt(e.target.value)
                     : setPrompt(e.target.value)
                 }
                 rows={3}
                 placeholder={
-                  editingNegative && !isKieModel
+                  editingNegative && caps.supportsNegativePrompt
                     ? 'O que você NÃO quer no vídeo (ex: blurry, distortion, low quality)'
                     : t('promptPlaceholder')
                 }
                 className={
-                  editingNegative && !isKieModel
+                  editingNegative && caps.supportsNegativePrompt
                     ? 'w-full resize-none rounded-xl border border-red-500/35 bg-red-500/8 px-3 py-2.5 text-sm text-red-100/95 placeholder-red-300/35 outline-none transition-all focus:border-red-500/60 focus:bg-red-500/10'
                     : `w-full resize-none rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/20 px-3 py-2.5 text-sm text-[#f3f0ed]/90 placeholder-[#f3f0ed]/25 outline-none transition-all focus:bg-[#1e494b]/30 ${unlimited ? 'focus:border-[#a855f7]/40' : 'focus:border-[#a2dd00]/40'}`
                 }
-                style={editingNegative && !isKieModel ? { caretColor: '#ef4444' } : undefined}
+                style={editingNegative && caps.supportsNegativePrompt ? { caretColor: '#ef4444' } : undefined}
               />
 
               {/* Unlimited mode toggle (vem antes do enhance prompt) */}
@@ -1643,18 +1672,28 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
             >
               <div className="space-y-3.5 pt-0.5">
 
-                {/* Audio toggle */}
-                <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/10 px-3 py-2.5" style={{ opacity: isGenerating || isKieModel ? 0.4 : 1, pointerEvents: isGenerating || isKieModel ? 'none' : undefined }}>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-[#f3f0ed]/60">{t('labels.audio')}</span>
-                    {isKieModel && <span className="text-[11px] text-[#a2dd00]/60">{t('labels.audioAlwaysOn')}</span>}
+                {/* Audio toggle — só aparece quando o modelo permite alternar */}
+                {caps.audio === 'toggle' && (
+                  <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/10 px-3 py-2.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-[#f3f0ed]/60">{t('labels.audio')}</span>
+                    </div>
+                    <ToggleSwitch
+                      checked={audio}
+                      onChange={setAudio}
+                      accent={unlimited ? '#a855f7' : '#a2dd00'}
+                    />
                   </div>
-                  <ToggleSwitch
-                    checked={isKieModel ? true : audio}
-                    onChange={isKieModel ? () => { } : setAudio}
-                    accent={unlimited ? '#a855f7' : '#a2dd00'}
-                  />
-                </div>
+                )}
+                {caps.audio === 'always-on' && (
+                  <div className="flex items-center justify-between rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/10 px-3 py-2.5 opacity-60">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-[#f3f0ed]/60">{t('labels.audio')}</span>
+                      <span className="text-[11px] text-[#a2dd00]/60">{t('labels.audioAlwaysOn')}</span>
+                    </div>
+                    <ToggleSwitch checked onChange={() => { }} accent="#a2dd00" />
+                  </div>
+                )}
 
                 {/* Model + Resolution */}
                 <div className="grid grid-cols-2 gap-3" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
@@ -1682,14 +1721,20 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 </div>
 
                 {/* Duration + Proportion */}
-                <div className={`grid ${isKieModel ? 'grid-cols-1' : 'grid-cols-2'} gap-3`} style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-                  {!isKieModel && (
+                {(() => {
+                  const showInlineDuration =
+                    caps.duration.type === 'preset' &&
+                    caps.duration.options.length > 1;
+                  const gridCols = showInlineDuration ? 'grid-cols-2' : 'grid-cols-1';
+                  return (
+                <div className={`grid ${gridCols} gap-3`} style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                  {showInlineDuration && (
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
                         {t('labels.duration')}
                       </label>
                       <div className="flex gap-1.5">
-                        {['4s', '6s', '8s'].map((d) => {
+                        {(caps.duration as { type: 'preset'; options: string[]; default: string }).options.map((d) => {
                           const active = effectiveDuration === d;
                           const disabled = forceEightSeconds && d !== '8s';
                           return (
@@ -1732,12 +1777,12 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       {t('labels.proportion')}
                     </label>
                     <div className="flex gap-1.5">
-                      {['16:9', '9:16', '1:1'].map((p) => {
-                        const val = p.replace(':', '-');
+                      {caps.aspectRatios.map((ar) => {
+                        const val = ar.value;
                         const active = proportion === val;
-                        const isOneToOne = p === '1:1';
-                        const disabled = isOneToOne && !isKieModel;
-                        const label = isKieModel && isOneToOne ? 'Auto' : p;
+                        const disabled = false;
+                        const label = ar.label;
+                        const p = ar.apiValue;
                         return (
                           <button
                             key={p}
@@ -1778,9 +1823,44 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                     </div>
                   </div>
                 </div>
+                  );
+                })()}
 
-                {/* Sample count — hidden for KIE (always 1), locked at 1 in unlimited mode */}
-                {!isKieModel && (
+                {/* Slider de duração (full width) — para modelos com duration tipo slider */}
+                {caps.duration.type === 'slider' && (
+                  <div
+                    className="space-y-1.5"
+                    style={{
+                      opacity: isGenerating ? 0.4 : 1,
+                      pointerEvents: isGenerating ? 'none' : undefined,
+                    }}
+                  >
+                    <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                      {t('labels.duration')}
+                    </label>
+                    <div className="flex items-center gap-3 rounded-xl border border-[#f3f0ed]/[0.07] bg-[#1e494b]/15 px-3 py-2.5">
+                      <input
+                        type="range"
+                        min={caps.duration.min}
+                        max={caps.duration.max}
+                        step={caps.duration.step}
+                        value={durationToSeconds(duration)}
+                        disabled={isGenerating}
+                        onChange={(e) => setDuration(`${e.target.value}s`)}
+                        className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-white/10 accent-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                      <span
+                        className="min-w-[40px] text-right text-[12px] font-bold"
+                        style={{ color: unlimited ? '#a855f7' : '#a2dd00' }}
+                      >
+                        {durationToSeconds(duration)}s
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sample count — só pra modelos com `samples: 'multi'` */}
+                {caps.samples === 'multi' && (
                   <div
                     className="space-y-1.5"
                     style={{

@@ -590,6 +590,16 @@ export interface ReferenceToVideoKieRequest extends TextToVideoKieRequest {
   reference_images_mime_types?: string[];
 }
 
+export interface ImageToVideoGrokRequest {
+  prompt?: string;
+  resolution: string; // 'RES_480P' | 'RES_720P'
+  duration_seconds: number; // 6-30
+  aspect_ratio?: string;
+  first_frame: string;
+  first_frame_mime_type?: string;
+  model_variant?: string;
+}
+
 export interface TextToSpeechRequest {
   text: string;
   voice_id: string;
@@ -1386,6 +1396,12 @@ export const api = {
     },
     referenceToVideoKie(accessToken: string, payload: ReferenceToVideoKieRequest) {
       return authRequest<CreateGenerationResponse>('/api/v1/generations/reference-to-video-kie', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    imageToVideoGrok(accessToken: string, payload: ImageToVideoGrokRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/image-to-video-grok', accessToken, {
         method: 'POST',
         body: JSON.stringify(payload),
       });

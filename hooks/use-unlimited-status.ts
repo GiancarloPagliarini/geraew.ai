@@ -54,6 +54,7 @@ const MODEL_SLUG_TO_VARIANT: Record<string, string> = {
   'veo-3.1-generate-001': 'GERAEW_QUALITY',
   'veo3_fast': 'VEO_FAST',
   'veo3': 'VEO_MAX',
+  'grok-imagine': 'GROK_IMAGINE',
 };
 
 export function getModelVariantFromSlug(
