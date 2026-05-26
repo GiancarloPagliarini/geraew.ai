@@ -106,9 +106,11 @@
         "audio": "Audio",
         "audioAlwaysOn": "(always on)",
         "videoReference": "Reference video",
-        "videoReferenceMax": "optional · max 30s",
+        "videoReferenceMax": "optional · max {maxSeconds}s",
         "videoReferenceOptionalShort": "optional",
-        "videoTruncateNote": "trimmed to 10s"
+        "videoTruncateNote": "trimmed to 10s",
+        "audioReference": "Reference audio",
+        "audioReferenceMax": "optional · max {maxSeconds}s"
       },
       "proportionOptions": {
         "landscape": "Landscape",
@@ -118,17 +120,27 @@
       "buttons": {
         "upload": "UPLOAD",
         "attachVideo": "Attach video",
-        "attachVideoReference": "Attach reference video"
+        "attachVideoReference": "Attach reference video",
+        "attachAudio": "Attach audio",
+        "attachAudioReference": "Attach reference audio",
+        "record": "Record",
+        "stopRecording": "Stop"
       },
       "toasts": {
         "videoAttached": "Reference video attached.",
-        "videoTruncated": "Video is {duration}s — only the first {limit}s will be used."
+        "videoTruncated": "Video is {duration}s — only the first {limit}s will be used.",
+        "audioAttached": "Reference audio attached."
       },
       "errors": {
         "mustBeVideo": "File must be a video.",
         "videoTooLarge": "Video exceeds {maxMB}MB.",
         "videoTooLong": "Video exceeds {maxSeconds}s. Use a shorter one.",
+        "mustBeAudio": "File must be an audio.",
+        "audioTooLarge": "Audio exceeds {maxMB}MB.",
+        "audioTooLong": "Audio exceeds {maxSeconds}s. Use a shorter one.",
+        "micAccess": "Could not access the microphone.",
         "omniRequiresPrompt": "Gemini Omni requires a prompt.",
+        "seedanceRequiresPrompt": "Seedance requires a prompt.",
         "grokImageRequiresFirstFrame": "Grok Imagine image-to-video requires an initial image.",
         "grokTextRequiresPrompt": "Grok Imagine text-to-video requires a prompt.",
         "grokUnsupportedMode": "Grok Imagine does not support this mode."

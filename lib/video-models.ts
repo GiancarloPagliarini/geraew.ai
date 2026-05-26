@@ -105,6 +105,30 @@ const GEMINI_OMNI: VideoModelCapabilities = {
   supportsReferenceMode: true,
 };
 
+const SEEDANCE: VideoModelCapabilities = {
+  resolutions: [
+    { value: 'RES_480P', label: '480p' },
+    { value: 'RES_720P', label: '720p' },
+    { value: 'RES_1080P', label: '1080p' },
+  ],
+  aspectRatios: [
+    { value: '1-1', apiValue: '1:1', label: '1:1' },
+    { value: '4-3', apiValue: '4:3', label: '4:3' },
+    { value: '3-4', apiValue: '3:4', label: '3:4' },
+    { value: '16-9', apiValue: '16:9', label: '16:9' },
+    { value: '9-16', apiValue: '9:16', label: '9:16' },
+    { value: '21-9', apiValue: '21:9', label: '21:9' },
+  ],
+  duration: { type: 'slider', min: 4, max: 15, step: 1, default: '5s' },
+  audio: 'toggle',
+  samples: 'single',
+  supportsNegativePrompt: false,
+  supportsTextMode: true,
+  // Sem keyframe interpolation (first/last frame). Usa apenas multimodal references.
+  supportsImageMode: false,
+  supportsReferenceMode: true,
+};
+
 const GROK_IMAGINE: VideoModelCapabilities = {
   resolutions: [
     { value: 'RES_480P', label: '480p' },
@@ -133,6 +157,7 @@ const VIDEO_MODEL_CAPABILITIES: Record<string, VideoModelCapabilities> = {
   'veo3': KIE_VEO,
   'grok-imagine': GROK_IMAGINE,
   'gemini-omni-video': GEMINI_OMNI,
+  'bytedance-seedance-2': SEEDANCE,
 };
 
 export function getVideoModelCapabilities(slug: string): VideoModelCapabilities {

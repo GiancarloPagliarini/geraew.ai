@@ -630,6 +630,33 @@ export interface OmniVideoRequest {
   model_variant?: string;
 }
 
+export interface SeedanceReferenceImage {
+  base64: string;
+  mime_type?: string;
+}
+
+export interface SeedanceReferenceVideo {
+  base64: string;
+  mime_type?: string;
+}
+
+export interface SeedanceReferenceAudio {
+  base64: string;
+  mime_type?: string;
+}
+
+export interface SeedanceVideoRequest {
+  prompt: string;
+  resolution: string; // 'RES_480P' | 'RES_720P' | 'RES_1080P'
+  duration_seconds: number; // 4-15
+  aspect_ratio?: '1:1' | '4:3' | '3:4' | '16:9' | '9:16' | '21:9';
+  generate_audio?: boolean;
+  reference_images?: SeedanceReferenceImage[]; // até 6
+  reference_video?: SeedanceReferenceVideo; // 1 vídeo, ativa pricing "with video"
+  reference_audio?: SeedanceReferenceAudio; // 1 áudio, sem efeito no pricing
+  model_variant?: string;
+}
+
 
 export interface TextToSpeechRequest {
   text: string;
@@ -1445,6 +1472,12 @@ export const api = {
     },
     omniVideo(accessToken: string, payload: OmniVideoRequest) {
       return authRequest<CreateGenerationResponse>('/api/v1/generations/omni-video', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    seedanceVideo(accessToken: string, payload: SeedanceVideoRequest) {
+      return authRequest<CreateGenerationResponse>('/api/v1/generations/seedance-video', accessToken, {
         method: 'POST',
         body: JSON.stringify(payload),
       });

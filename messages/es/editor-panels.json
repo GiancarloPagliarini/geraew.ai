@@ -106,9 +106,11 @@
         "audio": "Audio",
         "audioAlwaysOn": "(siempre activo)",
         "videoReference": "Video de referencia",
-        "videoReferenceMax": "opcional · máx 30s",
+        "videoReferenceMax": "opcional · máx {maxSeconds}s",
         "videoReferenceOptionalShort": "opcional",
-        "videoTruncateNote": "recorta a 10s"
+        "videoTruncateNote": "recorta a 10s",
+        "audioReference": "Audio de referencia",
+        "audioReferenceMax": "opcional · máx {maxSeconds}s"
       },
       "proportionOptions": {
         "landscape": "Horizontal",
@@ -118,17 +120,27 @@
       "buttons": {
         "upload": "SUBIR",
         "attachVideo": "Adjuntar video",
-        "attachVideoReference": "Adjuntar video de referencia"
+        "attachVideoReference": "Adjuntar video de referencia",
+        "attachAudio": "Adjuntar audio",
+        "attachAudioReference": "Adjuntar audio de referencia",
+        "record": "Grabar",
+        "stopRecording": "Detener"
       },
       "toasts": {
         "videoAttached": "Video de referencia adjuntado.",
-        "videoTruncated": "Video de {duration}s — solo se usarán los primeros {limit}s."
+        "videoTruncated": "Video de {duration}s — solo se usarán los primeros {limit}s.",
+        "audioAttached": "Audio de referencia adjuntado."
       },
       "errors": {
         "mustBeVideo": "El archivo debe ser un video.",
         "videoTooLarge": "El video excede {maxMB}MB.",
         "videoTooLong": "El video excede {maxSeconds}s. Usa uno más corto.",
+        "mustBeAudio": "El archivo debe ser un audio.",
+        "audioTooLarge": "El audio excede {maxMB}MB.",
+        "audioTooLong": "El audio excede {maxSeconds}s. Usa uno más corto.",
+        "micAccess": "No se pudo acceder al micrófono.",
         "omniRequiresPrompt": "Gemini Omni requiere un prompt.",
+        "seedanceRequiresPrompt": "Seedance requiere un prompt.",
         "grokImageRequiresFirstFrame": "Grok Imagine image-to-video requiere una imagen inicial.",
         "grokTextRequiresPrompt": "Grok Imagine text-to-video requiere un prompt.",
         "grokUnsupportedMode": "Grok Imagine no admite este modo."

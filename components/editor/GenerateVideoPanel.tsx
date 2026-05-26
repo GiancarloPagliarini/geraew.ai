@@ -20,10 +20,13 @@ import {
   Info,
   Loader2,
   Maximize2,
+  Mic,
   Plus,
   Settings,
   Sparkles,
+  Square,
   Type,
+  Upload,
   Video,
   Volume2, VolumeX,
   Wand2,
@@ -31,6 +34,7 @@ import {
   X
 } from 'lucide-react';
 import { StudioPill, StudioSelectPill } from './studio/StudioControls';
+import { InlineAudioPlayer } from './InlineAudioPlayer';
 import { StudioImageInputHandle, StudioTextInputHandle } from './studio/StudioHandles';
 import { useIncomingImage, urlToImagePayload } from '@/lib/use-incoming-image';
 import { useIncomingText } from '@/lib/use-incoming-text';
@@ -97,6 +101,12 @@ async function compressImage(dataUrl: string, mimeType: string): Promise<{ dataU
   });
 }
 
+function formatRecordTime(seconds: number): string {
+  const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const s = (seconds % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
 function durationToSeconds(d: string): number {
   return parseInt(d.replace('s', ''), 10);
 }
@@ -155,6 +165,18 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   const [lastFrame, setLastFrame] = useState<{ base64: string; mime_type: string; preview: string } | null>(null);
   // Vídeo de referência do Gemini Omni (opcional). duration usada pra calcular trim auto (ends=min(duration, 10)).
   const [omniVideoFile, setOmniVideoFile] = useState<{ base64: string; mime_type: string; duration: number; filename: string } | null>(null);
+  // Vídeo de referência do Bytedance Seedance (opcional, máx 15s, ativa pricing "with video").
+  const [seedanceVideoFile, setSeedanceVideoFile] = useState<{ base64: string; mime_type: string; duration: number; filename: string } | null>(null);
+  // Áudio de referência do Bytedance Seedance (opcional, máx 15s, não afeta pricing).
+  const [seedanceAudioFile, setSeedanceAudioFile] = useState<{ base64: string; mime_type: string; duration: number; filename: string } | null>(null);
+  const [isSeedanceRecording, setIsSeedanceRecording] = useState(false);
+  const [seedanceRecordSeconds, setSeedanceRecordSeconds] = useState(0);
+  const seedanceMediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const seedanceRecordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const seedanceRecordSecondsRef = useRef(0);
+  const seedanceVisualizerCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const seedanceAudioCtxRef = useRef<AudioContext | null>(null);
+  const seedanceRafRef = useRef<number | null>(null);
 
   // Load reference images from IndexedDB on mount (too large for localStorage)
   useEffect(() => {
@@ -190,9 +212,11 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       'veo3_fast': 'Geraew Fast',
       'grok-imagine': 'Grok Imagine',
       'gemini-omni-video': 'Gemini Omni',
+      'bytedance-seedance-2': 'Seedance 2',
     };
     const fallback: { value: string; label: string; disabled?: boolean; unlimited?: boolean }[] = [
       { value: 'gemini-omni-video', label: labelOverride['gemini-omni-video'] },
+      { value: 'bytedance-seedance-2', label: labelOverride['bytedance-seedance-2'] },
       { value: 'grok-imagine', label: labelOverride['grok-imagine'] },
       { value: 'geraew-quality', label: labelOverride['geraew-quality'] },
       { value: 'geraew-fast', label: labelOverride['geraew-fast'] },
@@ -211,7 +235,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     return raw.map((opt) => ({
       ...opt,
       unlimited: unlimited && isModelSlugInUnlimitedPlan(unlimitedStatus, opt.value),
-      isNew: opt.value === 'grok-imagine' || opt.value === 'gemini-omni-video',
+      isNew: opt.value === 'grok-imagine' || opt.value === 'gemini-omni-video' || opt.value === 'bytedance-seedance-2',
     }));
   }, [videoModelsQuery.data, unlimited, unlimitedStatus]);
 
@@ -310,6 +334,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   const isKieModel = model === 'veo3_fast' || model === 'veo3';
   const isGrokModel = model === 'grok-imagine';
   const isOmniModel = model === 'gemini-omni-video';
+  const isSeedanceModel = model === 'bytedance-seedance-2';
   const caps = useMemo(() => getVideoModelCapabilities(model), [model]);
   const videoModelVariant = ({
     'geraew-fast': 'GERAEW_FAST',
@@ -318,10 +343,20 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     'veo3': 'VEO_MAX',
     'grok-imagine': 'GROK_IMAGINE',
     'gemini-omni-video': 'GEMINI_OMNI',
+    'bytedance-seedance-2': 'SEEDANCE_2',
   } as Record<string, string>)[model] ?? 'GERAEW_QUALITY';
 
   const effectiveAudio = caps.audio === 'always-on' ? true : caps.audio === 'always-off' ? false : audio;
   const effectiveSampleCount = caps.samples === 'single' ? 1 : sampleCount;
+
+  // Seedance: default 480p sempre que o modelo é selecionado.
+  // Não dispara quando o usuário muda manualmente a resolução depois.
+  useEffect(() => {
+    if (model === 'bytedance-seedance-2') {
+      setResolution('RES_480P');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model]);
 
   // Normaliza o estado quando o modelo muda, baseado nas capabilities.
   // Cobre: resolução, aspect ratio, duração, modo de input, negative prompt.
@@ -344,15 +379,20 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     }
     if (videoMode === 'text' && !caps.supportsTextMode) setVideoMode('image');
     if (videoMode === 'image' && !caps.supportsImageMode) setVideoMode('text');
-    // Limpa vídeo de referência quando sai do Omni (outros modelos não usam).
+    // Limpa vídeos de referência ao sair dos respectivos modelos.
     if (!isOmniModel && omniVideoFile) setOmniVideoFile(null);
+    if (!isSeedanceModel && seedanceVideoFile) setSeedanceVideoFile(null);
+    if (!isSeedanceModel && seedanceAudioFile) setSeedanceAudioFile(null);
+    if (!isSeedanceModel && isSeedanceRecording) stopSeedanceRecording();
     if (!caps.supportsNegativePrompt && editingNegative) setEditingNegative(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [caps]);
 
   const estimateDurationSeconds = durationToSeconds(duration);
-  // Pricing do Gemini Omni muda se tem vídeo de referência — pricing flat por resolution.
-  const estimateHasVideoInput = isOmniModel && !!omniVideoFile;
+  // Pricing do Omni e do Seedance mudam quando há vídeo de referência.
+  const estimateHasVideoInput =
+    (isOmniModel && !!omniVideoFile) ||
+    (isSeedanceModel && !!seedanceVideoFile);
   const { data: estimate, isLoading: estimateLoading } = useQuery({
     queryKey: ['credits', 'estimate', videoType, resolution, effectiveAudio, effectiveSampleCount, videoModelVariant, estimateDurationSeconds, estimateHasVideoInput],
     queryFn: () => api.credits.estimate(accessToken!, {
@@ -452,6 +492,225 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   const firstFrameInputRef = useRef<HTMLInputElement | null>(null);
   const lastFrameInputRef = useRef<HTMLInputElement | null>(null);
   const omniVideoInputRef = useRef<HTMLInputElement | null>(null);
+  const seedanceVideoInputRef = useRef<HTMLInputElement | null>(null);
+  const seedanceAudioInputRef = useRef<HTMLInputElement | null>(null);
+
+  async function startSeedanceRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : MediaRecorder.isTypeSupported('audio/mp4')
+          ? 'audio/mp4'
+          : '';
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      const chunks: BlobPart[] = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      recorder.onstop = () => {
+        stream.getTracks().forEach((tr) => tr.stop());
+        const blob = new Blob(chunks, { type: mimeType || 'audio/webm' });
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const dataUrl = ev.target?.result as string;
+          const base64 = dataUrl.split(',')[1];
+          setSeedanceAudioFile({
+            base64,
+            mime_type: blob.type,
+            duration: seedanceRecordSecondsRef.current,
+            filename: `gravacao-${Date.now()}.${(blob.type.split('/')[1] ?? 'webm').split(';')[0]}`,
+          });
+          toast.success(t('toasts.audioAttached'));
+        };
+        reader.readAsDataURL(blob);
+      };
+
+      seedanceMediaRecorderRef.current = recorder;
+      recorder.start();
+      setIsSeedanceRecording(true);
+      setSeedanceRecordSeconds(0);
+      seedanceRecordSecondsRef.current = 0;
+      seedanceRecordTimerRef.current = setInterval(() => {
+        seedanceRecordSecondsRef.current += 1;
+        setSeedanceRecordSeconds(seedanceRecordSecondsRef.current);
+        // Auto-stop em 15s (limite KIE)
+        if (seedanceRecordSecondsRef.current >= 15) {
+          stopSeedanceRecording();
+        }
+      }, 1000);
+      requestAnimationFrame(() => startSeedanceVisualizer(stream));
+    } catch {
+      toast.error(t('errors.micAccess'));
+    }
+  }
+
+  function stopSeedanceRecording() {
+    if (seedanceMediaRecorderRef.current && seedanceMediaRecorderRef.current.state !== 'inactive') {
+      seedanceMediaRecorderRef.current.stop();
+    }
+    seedanceMediaRecorderRef.current = null;
+    if (seedanceRecordTimerRef.current) {
+      clearInterval(seedanceRecordTimerRef.current);
+      seedanceRecordTimerRef.current = null;
+    }
+    stopSeedanceVisualizer();
+    setIsSeedanceRecording(false);
+  }
+
+  function startSeedanceVisualizer(stream: MediaStream) {
+    const canvas = seedanceVisualizerCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.max(1, rect.width * dpr);
+    canvas.height = Math.max(1, rect.height * dpr);
+    ctx.scale(dpr, dpr);
+
+    type WindowWithWebkit = Window & { webkitAudioContext?: typeof AudioContext };
+    const Ctor = window.AudioContext ?? (window as WindowWithWebkit).webkitAudioContext;
+    if (!Ctor) return;
+    const audioCtx = new Ctor();
+    seedanceAudioCtxRef.current = audioCtx;
+    const source = audioCtx.createMediaStreamSource(stream);
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 128;
+    analyser.smoothingTimeConstant = 0.75;
+    source.connect(analyser);
+
+    const buffer = new Uint8Array(analyser.frequencyBinCount);
+    const barCount = 22;
+    const barGap = 2;
+
+    const draw = () => {
+      analyser.getByteFrequencyData(buffer);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      const totalGap = barGap * (barCount - 1);
+      const barWidth = (rect.width - totalGap) / barCount;
+
+      ctx.fillStyle = '#a2dd00';
+      for (let i = 0; i < barCount; i++) {
+        const idx = Math.floor((i / barCount) * buffer.length);
+        const value = buffer[idx] / 255;
+        const barHeight = Math.max(2, value * rect.height);
+        const x = i * (barWidth + barGap);
+        const y = (rect.height - barHeight) / 2;
+        ctx.fillRect(x, y, barWidth, barHeight);
+      }
+      seedanceRafRef.current = requestAnimationFrame(draw);
+    };
+    seedanceRafRef.current = requestAnimationFrame(draw);
+  }
+
+  function stopSeedanceVisualizer() {
+    if (seedanceRafRef.current !== null) {
+      cancelAnimationFrame(seedanceRafRef.current);
+      seedanceRafRef.current = null;
+    }
+    if (seedanceAudioCtxRef.current) {
+      seedanceAudioCtxRef.current.close().catch(() => { });
+      seedanceAudioCtxRef.current = null;
+    }
+  }
+
+  async function processSeedanceAudioFile(file: File) {
+    if (!file.type.startsWith('audio/')) {
+      toast.error(t('errors.mustBeAudio'));
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error(t('errors.audioTooLarge', { maxMB: 15 }));
+      return;
+    }
+    const duration = await new Promise<number>((resolve) => {
+      const url = URL.createObjectURL(file);
+      const audio = document.createElement('audio');
+      audio.preload = 'metadata';
+      audio.onloadedmetadata = () => {
+        URL.revokeObjectURL(url);
+        resolve(audio.duration);
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(0);
+      };
+      audio.src = url;
+    });
+    if (duration > 15) {
+      toast.error(t('errors.audioTooLong', { maxSeconds: 15 }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      const base64 = dataUrl.split(',')[1];
+      setSeedanceAudioFile({
+        base64,
+        mime_type: file.type,
+        duration,
+        filename: file.name,
+      });
+      toast.success(t('toasts.audioAttached'));
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleSeedanceAudioSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) void processSeedanceAudioFile(file);
+    e.target.value = '';
+  }
+
+  async function processSeedanceVideoFile(file: File) {
+    if (!file.type.startsWith('video/')) {
+      toast.error(t('errors.mustBeVideo'));
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error(t('errors.videoTooLarge', { maxMB: 50 }));
+      return;
+    }
+    const duration = await new Promise<number>((resolve) => {
+      const url = URL.createObjectURL(file);
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(url);
+        resolve(video.duration);
+      };
+      video.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(0);
+      };
+      video.src = url;
+    });
+    if (duration > 15) {
+      toast.error(t('errors.videoTooLong', { maxSeconds: 15 }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      const base64 = dataUrl.split(',')[1];
+      setSeedanceVideoFile({
+        base64,
+        mime_type: file.type,
+        duration,
+        filename: file.name,
+      });
+      toast.success(t('toasts.videoAttached'));
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleSeedanceVideoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) void processSeedanceVideoFile(file);
+    e.target.value = '';
+  }
 
   async function processOmniVideoFile(file: File) {
     if (!file.type.startsWith('video/')) {
@@ -564,6 +823,10 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     e.stopPropagation();
     if (videoMode === 'image') {
       if (!firstFrame || !lastFrame) setIsDraggingOver(true);
+    } else if (isOmniModel || isSeedanceModel) {
+      // Aceita imagem (ref) ou vídeo (reference_video). Vídeo só se ainda não tiver um.
+      const acceptingVideo = isOmniModel ? !omniVideoFile : !seedanceVideoFile;
+      if (refImages.length < 6 || acceptingVideo) setIsDraggingOver(true);
     } else {
       if (refImages.length < 3) setIsDraggingOver(true);
     }
@@ -602,7 +865,23 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       return;
     }
 
-    // Text mode — existing behavior
+    // Text mode — Omni/Seedance aceitam vídeo (e Seedance também áudio) além de imagens.
+    if (isOmniModel || isSeedanceModel) {
+      const files = Array.from(e.dataTransfer.files);
+      const videoFile = files.find((f) => f.type.startsWith('video/'));
+      const audioFile = isSeedanceModel ? files.find((f) => f.type.startsWith('audio/')) : undefined;
+      if (videoFile || audioFile) {
+        if (videoFile) {
+          if (isOmniModel) void processOmniVideoFile(videoFile);
+          else void processSeedanceVideoFile(videoFile);
+        }
+        if (audioFile) void processSeedanceAudioFile(audioFile);
+        const imageFiles = files.filter((f) => f.type.startsWith('image/'));
+        if (imageFiles.length > 0) processFiles(imageFiles);
+        return;
+      }
+    }
+
     const imageUrl = e.dataTransfer.getData('text/geraew-image-url');
     if (imageUrl) {
       addImageFromUrl(imageUrl);
@@ -763,7 +1042,36 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     try {
       let result: { id: string; creditsConsumed: number };
 
-      if (isOmniModel) {
+      if (isSeedanceModel) {
+        if (!finalPrompt) {
+          throw new Error(t('errors.seedanceRequiresPrompt'));
+        }
+        // Seedance multimodal: text + refImages (até 6) + opcional reference_video.
+        // Vídeo de referência ativa pricing "with video" (mais barato) no backend.
+        result = await api.generations.seedanceVideo(accessToken, {
+          prompt: finalPrompt,
+          resolution,
+          duration_seconds: durationToSeconds(duration),
+          aspect_ratio: proportionToApiAspectRatio(caps, proportion) as '1:1' | '4:3' | '3:4' | '16:9' | '9:16' | '21:9',
+          generate_audio: effectiveAudio,
+          model_variant: videoModelVariant,
+          ...(refImages.length > 0 && {
+            reference_images: refImages.slice(0, 6).map(({ base64, mime_type }) => ({ base64, mime_type })),
+          }),
+          ...(seedanceVideoFile && {
+            reference_video: {
+              base64: seedanceVideoFile.base64,
+              mime_type: seedanceVideoFile.mime_type,
+            },
+          }),
+          ...(seedanceAudioFile && {
+            reference_audio: {
+              base64: seedanceAudioFile.base64,
+              mime_type: seedanceAudioFile.mime_type,
+            },
+          }),
+        });
+      } else if (isOmniModel) {
         if (!finalPrompt) {
           throw new Error(t('errors.omniRequiresPrompt'));
         }
@@ -1235,6 +1543,98 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 </button>
               )}
 
+              {/* Seedance: vídeo de referência (opcional, máx 15s) */}
+              {isSeedanceModel && genState === 'idle' && !hasMedia && (
+                <button
+                  type="button"
+                  onClick={() => seedanceVideoInputRef.current?.click()}
+                  disabled={isGenerating}
+                  className="mt-1 flex w-full items-center justify-between gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 bg-[#0d1011] px-3 py-2 text-left text-[11px] text-[#f3f0ed]/50 transition-all hover:border-[#a2dd00]/40 hover:text-[#f3f0ed]/80 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {seedanceVideoFile ? (
+                    <>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Video className="h-3.5 w-3.5 shrink-0 text-[#a2dd00]" />
+                        <span className="truncate">{seedanceVideoFile.filename}</span>
+                        <span className="shrink-0 text-[10px] text-[#f3f0ed]/40">
+                          {seedanceVideoFile.duration.toFixed(1)}s
+                        </span>
+                      </span>
+                      <span
+                        onClick={(e) => { e.stopPropagation(); setSeedanceVideoFile(null); }}
+                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[#f3f0ed]/40 hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]"
+                      >
+                        <X className="h-3 w-3" />
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="flex items-center gap-2">
+                        <Video className="h-3.5 w-3.5" />
+                        <span>{t('buttons.attachVideoReference')}</span>
+                      </span>
+                      <span className="text-[9px] uppercase tracking-wide text-[#f3f0ed]/25">{t('labels.videoReferenceOptionalShort')}</span>
+                    </>
+                  )}
+                </button>
+              )}
+
+              {/* Seedance: áudio de referência (opcional, máx 15s) */}
+              {isSeedanceModel && genState === 'idle' && !hasMedia && (
+                isSeedanceRecording ? (
+                  <div className="flex items-center gap-2 rounded-xl border border-red-400/30 bg-red-500/8 px-2 py-1.5">
+                    <span className="relative flex h-2 w-2 shrink-0">
+                      <span className="absolute inset-0 animate-ping rounded-full bg-red-400/60" />
+                      <span className="relative h-2 w-2 rounded-full bg-red-400" />
+                    </span>
+                    <canvas ref={seedanceVisualizerCanvasRef} className="h-6 min-w-0 flex-1" />
+                    <span className="shrink-0 font-mono text-[10px] tabular-nums text-red-400/80">
+                      {formatRecordTime(seedanceRecordSeconds)}
+                    </span>
+                    <button
+                      onClick={stopSeedanceRecording}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-500/20 text-red-400 transition-all hover:bg-red-500/30 active:scale-95"
+                    >
+                      <Square className="h-3 w-3 fill-red-400" />
+                    </button>
+                  </div>
+                ) : seedanceAudioFile ? (
+                  <InlineAudioPlayer
+                    src={`data:${seedanceAudioFile.mime_type};base64,${seedanceAudioFile.base64}`}
+                    actions={
+                      <button
+                        onClick={() => setSeedanceAudioFile(null)}
+                        disabled={isGenerating}
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#f3f0ed]/40 transition-all hover:bg-red-500/10 hover:text-red-400"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    }
+                  />
+                ) : (
+                  <div className="flex gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => seedanceAudioInputRef.current?.click()}
+                      disabled={isGenerating}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#f3f0ed]/10 bg-[#0d1011] px-3 py-2 text-[11px] font-medium text-[#f3f0ed]/50 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      <span>{t('buttons.upload')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={startSeedanceRecording}
+                      disabled={isGenerating}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#f3f0ed]/10 bg-[#0d1011] px-3 py-2 text-[11px] font-medium text-[#f3f0ed]/50 transition-all hover:border-[#a2dd00]/40 hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Mic className="h-3.5 w-3.5" />
+                      <span>{t('buttons.record')}</span>
+                    </button>
+                  </div>
+                )
+              )}
+
               <div className="flex items-center gap-1.5 pt-1">
                 {videoMode === 'text' && (
                   <>
@@ -1286,11 +1686,13 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
               <input ref={firstFrameInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) processFrameFile(f, setFirstFrame); e.target.value = ''; }} />
               <input ref={lastFrameInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) processFrameFile(f, setLastFrame); e.target.value = ''; }} />
               <input ref={omniVideoInputRef} type="file" accept="video/mp4,video/quicktime,video/webm" className="hidden" onChange={handleOmniVideoSelect} />
+              <input ref={seedanceVideoInputRef} type="file" accept="video/mp4,video/quicktime" className="hidden" onChange={handleSeedanceVideoSelect} />
+              <input ref={seedanceAudioInputRef} type="file" accept="audio/mpeg,audio/mp3,audio/wav" className="hidden" onChange={handleSeedanceAudioSelect} />
 
               <div className="grid grid-rows-[0fr] opacity-0 transition-all duration-300 ease-out group-hover/studio:grid-rows-[1fr] group-hover/studio:opacity-100">
                 <div className="overflow-hidden">
                   <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
-                    {!isOmniModel && (
+                    {!isOmniModel && !isSeedanceModel && (
                       <>
                         <StudioPill
                           active={videoMode === 'text'}
@@ -1473,8 +1875,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           </div>
 
           <div className="space-y-3.5 p-4">
-            {/* Mode selector — escondido pro Omni (multimodal por natureza) */}
-            {!isOmniModel && (
+            {/* Mode selector — escondido pro Omni e Seedance (multimodal por natureza) */}
+            {!isOmniModel && !isSeedanceModel && (
             <div className="flex gap-2">
               {([
                 ['text', t('modes.text'), Type],
@@ -1726,11 +2128,118 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
               </div>
             )}
 
+            {/* Seedance: vídeo de referência (opcional, máx 15s) */}
+            {isSeedanceModel && (
+              <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                  {t('labels.videoReference')} <span className="text-[#f3f0ed]/20">{t('labels.videoReferenceMax', { maxSeconds: 15 })}</span>
+                </label>
+                {seedanceVideoFile ? (
+                  <div className="group relative flex h-14 w-full items-center gap-3 overflow-hidden rounded-xl border border-[#f3f0ed]/10 bg-[#0d1011] px-3">
+                    <Video className="h-4 w-4 shrink-0 text-[#a2dd00]" />
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <span className="truncate text-[11px] text-[#f3f0ed]/80">{seedanceVideoFile.filename}</span>
+                      <span className="text-[10px] text-[#f3f0ed]/40">
+                        {seedanceVideoFile.duration.toFixed(1)}s
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setSeedanceVideoFile(null)}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#f3f0ed]/40 hover:bg-[#f3f0ed]/8 hover:text-[#f3f0ed]"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => seedanceVideoInputRef.current?.click()}
+                    className={`flex h-14 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all ${refHoverClass}`}
+                  >
+                    <Video className="h-4 w-4" />
+                    <span className="text-[10px] font-bold tracking-wider">{t('buttons.attachVideo')}</span>
+                  </button>
+                )}
+                <input
+                  ref={seedanceVideoInputRef}
+                  type="file"
+                  accept="video/mp4,video/quicktime"
+                  className="hidden"
+                  onChange={handleSeedanceVideoSelect}
+                />
+              </div>
+            )}
+
+            {/* Seedance: áudio de referência (opcional, máx 15s) */}
+            {isSeedanceModel && (
+              <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
+                <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                  {t('labels.audioReference')} <span className="text-[#f3f0ed]/20">{t('labels.audioReferenceMax', { maxSeconds: 15 })}</span>
+                </label>
+                {isSeedanceRecording ? (
+                  <div className="flex h-14 items-center gap-2 rounded-xl border border-red-400/30 bg-red-500/8 px-3">
+                    <span className="relative flex h-2 w-2 shrink-0">
+                      <span className="absolute inset-0 animate-ping rounded-full bg-red-400/60" />
+                      <span className="relative h-2 w-2 rounded-full bg-red-400" />
+                    </span>
+                    <canvas ref={seedanceVisualizerCanvasRef} className="h-8 min-w-0 flex-1" />
+                    <span className="shrink-0 font-mono text-[11px] tabular-nums text-red-400/80">
+                      {formatRecordTime(seedanceRecordSeconds)}
+                    </span>
+                    <button
+                      onClick={stopSeedanceRecording}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-500/20 text-red-400 transition-all hover:bg-red-500/30 active:scale-95"
+                    >
+                      <Square className="h-3 w-3 fill-red-400" />
+                    </button>
+                  </div>
+                ) : seedanceAudioFile ? (
+                  <InlineAudioPlayer
+                    src={`data:${seedanceAudioFile.mime_type};base64,${seedanceAudioFile.base64}`}
+                    actions={
+                      <button
+                        onClick={() => setSeedanceAudioFile(null)}
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#f3f0ed]/40 transition-all hover:bg-red-500/10 hover:text-red-400"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    }
+                  />
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => seedanceAudioInputRef.current?.click()}
+                      className={`flex h-14 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/40 transition-all ${refHoverClass}`}
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      <span className="text-[10px] font-bold tracking-wider">{t('buttons.upload')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={startSeedanceRecording}
+                      className={`flex h-14 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/40 transition-all ${refHoverClass}`}
+                    >
+                      <Mic className="h-3.5 w-3.5" />
+                      <span className="text-[10px] font-bold tracking-wider">{t('buttons.record')}</span>
+                    </button>
+                  </div>
+                )}
+                <input
+                  ref={seedanceAudioInputRef}
+                  type="file"
+                  accept="audio/mpeg,audio/mp3,audio/wav"
+                  className="hidden"
+                  onChange={handleSeedanceAudioSelect}
+                />
+              </div>
+            )}
+
             {/* Gemini Omni: vídeo de referência (opcional, máx 30s) */}
             {isOmniModel && (
               <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
                 <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
-                  {t('labels.videoReference')} <span className="text-[#f3f0ed]/20">{t('labels.videoReferenceMax')}</span>
+                  {t('labels.videoReference')} <span className="text-[#f3f0ed]/20">{t('labels.videoReferenceMax', { maxSeconds: 30 })}</span>
                 </label>
                 {omniVideoFile ? (
                   <div className="group relative flex h-14 w-full items-center gap-3 overflow-hidden rounded-xl border border-[#f3f0ed]/10 bg-[#0d1011] px-3">
