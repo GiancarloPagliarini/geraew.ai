@@ -103,6 +103,8 @@ export function StudioSelectPill({
     };
   }, [open]);
 
+  const hasNewOption = options.some((o) => o.isNew);
+
   return (
     <>
       <button
@@ -110,7 +112,7 @@ export function StudioSelectPill({
         type="button"
         onClick={() => !disabled && setOpen((o) => !o)}
         disabled={disabled}
-        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
+        className={`relative inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
           open
             ? 'bg-[#a2dd00]/10 text-[#a2dd00]'
             : 'bg-[#f3f0ed]/[0.04] text-[#f3f0ed]/75 hover:text-[#f3f0ed]'
@@ -119,6 +121,12 @@ export function StudioSelectPill({
         {icon}
         {label}
         <ChevronDown className={`h-2.5 w-2.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+        {hasNewOption && !open && (
+          <span
+            aria-hidden
+            className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-[#a2dd00] shadow-[0_0_6px_rgba(162,221,0,0.8)] animate-pulse"
+          />
+        )}
       </button>
       {open && pos && typeof document !== 'undefined' && createPortal(
         <div

@@ -1374,8 +1374,11 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
             >
               <div className="space-y-4 pt-0.5">
                 <div className="space-y-1.5" style={{ opacity: isGenerating ? 0.4 : 1, pointerEvents: isGenerating ? 'none' : undefined }}>
-                  <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
+                  <label className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
                     {t('labels.model')}
+                    {imageModelOptions.some((o) => o.badge) && (
+                      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[#a2dd00] shadow-[0_0_6px_rgba(162,221,0,0.8)] animate-pulse" />
+                    )}
                   </label>
                   <PanelSelect
                     value={model}

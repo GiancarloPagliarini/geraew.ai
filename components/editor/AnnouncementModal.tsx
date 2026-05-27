@@ -1,6 +1,6 @@
 'use client';
 
-import { Sparkles, Wrench, Tag, ArrowRight, Gift, Mic, Infinity as InfinityIcon } from 'lucide-react';
+import { BrainCircuit, Wrench, Tag, ArrowRight, Gift, Mic, Infinity as InfinityIcon } from 'lucide-react';
 import type { ComponentType, SVGProps } from 'react';
 import { useTranslations } from 'next-intl';
 import {
@@ -45,7 +45,7 @@ function OpenAILogo({ className }: { className?: string }) {
 type IconComponent = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
 
 const VARIANT_ICON: Record<AnnouncementVariant, IconComponent> = {
-  feature: Sparkles,
+  feature: BrainCircuit,
   maintenance: Wrench,
   promo: Tag,
   openai: OpenAILogo,
