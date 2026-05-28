@@ -1,6 +1,7 @@
 
 import type { Metadata } from "next";
 import { Sora, DM_Sans } from "next/font/google";
+import { getTranslations } from "next-intl/server";
 import { TrackingCapture } from "@/components/TrackingCapture";
 
 const sora = Sora({
@@ -17,22 +18,22 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title:
-    "Geraew - Crie Influencers Digitais com IA | Imagens e Vídeos Ultra-Realistas",
-  description:
-    "Plataforma de inteligência artificial para criar influencers digitais, imagens e vídeos ultra-realistas. Sem aparecer, sem estúdio, sem equipe. Comece grátis.",
-  openGraph: {
-    title: "Geraew - Crie Influencers Digitais com IA",
-    description:
-      "Gere imagens e vídeos ultra-realistas com IA. Sem aparecer, sem estúdio. Comece grátis.",
-    type: "website",
-    url: "https://geraew.com",
-  },
-  twitter: {
-    card: "summary_large_image",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("landingMeta");
+  return {
+    title: t("title"),
+    description: t("description"),
+    openGraph: {
+      title: t("ogTitle"),
+      description: t("ogDescription"),
+      type: "website",
+      url: "https://geraew.com",
+    },
+    twitter: {
+      card: "summary_large_image",
+    },
+  };
+}
 
 export default function LandingLayout({
   children,

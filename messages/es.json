@@ -743,5 +743,38 @@
   "locale": {
     "portuguese": "Portugués",
     "english": "Inglés"
+  },
+  "landingMeta": {
+    "title": "Geraew - Crea Influencers Digitales con IA | Imágenes y Vídeos Ultra-Realistas",
+    "description": "Plataforma de inteligencia artificial para crear influencers digitales, imágenes y vídeos ultra-realistas. Sin aparecer, sin estudio, sin equipo. Comienza gratis.",
+    "ogTitle": "Geraew - Crea Influencers Digitales con IA",
+    "ogDescription": "Genera imágenes y vídeos ultra-realistas con IA. Sin aparecer, sin estudio. Comienza gratis."
+  },
+  "promptsLibrary": {
+    "metaTitle": "Biblioteca de Prompts · GeraEW",
+    "metaDescription": "Explora la biblioteca completa de prompts de GeraEW. Cientos de prompts listos para generar imágenes y vídeos con IA, organizados por nicho.",
+    "ogDescription": "Cientos de prompts listos para generar imágenes y vídeos con IA. Copia, úsalos y crea contenido profesional en segundos.",
+    "twitterDescription": "Cientos de prompts listos para generar imágenes y vídeos con IA.",
+    "badge": "Fábrica de Prompts",
+    "title": "Biblioteca de Prompts",
+    "descriptionWithTotal": "Explora {total} prompts listos para generar imágenes y vídeos con IA. Haz clic en el ícono de copiar y úsalos directamente en tu plataforma favorita.",
+    "descriptionEmpty": "Explora los prompts disponibles en la plataforma. Haz clic en el ícono de copiar para usarlo.",
+    "loadError": "No pudimos cargar los prompts en este momento. Inténtalo de nuevo en unos instantes.",
+    "noPreview": "sin vista previa",
+    "copyPrompt": "Copiar prompt",
+    "usePrompt": "Usar prompt",
+    "searchPlaceholder": "Buscar prompts...",
+    "filterAll": "Todos",
+    "allSections": "Todas las secciones",
+    "noResults": "Ningún prompt encontrado.",
+    "promptCount": "{count, plural, one {# prompt} other {# prompts}}",
+    "promptCountSimple": "{count, plural, one {prompt} other {prompts}}",
+    "types": {
+      "text_to_image": "Texto → Imagen",
+      "image_to_image": "Imagen → Imagen",
+      "text_to_video": "Texto → Vídeo",
+      "image_to_video": "Imagen → Vídeo",
+      "motion_control": "Control de Movimiento"
+    }
   }
 }

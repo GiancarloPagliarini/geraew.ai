@@ -743,5 +743,38 @@
   "locale": {
     "portuguese": "Portuguese",
     "english": "English"
+  },
+  "landingMeta": {
+    "title": "Geraew - Create Digital Influencers with AI | Ultra-Realistic Images and Videos",
+    "description": "AI platform to create digital influencers, ultra-realistic images, and videos. No face on camera, no studio, no crew. Start free.",
+    "ogTitle": "Geraew - Create Digital Influencers with AI",
+    "ogDescription": "Generate ultra-realistic images and videos with AI. No face on camera, no studio. Start free."
+  },
+  "promptsLibrary": {
+    "metaTitle": "Prompt Library · GeraEW",
+    "metaDescription": "Explore GeraEW's full prompt library. Hundreds of ready-made prompts to generate AI images and videos, organized by niche.",
+    "ogDescription": "Hundreds of ready-made prompts to generate AI images and videos. Copy, use, and create professional content in seconds.",
+    "twitterDescription": "Hundreds of ready-made prompts to generate AI images and videos.",
+    "badge": "Prompt Factory",
+    "title": "Prompt Library",
+    "descriptionWithTotal": "Explore {total} ready-made prompts to generate AI images and videos. Click the copy icon and use them directly on your favorite platform.",
+    "descriptionEmpty": "Explore the prompts available on the platform. Click the copy icon to use one.",
+    "loadError": "We couldn't load the prompts right now. Please try again shortly.",
+    "noPreview": "no preview",
+    "copyPrompt": "Copy prompt",
+    "usePrompt": "Use prompt",
+    "searchPlaceholder": "Search prompts...",
+    "filterAll": "All",
+    "allSections": "All sections",
+    "noResults": "No prompts found.",
+    "promptCount": "{count, plural, one {# prompt} other {# prompts}}",
+    "promptCountSimple": "{count, plural, one {prompt} other {prompts}}",
+    "types": {
+      "text_to_image": "Text → Image",
+      "image_to_image": "Image → Image",
+      "text_to_video": "Text → Video",
+      "image_to_video": "Image → Video",
+      "motion_control": "Motion Control"
+    }
   }
 }

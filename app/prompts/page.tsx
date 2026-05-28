@@ -3,6 +3,7 @@ import type { ApiPromptSection } from '@/lib/api';
 import { Navbar } from '@/components/landing/navbar';
 import { Footer } from '@/components/landing/footer';
 import { Sora, DM_Sans } from 'next/font/google';
+import { getTranslations } from 'next-intl/server';
 import { PromptsClient } from './PromptsClient';
 
 const sora = Sora({
@@ -21,26 +22,45 @@ const dmSans = DM_Sans({
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
-export const metadata: Metadata = {
-  title: 'Biblioteca de Prompts · GeraEW',
-  description:
-    'Explore a biblioteca completa de prompts da GeraEW. Centenas de prompts prontos para gerar imagens e vídeos com IA, organizados por nicho.',
-  openGraph: {
-    title: 'Biblioteca de Prompts · GeraEW',
-    description:
-      'Centenas de prompts prontos para gerar imagens e vídeos com IA. Copie, use e crie conteúdo profissional em segundos.',
-    type: 'website',
-    url: 'https://geraew.com/prompts',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Biblioteca de Prompts · GeraEW',
-    description:
-      'Centenas de prompts prontos para gerar imagens e vídeos com IA.',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('promptsLibrary');
+  return {
+    title: t('metaTitle'),
+    description: t('metaDescription'),
+    openGraph: {
+      title: t('metaTitle'),
+      description: t('ogDescription'),
+      type: 'website',
+      url: 'https://geraew.com/prompts',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: t('metaTitle'),
+      description: t('twitterDescription'),
+    },
+  };
+}
 
 export const revalidate = 300;
+
+const SECTION_ORDER = ['nicho hot', 'influencer de ia', 'role noite'];
+
+function normalizeForOrder(title: string): string {
+  return title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function orderRank(title: string): number {
+  const normalized = normalizeForOrder(title).replace(/\bi\s+a\b/g, 'ia');
+  for (let i = 0; i < SECTION_ORDER.length; i++) {
+    if (normalized.includes(SECTION_ORDER[i])) return i;
+  }
+  return SECTION_ORDER.length;
+}
 
 async function getSections(): Promise<ApiPromptSection[]> {
   try {
@@ -49,13 +69,15 @@ async function getSections(): Promise<ApiPromptSection[]> {
     });
     if (!res.ok) return [];
     const data: { sections: ApiPromptSection[] } = await res.json();
-    return data.sections ?? [];
+    const sections = data.sections ?? [];
+    return [...sections].sort((a, b) => orderRank(a.title) - orderRank(b.title));
   } catch {
     return [];
   }
 }
 
 export default async function PromptsPage() {
+  const t = await getTranslations('promptsLibrary');
   const sections = await getSections();
   const total = sections.reduce(
     (sum, s) =>
@@ -73,21 +95,21 @@ export default async function PromptsPage() {
         <div className="mx-auto w-full max-w-7xl px-4 py-10 md:px-6 md:py-14">
           <header className="mb-8 flex flex-col gap-3">
             <span className="w-fit rounded-full border border-[#a2dd00]/20 bg-[#a2dd00]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#a2dd00]">
-              Fábrica de Prompts
+              {t('badge')}
             </span>
             <h1 className="text-3xl font-bold md:text-5xl">
-              Biblioteca de Prompts
+              {t('title')}
             </h1>
             <p className="max-w-2xl text-sm text-[#f3f0ed]/50 md:text-base">
               {total > 0
-                ? `Explore ${total} prompts prontos para gerar imagens e vídeos com IA. Clique no ícone de copiar e use direto na sua plataforma favorita.`
-                : 'Explore os prompts disponíveis na plataforma. Clique no ícone de copiar para usar.'}
+                ? t('descriptionWithTotal', { total })
+                : t('descriptionEmpty')}
             </p>
           </header>
 
           {sections.length === 0 ? (
             <div className="rounded-2xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/2 p-10 text-center text-sm text-[#f3f0ed]/40">
-              Não foi possível carregar os prompts no momento. Tente novamente em instantes.
+              {t('loadError')}
             </div>
           ) : (
             <PromptsClient sections={sections} />

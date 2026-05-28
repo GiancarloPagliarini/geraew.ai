@@ -2,15 +2,8 @@
 
 import { Search, Copy, Check, Wand2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { ApiPromptSection } from '@/lib/api';
-
-const TYPE_LABEL: Record<string, string> = {
-  text_to_image: 'Texto → Imagem',
-  image_to_image: 'Imagem → Imagem',
-  text_to_video: 'Texto → Vídeo',
-  image_to_video: 'Imagem → Vídeo',
-  motion_control: 'Controle de Movimento',
-};
 
 const VIDEO_TYPES = new Set(['text_to_video', 'image_to_video', 'motion_control']);
 
@@ -29,7 +22,14 @@ interface CardPrompt {
   aiModel: string | null;
 }
 
+function typeLabel(t: ReturnType<typeof useTranslations>, type: string): string {
+  const known = ['text_to_image', 'image_to_image', 'text_to_video', 'image_to_video', 'motion_control'];
+  if (known.includes(type)) return t(`types.${type}`);
+  return type;
+}
+
 function PromptCard({ p }: { p: CardPrompt }) {
+  const t = useTranslations('promptsLibrary');
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -51,11 +51,11 @@ function PromptCard({ p }: { p: CardPrompt }) {
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-xs text-[#f3f0ed]/20">
-            sem preview
+            {t('noPreview')}
           </div>
         )}
         <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-[#f3f0ed]/80 backdrop-blur">
-          {TYPE_LABEL[p.type] ?? p.type}
+          {typeLabel(t, p.type)}
         </span>
       </div>
 
@@ -65,7 +65,7 @@ function PromptCard({ p }: { p: CardPrompt }) {
           <button
             onClick={copy}
             className="shrink-0 rounded-lg border border-[#f3f0ed]/10 bg-[#f3f0ed]/5 p-1.5 text-[#f3f0ed]/50 hover:bg-[#f3f0ed]/10 hover:text-[#f3f0ed]"
-            title="Copiar prompt"
+            title={t('copyPrompt')}
           >
             {copied ? <Check className="h-3.5 w-3.5 text-[#a2dd00]" /> : <Copy className="h-3.5 w-3.5" />}
           </button>
@@ -83,7 +83,7 @@ function PromptCard({ p }: { p: CardPrompt }) {
           className="mt-2 flex items-center justify-center gap-1.5 rounded-lg bg-[#a2dd00] px-3 py-2 text-xs font-semibold text-[#111618] transition-all hover:brightness-110 hover:shadow-[0_0_20px_rgba(162,221,0,0.25)]"
         >
           <Wand2 className="h-3.5 w-3.5" />
-          Usar prompt
+          {t('usePrompt')}
         </a>
       </div>
     </div>
@@ -91,6 +91,7 @@ function PromptCard({ p }: { p: CardPrompt }) {
 }
 
 export function PromptsClient({ sections }: { sections: ApiPromptSection[] }) {
+  const t = useTranslations('promptsLibrary');
   const [search, setSearch] = useState('');
   const [activeType, setActiveType] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -148,7 +149,7 @@ export function PromptsClient({ sections }: { sections: ApiPromptSection[] }) {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar prompts..."
+            placeholder={t('searchPlaceholder')}
             className="h-10 w-full rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/3 pl-9 pr-3 text-sm text-[#f3f0ed] placeholder:text-[#f3f0ed]/30 focus:border-[#a2dd00]/40 focus:outline-none"
           />
         </div>
@@ -162,19 +163,19 @@ export function PromptsClient({ sections }: { sections: ApiPromptSection[] }) {
                 : 'border border-[#f3f0ed]/10 bg-[#f3f0ed]/3 text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/8'
             }`}
           >
-            Todos
+            {t('filterAll')}
           </button>
-          {types.map((t) => (
+          {types.map((type) => (
             <button
-              key={t}
-              onClick={() => setActiveType(t)}
+              key={type}
+              onClick={() => setActiveType(type)}
               className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                activeType === t
+                activeType === type
                   ? 'bg-[#a2dd00] text-[#111618]'
                   : 'border border-[#f3f0ed]/10 bg-[#f3f0ed]/3 text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/8'
               }`}
             >
-              {TYPE_LABEL[t] ?? t}
+              {typeLabel(t, type)}
             </button>
           ))}
         </div>
@@ -191,7 +192,7 @@ export function PromptsClient({ sections }: { sections: ApiPromptSection[] }) {
                   : 'border-[#f3f0ed]/10 bg-[#f3f0ed]/3 text-[#f3f0ed]/60 hover:bg-[#f3f0ed]/8'
               }`}
             >
-              Todas as seções
+              {t('allSections')}
             </button>
             {sections.map((s) => (
               <button
@@ -211,12 +212,12 @@ export function PromptsClient({ sections }: { sections: ApiPromptSection[] }) {
       )}
 
       <p className="mb-6 text-xs text-[#f3f0ed]/40">
-        {totalFiltered} {totalFiltered === 1 ? 'prompt' : 'prompts'}
+        {t('promptCount', { count: totalFiltered })}
       </p>
 
       {filteredSections.length === 0 ? (
         <div className="py-20 text-center text-sm text-[#f3f0ed]/40">
-          Nenhum prompt encontrado.
+          {t('noResults')}
         </div>
       ) : (
         <div className="flex flex-col gap-14">
@@ -238,8 +239,7 @@ export function PromptsClient({ sections }: { sections: ApiPromptSection[] }) {
                       {category.title}
                     </h3>
                     <span className="text-xs text-[#f3f0ed]/30">
-                      {category.prompts.length}{' '}
-                      {category.prompts.length === 1 ? 'prompt' : 'prompts'}
+                      {t('promptCount', { count: category.prompts.length })}
                     </span>
                   </div>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
