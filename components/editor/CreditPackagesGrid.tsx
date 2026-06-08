@@ -271,7 +271,7 @@ export function CreditPackagesGrid({ packages, currency = 'BRL', compact }: Cred
                         )}
                       </button>
 
-                      {/* PIX option (BRL only) */}
+                      {/* PIX option (BRL only)
                       {isBRL && (
                         <button
                           type="button"
@@ -282,7 +282,7 @@ export function CreditPackagesGrid({ packages, currency = 'BRL', compact }: Cred
                           <Zap className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
                           Pagar com PIX
                         </button>
-                      )}
+                      )} */}
 
                       {/* Trust micro-copy */}
                       {!compact && (
