@@ -272,17 +272,17 @@ export function CreditPackagesGrid({ packages, currency = 'BRL', compact }: Cred
                       </button>
 
                       {/* PIX option (BRL only) */}
-                      {/* {isBRL && (
-                <button
-                  type="button"
-                  onClick={() => setPixPkg(pkg)}
-                  disabled={!!purchasingId}
-                  className={`mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg text-[#f3f0ed]/55 transition-colors hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40 ${compact ? 'h-8 text-[11px]' : 'h-9 text-[12px]'}`}
-                >
-                  <Zap className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
-                  Pagar com PIX
-                </button>
-              )} */}
+                      {isBRL && (
+                        <button
+                          type="button"
+                          onClick={() => setPixPkg(pkg)}
+                          disabled={!!purchasingId}
+                          className={`mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg text-[#f3f0ed]/55 transition-colors hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40 ${compact ? 'h-8 text-[11px]' : 'h-9 text-[12px]'}`}
+                        >
+                          <Zap className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
+                          Pagar com PIX
+                        </button>
+                      )}
 
                       {/* Trust micro-copy */}
                       {!compact && (

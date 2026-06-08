@@ -13,12 +13,37 @@ interface PixCheckoutModalProps {
   onClose: () => void;
 }
 
+function sanitizeTaxId(raw: string): string {
+  return raw.replace(/\D/g, '');
+}
+
+function formatTaxIdMask(digits: string): string {
+  if (digits.length <= 11) {
+    return digits
+      .replace(/^(\d{3})(\d)/, '$1.$2')
+      .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+      .replace(/\.(\d{3})(\d)/, '.$1-$2');
+  }
+  return digits
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1/$2')
+    .replace(/(\d{4})(\d)/, '$1-$2');
+}
+
+function isValidTaxId(digits: string): boolean {
+  return digits.length === 11 || digits.length === 14;
+}
+
 export function PixCheckoutModal({ pkg, onClose }: PixCheckoutModalProps) {
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
 
+  const [taxIdInput, setTaxIdInput] = useState('');
+  const [step, setStep] = useState<'taxId' | 'qr'>('taxId');
+
   const [pix, setPix] = useState<PixCharge | null>(null);
-  const [creating, setCreating] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [paid, setPaid] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
@@ -26,23 +51,24 @@ export function PixCheckoutModal({ pkg, onClose }: PixCheckoutModalProps) {
 
   const stoppedRef = useRef(false);
 
-  useEffect(() => {
-    if (!accessToken) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const charge = await api.payments.createBoostPix(accessToken, pkg.id);
-        if (!cancelled) setPix(charge);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Falha ao gerar PIX');
-      } finally {
-        if (!cancelled) setCreating(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [accessToken, pkg.id]);
+  const taxIdDigits = sanitizeTaxId(taxIdInput);
+  const taxIdValid = isValidTaxId(taxIdDigits);
+
+  async function handleSubmitTaxId(e: React.FormEvent) {
+    e.preventDefault();
+    if (!accessToken || !taxIdValid || creating) return;
+    setCreating(true);
+    setError(null);
+    try {
+      const charge = await api.payments.createBoostPix(accessToken, pkg.id, taxIdDigits);
+      setPix(charge);
+      setStep('qr');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao gerar PIX');
+    } finally {
+      setCreating(false);
+    }
+  }
 
   // Countdown
   useEffect(() => {
@@ -65,7 +91,7 @@ export function PixCheckoutModal({ pkg, onClose }: PixCheckoutModalProps) {
     const poll = async () => {
       if (stoppedRef.current) return;
       try {
-        const res = await api.payments.getPixStatus(accessToken, pix.abacatepayId);
+        const res = await api.payments.getPixStatus(accessToken, pix.paymentId);
         if (res.paid) {
           setPaid(true);
           stoppedRef.current = true;
@@ -135,22 +161,53 @@ export function PixCheckoutModal({ pkg, onClose }: PixCheckoutModalProps) {
           </p>
         </div>
 
-        {/* Body */}
-        {creating && (
-          <div className="flex flex-col items-center gap-3 py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-[#a2dd00]" />
-            <p className="text-xs text-[#f3f0ed]/50">Gerando QR Code…</p>
-          </div>
+        {/* Step 1: CPF */}
+        {step === 'taxId' && (
+          <form className="flex flex-col gap-4" onSubmit={handleSubmitTaxId}>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/50">
+                CPF ou CNPJ do pagador
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoFocus
+                placeholder="000.000.000-00"
+                value={formatTaxIdMask(taxIdDigits)}
+                onChange={(e) => setTaxIdInput(e.target.value)}
+                maxLength={18}
+                className="h-11 rounded-lg border border-[#f3f0ed]/10 bg-[#f3f0ed]/3 px-3 text-sm text-[#f3f0ed] outline-none transition-colors placeholder:text-[#f3f0ed]/25 focus:border-[#a2dd00]/40"
+              />
+              <p className="text-[11px] text-[#f3f0ed]/35">
+                Exigido pelo banco para gerar a cobrança PIX. Salvamos com segurança e não pediremos de novo.
+              </p>
+            </div>
+
+            {error && (
+              <div className="rounded-lg border border-red-500/20 bg-red-500/8 p-3 text-xs text-red-300">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={!taxIdValid || creating}
+              className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#a2dd00] text-sm font-bold text-[#141a1c] transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {creating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Gerando QR Code…
+                </>
+              ) : (
+                'Gerar QR Code'
+              )}
+            </button>
+          </form>
         )}
 
-        {error && !creating && (
-          <div className="flex flex-col gap-3 rounded-xl border border-red-500/20 bg-red-500/8 p-4 text-sm text-red-300">
-            <span className="font-semibold">Falha ao gerar PIX</span>
-            <span className="text-xs text-red-300/70">{error}</span>
-          </div>
-        )}
-
-        {pix && !error && (
+        {/* Step 2: QR Code */}
+        {step === 'qr' && pix && (
           <>
             {paid ? (
               <div className="flex flex-col items-center gap-3 py-8">

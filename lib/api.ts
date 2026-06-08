@@ -127,7 +127,7 @@ export interface CreditPackage {
 export type PixStatus = 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED' | 'REFUNDED';
 
 export interface PixCharge {
-  abacatepayId: string;
+  paymentId: string;
   amountCents: number;
   status: PixStatus;
   brCode: string;
@@ -1211,6 +1211,23 @@ export interface AdminGeneration {
   completedAt: string | null;
 }
 
+// ─── Admin Vertex (gestão de contas no Geraew Provider) ──────────────────
+export interface VertexCredential {
+  id: string;
+  name: string;
+  quotaProjectId: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface CreateVertexCredentialInput {
+  name: string;
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+  quotaProjectId: string;
+}
+
 // ─── Inworld voices cache (module-level, dedupes concurrent fetches) ─────
 const INWORLD_VOICES_CACHE_TTL = 60 * 60 * 1000; // 1h
 let inworldVoicesCache: { at: number; voices: InworldVoice[] } | null = null;
@@ -1543,15 +1560,15 @@ export const api = {
   },
 
   payments: {
-    createBoostPix(accessToken: string, packageId: string, taxId?: string) {
+    createBoostPix(accessToken: string, packageId: string, taxId: string) {
       return authRequest<PixCharge>('/api/v1/payments/pix/boost', accessToken, {
         method: 'POST',
-        body: JSON.stringify({ packageId, ...(taxId ? { taxId } : {}) }),
+        body: JSON.stringify({ packageId, taxId }),
       });
     },
-    getPixStatus(accessToken: string, abacatepayId: string) {
+    getPixStatus(accessToken: string, paymentId: string) {
       return authRequest<{ status: PixStatus; paid: boolean }>(
-        `/api/v1/payments/pix/${encodeURIComponent(abacatepayId)}/status`,
+        `/api/v1/payments/pix/${encodeURIComponent(paymentId)}/status`,
         accessToken,
       );
     },
@@ -2521,6 +2538,23 @@ export const api = {
         `/api/v1/admin/crons/executions${suffix}`,
         accessToken,
       );
+    },
+  },
+
+  adminVertex: {
+    listCredentials(accessToken: string) {
+      return authRequest<VertexCredential[]>('/api/v1/admin/vertex/credentials', accessToken);
+    },
+    createCredential(accessToken: string, payload: CreateVertexCredentialInput) {
+      return authRequest<VertexCredential>('/api/v1/admin/vertex/credentials', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    deleteCredential(accessToken: string, id: string) {
+      return authRequest<void>(`/api/v1/admin/vertex/credentials/${id}`, accessToken, {
+        method: 'DELETE',
+      });
     },
   },
 
