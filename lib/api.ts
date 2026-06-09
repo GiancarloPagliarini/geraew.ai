@@ -215,6 +215,34 @@ export interface AdminPromptSection {
   categories: AdminPromptCategory[];
 }
 
+export interface AdminPromptCategoryLight {
+  id: string;
+  sectionId: string;
+  title: string;
+  sortOrder: number;
+  promptCount: number;
+}
+
+export interface AdminPromptSectionLight {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  icon: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  categories: AdminPromptCategoryLight[];
+}
+
+export interface AdminPromptTemplateItem extends AdminPromptTemplate {
+  thumbnailUrl: string | null;
+  category: {
+    id: string;
+    title: string;
+    section: { id: string; title: string };
+  };
+}
+
 // ─── Prompts ─────────────────────────────────────────────────────────────────
 
 export interface ApiPromptSection {
@@ -1958,11 +1986,24 @@ export const api = {
         },
       );
     },
-    generations(accessToken: string, page = 1, limit = 20) {
+    generations(
+      accessToken: string,
+      page = 1,
+      limit = 20,
+      filters?: { search?: string; type?: string; status?: string; model?: string },
+    ) {
+      const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+      if (filters?.search?.trim()) params.set('search', filters.search.trim());
+      if (filters?.type) params.set('type', filters.type);
+      if (filters?.status) params.set('status', filters.status);
+      if (filters?.model) params.set('model', filters.model);
       return authRequest<AdminPaginatedResponse<AdminGeneration>>(
-        `/api/v1/admin/generations?page=${page}&limit=${limit}`,
+        `/api/v1/admin/generations?${params.toString()}`,
         accessToken,
       );
+    },
+    generationModels(accessToken: string) {
+      return authRequest<string[]>('/api/v1/admin/generations/models', accessToken);
     },
     providerStats(accessToken: string) {
       return authRequest<AdminProviderStats>('/api/v1/admin/generations/providers', accessToken);
@@ -1988,6 +2029,25 @@ export const api = {
         meta: { page: number; limit: number; total: number };
         stats: AdminFeedbackStats;
       }>(`/api/v1/admin/feedback?page=${page}&limit=${limit}`, accessToken);
+    },
+    // Busca todos os feedbacks (para filtros e exportação client-side).
+    // Pagina internamente caso o total exceda o tamanho do lote.
+    async feedbackListAll(accessToken: string) {
+      const batch = 100;
+      const first = await this.feedbackList(accessToken, 1, batch);
+      const total = first.meta?.total ?? first.data.length;
+      if (first.data.length >= total) return first;
+      const pages = Math.ceil(total / batch);
+      const rest = await Promise.all(
+        Array.from({ length: pages - 1 }, (_, i) =>
+          this.feedbackList(accessToken, i + 2, batch),
+        ),
+      );
+      return {
+        ...first,
+        data: [...first.data, ...rest.flatMap((r) => r.data)],
+        meta: { page: 1, limit: total, total },
+      };
     },
     affiliatesDashboard(accessToken: string) {
       return authRequest<AffiliateDashboard>('/api/v1/admin/affiliates/dashboard', accessToken);
@@ -2093,6 +2153,28 @@ export const api = {
     prompts: {
       list(accessToken: string) {
         return authRequest<AdminPromptSection[]>('/api/v1/admin/prompts', accessToken);
+      },
+      sectionsLight(accessToken: string) {
+        return authRequest<AdminPromptSectionLight[]>(
+          '/api/v1/admin/prompts/sections-light',
+          accessToken,
+        );
+      },
+      templates(
+        accessToken: string,
+        page = 1,
+        limit = 24,
+        filters?: { search?: string; type?: string; sectionId?: string; categoryId?: string },
+      ) {
+        const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+        if (filters?.search?.trim()) params.set('search', filters.search.trim());
+        if (filters?.type) params.set('type', filters.type);
+        if (filters?.sectionId) params.set('sectionId', filters.sectionId);
+        if (filters?.categoryId) params.set('categoryId', filters.categoryId);
+        return authRequest<AdminPaginatedResponse<AdminPromptTemplateItem>>(
+          `/api/v1/admin/prompts/templates?${params.toString()}`,
+          accessToken,
+        );
       },
       createSection(accessToken: string, data: {
         slug: string;

@@ -2,19 +2,21 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Loader2,
   ChevronLeft,
   ChevronRight,
-  Image,
+  Image as ImageIcon,
   CheckCircle2,
   Clock,
   XCircle,
   Cog,
   UserCircle,
   RefreshCw,
+  Search,
+  X,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -25,7 +27,31 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { FilterSelect, FilterField } from '@/components/admin/filter-controls';
 import { useRouter } from 'next/navigation';
+
+const TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'all', label: 'Todos' },
+  { value: 'TEXT_TO_IMAGE', label: 'Texto → Imagem' },
+  { value: 'IMAGE_TO_IMAGE', label: 'Imagem → Imagem' },
+  { value: 'TEXT_TO_VIDEO', label: 'Texto → Vídeo' },
+  { value: 'IMAGE_TO_VIDEO', label: 'Imagem → Vídeo' },
+  { value: 'MOTION_CONTROL', label: 'Copiar movimentos' },
+  { value: 'REFERENCE_VIDEO', label: 'Referência' },
+  { value: 'FACE_SWAP', label: 'Face Swap' },
+  { value: 'VIRTUAL_TRY_ON', label: 'Try On' },
+  { value: 'SPOKEN_VIDEO', label: 'Vídeo falado' },
+  { value: 'VOICE_CLONE', label: 'Clone de voz' },
+  { value: 'AVATAR_VIDEO', label: 'Avatar' },
+];
+
+const STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: 'all', label: 'Todos' },
+  { value: 'PENDING', label: 'Pendente' },
+  { value: 'PROCESSING', label: 'Processando' },
+  { value: 'COMPLETED', label: 'Concluída' },
+  { value: 'FAILED', label: 'Falha' },
+];
 
 function genTypeLabel(type: string) {
   const map: Record<string, string> = {
@@ -35,6 +61,11 @@ function genTypeLabel(type: string) {
     IMAGE_TO_VIDEO: 'Imagem → Vídeo',
     MOTION_CONTROL: 'Copiar movimentos',
     REFERENCE_VIDEO: 'Referência',
+    FACE_SWAP: 'Face Swap',
+    VIRTUAL_TRY_ON: 'Try On',
+    SPOKEN_VIDEO: 'Vídeo falado',
+    VOICE_CLONE: 'Clone de voz',
+    AVATAR_VIDEO: 'Avatar',
     text_to_image: 'Texto → Imagem',
     image_to_image: 'Imagem → Imagem',
     text_to_video: 'Texto → Vídeo',
@@ -49,7 +80,7 @@ function modelLabel(model: string | null) {
   const map: Record<string, string> = {
     'nano-banana-2': 'Nano Banana 2',
     'nano-banana-pro': 'Nano Banana Pro',
-    'nbpro': 'Nano Banana Pro',
+    nbpro: 'Nano Banana Pro',
     'kling-2.6': 'Kling 2.6',
     'veo-3.1': 'Veo 3.1',
     'veo-fast': 'Veo Fast',
@@ -88,16 +119,70 @@ export default function AdminGenerationsPage() {
   const [page, setPage] = useState(1);
   const limit = 20;
 
+  // Filtros
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [modelFilter, setModelFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  // Debounce da busca
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const filters = useMemo(
+    () => ({
+      search: search || undefined,
+      type: typeFilter !== 'all' ? typeFilter : undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+      model: modelFilter !== 'all' ? modelFilter : undefined,
+    }),
+    [search, typeFilter, statusFilter, modelFilter],
+  );
+
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['admin', 'generations', page],
-    queryFn: () => api.admin.generations(accessToken!, page, limit),
+    queryKey: ['admin', 'generations', page, filters],
+    queryFn: () => api.admin.generations(accessToken!, page, limit, filters),
     enabled: !!accessToken,
     refetchInterval: 15_000,
+    placeholderData: keepPreviousData,
   });
+
+  const { data: modelsData } = useQuery({
+    queryKey: ['admin', 'generation-models'],
+    queryFn: () => api.admin.generationModels(accessToken!),
+    enabled: !!accessToken,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const modelOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Todos' },
+      ...(modelsData ?? []).map((m) => ({ value: m, label: modelLabel(m) })),
+    ],
+    [modelsData],
+  );
 
   const generations = data?.data ?? [];
   const total = data?.meta?.total ?? 0;
   const totalPages = data?.meta?.totalPages ?? 1;
+
+  const hasFilters =
+    search !== '' || typeFilter !== 'all' || modelFilter !== 'all' || statusFilter !== 'all';
+
+  function resetFilters() {
+    setSearchInput('');
+    setSearch('');
+    setTypeFilter('all');
+    setModelFilter('all');
+    setStatusFilter('all');
+    setPage(1);
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -106,7 +191,8 @@ export default function AdminGenerationsPage() {
         <div>
           <h1 className="text-2xl font-bold text-[#f3f0ed]">Gerações</h1>
           <p className="mt-1 text-sm text-[#f3f0ed]/40">
-            Monitoramento em tempo real · {total.toLocaleString('pt-BR')} gerações
+            Monitoramento em tempo real · {total.toLocaleString('pt-BR')}{' '}
+            {hasFilters ? 'resultado(s)' : 'gerações'}
           </p>
         </div>
         <button
@@ -116,6 +202,57 @@ export default function AdminGenerationsPage() {
         >
           <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
         </button>
+      </div>
+
+      {/* Filtros */}
+      <div className="rounded-2xl border border-[#f3f0ed]/8 bg-gradient-to-b from-[#f3f0ed]/[0.04] to-[#f3f0ed]/[0.01] p-3 md:p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <FilterField label="Buscar" className="min-w-[180px] flex-1 sm:max-w-[280px]">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#f3f0ed]/30" />
+              <input
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Nome ou email…"
+                className="h-9 w-full rounded-lg border border-[#f3f0ed]/10 bg-[#141a1c] pl-9 pr-3 text-sm text-[#f3f0ed] placeholder:text-[#f3f0ed]/30 outline-none transition-colors focus:border-[#a2dd00]/50"
+              />
+            </div>
+          </FilterField>
+
+          <FilterField label="Tipo" className="min-w-[150px] flex-1">
+            <FilterSelect
+              value={typeFilter}
+              onChange={(v) => { setTypeFilter(v); setPage(1); }}
+              options={TYPE_OPTIONS}
+            />
+          </FilterField>
+
+          <FilterField label="Modelo" className="min-w-[150px] flex-1">
+            <FilterSelect
+              value={modelFilter}
+              onChange={(v) => { setModelFilter(v); setPage(1); }}
+              options={modelOptions}
+            />
+          </FilterField>
+
+          <FilterField label="Status" className="min-w-[140px] flex-1">
+            <FilterSelect
+              value={statusFilter}
+              onChange={(v) => { setStatusFilter(v); setPage(1); }}
+              options={STATUS_OPTIONS}
+            />
+          </FilterField>
+
+          {hasFilters && (
+            <button
+              onClick={resetFilters}
+              className="flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-[#f3f0ed]/50 transition-colors hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/80"
+            >
+              <X className="h-3.5 w-3.5" />
+              Limpar
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -156,7 +293,7 @@ export default function AdminGenerationsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1.5">
-                      <Image className="h-3.5 w-3.5 text-[#f3f0ed]/30" />
+                      <ImageIcon className="h-3.5 w-3.5 text-[#f3f0ed]/30" />
                       <span className="text-xs text-[#f3f0ed]/60">{genTypeLabel(gen.type)}</span>
                     </div>
                   </TableCell>
@@ -193,7 +330,19 @@ export default function AdminGenerationsPage() {
               {generations.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={9} className="h-32 text-center text-sm text-[#f3f0ed]/30">
-                    Nenhuma geração encontrada
+                    {hasFilters ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <span>Nenhuma geração corresponde aos filtros.</span>
+                        <button
+                          onClick={resetFilters}
+                          className="text-xs font-medium text-[#a2dd00]/80 transition-colors hover:text-[#a2dd00]"
+                        >
+                          Limpar filtros
+                        </button>
+                      </div>
+                    ) : (
+                      'Nenhuma geração encontrada'
+                    )}
                   </TableCell>
                 </TableRow>
               )}
