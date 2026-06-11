@@ -53,7 +53,7 @@ function LoginModalContent() {
   const tVerify = useTranslations('auth.verifyEmail');
   const tSlides = useTranslations('auth.common.slides');
 
-  const redirectAfterLogin = planParam ? `/checkout?plan=${planParam}` : '/workspace';
+  const redirectAfterLogin = planParam ? `/checkout?plan=${planParam}` : '/home';
 
   // ── Form state ──────────────────────────────────────────────────────────────
   const [view, setView] = useState<'options' | 'email' | 'verify' | 'forgot'>('options');

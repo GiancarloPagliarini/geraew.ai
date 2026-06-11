@@ -56,7 +56,7 @@ function LoginPageContent() {
 
   const planParam = searchParams.get('plan');
   const refParam = searchParams.get('ref');
-  const redirectAfterLogin = planParam ? `/checkout?plan=${planParam}` : '/workspace';
+  const redirectAfterLogin = planParam ? `/checkout?plan=${planParam}` : '/home';
 
   // Salvar referral code em cookie para persistir durante OAuth redirect
   useEffect(() => {

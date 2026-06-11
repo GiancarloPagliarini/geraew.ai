@@ -20,6 +20,7 @@ export default getRequestConfig(async () => {
 
 async function loadPartials(locale: Locale): Promise<Record<string, unknown>> {
   const names = [
+    'home',
     'workspace',
     'account',
     'affiliate',

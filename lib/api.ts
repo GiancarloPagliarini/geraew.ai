@@ -626,6 +626,8 @@ export interface ImageToVideoGrokRequest {
   aspect_ratio?: string;
   first_frame: string;
   first_frame_mime_type?: string;
+  last_frame?: string;
+  last_frame_mime_type?: string;
   model_variant?: string;
 }
 
@@ -1541,6 +1543,18 @@ export const api = {
     },
     get(accessToken: string, id: string) {
       return authRequest<Generation>(`/api/v1/generations/${id}`, accessToken);
+    },
+    list(
+      accessToken: string,
+      params?: { status?: GenerationStatus; type?: string; page?: number; limit?: number },
+    ) {
+      const qs = new URLSearchParams({
+        page: String(params?.page ?? 1),
+        limit: String(params?.limit ?? 20),
+      });
+      if (params?.status) qs.set('status', params.status);
+      if (params?.type) qs.set('type', params.type);
+      return authRequest<PaginatedResponse<Generation>>(`/api/v1/generations?${qs.toString()}`, accessToken);
     },
     getUnlimitedStatus(accessToken: string) {
       return authRequest<UnlimitedStatus>(

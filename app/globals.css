@@ -57,6 +57,85 @@
   --color-landing-text-secondary: rgba(243, 240, 237, 0.6);
   --color-landing-text-muted: rgba(243, 240, 237, 0.35);
   --color-landing-green: #a2dd00;
+
+  /* App Shell — Geraew 2.0 (GERAEW_DESIGN_SYSTEM.md) */
+  --color-app-deep: #0d1011;
+  --color-app-bg: #141a1c;
+  --color-app-surface: #1a2123;
+  --color-app-card: #1e2829;
+  --color-app-card-hover: #243032;
+  --color-app-text: #f3f0ed;
+  --color-app-text-2: rgba(243, 240, 237, 0.6);
+  --color-app-muted: rgba(243, 240, 237, 0.35);
+  --color-app-hairline: rgba(243, 240, 237, 0.08);
+  --color-app-hairline-2: rgba(243, 240, 237, 0.14);
+  --color-app-lime: #a2dd00;
+  --color-app-lime-hover: #8bc400;
+  --color-app-lime-bright: #c8ff3f;
+  --color-app-lime-ink: #11181a;
+  --color-app-petrol: #1e494b;
+  --color-app-violet: #a855f7;
+  --color-app-violet-2: #d8b4fe;
+  --ease-app: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* entradas/saídas suaves de overlays/modais do app shell */
+  --animate-overlay-in: overlay-in 0.18s ease-out both;
+  --animate-dialog-in: dialog-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-overlay-out: overlay-out 0.16s ease-in both;
+  --animate-dialog-out: dialog-out 0.16s cubic-bezier(0.7, 0, 0.84, 0) both;
+
+  @keyframes overlay-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes dialog-in {
+    from { opacity: 0; transform: translateY(-14px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes overlay-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+  @keyframes dialog-out {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(-10px) scale(0.97); }
+  }
+
+  /* entrada suave de cards em listas (ex.: preview de geração nas Criações) */
+  --animate-card-in: card-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+}
+
+/* Tailwind v4 deixa button com cursor:default — restaura o pointer (padrão v3) */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* Scrollbar padrão do app shell (GERAEW_DESIGN_SYSTEM §4): fina, thumb sutil, hover lime */
+.scrollbar-app {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(243, 240, 237, 0.14) transparent;
+}
+.scrollbar-app::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.scrollbar-app::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-app::-webkit-scrollbar-thumb {
+  background: rgba(243, 240, 237, 0.14);
+  border-radius: 99px;
+}
+.scrollbar-app::-webkit-scrollbar-thumb:hover {
+  background: rgba(162, 221, 0, 0.4);
 }
 
 :root {

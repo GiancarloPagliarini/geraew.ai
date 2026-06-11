@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     // Check if there's a plan redirect cookie from the landing page
     const planRedirect = request.cookies.get('geraew-plan-redirect')?.value;
-    const redirectTo = planRedirect ? `/checkout?plan=${planRedirect}` : '/workspace';
+    const redirectTo = planRedirect ? `/checkout?plan=${planRedirect}` : '/home';
 
     // Set the same cookies the client-side auth context expects
     const response = NextResponse.redirect(new URL(redirectTo, origin));
