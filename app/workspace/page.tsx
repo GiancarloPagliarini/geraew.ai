@@ -11,10 +11,13 @@ import { EditorProvider, useEditor } from '@/lib/editor-context';
 import { InfluencerBuilderProvider } from '@/lib/influencer-builder-context';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
+import type { Edge, Node } from '@xyflow/react';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { api, type WorkspaceContentInput, type WorkspaceDetail } from '@/lib/api';
+import { useWorkspaceAutosave } from '@/components/workspaces/use-workspace-autosave';
+import { WorkspaceLoading } from '@/components/workspaces/WorkspaceLoading';
 import { FeedbackRewardModal } from '@/components/FeedbackRewardModal';
 import { AnnouncementsManager } from '@/components/editor/AnnouncementsManager';
 
@@ -98,7 +101,10 @@ function FeedbackRewardTrigger() {
   return <FeedbackRewardModal open={open} onClose={handleClose} />;
 }
 
-function WorkspaceShell() {
+function WorkspaceShell({ workspace, onPersist }: {
+  workspace: WorkspaceDetail;
+  onPersist: (partial: WorkspaceContentInput) => void;
+}) {
   const { studioMode } = useEditor();
   return (
     <div
@@ -109,7 +115,14 @@ function WorkspaceShell() {
       <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
         <LeftSidebar />
         <div className="flex flex-1 overflow-hidden">
-          <Canvas />
+          <Canvas
+            initial={{
+              nodes: (workspace.nodes ?? []) as Node[],
+              edges: (workspace.edges ?? []) as Edge[],
+              viewport: workspace.viewport ?? null,
+            }}
+            onPersist={onPersist}
+          />
           <RightSidebar />
         </div>
       </div>
@@ -117,11 +130,59 @@ function WorkspaceShell() {
   );
 }
 
+/**
+ * O canvas agora é acessado somente pela listagem (/workspaces): carrega o
+ * workspace do backend pelo ?id= e redireciona para a listagem sem id válido.
+ */
+const LOADER_MIN_MS = 4000;
+
+function WorkspaceGate() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { user, accessToken, loading: authLoading } = useAuth();
+  const workspaceId = searchParams.get('id');
+  const [minTimeDone, setMinTimeDone] = useState(false);
+
+  // a animação de loading fica visível por pelo menos LOADER_MIN_MS
+  useEffect(() => {
+    const timer = setTimeout(() => setMinTimeDone(true), LOADER_MIN_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const { data, isError } = useQuery({
+    queryKey: ['workspace', workspaceId],
+    queryFn: () => api.workspaces.get(accessToken!, workspaceId!),
+    enabled: !!accessToken && !!workspaceId,
+    // o canvas vira o dono do estado após carregar: nunca refazer a query
+    // com a tela aberta (sobrescreveria mudanças locais) nem manter cache
+    staleTime: Infinity,
+    gcTime: 0,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+
+  useEffect(() => {
+    if (!workspaceId || isError || (!authLoading && !user)) {
+      router.replace('/workspaces');
+    }
+  }, [workspaceId, isError, authLoading, user, router]);
+
+  const persist = useWorkspaceAutosave(workspaceId, accessToken);
+
+  if (!data || !minTimeDone) {
+    return <WorkspaceLoading />;
+  }
+
+  return <WorkspaceShell key={workspaceId} workspace={data} onPersist={persist} />;
+}
+
 export default function Home() {
   return (
     <EditorProvider>
       <InfluencerBuilderProvider>
-        <WorkspaceShell />
+        <Suspense fallback={<WorkspaceLoading />}>
+          <WorkspaceGate />
+        </Suspense>
         <OnboardingTour />
         <SupportButton />
         <Suspense><RegisterModalTrigger /></Suspense>

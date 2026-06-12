@@ -1,5 +1,6 @@
 import {
   AudioLines,
+  BadgePercent,
   Copy,
   Flame,
   FolderOpen,
@@ -8,11 +9,11 @@ import {
   LayoutGrid,
   Library,
   Mic,
+  PersonStanding,
   Rss,
   ScanFace,
   Search,
   SlidersHorizontal,
-  SquarePen,
   SquarePlay,
   Wand2,
   Waypoints,
@@ -37,7 +38,7 @@ export interface HomeNavItem {
 export const MAIN_NAV: HomeNavItem[] = [
   { id: 'inicio', icon: House, href: '/home' },
   { id: 'pesquisar', icon: Search, action: 'palette' },
-  { id: 'comunidade', icon: Rss, soon: true },
+  { id: 'comunidade', icon: Rss, href: '/community' },
   { id: 'galeria', icon: FolderOpen, href: '/gallery' },
   { id: 'prompts', icon: Library, href: '/prompt-library' },
 ];
@@ -51,6 +52,8 @@ export const SCREEN_TITLES: Record<string, { id: string; icon: LucideIcon }> = {
   '/image': { id: 'imagem', icon: Image },
   '/video': { id: 'video', icon: SquarePlay },
   '/voice': { id: 'textoParaVoz', icon: Mic },
+  '/community': { id: 'comunidade', icon: Rss },
+  '/pricing': { id: 'precos', icon: BadgePercent },
 };
 
 /**
@@ -68,7 +71,7 @@ export function stripLocalePrefix(pathname: string): string {
 
 export const TOOLS_NAV: HomeNavItem[] = [
   { id: 'todasFerramentas', icon: LayoutGrid, href: '/tools' },
-  { id: 'workspace', icon: Waypoints, href: '/workspace' },
+  { id: 'workspace', icon: Waypoints, href: '/workspaces' },
   { id: 'gerarImagens', icon: Image, href: '/image' },
   { id: 'gerarVideos', icon: SquarePlay, href: '/video' },
   { id: 'textoParaVoz', icon: Mic, href: '/voice' },
@@ -83,7 +86,7 @@ export interface QuickAction {
 }
 
 export const QUICK_ACTIONS: QuickAction[] = [
-  { id: 'workspace', icon: Waypoints, href: '/workspace' },
+  { id: 'workspace', icon: Waypoints, href: '/workspaces' },
   { id: 'imagem', icon: Image, href: '/image' },
   { id: 'video', icon: SquarePlay, href: '/video' },
   { id: 'audio', icon: AudioLines, href: '/voice' },
@@ -91,12 +94,16 @@ export const QUICK_ACTIONS: QuickAction[] = [
   { id: 'tiktokShop', icon: Flame, href: '/workspace' },
 ];
 
-/** Painel "Ferramentas" do dashboard (atalhos fixados) */
+/** Painel "Ferramentas" do dashboard (atalhos fixados — só telas já em produção) */
 export const PINNED_TOOLS: QuickAction[] = [
-  { id: 'workspace', icon: Waypoints, href: '/workspace' },
+  { id: 'workspace', icon: Waypoints, href: '/workspaces' },
   { id: 'gerarImagens', icon: Image, href: '/image' },
-  { id: 'melhorarImagem', icon: Wand2, href: '/workspace' },
-  { id: 'editarImagens', icon: SquarePen, href: '/workspace' },
+  { id: 'gerarVideos', icon: SquarePlay, href: '/video' },
+  { id: 'textoParaVoz', icon: Mic, href: '/voice' },
+  { id: 'melhorarImagem', icon: Wand2, href: '/image' },
+  { id: 'clonarPrompt', icon: Copy, href: '/clone-prompt' },
+  { id: 'copiarMovimentos', icon: PersonStanding, href: '/video' },
+  { id: 'clonarVoz', icon: AudioLines, href: '/voice' },
 ];
 
 // ─── Command palette (Ctrl K) ────────────────────────────────────────────────
@@ -122,7 +129,7 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   { id: 'textoParaVoz', icon: Mic, href: '/voice', shortcut: 'T', nav: true },
   { id: 'criarWorkspace', icon: Waypoints, href: '/workspace', shortcut: 'L', nav: true },
   // ações extras (aparecem em Recentes/busca)
-  { id: 'visitarComunidade', icon: Rss, soon: true },
+  { id: 'visitarComunidade', icon: Rss, href: '/community' },
   { id: 'abrirGeradorImagens', icon: Image, href: '/image' },
   { id: 'abrirTextoParaVoz', icon: Mic, href: '/voice' },
 ];

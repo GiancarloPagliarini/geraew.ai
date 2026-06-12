@@ -10,7 +10,7 @@
       "more": "Mais opções",
       "terms": "Termos de Uso",
       "privacy": "Política de Privacidade",
-      "pricing": "Preços",
+      "pricing": "Planos",
       "signIn": "Entrar",
       "account": "Conta",
       "profile": "Perfil",
@@ -31,7 +31,63 @@
       "textoParaVoz": "Texto para voz",
       "clonarPrompt": "Clonar prompt",
       "imagem": "Imagem",
-      "video": "Vídeo"
+      "video": "Vídeo",
+      "precos": "Planos"
+    },
+    "community": {
+      "subtitle": "Explore o que a comunidade está criando.",
+      "searchPlaceholder": "Buscar na comunidade...",
+      "follow": "Seguir",
+      "share": "Compartilhar",
+      "promptLabel": "Prompt",
+      "settingsLabel": "Configurações",
+      "recreate": "Recriar",
+      "createVideo": "Criar vídeo",
+      "useAsReference": "Usar como referência",
+      "prev": "Post anterior",
+      "next": "Próximo post",
+      "post": "Publicar",
+      "submitTitle": "Publicar na comunidade",
+      "submitSubtitle": "Escolha uma criação da sua galeria para enviar.",
+      "submitCta": "Enviar para análise",
+      "submitHint": "Sua publicação passa por uma análise rápida antes de aparecer para todos.",
+      "submitSuccess": "Enviado para análise!",
+      "submitSuccessDesc": "Você será notificado quando a publicação for aprovada.",
+      "submitError": "Não foi possível enviar. Tente novamente.",
+      "pickerEmpty": "Você ainda não tem criações",
+      "pickerEmptyHint": "Gere uma imagem ou vídeo primeiro.",
+      "empty": "Ainda não há publicações",
+      "emptyHint": "Seja o primeiro a publicar uma criação."
+    },
+    "notifications": {
+      "title": "Notificações",
+      "empty": "Nenhuma notificação por aqui.",
+      "generic": "Você tem uma nova notificação.",
+      "types": {
+        "community-submitted": "Sua publicação está em análise.",
+        "community-approved": "Sua publicação foi aprovada e já está na comunidade!",
+        "community-rejected": "Sua publicação não foi aprovada."
+      }
+    },
+    "workspaces": {
+      "title": "Workspace",
+      "subtitle": "Crie fluxos generativos baseados em nós e dê vida às suas ideias.",
+      "mine": "Meus workspaces",
+      "shared": "Compartilhados",
+      "new": "Novo workspace",
+      "favorites": "Favoritos",
+      "filters": "Filtros",
+      "searchPlaceholder": "Buscar workspaces...",
+      "untitled": "Sem título",
+      "empty": "Nenhum workspace encontrado",
+      "emptyHint": "Tente outro termo de busca ou crie um novo.",
+      "rename": "Renomear",
+      "favorite": "Favoritar",
+      "unfavorite": "Remover favorito",
+      "delete": "Excluir",
+      "confirmDelete": "Confirmar exclusão",
+      "deleted": "Workspace excluído.",
+      "error": "Não foi possível concluir. Tente novamente."
     },
     "voice": {
       "tab": "Texto para voz",
@@ -48,7 +104,7 @@
       "scriptPlaceholder": "Digite seu texto com etiquetas de áudio como [risos] para criar uma locução expressiva e adicione pausas com etiquetas como [pausa 0.5s]",
       "chars": "{count} / {max} caracteres",
       "tagPause": "Inserir pausa",
-      "pauseTag": "[pausa 0.5s]",
+      "pauseTag": "[pausa {s}s]",
       "emotionsMenu": "Inserir emoção",
       "emotions": {
         "laughs": "Risos",
@@ -162,34 +218,25 @@
       "untitled": "Sem título",
       "emptyTitle": "Suas criações recentes aparecem aqui",
       "emptyCta": "Criar minha primeira geração",
-      "kind": { "imagem": "imagem", "video": "vídeo", "audio": "áudio" }
+      "kind": { "imagem": "Imagem", "video": "Vídeo", "audio": "Áudio" }
     },
     "panels": {
-      "projects": "Projetos",
-      "personal": "Personal",
-      "teamProject": "Projeto de equipe",
-      "upgrade": "Fazer upgrade",
       "tools": "Ferramentas",
       "pinned": {
         "workspace": "Workspace",
         "gerarImagens": "Gerar imagens",
+        "gerarVideos": "Gerar vídeos",
+        "textoParaVoz": "Texto para voz",
         "melhorarImagem": "Melhorar imagem",
-        "editarImagens": "Editar imagens"
+        "clonarPrompt": "Clonar prompt",
+        "copiarMovimentos": "Copiar movimentos",
+        "clonarVoz": "Clonar voz"
       }
     },
     "news": {
       "title": "Novidades",
       "more": "Ver mais",
-      "items": {
-        "geraew2": { "title": "Geraew 2.0", "tag": "30% OFF", "caption": "E se a próxima geração for a melhor?" },
-        "gptImage2": { "title": "GPT Image 2", "tag": "Novo modelo de imagem", "caption": "Chegue exatamente onde sua ideia leva" },
-        "veo31Fast": { "title": "Veo 3.1 Fast", "tag": "Novo modelo de vídeo", "caption": "Vídeos com alma e trilha" },
-        "avatares": { "title": "Avatares", "tag": "Novo", "caption": "Clone a si mesmo em segundos" },
-        "elevenlabsV3": { "title": "ElevenLabs v3", "tag": "Áudio", "caption": "Locuções expressivas com IA" },
-        "tiktokShop": { "title": "TikTok Shop", "tag": "Novo", "caption": "Conteúdo pronto para vender" },
-        "bibliotecaPrompts": { "title": "Biblioteca de Prompts", "tag": "Novo", "caption": "Comece com prompts prontos" },
-        "musicaIA": { "title": "Música IA", "tag": "Em breve", "caption": "Trilhas originais sob demanda" }
-      }
+      "cta": "Ver"
     },
     "tools": {
       "searchPlaceholder": "Buscar ferramenta...",
@@ -273,7 +320,6 @@
     },
     "palette": {
       "title": "Pesquisar",
-      "placeholder": "Pergunte à Geraew ou pesquise projetos",
       "recents": "Recentes",
       "navigation": "Navegação",
       "empty": "Nada encontrado",

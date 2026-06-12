@@ -245,7 +245,7 @@ export function ClonePromptView() {
             {[80, 95, 70, 88, 60].map((w, i) => (
               <div
                 key={i}
-                className="h-3.5 animate-pulse rounded bg-app-surface"
+                className="h-3.5 skeleton-app rounded bg-app-surface"
                 style={{ width: `${w}%`, animationDelay: `${i * 120}ms` }}
               />
             ))}

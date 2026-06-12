@@ -1,6 +1,11 @@
 {
   "editorChrome": {
+    "loading": {
+      "title": "Preparando seu workspace…"
+    },
     "navbar": {
+      "backToHome": "Voltar para a Home",
+      "home": "Início",
       "logoAlt": "Geraew AI",
       "brand": "Geraew.AI",
       "buyCredits": "Comprar Créditos",

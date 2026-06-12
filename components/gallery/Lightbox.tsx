@@ -72,14 +72,14 @@ export function Lightbox({ item, ratio, closing, onClose }: LightboxProps) {
           <>
             <div
               className={cn(
-                'animate-pulse rounded-[14px] border border-app-hairline bg-app-surface',
+                'skeleton-app rounded-[14px] border border-app-hairline bg-app-surface',
                 kind === 'voice'
                   ? 'h-[200px] w-[min(480px,86vw)]'
                   : !skeletonStyle && 'h-[min(70vh,640px)] aspect-[3/4]',
               )}
               style={kind === 'voice' ? undefined : skeletonStyle}
             />
-            <div className="flex h-[58px] w-0 min-w-full animate-pulse items-center gap-3 rounded-[14px] border border-app-hairline bg-app-surface px-4">
+            <div className="flex h-[58px] w-0 min-w-full skeleton-app items-center gap-3 rounded-[14px] border border-app-hairline bg-app-surface px-4">
               <div className="h-3.5 w-2/3 rounded bg-app-card-hover" />
               <div className="ml-auto h-8 w-[120px] rounded-[10px] bg-app-card-hover" />
             </div>

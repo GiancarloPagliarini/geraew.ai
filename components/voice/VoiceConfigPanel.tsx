@@ -16,13 +16,13 @@ import {
   MicVocal,
   Music,
   PartyPopper,
-  Plus,
   RefreshCw,
   Smile,
   Square,
   Upload,
   Volume1,
   Wand2,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -31,6 +31,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -57,6 +58,9 @@ const VOICE_TOOLS: { id: VoiceToolId; labelKey: string; icon: LucideIcon }[] = [
   { id: 'tts', labelKey: 'toolTts', icon: Mic },
   { id: 'clone', labelKey: 'toolClone', icon: MicVocal },
 ];
+
+/** Durações de pausa inseríveis no roteiro. */
+const PAUSE_OPTIONS = ['0.5', '1', '2'];
 
 /** Emoções inseríveis como etiqueta de áudio no roteiro (menu do rostinho). */
 const EMOTIONS: { id: string; icon: LucideIcon }[] = [
@@ -312,7 +316,7 @@ export function VoiceConfigPanel({
                   onClick={() => setPickerOpen(true)}
                   className="flex h-[76px] flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-app-hairline-2 text-app-text-2 transition-colors duration-200 ease-app hover:border-[rgba(162,221,0,0.4)] hover:text-app-text"
                 >
-                  <Plus className="size-[19px]" strokeWidth={1.8} />
+                  <AudioLines className="size-[19px]" strokeWidth={1.8} />
                   <span className="text-[12px] font-semibold">
                     {voice ? t('voice.changeVoice') : t('voice.addVoice')}
                   </span>
@@ -345,6 +349,35 @@ export function VoiceConfigPanel({
                   <Square className="size-3.5" fill="currentColor" strokeWidth={0} />
                 </button>
               </div>
+            ) : referenceAudio ? (
+              /* áudio capturado — card em largura total com player para ouvir */
+              <div className="flex flex-col gap-3 rounded-xl border border-[rgba(162,221,0,0.3)] bg-app-surface p-3.5">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-[8px] border border-[rgba(162,221,0,0.25)] bg-[rgba(162,221,0,0.08)]">
+                    <AudioLines className="size-4 text-app-lime" strokeWidth={1.8} />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-app-text">
+                    {referenceAudio.filename}
+                  </span>
+                  <span className="shrink-0 font-mono text-[11px] text-app-muted">
+                    {Math.round(referenceAudio.duration)}s
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={t('clone.remove')}
+                    onClick={() => setReferenceAudio(null)}
+                    className="flex size-6 shrink-0 items-center justify-center rounded-md text-app-muted transition-colors duration-200 ease-app hover:bg-app-card-hover hover:text-app-text"
+                  >
+                    <X className="size-3.5" strokeWidth={2} />
+                  </button>
+                </div>
+                <audio
+                  src={`data:${referenceAudio.mime_type};base64,${referenceAudio.base64}`}
+                  controls
+                  preload="metadata"
+                  className="h-10 w-full"
+                />
+              </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 <MediaFileTile
@@ -355,16 +388,14 @@ export function VoiceConfigPanel({
                   onChange={setReferenceAudio}
                   maxMB={MAX_AUDIO_MB}
                 />
-                {!referenceAudio && (
-                  <button
-                    type="button"
-                    onClick={startRecording}
-                    className="flex h-full min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-app-hairline-2 text-app-text-2 transition-colors duration-200 ease-app hover:border-[rgba(162,221,0,0.4)] hover:text-app-text"
-                  >
-                    <Mic className="size-[19px]" strokeWidth={1.8} />
-                    <span className="text-[12px] font-semibold">{t('voice.record')}</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={startRecording}
+                  className="flex h-full min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-app-hairline-2 text-app-text-2 transition-colors duration-200 ease-app hover:border-[rgba(162,221,0,0.4)] hover:text-app-text"
+                >
+                  <Mic className="size-[19px]" strokeWidth={1.8} />
+                  <span className="text-[12px] font-semibold">{t('voice.record')}</span>
+                </button>
               </div>
             )}
 
@@ -399,27 +430,54 @@ export function VoiceConfigPanel({
             right={
               <span className="flex items-center gap-1">
                 {/* pausa */}
-                <button
-                  type="button"
-                  title={t('voice.tagPause')}
-                  aria-label={t('voice.tagPause')}
-                  onClick={() => insertTag(t('voice.pauseTag'))}
-                  className="flex size-6 items-center justify-center rounded-md text-app-muted transition-colors duration-200 ease-app hover:bg-app-surface hover:text-app-text"
-                >
-                  <Clock className="size-[14px]" strokeWidth={1.8} />
-                </button>
+                <DropdownMenu>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label={t('voice.tagPause')}
+                          className="flex size-6 items-center justify-center rounded-md text-app-muted transition-colors duration-200 ease-app hover:bg-app-surface hover:text-app-text"
+                        >
+                          <Clock className="size-[14px]" strokeWidth={1.8} />
+                        </button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6}>{t('voice.tagPause')}</TooltipContent>
+                  </Tooltip>
+                  <DropdownMenuContent
+                    align="end"
+                    sideOffset={6}
+                    className="w-32 rounded-xl border-app-hairline-2 bg-app-card p-1.5 text-app-text shadow-[0_12px_30px_rgba(0,0,0,0.45)]"
+                  >
+                    {PAUSE_OPTIONS.map((s) => (
+                      <DropdownMenuItem
+                        key={s}
+                        onClick={() => insertTag(t('voice.pauseTag', { s }))}
+                        className="cursor-pointer rounded-lg px-2.5 py-2 font-mono text-[13px] text-app-text-2 focus:bg-app-surface focus:text-app-text"
+                      >
+                        <Clock className="size-[14px] !text-app-lime" strokeWidth={1.8} />
+                        {s}s
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 {/* emoções */}
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      title={t('voice.emotionsMenu')}
-                      aria-label={t('voice.emotionsMenu')}
-                      className="flex size-6 items-center justify-center rounded-md text-app-muted transition-colors duration-200 ease-app hover:bg-app-surface hover:text-app-text"
-                    >
-                      <Smile className="size-[14px]" strokeWidth={1.8} />
-                    </button>
-                  </DropdownMenuTrigger>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label={t('voice.emotionsMenu')}
+                          className="flex size-6 items-center justify-center rounded-md text-app-muted transition-colors duration-200 ease-app hover:bg-app-surface hover:text-app-text"
+                        >
+                          <Smile className="size-[14px]" strokeWidth={1.8} />
+                        </button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6}>{t('voice.emotionsMenu')}</TooltipContent>
+                  </Tooltip>
                   <DropdownMenuContent
                     align="end"
                     sideOffset={6}

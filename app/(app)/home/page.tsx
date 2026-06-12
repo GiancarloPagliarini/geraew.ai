@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Plus, Search } from 'lucide-react';
 import { useShell } from '@/components/app/shell-context';
+import { useTypewriter } from '@/components/app/use-typewriter';
 import { CreateMenu } from '@/components/app/CreateMenu';
 import { QuickActions } from '@/components/home/QuickActions';
 import { ContinueSection } from '@/components/home/ContinueSection';
@@ -12,6 +13,7 @@ import { NewsSection } from '@/components/home/NewsSection';
 export default function InicioPage() {
   const t = useTranslations('home');
   const { openPalette } = useShell();
+  const searchTyped = useTypewriter(t('hero.searchPlaceholder'));
 
   return (
     <div className="mx-auto w-full max-w-[1280px] px-6 pb-16 pt-8 lg:px-11">
@@ -38,7 +40,7 @@ export default function InicioPage() {
         className="mb-7 flex w-full items-center gap-3 rounded-[14px] border border-app-hairline bg-app-surface px-4 py-3.5 text-left transition-colors duration-200 ease-app hover:border-[rgba(162,221,0,0.4)]"
       >
         <Search className="size-[18px] text-app-muted" strokeWidth={1.8} />
-        <span className="flex-1 truncate text-[14.5px] text-app-muted">{t('hero.searchPlaceholder')}</span>
+        <span className="flex-1 truncate text-[14.5px] text-app-muted">{searchTyped}</span>
         <kbd className="rounded-md border border-app-hairline-2 px-2 py-1 font-mono text-[11px] text-app-muted">
           Ctrl K
         </kbd>

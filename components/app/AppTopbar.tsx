@@ -1,14 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useQuery } from '@tanstack/react-query';
 import { BarChart3, CreditCard, LogOut, UserRound } from 'lucide-react';
 import { SCREEN_TITLES, stripLocalePrefix } from '@/lib/home-nav';
+import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
-import { PlansModal } from '@/components/editor/PlansModal';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,12 +24,28 @@ export function AppTopbar() {
   const t = useTranslations('home');
   const router = useRouter();
   const pathname = usePathname();
-  const { user, logout, loading } = useAuth();
+  const { user, accessToken, logout, loading } = useAuth();
   const { openLoginModal } = useLoginModal();
-  const [plansOpen, setPlansOpen] = useState(false);
 
   const initial = (user?.name || user?.email || '?').trim().charAt(0).toUpperCase();
   const screen = SCREEN_TITLES[stripLocalePrefix(pathname)];
+
+  // saldo de créditos — vira o anel de progresso em volta do avatar
+  const { data: balance } = useQuery({
+    queryKey: ['credits', 'balance'],
+    queryFn: () => api.credits.balance(accessToken!),
+    enabled: !!accessToken && !!user,
+    staleTime: 30_000,
+  });
+
+  const used = balance?.planCreditsUsed ?? 0;
+  const remaining = balance?.planCreditsRemaining ?? 0;
+  const total = used + remaining;
+  const fraction = total > 0 ? remaining / total : 1;
+  const RING_R = 19;
+  const RING_C = 2 * Math.PI * RING_R;
+  const ringOffset = RING_C * (1 - fraction);
+  const ringColor = fraction > 0.25 ? '#a2dd00' : fraction > 0.1 ? '#f59e0b' : '#ef4444';
 
   return (
     <header className="flex items-center justify-between gap-5 px-7 pt-5">
@@ -48,13 +64,12 @@ export function AppTopbar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-5">
-      <button
-        type="button"
-        onClick={() => setPlansOpen(true)}
+      <Link
+        href="/pricing"
         className="text-[14.5px] font-semibold text-app-lime transition-colors duration-200 ease-app hover:text-app-lime-bright"
       >
         {t('shell.pricing')}
-      </button>
+      </Link>
 
       {!loading && !user ? (
         <button
@@ -70,16 +85,38 @@ export function AppTopbar() {
             <button
               type="button"
               aria-label={t('shell.account')}
-              className="size-9 overflow-hidden rounded-full border border-app-hairline-2 bg-app-card transition-transform duration-200 ease-app hover:scale-105"
+              className="relative size-9 rounded-full transition-transform duration-200 ease-app hover:scale-105"
             >
-              {user?.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.avatarUrl} alt={user.name} width={36} height={36} className="size-full object-cover" />
-              ) : (
-                <span className="flex size-full items-center justify-center text-[14px] font-bold text-app-lime">
-                  {initial}
-                </span>
-              )}
+              {/* anel de progresso: fração restante dos créditos do plano */}
+              <svg className="pointer-events-none absolute -inset-[3px] size-[42px]" viewBox="0 0 42 42">
+                <circle cx="21" cy="21" r={RING_R} fill="none" stroke="rgba(243,240,237,0.08)" strokeWidth="2" />
+                <circle
+                  cx="21"
+                  cy="21"
+                  r={RING_R}
+                  fill="none"
+                  stroke={ringColor}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeDasharray={RING_C}
+                  strokeDashoffset={ringOffset}
+                  transform="rotate(-90 21 21)"
+                  style={{
+                    transition:
+                      'stroke-dashoffset 1.4s cubic-bezier(0.4, 0, 0.2, 1), stroke 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  }}
+                />
+              </svg>
+              <span className="flex size-full overflow-hidden rounded-full bg-app-card">
+                {user?.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={user.avatarUrl} alt={user.name} width={36} height={36} className="size-full object-cover" />
+                ) : (
+                  <span className="flex size-full items-center justify-center text-[14px] font-bold text-app-lime">
+                    {initial}
+                  </span>
+                )}
+              </span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -130,7 +167,6 @@ export function AppTopbar() {
       )}
       </div>
 
-      {plansOpen && <PlansModal onClose={() => setPlansOpen(false)} />}
     </header>
   );
 }

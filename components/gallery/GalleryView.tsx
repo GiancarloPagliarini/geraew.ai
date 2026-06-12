@@ -144,7 +144,7 @@ export function GalleryView() {
 
           {/* total */}
           {isPending ? (
-            <div className="mt-2.5 h-3 w-[90px] animate-pulse rounded bg-app-surface" />
+            <div className="mt-2.5 h-3 w-[90px] skeleton-app rounded bg-app-surface" />
           ) : (
             !isError && (
               <p className="mt-2.5 px-1 font-mono text-[12px] text-app-muted">

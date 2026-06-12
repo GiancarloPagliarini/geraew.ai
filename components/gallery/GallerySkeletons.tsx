@@ -6,7 +6,7 @@ export function SkeletonCard({ height, index }: { height: number; index: number 
   return (
     <div className="mb-5 break-inside-avoid">
       <div
-        className="relative w-full animate-pulse overflow-hidden rounded-[14px] border border-app-hairline bg-app-surface"
+        className="relative w-full skeleton-app overflow-hidden rounded-[14px] border border-app-hairline bg-app-surface"
         style={{ height, ...delay }}
       >
         {/* badge de tipo */}
@@ -14,11 +14,11 @@ export function SkeletonCard({ height, index }: { height: number; index: number 
       </div>
       {/* título + botão copy */}
       <div className="mt-2.5 flex items-center gap-2">
-        <div className="h-4 w-3/4 animate-pulse rounded bg-app-surface" style={delay} />
-        <div className="ml-auto size-4 animate-pulse rounded bg-app-surface" style={delay} />
+        <div className="h-4 w-3/4 skeleton-app rounded bg-app-surface" style={delay} />
+        <div className="ml-auto size-4 skeleton-app rounded bg-app-surface" style={delay} />
       </div>
       {/* timestamp */}
-      <div className="mt-1.5 h-3 w-1/3 animate-pulse rounded bg-app-surface" style={delay} />
+      <div className="mt-1.5 h-3 w-1/3 skeleton-app rounded bg-app-surface" style={delay} />
     </div>
   );
 }

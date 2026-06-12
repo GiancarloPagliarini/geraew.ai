@@ -12,6 +12,7 @@ import {
   type PaletteCommand,
 } from '@/lib/home-nav';
 import { useShell } from '@/components/app/shell-context';
+import { useTypewriter } from '@/components/app/use-typewriter';
 
 const RECENTS_KEY = 'geraew-palette-recents';
 
@@ -51,6 +52,8 @@ export function CommandPalette() {
 
 function PaletteDialog({ closing }: { closing: boolean }) {
   const t = useTranslations('home');
+  // mesmo texto (e efeito de digitação) da busca da home, sem o cursor
+  const typedPlaceholder = useTypewriter(t('hero.searchPlaceholder'), { cursor: false });
   const router = useRouter();
   const { closePalette } = useShell();
   const [query, setQuery] = useState('');
@@ -149,7 +152,7 @@ function PaletteDialog({ closing }: { closing: boolean }) {
               setQuery(e.target.value);
               setSelected(0);
             }}
-            placeholder={t('palette.placeholder')}
+            placeholder={typedPlaceholder}
             className="w-full min-w-0 bg-transparent text-[17px] text-app-text outline-none placeholder:text-app-muted"
           />
           <div className="flex shrink-0 items-center gap-2">

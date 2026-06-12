@@ -31,7 +31,63 @@
       "textoParaVoz": "Text to speech",
       "clonarPrompt": "Clone prompt",
       "imagem": "Image",
-      "video": "Video"
+      "video": "Video",
+      "precos": "Pricing"
+    },
+    "community": {
+      "subtitle": "Explore what the community is creating.",
+      "searchPlaceholder": "Search the community...",
+      "follow": "Follow",
+      "share": "Share",
+      "promptLabel": "Prompt",
+      "settingsLabel": "Settings",
+      "recreate": "Recreate",
+      "createVideo": "Create video",
+      "useAsReference": "Use as reference",
+      "prev": "Previous post",
+      "next": "Next post",
+      "post": "Post",
+      "submitTitle": "Post to the community",
+      "submitSubtitle": "Pick a creation from your gallery to submit.",
+      "submitCta": "Send for review",
+      "submitHint": "Your post goes through a quick review before everyone can see it.",
+      "submitSuccess": "Sent for review!",
+      "submitSuccessDesc": "You'll be notified when your post is approved.",
+      "submitError": "Could not submit. Please try again.",
+      "pickerEmpty": "You don't have any creations yet",
+      "pickerEmptyHint": "Generate an image or video first.",
+      "empty": "No posts yet",
+      "emptyHint": "Be the first to share a creation."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "empty": "Nothing here yet.",
+      "generic": "You have a new notification.",
+      "types": {
+        "community-submitted": "Your post is under review.",
+        "community-approved": "Your post was approved and is now live in the community!",
+        "community-rejected": "Your post was not approved."
+      }
+    },
+    "workspaces": {
+      "title": "Workspace",
+      "subtitle": "Create node-based generative flows and bring your ideas to life.",
+      "mine": "My workspaces",
+      "shared": "Shared",
+      "new": "New workspace",
+      "favorites": "Favorites",
+      "filters": "Filters",
+      "searchPlaceholder": "Search workspaces...",
+      "untitled": "Untitled",
+      "empty": "No workspaces found",
+      "emptyHint": "Try another search term or create a new one.",
+      "rename": "Rename",
+      "favorite": "Favorite",
+      "unfavorite": "Remove favorite",
+      "delete": "Delete",
+      "confirmDelete": "Confirm deletion",
+      "deleted": "Workspace deleted.",
+      "error": "Something went wrong. Please try again."
     },
     "voice": {
       "tab": "Text to speech",
@@ -48,7 +104,7 @@
       "scriptPlaceholder": "Type your text with audio tags like [laughs] to create an expressive voiceover, and add pauses with tags like [pause 0.5s]",
       "chars": "{count} / {max} characters",
       "tagPause": "Insert pause",
-      "pauseTag": "[pause 0.5s]",
+      "pauseTag": "[pause {s}s]",
       "emotionsMenu": "Insert emotion",
       "emotions": {
         "laughs": "Laughs",
@@ -162,34 +218,25 @@
       "untitled": "Untitled",
       "emptyTitle": "Your recent creations show up here",
       "emptyCta": "Create my first generation",
-      "kind": { "imagem": "image", "video": "video", "audio": "audio" }
+      "kind": { "imagem": "Image", "video": "Video", "audio": "Audio" }
     },
     "panels": {
-      "projects": "Projects",
-      "personal": "Personal",
-      "teamProject": "Team project",
-      "upgrade": "Upgrade",
       "tools": "Tools",
       "pinned": {
         "workspace": "Workspace",
         "gerarImagens": "Generate images",
+        "gerarVideos": "Generate videos",
+        "textoParaVoz": "Text to speech",
         "melhorarImagem": "Enhance image",
-        "editarImagens": "Edit images"
+        "clonarPrompt": "Clone prompt",
+        "copiarMovimentos": "Motion control",
+        "clonarVoz": "Clone voice"
       }
     },
     "news": {
       "title": "What's new",
       "more": "See more",
-      "items": {
-        "geraew2": { "title": "Geraew 2.0", "tag": "30% OFF", "caption": "What if the next generation is the best one?" },
-        "gptImage2": { "title": "GPT Image 2", "tag": "New image model", "caption": "Get exactly where your idea leads" },
-        "veo31Fast": { "title": "Veo 3.1 Fast", "tag": "New video model", "caption": "Videos with soul and soundtrack" },
-        "avatares": { "title": "Avatars", "tag": "New", "caption": "Clone yourself in seconds" },
-        "elevenlabsV3": { "title": "ElevenLabs v3", "tag": "Audio", "caption": "Expressive AI voiceovers" },
-        "tiktokShop": { "title": "TikTok Shop", "tag": "New", "caption": "Content ready to sell" },
-        "bibliotecaPrompts": { "title": "Prompt Library", "tag": "New", "caption": "Start with ready-made prompts" },
-        "musicaIA": { "title": "AI Music", "tag": "Coming soon", "caption": "Original soundtracks on demand" }
-      }
+      "cta": "View"
     },
     "tools": {
       "searchPlaceholder": "Search tools...",
@@ -273,7 +320,6 @@
     },
     "palette": {
       "title": "Search",
-      "placeholder": "Ask Geraew or search projects",
       "recents": "Recent",
       "navigation": "Navigation",
       "empty": "Nothing found",

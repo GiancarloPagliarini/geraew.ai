@@ -1,7 +1,8 @@
 'use client';
 
-import { ArrowRight, BadgePercent, BatteryCharging, Clapperboard, Coins, CreditCard, Gift, Loader2, LogIn, LogOut, Plus, Settings, User, Users, Wallet, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BadgePercent, BatteryCharging, Clapperboard, Coins, CreditCard, Gift, Loader2, LogIn, LogOut, Plus, Settings, User, Users, Wallet, X } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -100,6 +101,14 @@ export function TopNavbar() {
       <>
         <header className="relative md:pointer-events-none md:fixed md:top-1 md:left-0 md:right-0 z-50 flex h-10 shrink-0 items-center justify-between px-3">
           <div className="pointer-events-auto flex items-center gap-2">
+            <Link
+              href="/home"
+              title={t('backToHome')}
+              className="flex h-7 items-center gap-1.5 rounded-lg px-2 text-[11px] font-medium text-[#f3f0ed]/50 transition-colors hover:bg-[#f3f0ed]/[0.06] hover:text-[#f3f0ed]"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              {t('home')}
+            </Link>
             <Image
               src="/logo_2.svg"
               alt={t('logoAlt')}
@@ -292,6 +301,14 @@ export function TopNavbar() {
       <header className="relative md:pointer-events-none md:fixed md:top-1 md:left-0 md:right-0 z-50 flex h-12 shrink-0 items-center justify-between px-2 sm:px-4">
         {/* Logo */}
         <div className="pointer-events-auto flex items-center gap-2.5">
+          <Link
+            href="/home"
+            title={t('backToHome')}
+            className="flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-medium text-[#f3f0ed]/60 transition-colors hover:bg-[#f3f0ed]/[0.06] hover:text-[#f3f0ed]"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {t('home')}
+          </Link>
           <Image
             src="/logo_2.svg"
             alt={t('logoAlt')}

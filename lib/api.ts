@@ -734,6 +734,75 @@ export interface Folder {
   createdAt: string;
 }
 
+// ─── Workspaces (canvas salvo por usuário) ───────────────────────────────────
+
+export interface WorkspaceSummary {
+  id: string;
+  name: string;
+  thumbnailUrl: string | null;
+  favorite: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkspaceDetail extends WorkspaceSummary {
+  nodes: unknown[];
+  edges: unknown[];
+  viewport: { x: number; y: number; zoom: number } | null;
+}
+
+export interface WorkspaceContentInput {
+  nodes?: unknown[];
+  edges?: unknown[];
+  viewport?: { x: number; y: number; zoom: number };
+  /** snapshot JPEG (data URL) do canvas para o card da listagem */
+  thumbnailUrl?: string;
+}
+
+// ─── Community + Notifications ───────────────────────────────────────────────
+
+export type CommunityPostStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface CommunityFeedPost {
+  id: string;
+  kind: 'image' | 'video';
+  mediaUrl: string;
+  thumbnailUrl: string | null;
+  prompt: string;
+  /** tags exibidas no lightbox (aspecto, modelo) */
+  settings: string[] | null;
+  likesCount: number;
+  likedByMe: boolean;
+  createdAt: string;
+  author: { name: string; avatarUrl: string | null };
+}
+
+export interface MyCommunityPost {
+  id: string;
+  kind: 'image' | 'video';
+  mediaUrl: string;
+  thumbnailUrl: string | null;
+  prompt: string;
+  settings: string[] | null;
+  status: CommunityPostStatus;
+  likesCount: number;
+  rejectionReason: string | null;
+  createdAt: string;
+}
+
+export interface AdminCommunityPost extends MyCommunityPost {
+  user: { id: string; name: string; email: string };
+}
+
+export interface AppNotification {
+  id: string;
+  /** community-submitted | community-approved | community-rejected | ... */
+  type: string;
+  data: Record<string, unknown> | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
 // ─── Voices (saved voice profiles) ──────────────────────────────────────────
 
 export interface VoiceProfile {
@@ -1333,6 +1402,36 @@ export const api = {
     },
   },
 
+  workspaces: {
+    list(accessToken: string) {
+      return authRequest<WorkspaceSummary[]>('/api/v1/workspaces', accessToken);
+    },
+    create(accessToken: string, payload?: { name?: string } & WorkspaceContentInput) {
+      return authRequest<WorkspaceDetail>('/api/v1/workspaces', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload ?? {}),
+      });
+    },
+    get(accessToken: string, id: string) {
+      return authRequest<WorkspaceDetail>(`/api/v1/workspaces/${id}`, accessToken);
+    },
+    update(
+      accessToken: string,
+      id: string,
+      payload: { name?: string; favorite?: boolean; thumbnailUrl?: string } & WorkspaceContentInput,
+    ) {
+      return authRequest<WorkspaceDetail>(`/api/v1/workspaces/${id}`, accessToken, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+    },
+    remove(accessToken: string, id: string) {
+      return authRequest<void>(`/api/v1/workspaces/${id}`, accessToken, {
+        method: 'DELETE',
+      });
+    },
+  },
+
   voices: {
     list(accessToken: string) {
       return authRequest<VoiceListResponse>('/api/v1/voices', accessToken);
@@ -1886,6 +1985,52 @@ export const api = {
     },
   },
 
+  community: {
+    feed(accessToken: string, page = 1, limit = 30) {
+      return authRequest<{ data: CommunityFeedPost[]; meta: { page: number; limit: number; total: number } }>(
+        `/api/v1/community/posts?page=${page}&limit=${limit}`,
+        accessToken,
+      );
+    },
+    mine(accessToken: string) {
+      return authRequest<MyCommunityPost[]>('/api/v1/community/posts/mine', accessToken);
+    },
+    submit(accessToken: string, payload: { generationId: string; outputUrl?: string }) {
+      return authRequest<MyCommunityPost>('/api/v1/community/posts', accessToken, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    like(accessToken: string, postId: string) {
+      return authRequest<{ liked: boolean; likesCount: number }>(
+        `/api/v1/community/posts/${postId}/like`,
+        accessToken,
+        { method: 'POST' },
+      );
+    },
+    unlike(accessToken: string, postId: string) {
+      return authRequest<{ liked: boolean; likesCount: number }>(
+        `/api/v1/community/posts/${postId}/like`,
+        accessToken,
+        { method: 'DELETE' },
+      );
+    },
+  },
+
+  notifications: {
+    list(accessToken: string) {
+      return authRequest<{ data: AppNotification[]; unreadCount: number }>(
+        '/api/v1/notifications',
+        accessToken,
+      );
+    },
+    readAll(accessToken: string) {
+      return authRequest<{ success: boolean }>('/api/v1/notifications/read-all', accessToken, {
+        method: 'POST',
+      });
+    },
+  },
+
   admin: {
     stats(accessToken: string) {
       return authRequest<AdminStats>('/api/v1/admin/stats', accessToken);
@@ -2330,6 +2475,32 @@ export const api = {
       },
       delete(accessToken: string, id: string) {
         return authRequest<{ success: boolean }>(`/api/v1/admin/announcements/${id}`, accessToken, {
+          method: 'DELETE',
+        });
+      },
+    },
+
+    community: {
+      list(accessToken: string, status: CommunityPostStatus = 'PENDING', page = 1, limit = 30) {
+        const params = new URLSearchParams({ status, page: String(page), limit: String(limit) });
+        return authRequest<{ data: AdminCommunityPost[]; meta: { page: number; limit: number; total: number } }>(
+          `/api/v1/admin/community/posts?${params.toString()}`,
+          accessToken,
+        );
+      },
+      approve(accessToken: string, id: string) {
+        return authRequest<MyCommunityPost>(`/api/v1/admin/community/posts/${id}/approve`, accessToken, {
+          method: 'POST',
+        });
+      },
+      reject(accessToken: string, id: string, reason?: string) {
+        return authRequest<MyCommunityPost>(`/api/v1/admin/community/posts/${id}/reject`, accessToken, {
+          method: 'POST',
+          body: JSON.stringify(reason ? { reason } : {}),
+        });
+      },
+      delete(accessToken: string, id: string) {
+        return authRequest<void>(`/api/v1/admin/community/posts/${id}`, accessToken, {
           method: 'DELETE',
         });
       },

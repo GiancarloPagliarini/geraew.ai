@@ -123,12 +123,27 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(243, 240, 237, 0.14) transparent;
 }
+/* Chrome/Edge/Safari: as props padrão acima desligam o ::-webkit-scrollbar custom
+   (caindo na scrollbar nativa, com setas) — reseta para usar o estilo abaixo */
+@supports selector(::-webkit-scrollbar) {
+  .scrollbar-app {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+}
 .scrollbar-app::-webkit-scrollbar {
   width: 4px;
   height: 4px;
 }
+.scrollbar-app::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
 .scrollbar-app::-webkit-scrollbar-track {
   background: transparent;
+  /* recua o trilho para não atravessar os cantos arredondados (18px) do card */
+  margin: 16px;
 }
 .scrollbar-app::-webkit-scrollbar-thumb {
   background: rgba(243, 240, 237, 0.14);
@@ -208,6 +223,96 @@
 }
 
 /* ─── Fluid / aurora loading blobs ─────────────────────────────────────────── */
+
+/* ─── Skeleton suave (shimmer lento em vez de pulse) ───────────────────────── */
+
+.skeleton-app {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-app::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(243, 240, 237, 0.04) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: skeleton-shimmer 2.4s ease-in-out infinite;
+  animation-delay: inherit;
+}
+
+@keyframes skeleton-shimmer {
+  to { transform: translateX(100%); }
+}
+
+/* ─── Workspace full-screen loader ─────────────────────────────────────────── */
+
+.ws-loader-in {
+  animation: ws-loader-fade-in 0.45s ease both;
+}
+
+/* anel externo: arco lime fino e nítido (máscara recorta o annulus) */
+.ws-loader-ring {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    rgba(162, 221, 0, 0.12) 18%,
+    #a2dd00 40%,
+    #d4ff5c 47%,
+    transparent 62%
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  animation: ws-loader-spin 1.2s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(162, 221, 0, 0.55));
+}
+
+/* anel interno: arco mais suave girando ao contrário */
+.ws-loader-ring-2 {
+  background: conic-gradient(
+    from 180deg,
+    transparent 0%,
+    rgba(162, 221, 0, 0.5) 30%,
+    transparent 55%
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 1.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 1.5px));
+  animation: ws-loader-spin 2s linear infinite reverse;
+}
+
+.ws-loader-text {
+  background: linear-gradient(
+    90deg,
+    rgba(243, 240, 237, 0.55) 0%,
+    #ffffff 50%,
+    rgba(243, 240, 237, 0.55) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: ws-loader-shimmer 2.4s linear infinite;
+}
+
+@keyframes ws-loader-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ws-loader-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+
+@keyframes ws-loader-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
 
 @keyframes fluid-blob-1 {
   0%, 100% { transform: translate(0%, 0%)   rotate(0deg)   scale(1);    }
@@ -334,8 +439,21 @@
   scrollbar-color: rgba(243, 240, 237, 0.07) transparent;
 }
 
+@supports selector(::-webkit-scrollbar) {
+  .sidebar-scroll {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+}
+
 .sidebar-scroll::-webkit-scrollbar {
   width: 3px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .sidebar-scroll::-webkit-scrollbar-track {
@@ -358,8 +476,21 @@ textarea {
   scrollbar-color: rgba(243, 240, 237, 0.07) transparent;
 }
 
+@supports selector(::-webkit-scrollbar) {
+  textarea {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+}
+
 textarea::-webkit-scrollbar {
   width: 3px;
+}
+
+textarea::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 textarea::-webkit-scrollbar-track {

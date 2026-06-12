@@ -8,7 +8,7 @@ interface EmptyStateProps {
   icon: LucideIcon;
   title: string;
   hint?: string;
-  cta?: { label: string; href: string };
+  cta?: { label: string; href?: string; onClick?: () => void };
   className?: string;
 }
 
@@ -26,14 +26,23 @@ export function EmptyState({ icon: Icon, title, hint, cta, className }: EmptySta
       </span>
       <p className="text-[15px] font-semibold text-app-text">{title}</p>
       {hint && <p className="text-[13.5px] text-app-text-2">{hint}</p>}
-      {cta && (
-        <Link
-          href={cta.href}
-          className="text-[14px] font-semibold text-app-lime transition-colors duration-200 ease-app hover:text-app-lime-bright"
-        >
-          {cta.label}
-        </Link>
-      )}
+      {cta &&
+        (cta.href ? (
+          <Link
+            href={cta.href}
+            className="text-[14px] font-semibold text-app-lime transition-colors duration-200 ease-app hover:text-app-lime-bright"
+          >
+            {cta.label}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={cta.onClick}
+            className="text-[14px] font-semibold text-app-lime transition-colors duration-200 ease-app hover:text-app-lime-bright"
+          >
+            {cta.label}
+          </button>
+        ))}
     </div>
   );
 }

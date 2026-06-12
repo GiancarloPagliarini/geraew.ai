@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { Bell, Ellipsis, CircleHelp, Moon, PanelLeft, Plus } from 'lucide-react';
+import { Ellipsis, CircleHelp, Moon, PanelLeft, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MAIN_NAV, TOOLS_NAV, stripLocalePrefix, type HomeNavItem } from '@/lib/home-nav';
 import { useShell } from '@/components/app/shell-context';
 import { CreateMenu } from '@/components/app/CreateMenu';
+import { NotificationsBell } from '@/components/app/NotificationsBell';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
@@ -161,9 +162,7 @@ export function AppSidebar() {
         <FooterIcon label={t('shell.help')} onClick={soonToast}>
           <CircleHelp className="size-[18px]" strokeWidth={1.8} />
         </FooterIcon>
-        <FooterIcon label={t('shell.notifications')} onClick={soonToast}>
-          <Bell className="size-[18px]" strokeWidth={1.8} />
-        </FooterIcon>
+        <NotificationsBell />
         <FooterIcon label={t('shell.theme')} onClick={soonToast}>
           <Moon className="size-[18px]" strokeWidth={1.8} />
         </FooterIcon>

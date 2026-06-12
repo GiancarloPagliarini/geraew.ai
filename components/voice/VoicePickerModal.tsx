@@ -167,7 +167,7 @@ export function VoicePickerModal({ selected, closing, onSelect, onClose }: Voice
           {inworldQuery.isPending && savedQuery.isPending ? (
             <div className="flex flex-col gap-2 p-2">
               {Array.from({ length: 6 }, (_, i) => (
-                <div key={i} className="h-12 animate-pulse rounded-xl bg-app-surface" style={{ animationDelay: `${i * 100}ms` }} />
+                <div key={i} className="h-12 skeleton-app rounded-xl bg-app-surface" style={{ animationDelay: `${i * 100}ms` }} />
               ))}
             </div>
           ) : groups.length === 0 ? (

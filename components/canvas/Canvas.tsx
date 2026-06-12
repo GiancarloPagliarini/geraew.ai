@@ -30,10 +30,12 @@ import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import type { WorkspaceContentInput } from '@/lib/api';
 import { useEditor } from '@/lib/editor-context';
 import { BottomToolbar } from '../editor/BottomToolbar';
 import { CanvasContextMenu } from './CanvasContextMenu';
 import { PanelNode } from './PanelNode';
+import { captureCanvasThumbnail } from './thumbnail';
 
 // ─── node registry ───────────────────────────────────────────────────────────
 
@@ -51,6 +53,17 @@ const PANEL_NODE_STYLE = {
 const STORAGE_NODES_KEY = 'geraew-canvas-nodes';
 const STORAGE_EDGES_KEY = 'geraew-canvas-edges';
 const STORAGE_VIEWPORT_KEY = 'geraew-canvas-viewport';
+
+export interface CanvasWorkspaceProps {
+  /** Conteúdo do workspace carregado do backend; sem ele cai no localStorage legado. */
+  initial?: {
+    nodes: Node[];
+    edges: Edge[];
+    viewport: { x: number; y: number; zoom: number } | null;
+  };
+  /** Autosave do workspace — recebe somente o que mudou. */
+  onPersist?: (partial: WorkspaceContentInput) => void;
+}
 
 function loadStoredNodes(): Node[] {
   try {
@@ -84,11 +97,11 @@ function loadStoredViewport(): { x: number; y: number; zoom: number } | null {
 
 // ─── inner canvas — lives inside ReactFlowProvider ───────────────────────────
 
-function CanvasContent() {
+function CanvasContent({ initial, onPersist }: CanvasWorkspaceProps) {
   const t = useTranslations('editor.canvas');
   const [mounted, setMounted] = useState(false);
-  const [initialStoredNodes] = useState<Node[]>(() => loadStoredNodes());
-  const [initialStoredEdges] = useState<Edge[]>(() => loadStoredEdges());
+  const [initialStoredNodes] = useState<Node[]>(() => initial?.nodes ?? loadStoredNodes());
+  const [initialStoredEdges] = useState<Edge[]>(() => initial?.edges ?? loadStoredEdges());
   const [nodes, setNodes, onNodesChange] = useNodesState(initialStoredNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialStoredEdges);
   const [connectMenu, setConnectMenu] = useState<{
@@ -115,13 +128,15 @@ function CanvasContent() {
   }, []);
   const { selectedNodeId, setSelectedNodeId, setNodePanelType, pendingPromptRef, pendingPanelImageRef, pendingAvatarVideoFormRef, generatingNodeIds, studioMode, setImageConnections, setTextConnections, registerAddPanelHandler } = useEditor();
   const viewportSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flowWrapperRef = useRef<HTMLDivElement>(null);
+  const thumbnailTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Restore nodePanelTypes and viewport on mount
   useEffect(() => {
     initialStoredNodes.forEach((node) => {
       if (node.data?.panelType) setNodePanelType(node.id, node.data.panelType as string);
     });
-    const vp = loadStoredViewport();
+    const vp = initial ? initial.viewport : loadStoredViewport();
     if (vp) {
       setViewport(vp);
     } else {
@@ -135,12 +150,30 @@ function CanvasContent() {
     const serializable = nodes.map(({ id, type, position, data, dragHandle, style }) => ({
       id, type, position, data, dragHandle, style,
     }));
-    localStorage.setItem(STORAGE_NODES_KEY, JSON.stringify(serializable));
-  }, [nodes]);
+    if (onPersist) onPersist({ nodes: serializable });
+    else localStorage.setItem(STORAGE_NODES_KEY, JSON.stringify(serializable));
+  }, [nodes, onPersist]);
+
+  // Thumbnail do card na listagem: snapshot do canvas ~4s após a última mudança
+  useEffect(() => {
+    if (!onPersist || nodes.length === 0) return;
+    if (thumbnailTimer.current) clearTimeout(thumbnailTimer.current);
+    thumbnailTimer.current = setTimeout(() => {
+      const el = flowWrapperRef.current;
+      if (!el) return;
+      void captureCanvasThumbnail(el, nodes).then((thumbnailUrl) => {
+        if (thumbnailUrl) onPersist({ thumbnailUrl });
+      });
+    }, 4000);
+    return () => {
+      if (thumbnailTimer.current) clearTimeout(thumbnailTimer.current);
+    };
+  }, [nodes, onPersist]);
 
   // Persist edges + sync into editor context (so panels can read incoming connections)
   useEffect(() => {
-    localStorage.setItem(STORAGE_EDGES_KEY, JSON.stringify(edges));
+    if (onPersist) onPersist({ edges });
+    else localStorage.setItem(STORAGE_EDGES_KEY, JSON.stringify(edges));
     const imgMap: Record<string, string> = {};
     const txtMap: Record<string, string> = {};
     for (const e of edges) {
@@ -151,7 +184,7 @@ function CanvasContent() {
     }
     setImageConnections(imgMap);
     setTextConnections(txtMap);
-  }, [edges, setImageConnections, setTextConnections]);
+  }, [edges, onPersist, setImageConnections, setTextConnections]);
 
   const MAX_NODES = 10;
   const [showMaxNodesWarning, setShowMaxNodesWarning] = useState(false);
@@ -461,7 +494,7 @@ function CanvasContent() {
       `}</style>
 
       <CanvasContextMenu onAddPanel={handleAddPanel}>
-        <div className="h-full w-full" style={{ cursor: isSelectMode ? 'default' : 'grab' }}>
+        <div ref={flowWrapperRef} className="h-full w-full" style={{ cursor: isSelectMode ? 'default' : 'grab' }}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -477,7 +510,8 @@ function CanvasContent() {
               setZoom(vp.zoom);
               if (viewportSaveTimer.current) clearTimeout(viewportSaveTimer.current);
               viewportSaveTimer.current = setTimeout(() => {
-                localStorage.setItem(STORAGE_VIEWPORT_KEY, JSON.stringify(vp));
+                if (onPersist) onPersist({ viewport: vp });
+                else localStorage.setItem(STORAGE_VIEWPORT_KEY, JSON.stringify(vp));
               }, 500);
             }}
             panOnDrag={isSelectMode ? [1] : true}
@@ -836,11 +870,11 @@ function CanvasContent() {
 
 // ─── public component ────────────────────────────────────────────────────────
 
-export function Canvas() {
+export function Canvas({ initial, onPersist }: CanvasWorkspaceProps) {
   return (
     <div className="relative flex-1 overflow-hidden">
       <ReactFlowProvider>
-        <CanvasContent />
+        <CanvasContent initial={initial} onPersist={onPersist} />
       </ReactFlowProvider>
     </div>
   );
