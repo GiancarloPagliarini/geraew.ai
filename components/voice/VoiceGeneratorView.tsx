@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Mic, Plus, X } from 'lucide-react';
@@ -21,6 +22,8 @@ interface Tab {
 
 export function VoiceGeneratorView() {
   const t = useTranslations('home');
+  const searchParams = useSearchParams();
+  const initialTool = (['tts', 'clone'] as const).find((id) => id === searchParams.get('tool'));
 
   const [tabs, setTabs] = useState<Tab[]>([{ id: 1 }]);
   const [activeId, setActiveId] = useState(1);
@@ -181,6 +184,7 @@ export function VoiceGeneratorView() {
           <VoiceConfigPanel
             key={tab.id}
             hidden={tab.id !== activeId}
+            initialTool={tab.id === 1 ? initialTool : undefined}
             onPendingChange={(pending) => handlePendingChange(tab.id, pending)}
             registerFocus={(focus) => {
               promptFocusers.current[tab.id] = focus;

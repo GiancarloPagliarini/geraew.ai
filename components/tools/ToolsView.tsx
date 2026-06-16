@@ -12,10 +12,12 @@ import {
   Image as ImageIcon,
   LayoutGrid,
   Mic,
+  MicVocal,
+  PersonStanding,
+  Replace,
   ScanFace,
-  Scissors,
   Search,
-  SlidersHorizontal,
+  Shirt,
   SquarePlay,
   Volume2,
   Wand2,
@@ -45,8 +47,9 @@ const TOOL_SECTIONS: ToolSection[] = [
     id: 'image',
     tools: [
       { id: 'gerarImagens', icon: ImageIcon, href: '/image' },
-      { id: 'melhorarImagem', icon: Wand2, href: '/workspace' },
-      { id: 'editarImagens', icon: SlidersHorizontal, href: '/workspace' },
+      { id: 'provadorVirtual', icon: Shirt, href: '/image?tool=try-on' },
+      { id: 'trocaDeRosto', icon: Replace, href: '/image?tool=face-swap' },
+      { id: 'melhorarImagem', icon: Wand2, href: '/image?tool=upscale' },
       { id: 'removerFundo', icon: Eraser, soon: true },
     ],
   },
@@ -54,24 +57,25 @@ const TOOL_SECTIONS: ToolSection[] = [
     id: 'video',
     tools: [
       { id: 'gerarVideos', icon: SquarePlay, href: '/video' },
-      { id: 'editarVideos', icon: Scissors, href: '/workspace' },
+      { id: 'copiarMovimentos', icon: PersonStanding, href: '/video?tool=motion-control' },
     ],
   },
   {
     id: 'audio',
     tools: [
       { id: 'textoParaVoz', icon: Mic, href: '/voice' },
+      { id: 'clonarVoz', icon: MicVocal, href: '/voice?tool=clone' },
       { id: 'musica', icon: AudioLines, soon: true },
       { id: 'efeitosSonoros', icon: Volume2, soon: true },
     ],
   },
   {
     id: 'avatars',
-    tools: [{ id: 'avatares', icon: ScanFace, href: '/workspace' }],
+    tools: [{ id: 'avatares', icon: ScanFace, href: '/avatar' }],
   },
   {
     id: 'commerce',
-    tools: [{ id: 'tiktokShop', icon: Flame, href: '/workspace' }],
+    tools: [{ id: 'tiktokShop', icon: Flame, href: '/tiktok-shop' }],
   },
 ];
 

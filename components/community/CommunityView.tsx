@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Heart, ImageOff, Loader2, Plus, Rss, Search, SquarePlay, X } from 'lucide-react';
+import { Heart, ImageOff, Loader2, Plus, Rss, Search, X } from 'lucide-react';
 import { cn, normalizeSearch } from '@/lib/utils';
 import { api, type CommunityFeedPost } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -18,22 +18,54 @@ type FeedPages = {
   pageParams: unknown[];
 };
 
+/** Vídeo do feed: toca em loop, mutado, só enquanto visível na viewport. */
+function FeedVideo({ post, onError }: { post: CommunityFeedPost; onError: () => void }) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.play().catch(() => {});
+        } else {
+          el.pause();
+        }
+      },
+      { threshold: 0.25 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <video
+      ref={ref}
+      src={post.mediaUrl}
+      poster={post.thumbnailUrl ?? undefined}
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      onError={onError}
+      className="relative block w-full transition-transform duration-300 ease-app group-hover:scale-[1.04]"
+    />
+  );
+}
+
 function PostCard({
   post,
   onOpen,
-  onToggleLike,
 }: {
   post: CommunityFeedPost;
   onOpen: (post: CommunityFeedPost) => void;
-  onToggleLike: (post: CommunityFeedPost) => void;
 }) {
-  const t = useTranslations('home');
-  const [imgError, setImgError] = useState(false);
-  // imagem usa a mídia real (proporção original); thumb fica só para vídeo
-  const thumb = post.kind === 'image' ? post.mediaUrl : post.thumbnailUrl;
-  const showImage = !!thumb && !imgError;
-  const showVideo = !showImage && post.kind === 'video' && !imgError;
-  const showFallback = !showImage && !showVideo;
+  const [mediaError, setMediaError] = useState(false);
+  const isVideo = post.kind === 'video';
+  const showImage = !isVideo && !mediaError;
+  const showVideo = isVideo && !mediaError;
+  const showFallback = mediaError;
 
   return (
     <article className="group mb-5 break-inside-avoid">
@@ -49,37 +81,24 @@ function PostCard({
             // a mídia define a altura do card (masonry estilo Pinterest)
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={thumb}
+              src={post.mediaUrl}
               alt={post.prompt}
               loading="lazy"
-              onError={() => setImgError(true)}
+              onError={() => setMediaError(true)}
               className="relative block w-full transition-transform duration-300 ease-app group-hover:scale-[1.04]"
             />
           ) : showVideo ? (
-            <video
-              src={post.mediaUrl}
-              muted
-              playsInline
-              preload="metadata"
-              onError={() => setImgError(true)}
-              className="relative block w-full"
-            />
+            <FeedVideo post={post} onError={() => setMediaError(true)} />
           ) : (
             <ImageOff
               className="absolute left-1/2 top-1/2 size-7 -translate-x-1/2 -translate-y-1/2 text-app-muted"
               strokeWidth={1.6}
             />
           )}
-          {post.kind === 'video' && (
-            <span className="absolute left-2.5 top-2.5 flex items-center gap-1.5 rounded-full bg-[rgba(13,16,17,0.65)] px-2.5 py-1 text-[11px] font-bold text-app-text backdrop-blur-md">
-              <SquarePlay className="size-3 text-app-lime" strokeWidth={2} />
-              {t('gallery.kind.video')}
-            </span>
-          )}
         </div>
       </button>
-      {/* autor + curtidas */}
-      <div className="mt-2.5 flex items-center gap-2">
+      {/* autor + curtidas (só exibição — interações ficam no lightbox) */}
+      <div className="mt-2.5 flex cursor-default select-none items-center gap-2">
         <span className="flex size-[22px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-app-hairline-2 bg-app-surface text-[10px] font-bold text-app-lime">
           {post.author.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -91,13 +110,10 @@ function PostCard({
         <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-app-text">
           {post.author.name}
         </span>
-        <button
-          type="button"
-          aria-pressed={post.likedByMe}
-          onClick={() => onToggleLike(post)}
+        <span
           className={cn(
-            'flex shrink-0 items-center gap-1 font-mono text-[12px] transition-colors duration-200 ease-app',
-            post.likedByMe ? 'text-app-lime' : 'text-app-muted hover:text-app-text',
+            'flex shrink-0 items-center gap-1 font-mono text-[12px]',
+            post.likedByMe ? 'text-app-lime' : 'text-app-muted',
           )}
         >
           <Heart
@@ -106,7 +122,7 @@ function PostCard({
             fill={post.likedByMe ? 'currentColor' : 'none'}
           />
           {post.likesCount}
-        </button>
+        </span>
       </div>
     </article>
   );
@@ -191,6 +207,39 @@ export function CommunityView() {
   });
 
   const toggleLike = (post: CommunityFeedPost) => likeMutation.mutate({ post });
+
+  // follow otimista — atualiza todos os posts do mesmo autor no cache do feed
+  const followMutation = useMutation({
+    mutationFn: ({ post }: { post: CommunityFeedPost }) =>
+      post.author.isFollowing
+        ? api.community.unfollow(accessToken!, post.author.id)
+        : api.community.follow(accessToken!, post.author.id),
+    onMutate: async ({ post }) => {
+      await queryClient.cancelQueries({ queryKey: ['community', 'feed'] });
+      const previous = queryClient.getQueryData<FeedPages>(['community', 'feed']);
+      const nextFollowing = !post.author.isFollowing;
+      queryClient.setQueryData<FeedPages>(['community', 'feed'], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            data: page.data.map((p) =>
+              p.author.id === post.author.id
+                ? { ...p, author: { ...p.author, isFollowing: nextFollowing } }
+                : p,
+            ),
+          })),
+        };
+      });
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(['community', 'feed'], context.previous);
+    },
+  });
+
+  const toggleFollow = (post: CommunityFeedPost) => followMutation.mutate({ post });
 
   const selectedIndex = posts.findIndex((p) => p.id === selectedId);
   const selected = selectedIndex >= 0 ? posts[selectedIndex] : null;
@@ -298,7 +347,7 @@ export function CommunityView() {
           <>
             <div className="columns-1 gap-5 sm:columns-2 lg:columns-3 xl:columns-4">
               {posts.map((post) => (
-                <PostCard key={post.id} post={post} onOpen={openLightbox} onToggleLike={toggleLike} />
+                <PostCard key={post.id} post={post} onOpen={openLightbox} />
               ))}
             </div>
             <div ref={sentinelRef} className="flex justify-center py-6">
@@ -318,6 +367,7 @@ export function CommunityView() {
           onPrev={() => step(-1)}
           onNext={() => step(1)}
           onToggleLike={() => toggleLike(selected)}
+          onToggleFollow={() => toggleFollow(selected)}
         />
       )}
 

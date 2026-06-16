@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { BarChart3, CreditCard, LogOut, UserRound } from 'lucide-react';
+import { BarChart3, Images, LogOut, UserRound } from 'lucide-react';
 import { SCREEN_TITLES, stripLocalePrefix } from '@/lib/home-nav';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -85,8 +85,10 @@ export function AppTopbar() {
             <button
               type="button"
               aria-label={t('shell.account')}
-              className="relative size-9 rounded-full transition-transform duration-200 ease-app hover:scale-105"
+              className="group relative size-9 rounded-full outline-none"
             >
+              {/* glow lime bem sutil no hover/foco */}
+              <span className="pointer-events-none absolute -inset-0.5 rounded-full bg-app-lime/0 blur-[3px] transition-colors duration-300 ease-app group-hover:bg-app-lime/10 group-data-[state=open]:bg-app-lime/10" />
               {/* anel de progresso: fração restante dos créditos do plano */}
               <svg className="pointer-events-none absolute -inset-[3px] size-[42px]" viewBox="0 0 42 42">
                 <circle cx="21" cy="21" r={RING_R} fill="none" stroke="rgba(243,240,237,0.08)" strokeWidth="2" />
@@ -107,7 +109,7 @@ export function AppTopbar() {
                   }}
                 />
               </svg>
-              <span className="flex size-full overflow-hidden rounded-full bg-app-card">
+              <span className="relative flex size-full overflow-hidden rounded-full bg-app-card transition-[filter] duration-200 ease-app group-hover:brightness-110">
                 {user?.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={user.avatarUrl} alt={user.name} width={36} height={36} className="size-full object-cover" />
@@ -140,13 +142,13 @@ export function AppTopbar() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild className={itemClass}>
-              <Link href="/creditos">
-                <CreditCard className="size-4" strokeWidth={1.8} />
-                {t('shell.credits')}
+              <Link href="/perfil?tab=posts">
+                <Images className="size-4" strokeWidth={1.8} />
+                {t('shell.posts')}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild className={itemClass}>
-              <Link href="/uso">
+              <Link href="/perfil?tab=usage">
                 <BarChart3 className="size-4" strokeWidth={1.8} />
                 {t('shell.usage')}
               </Link>

@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import {
+  Check,
   ChevronLeft,
   ChevronRight,
   Heart,
@@ -17,13 +18,55 @@ import {
 import { cn, formatRelativeTime } from '@/lib/utils';
 import type { CommunityFeedPost } from '@/lib/api';
 
+/** Prompt com colapso estilo Instagram: clampa em N linhas + "ver mais".
+ *  Recebe `key={post.id}` no pai, então remonta limpo a cada post. */
+function ExpandablePrompt({ prompt }: { prompt: string }) {
+  const t = useTranslations('home');
+  const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
+
+  // mede no mount (callback ref): texto clampado ultrapassa a área visível?
+  const measure = (el: HTMLParagraphElement | null) => {
+    if (el) setOverflowing(el.scrollHeight - el.clientHeight > 2);
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-[11px] font-bold uppercase tracking-[0.9px] text-app-muted">
+        {t('community.promptLabel')}
+      </span>
+      <p
+        ref={measure}
+        className={cn(
+          'text-[14.5px] font-semibold leading-relaxed text-app-text',
+          !expanded && 'line-clamp-6',
+        )}
+      >
+        {prompt}
+      </p>
+      {(overflowing || expanded) && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="self-start text-[13px] font-semibold text-app-lime transition-colors duration-200 ease-app hover:text-app-lime-bright"
+        >
+          {expanded ? t('community.showLess') : t('community.showMore')}
+        </button>
+      )}
+    </div>
+  );
+}
+
 interface CommunityLightboxProps {
   post: CommunityFeedPost;
   closing: boolean;
   onClose: () => void;
-  onPrev: () => void;
-  onNext: () => void;
+  /** sem onPrev/onNext (ex.: página de post único) as setas e atalhos somem */
+  onPrev?: () => void;
+  onNext?: () => void;
   onToggleLike: () => void;
+  /** quando ausente, o botão Seguir não é exibido (ex.: posts do próprio usuário) */
+  onToggleFollow?: () => void;
 }
 
 /** Lightbox da comunidade: mídia centralizada + painel fixo à direita (design 6.12). */
@@ -34,16 +77,18 @@ export function CommunityLightbox({
   onPrev,
   onNext,
   onToggleLike,
+  onToggleFollow,
 }: CommunityLightboxProps) {
   const t = useTranslations('home');
   const locale = useLocale();
   const router = useRouter();
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowLeft') onPrev();
-      if (e.key === 'ArrowRight') onNext();
+      if (e.key === 'ArrowLeft') onPrev?.();
+      if (e.key === 'ArrowRight') onNext?.();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -52,6 +97,17 @@ export function CommunityLightbox({
   const goWithPrompt = (path: '/image' | '/video') => {
     onClose();
     router.push(`${path}?${new URLSearchParams({ prompt: post.prompt }).toString()}`);
+  };
+
+  const sharePost = async () => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+      setCopied(true);
+      toast.success(t('community.linkCopied'));
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      toast.error(t('community.shareError'));
+    }
   };
 
   const settings = Array.isArray(post.settings) ? post.settings : [];
@@ -94,22 +150,26 @@ export function CommunityLightbox({
         </div>
 
         {/* navegação ‹ › */}
-        <button
-          type="button"
-          aria-label={t('community.prev')}
-          onClick={onPrev}
-          className="absolute left-4 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-app-hairline-2 bg-app-card text-app-text-2 transition-colors duration-200 ease-app hover:text-app-text"
-        >
-          <ChevronLeft className="size-5" strokeWidth={1.8} />
-        </button>
-        <button
-          type="button"
-          aria-label={t('community.next')}
-          onClick={onNext}
-          className="absolute right-4 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-app-hairline-2 bg-app-card text-app-text-2 transition-colors duration-200 ease-app hover:text-app-text lg:right-[388px]"
-        >
-          <ChevronRight className="size-5" strokeWidth={1.8} />
-        </button>
+        {onPrev && (
+          <button
+            type="button"
+            aria-label={t('community.prev')}
+            onClick={onPrev}
+            className="absolute left-4 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-app-hairline-2 bg-app-card text-app-text-2 transition-colors duration-200 ease-app hover:text-app-text"
+          >
+            <ChevronLeft className="size-5" strokeWidth={1.8} />
+          </button>
+        )}
+        {onNext && (
+          <button
+            type="button"
+            aria-label={t('community.next')}
+            onClick={onNext}
+            className="absolute right-4 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-app-hairline-2 bg-app-card text-app-text-2 transition-colors duration-200 ease-app hover:text-app-text lg:right-[388px]"
+          >
+            <ChevronRight className="size-5" strokeWidth={1.8} />
+          </button>
+        )}
       </div>
 
       {/* fechar */}
@@ -133,29 +193,46 @@ export function CommunityLightbox({
         <div className="flex h-full flex-col gap-5">
           {/* autor + seguir */}
           <div className="flex items-center gap-3">
-            <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-app-hairline-2 bg-app-surface text-[13px] font-bold text-app-lime">
-              {post.author.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={post.author.avatarUrl} alt={post.author.name} className="size-full object-cover" />
-              ) : (
-                post.author.name.charAt(0).toUpperCase()
-              )}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[14px] font-semibold text-app-text">
-                {post.author.name}
-              </span>
-              <span className="block font-mono text-[11px] text-app-muted">
-                {formatRelativeTime(post.createdAt, locale)}
-              </span>
-            </span>
             <button
               type="button"
-              onClick={() => toast.info(t('soon'))}
-              className="shrink-0 rounded-full bg-app-text px-4 py-1.5 text-[13px] font-semibold text-app-lime-ink transition-opacity duration-200 ease-app hover:opacity-90"
+              onClick={() => {
+                onClose();
+                router.push(`/u/${post.author.id}`);
+              }}
+              className="flex min-w-0 flex-1 items-center gap-3 text-left"
             >
-              {t('community.follow')}
+              <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-app-hairline-2 bg-app-surface text-[13px] font-bold text-app-lime">
+                {post.author.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={post.author.avatarUrl} alt={post.author.name} className="size-full object-cover" />
+                ) : (
+                  post.author.name.charAt(0).toUpperCase()
+                )}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[14px] font-semibold text-app-text transition-colors duration-200 ease-app hover:text-app-lime">
+                  {post.author.name}
+                </span>
+                <span className="block font-mono text-[11px] text-app-muted">
+                  {formatRelativeTime(post.createdAt, locale)}
+                </span>
+              </span>
             </button>
+            {onToggleFollow && !post.author.isMe && (
+              <button
+                type="button"
+                onClick={onToggleFollow}
+                aria-pressed={post.author.isFollowing}
+                className={cn(
+                  'shrink-0 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors duration-200 ease-app',
+                  post.author.isFollowing
+                    ? 'border border-app-hairline-2 text-app-text-2 hover:text-app-text'
+                    : 'bg-app-text text-app-lime-ink hover:opacity-90',
+                )}
+              >
+                {post.author.isFollowing ? t('community.following') : t('community.follow')}
+              </button>
+            )}
           </div>
 
           {/* curtidas + compartilhar */}
@@ -180,23 +257,23 @@ export function CommunityLightbox({
             </button>
             <button
               type="button"
-              onClick={() => toast.info(t('soon'))}
-              className="flex items-center gap-1.5 transition-colors duration-200 ease-app hover:text-app-text"
+              onClick={sharePost}
+              className={cn(
+                'flex items-center gap-1.5 transition-colors duration-200 ease-app',
+                copied ? 'text-app-lime' : 'hover:text-app-text',
+              )}
             >
-              <Share2 className="size-4" strokeWidth={1.8} />
-              {t('community.share')}
+              {copied ? (
+                <Check className="size-4 animate-[share-pop_0.3s_ease]" strokeWidth={2.2} />
+              ) : (
+                <Share2 className="size-4" strokeWidth={1.8} />
+              )}
+              {copied ? t('community.linkCopiedShort') : t('community.share')}
             </button>
           </div>
 
           {/* prompt */}
-          {post.prompt && (
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-[0.9px] text-app-muted">
-                {t('community.promptLabel')}
-              </span>
-              <p className="text-[14.5px] font-semibold leading-relaxed text-app-text">{post.prompt}</p>
-            </div>
-          )}
+          {post.prompt && <ExpandablePrompt key={post.id} prompt={post.prompt} />}
 
           {/* configurações */}
           {settings.length > 0 && (

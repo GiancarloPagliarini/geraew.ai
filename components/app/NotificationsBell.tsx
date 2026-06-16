@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from 'next-intl';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, CheckCircle2, Hourglass, XCircle, type LucideIcon } from 'lucide-react';
+import { Bell, CheckCircle2, Hourglass, UserPlus, XCircle, type LucideIcon } from 'lucide-react';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import { api, type AppNotification } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -16,6 +16,7 @@ const TYPE_ICONS: Record<string, { icon: LucideIcon; className: string }> = {
   'community-submitted': { icon: Hourglass, className: 'text-app-text-2' },
   'community-approved': { icon: CheckCircle2, className: 'text-app-lime' },
   'community-rejected': { icon: XCircle, className: 'text-red-400' },
+  'user-followed': { icon: UserPlus, className: 'text-app-lime' },
 };
 
 function NotificationRow({ notification }: { notification: AppNotification }) {
@@ -31,9 +32,14 @@ function NotificationRow({ notification }: { notification: AppNotification }) {
 
   // texto pelo tipo; tipos desconhecidos caem no genérico
   const known = notification.type in TYPE_ICONS;
-  const text = known
-    ? t(`notifications.types.${notification.type}` as 'notifications.types.community-approved')
-    : t('notifications.generic');
+  const text =
+    notification.type === 'user-followed'
+      ? t('notifications.types.user-followed', {
+          name: (notification.data?.followerName as string | undefined) || '',
+        })
+      : known
+        ? t(`notifications.types.${notification.type}` as 'notifications.types.community-approved')
+        : t('notifications.generic');
 
   return (
     <div

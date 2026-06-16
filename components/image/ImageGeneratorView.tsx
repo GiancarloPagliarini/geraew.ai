@@ -24,6 +24,11 @@ export function ImageGeneratorView() {
   const t = useTranslations('home');
   const searchParams = useSearchParams();
   const initialPrompt = searchParams.get('prompt') ?? undefined;
+  const toolParam = searchParams.get('tool');
+  const initialTool = (['generate', 'try-on', 'face-swap', 'upscale'] as const).find(
+    (id) => id === toolParam,
+  );
+  const initialRefUrl = searchParams.get('ref') ?? undefined;
 
   const [tabs, setTabs] = useState<Tab[]>([{ id: 1 }]);
   const [activeId, setActiveId] = useState(1);
@@ -185,6 +190,8 @@ export function ImageGeneratorView() {
             key={tab.id}
             hidden={tab.id !== activeId}
             initialPrompt={tab.id === 1 ? initialPrompt : undefined}
+            initialTool={tab.id === 1 ? initialTool : undefined}
+            initialRefUrl={tab.id === 1 ? initialRefUrl : undefined}
             onPendingChange={(pending) => handlePendingChange(tab.id, pending)}
             registerFocus={(focus) => {
               promptFocusers.current[tab.id] = focus;

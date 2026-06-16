@@ -65,6 +65,37 @@ function PromptFromQueryTrigger() {
   return null;
 }
 
+/** Abre o formulário de vídeo de avatar quando chega via /workspace?avatarVideo=<id>. */
+function AvatarVideoFromQueryTrigger() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { accessToken } = useAuth();
+  const { requestAvatarVideoForm } = useEditor();
+  const triggered = useRef(false);
+
+  useEffect(() => {
+    if (triggered.current) return;
+    const avatarId = searchParams.get('avatarVideo');
+    if (!avatarId || !accessToken) return;
+    triggered.current = true;
+
+    (async () => {
+      try {
+        const avatar = await api.avatars.get(accessToken, avatarId);
+        requestAvatarVideoForm({ avatar });
+      } catch {
+        /* avatar inacessível — ignora */
+      }
+      const next = new URLSearchParams(searchParams.toString());
+      next.delete('avatarVideo');
+      const qs = next.toString();
+      router.replace(qs ? `/workspace?${qs}` : '/workspace');
+    })();
+  }, [searchParams, accessToken, requestAvatarVideoForm, router]);
+
+  return null;
+}
+
 function FeedbackRewardTrigger() {
   const { user, accessToken } = useAuth();
   const [open, setOpen] = useState(false);
@@ -187,6 +218,7 @@ export default function Home() {
         <SupportButton />
         <Suspense><RegisterModalTrigger /></Suspense>
         <Suspense><PromptFromQueryTrigger /></Suspense>
+        <Suspense><AvatarVideoFromQueryTrigger /></Suspense>
         <FeedbackRewardTrigger />
         <AnnouncementsManager />
       </InfluencerBuilderProvider>

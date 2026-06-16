@@ -249,6 +249,13 @@
   to { transform: translateX(100%); }
 }
 
+/* feedback ao copiar link de compartilhamento */
+@keyframes share-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.25); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 /* ─── Workspace full-screen loader ─────────────────────────────────────────── */
 
 .ws-loader-in {

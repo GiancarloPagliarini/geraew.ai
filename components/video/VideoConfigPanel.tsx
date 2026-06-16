@@ -129,6 +129,8 @@ interface VideoConfigPanelProps {
   /** aba inativa: fica montada (mantém estado e polling) porém oculta */
   hidden?: boolean;
   initialPrompt?: string;
+  /** ferramenta pré-selecionada (vinda do ?tool= na URL) */
+  initialTool?: VideoToolId;
   /** gerações em andamento desta aba (com url quando concluem, para revelar no preview) */
   onPendingChange: (pending: PendingGeneration[]) => void;
   /** registra a função que foca o prompt desta aba */
@@ -139,6 +141,7 @@ interface VideoConfigPanelProps {
 export function VideoConfigPanel({
   hidden = false,
   initialPrompt,
+  initialTool,
   onPendingChange,
   registerFocus,
 }: VideoConfigPanelProps) {
@@ -146,7 +149,7 @@ export function VideoConfigPanel({
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
 
-  const [tool, setTool] = useState<VideoToolId>('generate');
+  const [tool, setTool] = useState<VideoToolId>(initialTool ?? 'generate');
   const [model, setModel] = useState('geraew-fast');
   const [references, setReferences] = useState<UploadedImage[]>([]);
 

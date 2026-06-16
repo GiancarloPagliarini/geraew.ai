@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
+  Lightbulb,
   Loader2,
   Upload,
   Video,
@@ -34,9 +35,11 @@ interface CreateAvatarModalProps {
   open: boolean;
   onClose: () => void;
   onCreated: (avatar: UserAvatar) => void;
+  /** renderiza o formulário embutido (sem overlay/portal), para o painel do shell */
+  embedded?: boolean;
 }
 
-export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModalProps) {
+export function CreateAvatarModal({ open, onClose, onCreated, embedded = false }: CreateAvatarModalProps) {
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
   const t = useTranslations('editorDialogs.avatars.create');
@@ -90,7 +93,7 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
 
   // Esc closes (unless mid-submit) + lock body scroll while open
   useEffect(() => {
-    if (!open) return;
+    if (!open || embedded) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape' && !submitting) onClose();
     }
@@ -101,7 +104,7 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [open, submitting, onClose]);
+  }, [open, embedded, submitting, onClose]);
 
   // Portal target — only available on the client
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
@@ -109,7 +112,7 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
     setPortalTarget(document.body);
   }, []);
 
-  if (!open || !portalTarget) return null;
+  if (!embedded && (!open || !portalTarget)) return null;
 
   async function handleFileChosen(
     f: File | null,
@@ -245,15 +248,16 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
     }
   }
 
-  return createPortal(
+  const card = (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !submitting) onClose();
-      }}
+      className={
+        embedded
+          ? 'relative flex h-full min-h-0 w-full flex-col overflow-hidden'
+          : 'relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[#a2dd00]/25 bg-gradient-to-b from-[#a2dd00]/[0.06] via-[#171f21] to-[#171f21] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6),0_0_0_1px_rgba(162,221,0,0.05),0_0_48px_-12px_rgba(162,221,0,0.18)]'
+      }
     >
-      <div className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[#a2dd00]/25 bg-gradient-to-b from-[#a2dd00]/[0.06] via-[#171f21] to-[#171f21] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6),0_0_0_1px_rgba(162,221,0,0.05),0_0_48px_-12px_rgba(162,221,0,0.18)]">
-        {/* Header */}
+      {/* Header — só no modal */}
+      {!embedded && (
         <div className="flex shrink-0 items-center justify-between border-b border-[#a2dd00]/15 bg-[#a2dd00]/[0.06] px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#a2dd00]/20 ring-1 ring-[#a2dd00]/30">
@@ -271,12 +275,13 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
             <X className="h-4 w-4" />
           </button>
         </div>
+      )}
 
         {/* Body — scrollable */}
         <div className="sidebar-scroll flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
           {/* 1. Tipo */}
           <div>
-            <FieldLabel index={1} label={t('typeLabel')} />
+            <FieldLabel label={t('typeLabel')} />
             <div className="grid grid-cols-2 gap-2">
               <TypeCard
                 selected={avatarKind === 'photo'}
@@ -303,7 +308,7 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
 
           {/* 2. Nome */}
           <div>
-            <FieldLabel index={2} label={t('nameLabel')} />
+            <FieldLabel label={t('nameLabel')} />
             <input
               type="text"
               value={name}
@@ -318,7 +323,6 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
           {/* 3. Arquivo */}
           <div>
             <FieldLabel
-              index={3}
               label={avatarKind === 'photo' ? t('fileLabelPhoto') : t('fileLabelVideo')}
             />
             {file ? (
@@ -392,35 +396,40 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
           {uploadProgress !== null && <StageProgress progress={uploadProgress} />}
         </div>
 
-        {/* Footer (sticky) — Cost + CTA */}
-        <div className="flex shrink-0 items-center gap-3 border-t border-white/[0.05] bg-[#171f21]/95 px-4 py-3 sm:px-5 sm:py-4">
-          <div className="flex-1">
-            <div className="text-[9.5px] font-bold uppercase tracking-[0.18em] text-white/35">
-              {t('costLabel')}
-            </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[18px] font-extrabold tabular-nums text-[#a2dd00]">
-                {(avatarKind === 'photo' ? 1250 : 2000).toLocaleString()}
-              </span>
-              <span className="text-[10.5px] font-semibold text-white/45">{t('credits')}</span>
-            </div>
-          </div>
+        {/* Footer (sticky) — CTA no padrão do painel de vídeo */}
+        <div className="shrink-0 border-t border-white/[0.05] bg-[#171f21]/95 px-4 py-3 sm:px-5 sm:py-4">
           <button
             onClick={handleSubmitCreate}
             disabled={submitting || !name.trim() || !file || !consent}
-            className="flex h-10 items-center gap-1.5 rounded-lg bg-[#a2dd00] px-5 text-[12px] font-extrabold text-black shadow-[0_4px_18px_-4px_rgba(162,221,0,0.5)] transition-all hover:bg-[#b6ec1f] hover:shadow-[0_6px_22px_-4px_rgba(162,221,0,0.6)] disabled:cursor-not-allowed disabled:bg-white/[0.06] disabled:text-white/35 disabled:shadow-none"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-app-lime text-[14.5px] font-semibold text-app-lime-ink transition-colors duration-200 ease-app hover:bg-app-lime-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? (
               <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="size-[16px] animate-spin" strokeWidth={2} />
                 {t('submitting')}
               </>
             ) : (
-              t('submit')
+              <>
+                {t('submit')}
+                <Wand2 className="size-[16px]" strokeWidth={2} />
+              </>
             )}
           </button>
         </div>
-      </div>
+    </div>
+  );
+
+  if (embedded) return card;
+  if (!portalTarget) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !submitting) onClose();
+      }}
+    >
+      {card}
     </div>,
     portalTarget,
   );
@@ -428,12 +437,9 @@ export function CreateAvatarModal({ open, onClose, onCreated }: CreateAvatarModa
 
 // ─── Form sub-components ────────────────────────────────────────────────────
 
-function FieldLabel({ index, label }: { index: number; label: string }) {
+function FieldLabel({ label }: { label: string }) {
   return (
     <div className="mb-1.5 flex items-center gap-1.5">
-      <span className="flex h-4 w-4 items-center justify-center rounded-[5px] bg-[#a2dd00]/15 text-[9px] font-extrabold tabular-nums text-[#a2dd00]">
-        {index}
-      </span>
       <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">
         {label}
       </span>
@@ -570,22 +576,13 @@ function ConsentBox({ consent, expanded, onToggleConsent, onToggleExpand }: Cons
 
 function TipList({ kind }: { kind: AvatarKind }) {
   const t = useTranslations('editorDialogs.avatars.create');
-  const tips =
-    kind === 'photo'
-      ? [t('tipsPhoto1'), t('tipsPhoto2'), t('tipsPhoto3')]
-      : [t('tipsVideo1'), t('tipsVideo2'), t('tipsVideo3')];
   return (
-    <ul className="mt-2.5 space-y-1">
-      {tips.map((tip) => (
-        <li
-          key={tip}
-          className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-white/40"
-        >
-          <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-[#a2dd00]/55" />
-          {tip}
-        </li>
-      ))}
-    </ul>
+    <div className="mt-2.5 flex items-start gap-2 rounded-lg border border-[#a2dd00]/15 bg-[#a2dd00]/[0.04] p-2.5">
+      <Lightbulb className="mt-0.5 size-3.5 shrink-0 text-[#a2dd00]" strokeWidth={1.8} />
+      <p className="text-[10.5px] leading-relaxed text-white/55">
+        {kind === 'photo' ? t('tipPhoto') : t('tipVideo')}
+      </p>
+    </div>
   );
 }
 

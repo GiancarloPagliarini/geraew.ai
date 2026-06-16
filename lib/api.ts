@@ -774,7 +774,14 @@ export interface CommunityFeedPost {
   likesCount: number;
   likedByMe: boolean;
   createdAt: string;
-  author: { name: string; avatarUrl: string | null };
+  author: {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+    isFollowing: boolean;
+    /** true quando o post é do próprio usuário */
+    isMe: boolean;
+  };
 }
 
 export interface MyCommunityPost {
@@ -792,6 +799,20 @@ export interface MyCommunityPost {
 
 export interface AdminCommunityPost extends MyCommunityPost {
   user: { id: string; name: string; email: string };
+}
+
+export interface CommunityUser {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+  isFollowing: boolean;
+  isMe: boolean;
+}
+
+export interface PublicProfile extends CommunityUser {
+  followers: number;
+  following: number;
+  postsCount: number;
 }
 
 export interface AppNotification {
@@ -1995,6 +2016,9 @@ export const api = {
     mine(accessToken: string) {
       return authRequest<MyCommunityPost[]>('/api/v1/community/posts/mine', accessToken);
     },
+    post(accessToken: string, postId: string) {
+      return authRequest<CommunityFeedPost>(`/api/v1/community/posts/${postId}`, accessToken);
+    },
     submit(accessToken: string, payload: { generationId: string; outputUrl?: string }) {
       return authRequest<MyCommunityPost>('/api/v1/community/posts', accessToken, {
         method: 'POST',
@@ -2011,6 +2035,41 @@ export const api = {
     unlike(accessToken: string, postId: string) {
       return authRequest<{ liked: boolean; likesCount: number }>(
         `/api/v1/community/posts/${postId}/like`,
+        accessToken,
+        { method: 'DELETE' },
+      );
+    },
+    followStats(accessToken: string) {
+      return authRequest<{ followers: number; following: number }>(
+        '/api/v1/community/me/follow-stats',
+        accessToken,
+      );
+    },
+    followers(accessToken: string) {
+      return authRequest<CommunityUser[]>('/api/v1/community/me/followers', accessToken);
+    },
+    followingList(accessToken: string) {
+      return authRequest<CommunityUser[]>('/api/v1/community/me/following', accessToken);
+    },
+    userProfile(accessToken: string, userId: string) {
+      return authRequest<PublicProfile>(`/api/v1/community/users/${userId}`, accessToken);
+    },
+    userPosts(accessToken: string, userId: string, page = 1, limit = 30) {
+      return authRequest<{ data: CommunityFeedPost[]; meta: { page: number; limit: number; total: number } }>(
+        `/api/v1/community/users/${userId}/posts?page=${page}&limit=${limit}`,
+        accessToken,
+      );
+    },
+    follow(accessToken: string, userId: string) {
+      return authRequest<{ following: boolean }>(
+        `/api/v1/community/users/${userId}/follow`,
+        accessToken,
+        { method: 'POST' },
+      );
+    },
+    unfollow(accessToken: string, userId: string) {
+      return authRequest<{ following: boolean }>(
+        `/api/v1/community/users/${userId}/follow`,
         accessToken,
         { method: 'DELETE' },
       );
@@ -2487,6 +2546,15 @@ export const api = {
           `/api/v1/admin/community/posts?${params.toString()}`,
           accessToken,
         );
+      },
+      create(
+        accessToken: string,
+        payload: { kind: 'image' | 'video'; mediaUrl: string; thumbnailUrl?: string; prompt?: string },
+      ) {
+        return authRequest<AdminCommunityPost>('/api/v1/admin/community/posts', accessToken, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
       },
       approve(accessToken: string, id: string) {
         return authRequest<MyCommunityPost>(`/api/v1/admin/community/posts/${id}/approve`, accessToken, {

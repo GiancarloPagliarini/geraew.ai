@@ -14,6 +14,7 @@
       "signIn": "Sign in",
       "account": "Account",
       "profile": "Profile",
+      "posts": "Posts",
       "credits": "Credits",
       "usage": "My usage",
       "logout": "Log out"
@@ -28,29 +29,51 @@
       "workspace": "Workspace",
       "gerarImagens": "Generate images",
       "gerarVideos": "Generate videos",
+      "avatar": "Avatar",
       "textoParaVoz": "Text to speech",
       "clonarPrompt": "Clone prompt",
+      "tiktokShop": "TikTok Shop",
       "imagem": "Image",
       "video": "Video",
-      "precos": "Pricing"
+      "precos": "Pricing",
+      "perfil": "Profile"
+    },
+    "profile": {
+      "tabs": { "account": "Account", "posts": "Posts", "usage": "Usage" },
+      "stats": { "posts": "Posts", "followers": "Followers", "following": "Following", "likes": "Likes", "credits": "Credits" },
+      "status": { "pending": "Under review", "rejected": "Rejected" },
+      "postsEmpty": "You haven't posted anything yet",
+      "postsEmptyHint": "Share your creations with the community.",
+      "followersEmpty": "No one follows you yet.",
+      "followingEmpty": "You're not following anyone yet.",
+      "publicEmpty": "No posts yet"
     },
     "community": {
       "subtitle": "Explore what the community is creating.",
       "searchPlaceholder": "Search the community...",
       "follow": "Follow",
+      "following": "Following",
       "share": "Share",
+      "linkCopied": "Link copied!",
+      "linkCopiedShort": "Copied",
+      "shareError": "Could not share.",
+      "postNotFound": "Post not found",
       "promptLabel": "Prompt",
+      "showMore": "see more",
+      "showLess": "see less",
       "settingsLabel": "Settings",
       "recreate": "Recreate",
       "createVideo": "Create video",
       "useAsReference": "Use as reference",
       "prev": "Previous post",
       "next": "Next post",
+      "back": "Back",
       "post": "Post",
       "submitTitle": "Post to the community",
       "submitSubtitle": "Pick a creation from your gallery to submit.",
       "submitCta": "Send for review",
       "submitHint": "Your post goes through a quick review before everyone can see it.",
+      "filters": { "all": "All", "image": "Images", "video": "Videos" },
       "submitSuccess": "Sent for review!",
       "submitSuccessDesc": "You'll be notified when your post is approved.",
       "submitError": "Could not submit. Please try again.",
@@ -66,7 +89,8 @@
       "types": {
         "community-submitted": "Your post is under review.",
         "community-approved": "Your post was approved and is now live in the community!",
-        "community-rejected": "Your post was not approved."
+        "community-rejected": "Your post was not approved.",
+        "user-followed": "{name} started following you."
       }
     },
     "workspaces": {
@@ -88,6 +112,16 @@
       "confirmDelete": "Confirm deletion",
       "deleted": "Workspace deleted.",
       "error": "Something went wrong. Please try again."
+    },
+    "avatar": {
+      "tool": "Tool",
+      "toolCreate": "Create avatar",
+      "toolVideo": "Generate video",
+      "selectAvatar": "Avatar",
+      "selectAvatarPlaceholder": "Pick a ready avatar",
+      "noReady": "You don't have any ready avatars yet. Create one first.",
+      "generate": "Generate video",
+      "generateHint": "You'll choose the voice, script and resolution in the next step."
     },
     "voice": {
       "tab": "Text to speech",
@@ -252,11 +286,13 @@
       "items": {
         "gerarImagens": { "title": "Generate images", "desc": "Create AI images from text" },
         "melhorarImagem": { "title": "Enhance image", "desc": "Boost quality, sharpness and resolution" },
-        "editarImagens": { "title": "Edit images", "desc": "Adjust, refine and reimagine scenes" },
+        "provadorVirtual": { "title": "Virtual try-on", "desc": "Dress anyone in any outfit" },
+        "trocaDeRosto": { "title": "Face swap", "desc": "Swap faces in images and videos" },
         "removerFundo": { "title": "Remove background", "desc": "Cut out the background automatically" },
         "gerarVideos": { "title": "Generate videos", "desc": "Create videos from start to finish" },
-        "editarVideos": { "title": "Edit videos", "desc": "Cut, assemble and finish clips" },
+        "copiarMovimentos": { "title": "Motion control", "desc": "Apply a video's motion onto your image" },
         "textoParaVoz": { "title": "Text to speech", "desc": "Realistic AI voiceovers" },
+        "clonarVoz": { "title": "Clone voice", "desc": "Create a voice from your own audio" },
         "musica": { "title": "Music", "desc": "Compose original soundtracks" },
         "efeitosSonoros": { "title": "Sound effects", "desc": "Generate effects on demand" },
         "avatares": { "title": "Avatars", "desc": "Clone yourself into avatars" },
@@ -330,15 +366,24 @@
       "voiceSearch": "Voice search",
       "imageSearch": "Image search",
       "commands": {
-        "abrirGaleria": "Open the Gallery",
-        "criarImagem": "Create an image",
-        "editarImagem": "Edit image",
-        "criarVideo": "Create a video",
+        "gerarImagens": "Generate images",
+        "gerarVideos": "Generate videos",
         "textoParaVoz": "Text to speech",
+        "abrirGaleria": "Open the Gallery",
         "criarWorkspace": "Create a workspace",
+        "provadorVirtual": "Virtual try-on",
+        "trocaDeRosto": "Face swap",
+        "melhorarImagem": "Enhance image",
+        "copiarMovimentos": "Motion control",
+        "clonarVoz": "Clone voice",
+        "avatar": "Avatar",
+        "tiktokShop": "TikTok Shop",
+        "clonarPrompt": "Clone prompt",
+        "bibliotecaPrompts": "Prompt Library",
         "visitarComunidade": "Visit the community",
-        "abrirGeradorImagens": "Open the image generator",
-        "abrirTextoParaVoz": "Open Text to speech"
+        "todasFerramentas": "All tools",
+        "precos": "Plans & pricing",
+        "perfil": "Profile"
       }
     }
   }

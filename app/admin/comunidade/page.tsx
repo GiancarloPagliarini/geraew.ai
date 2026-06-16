@@ -1,12 +1,158 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Check, Heart, Loader2, Rss, SquarePlay, Trash2, X } from 'lucide-react';
+import { Check, Heart, ImagePlus, Loader2, Plus, Rss, SquarePlay, Trash2, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { api, type AdminCommunityPost, type CommunityPostStatus } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
+
+/** Modal: o admin envia uma imagem/vídeo e publica direto (auto-aprovado). */
+function CreatePostModal({
+  accessToken,
+  onClose,
+  onCreated,
+}: {
+  accessToken: string;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [prompt, setPrompt] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isVideoFile = file?.type.startsWith('video/');
+
+  const pickFile = (f: File) => {
+    if (!f.type.startsWith('image/') && !f.type.startsWith('video/')) {
+      toast.error('Envie uma imagem ou vídeo.');
+      return;
+    }
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setFile(f);
+    setPreviewUrl(URL.createObjectURL(f));
+  };
+
+  const submit = async () => {
+    if (!file) return;
+    setSubmitting(true);
+    try {
+      const { uploadUrl, publicUrl } = await api.admin.upload(
+        accessToken,
+        file.name,
+        file.type,
+        'community',
+      );
+      await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+      await api.admin.community.create(accessToken, {
+        kind: file.type.startsWith('video/') ? 'video' : 'image',
+        mediaUrl: publicUrl,
+        prompt: prompt.trim() || undefined,
+      });
+      toast.success('Publicação criada e já está no feed.');
+      onCreated();
+      onClose();
+    } catch (e) {
+      toast.error((e as Error).message || 'Não foi possível publicar.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="mt-[6vh] w-[min(560px,100%)] overflow-hidden rounded-2xl border border-[#f3f0ed]/10 bg-[#1a2123] shadow-2xl"
+      >
+        <div className="flex items-center justify-between border-b border-[#f3f0ed]/10 px-5 py-4">
+          <h2 className="text-base font-bold text-[#f3f0ed]">Nova publicação</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex size-8 items-center justify-center rounded-lg text-[#f3f0ed]/50 transition-colors hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]"
+          >
+            <X className="size-[18px]" />
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-4 p-5">
+          {/* upload / preview */}
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*,video/*"
+            className="hidden"
+            onChange={(e) => e.target.files?.[0] && pickFile(e.target.files[0])}
+          />
+          {previewUrl ? (
+            <div className="relative overflow-hidden rounded-xl border border-[#f3f0ed]/10 bg-black/30">
+              {isVideoFile ? (
+                <video src={previewUrl} controls className="max-h-[320px] w-full object-contain" />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={previewUrl} alt="preview" className="max-h-[320px] w-full object-contain" />
+              )}
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                className="absolute bottom-3 right-3 rounded-lg bg-black/70 px-3 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-black/90"
+              >
+                Trocar mídia
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="flex h-44 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#f3f0ed]/15 text-[#f3f0ed]/50 transition-colors hover:border-[#a2dd00]/40 hover:text-[#f3f0ed]"
+            >
+              <ImagePlus className="size-7" strokeWidth={1.6} />
+              <span className="text-sm font-medium">Selecionar imagem ou vídeo</span>
+            </button>
+          )}
+
+          {/* prompt/legenda */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-semibold text-[#f3f0ed]/70">Prompt / legenda (opcional)</label>
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              maxLength={2000}
+              rows={3}
+              placeholder="Descreva ou cole o prompt usado..."
+              className="resize-none rounded-lg border border-[#f3f0ed]/10 bg-[#141a1c] px-3 py-2 text-[13px] text-[#f3f0ed] outline-none placeholder:text-[#f3f0ed]/30 focus:border-[#a2dd00]/40"
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-[#f3f0ed]/10 px-5 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-10 rounded-lg border border-[#f3f0ed]/15 px-4 text-[13px] font-semibold text-[#f3f0ed]/70 transition-colors hover:bg-[#f3f0ed]/5"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            disabled={!file || submitting}
+            onClick={submit}
+            className="flex h-10 items-center gap-2 rounded-lg bg-[#a2dd00] px-5 text-[13px] font-semibold text-[#11181a] transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {submitting && <Loader2 className="size-4 animate-spin" />}
+            Publicar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const STATUS_TABS: { value: CommunityPostStatus; label: string }[] = [
   { value: 'PENDING', label: 'Pendentes' },
@@ -161,6 +307,7 @@ export default function AdminComunidadePage() {
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<CommunityPostStatus>('PENDING');
+  const [createOpen, setCreateOpen] = useState(false);
 
   const { data, isPending } = useQuery({
     queryKey: ['admin', 'community', status],
@@ -204,14 +351,31 @@ export default function AdminComunidadePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="flex items-center gap-2.5 text-2xl font-bold text-[#f3f0ed]">
-          <Rss className="size-6 text-[#a2dd00]" /> Comunidade
-        </h1>
-        <p className="mt-1 text-sm text-[#f3f0ed]/50">
-          Modere as publicações enviadas pelos usuários. Aprovar ou rejeitar notifica o autor.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="flex items-center gap-2.5 text-2xl font-bold text-[#f3f0ed]">
+            <Rss className="size-6 text-[#a2dd00]" /> Comunidade
+          </h1>
+          <p className="mt-1 text-sm text-[#f3f0ed]/50">
+            Modere as publicações enviadas pelos usuários. Aprovar ou rejeitar notifica o autor.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setCreateOpen(true)}
+          className="flex h-10 shrink-0 items-center gap-2 rounded-lg bg-[#a2dd00] px-4 text-[13px] font-semibold text-[#11181a] transition-opacity hover:opacity-90"
+        >
+          <Plus className="size-4" strokeWidth={2.5} /> Nova publicação
+        </button>
       </div>
+
+      {createOpen && accessToken && (
+        <CreatePostModal
+          accessToken={accessToken}
+          onClose={() => setCreateOpen(false)}
+          onCreated={invalidate}
+        />
+      )}
 
       {/* abas de status */}
       <div className="flex gap-1 rounded-xl border border-[#f3f0ed]/10 bg-[#1a2123] p-1 w-fit">

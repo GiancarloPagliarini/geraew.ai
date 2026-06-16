@@ -14,6 +14,7 @@
       "signIn": "Entrar",
       "account": "Conta",
       "profile": "Perfil",
+      "posts": "Publicações",
       "credits": "Créditos",
       "usage": "Meu uso",
       "logout": "Sair"
@@ -28,29 +29,51 @@
       "workspace": "Workspace",
       "gerarImagens": "Gerar imagens",
       "gerarVideos": "Gerar vídeos",
+      "avatar": "Avatar",
       "textoParaVoz": "Texto para voz",
       "clonarPrompt": "Clonar prompt",
+      "tiktokShop": "TikTok Shop",
       "imagem": "Imagem",
       "video": "Vídeo",
-      "precos": "Planos"
+      "precos": "Planos",
+      "perfil": "Perfil"
+    },
+    "profile": {
+      "tabs": { "account": "Conta", "posts": "Publicações", "usage": "Uso" },
+      "stats": { "posts": "Publicações", "followers": "Seguidores", "following": "Seguindo", "likes": "Curtidas", "credits": "Créditos" },
+      "status": { "pending": "Em análise", "rejected": "Rejeitado" },
+      "postsEmpty": "Você ainda não publicou nada",
+      "postsEmptyHint": "Compartilhe suas criações com a comunidade.",
+      "followersEmpty": "Ninguém te segue ainda.",
+      "followingEmpty": "Você ainda não segue ninguém.",
+      "publicEmpty": "Nenhuma publicação ainda"
     },
     "community": {
       "subtitle": "Explore o que a comunidade está criando.",
       "searchPlaceholder": "Buscar na comunidade...",
       "follow": "Seguir",
+      "following": "Seguindo",
       "share": "Compartilhar",
+      "linkCopied": "Link copiado!",
+      "linkCopiedShort": "Copiado",
+      "shareError": "Não foi possível compartilhar.",
+      "postNotFound": "Publicação não encontrada",
       "promptLabel": "Prompt",
+      "showMore": "ver mais",
+      "showLess": "ver menos",
       "settingsLabel": "Configurações",
       "recreate": "Recriar",
       "createVideo": "Criar vídeo",
       "useAsReference": "Usar como referência",
       "prev": "Post anterior",
       "next": "Próximo post",
+      "back": "Voltar",
       "post": "Publicar",
       "submitTitle": "Publicar na comunidade",
       "submitSubtitle": "Escolha uma criação da sua galeria para enviar.",
       "submitCta": "Enviar para análise",
       "submitHint": "Sua publicação passa por uma análise rápida antes de aparecer para todos.",
+      "filters": { "all": "Tudo", "image": "Imagens", "video": "Vídeos" },
       "submitSuccess": "Enviado para análise!",
       "submitSuccessDesc": "Você será notificado quando a publicação for aprovada.",
       "submitError": "Não foi possível enviar. Tente novamente.",
@@ -66,7 +89,8 @@
       "types": {
         "community-submitted": "Sua publicação está em análise.",
         "community-approved": "Sua publicação foi aprovada e já está na comunidade!",
-        "community-rejected": "Sua publicação não foi aprovada."
+        "community-rejected": "Sua publicação não foi aprovada.",
+        "user-followed": "{name} começou a seguir você."
       }
     },
     "workspaces": {
@@ -88,6 +112,16 @@
       "confirmDelete": "Confirmar exclusão",
       "deleted": "Workspace excluído.",
       "error": "Não foi possível concluir. Tente novamente."
+    },
+    "avatar": {
+      "tool": "Ferramenta",
+      "toolCreate": "Criar avatar",
+      "toolVideo": "Gerar vídeo",
+      "selectAvatar": "Avatar",
+      "selectAvatarPlaceholder": "Escolha um avatar pronto",
+      "noReady": "Você ainda não tem avatares prontos. Crie um primeiro.",
+      "generate": "Gerar vídeo",
+      "generateHint": "Você escolhe a voz, o roteiro e a resolução na próxima etapa."
     },
     "voice": {
       "tab": "Texto para voz",
@@ -252,11 +286,13 @@
       "items": {
         "gerarImagens": { "title": "Gerar imagens", "desc": "Crie imagens com IA a partir de texto" },
         "melhorarImagem": { "title": "Melhorar imagem", "desc": "Aumente qualidade, nitidez e resolução" },
-        "editarImagens": { "title": "Editar imagens", "desc": "Ajuste, refine e reimagine cenas" },
+        "provadorVirtual": { "title": "Provador virtual", "desc": "Vista qualquer roupa em uma pessoa" },
+        "trocaDeRosto": { "title": "Troca de rosto", "desc": "Troque rostos em imagens e vídeos" },
         "removerFundo": { "title": "Remover fundo", "desc": "Recorte o fundo automaticamente" },
         "gerarVideos": { "title": "Gerar vídeos", "desc": "Crie vídeos do início ao fim" },
-        "editarVideos": { "title": "Editar vídeos", "desc": "Corte, monte e finalize clipes" },
+        "copiarMovimentos": { "title": "Copiar movimentos", "desc": "Aplique o movimento de um vídeo na sua imagem" },
         "textoParaVoz": { "title": "Texto para voz", "desc": "Locuções realistas com IA" },
+        "clonarVoz": { "title": "Clonar voz", "desc": "Crie uma voz a partir de um áudio seu" },
         "musica": { "title": "Música", "desc": "Componha trilhas originais" },
         "efeitosSonoros": { "title": "Efeitos sonoros", "desc": "Gere efeitos sob demanda" },
         "avatares": { "title": "Avatares", "desc": "Clone a si mesmo em avatares" },
@@ -330,15 +366,24 @@
       "voiceSearch": "Pesquisa por voz",
       "imageSearch": "Pesquisa por imagem",
       "commands": {
-        "abrirGaleria": "Abrir a Galeria",
-        "criarImagem": "Criar uma imagem",
-        "editarImagem": "Editar imagem",
-        "criarVideo": "Criar um vídeo",
+        "gerarImagens": "Gerar imagens",
+        "gerarVideos": "Gerar vídeos",
         "textoParaVoz": "Texto para voz",
+        "abrirGaleria": "Abrir a Galeria",
         "criarWorkspace": "Criar um workspace",
+        "provadorVirtual": "Provador virtual",
+        "trocaDeRosto": "Troca de rosto",
+        "melhorarImagem": "Melhorar imagem",
+        "copiarMovimentos": "Copiar movimentos",
+        "clonarVoz": "Clonar voz",
+        "avatar": "Avatar",
+        "tiktokShop": "TikTok Shop",
+        "clonarPrompt": "Clonar prompt",
+        "bibliotecaPrompts": "Biblioteca de Prompts",
         "visitarComunidade": "Visitar a comunidade",
-        "abrirGeradorImagens": "Abrir o gerador de imagens",
-        "abrirTextoParaVoz": "Abrir Texto para voz"
+        "todasFerramentas": "Todas as ferramentas",
+        "precos": "Planos e preços",
+        "perfil": "Perfil"
       }
     }
   }

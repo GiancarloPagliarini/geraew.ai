@@ -24,6 +24,8 @@ export function VideoGeneratorView() {
   const t = useTranslations('home');
   const searchParams = useSearchParams();
   const initialPrompt = searchParams.get('prompt') ?? undefined;
+  const toolParam = searchParams.get('tool');
+  const initialTool = (['generate', 'motion-control'] as const).find((id) => id === toolParam);
 
   const [tabs, setTabs] = useState<Tab[]>([{ id: 1 }]);
   const [activeId, setActiveId] = useState(1);
@@ -185,6 +187,7 @@ export function VideoGeneratorView() {
             key={tab.id}
             hidden={tab.id !== activeId}
             initialPrompt={tab.id === 1 ? initialPrompt : undefined}
+            initialTool={tab.id === 1 ? initialTool : undefined}
             onPendingChange={(pending) => handlePendingChange(tab.id, pending)}
             registerFocus={(focus) => {
               promptFocusers.current[tab.id] = focus;

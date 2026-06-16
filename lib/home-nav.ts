@@ -9,12 +9,15 @@ import {
   LayoutGrid,
   Library,
   Mic,
+  MicVocal,
   PersonStanding,
+  Replace,
   Rss,
   ScanFace,
   Search,
-  SlidersHorizontal,
+  Shirt,
   SquarePlay,
+  UserRound,
   Wand2,
   Waypoints,
   type LucideIcon,
@@ -52,8 +55,11 @@ export const SCREEN_TITLES: Record<string, { id: string; icon: LucideIcon }> = {
   '/image': { id: 'imagem', icon: Image },
   '/video': { id: 'video', icon: SquarePlay },
   '/voice': { id: 'textoParaVoz', icon: Mic },
+  '/avatar': { id: 'avatar', icon: ScanFace },
+  '/tiktok-shop': { id: 'tiktokShop', icon: Flame },
   '/community': { id: 'comunidade', icon: Rss },
   '/pricing': { id: 'precos', icon: BadgePercent },
+  '/perfil': { id: 'perfil', icon: UserRound },
 };
 
 /**
@@ -74,8 +80,10 @@ export const TOOLS_NAV: HomeNavItem[] = [
   { id: 'workspace', icon: Waypoints, href: '/workspaces' },
   { id: 'gerarImagens', icon: Image, href: '/image' },
   { id: 'gerarVideos', icon: SquarePlay, href: '/video' },
+  { id: 'avatar', icon: ScanFace, href: '/avatar' },
   { id: 'textoParaVoz', icon: Mic, href: '/voice' },
   { id: 'clonarPrompt', icon: Copy, href: '/clone-prompt' },
+  { id: 'tiktokShop', icon: Flame, href: '/tiktok-shop' },
 ];
 
 export interface QuickAction {
@@ -90,8 +98,8 @@ export const QUICK_ACTIONS: QuickAction[] = [
   { id: 'imagem', icon: Image, href: '/image' },
   { id: 'video', icon: SquarePlay, href: '/video' },
   { id: 'audio', icon: AudioLines, href: '/voice' },
-  { id: 'avatares', icon: ScanFace, href: '/workspace' },
-  { id: 'tiktokShop', icon: Flame, href: '/workspace' },
+  { id: 'avatares', icon: ScanFace, href: '/avatar' },
+  { id: 'tiktokShop', icon: Flame, href: '/tiktok-shop' },
 ];
 
 /** Painel "Ferramentas" do dashboard (atalhos fixados — só telas já em produção) */
@@ -121,22 +129,31 @@ export interface PaletteCommand {
 }
 
 export const PALETTE_COMMANDS: PaletteCommand[] = [
-  // navegação (com atalhos)
-  { id: 'abrirGaleria', icon: FolderOpen, href: '/gallery', shortcut: 'G', nav: true },
-  { id: 'criarImagem', icon: Image, href: '/image', shortcut: 'F', nav: true },
-  { id: 'editarImagem', icon: SlidersHorizontal, href: '/workspace', shortcut: 'E', nav: true },
-  { id: 'criarVideo', icon: SquarePlay, href: '/video', shortcut: 'V', nav: true },
+  // navegação principal (com atalhos) — grupo Navegação por padrão
+  { id: 'gerarImagens', icon: Image, href: '/image', shortcut: 'F', nav: true },
+  { id: 'gerarVideos', icon: SquarePlay, href: '/video', shortcut: 'V', nav: true },
   { id: 'textoParaVoz', icon: Mic, href: '/voice', shortcut: 'T', nav: true },
-  { id: 'criarWorkspace', icon: Waypoints, href: '/workspace', shortcut: 'L', nav: true },
-  // ações extras (aparecem em Recentes/busca)
+  { id: 'abrirGaleria', icon: FolderOpen, href: '/gallery', shortcut: 'G', nav: true },
+  { id: 'criarWorkspace', icon: Waypoints, href: '/workspaces', shortcut: 'L', nav: true },
+  // demais ferramentas (aparecem na busca)
+  { id: 'provadorVirtual', icon: Shirt, href: '/image?tool=try-on' },
+  { id: 'trocaDeRosto', icon: Replace, href: '/image?tool=face-swap' },
+  { id: 'melhorarImagem', icon: Wand2, href: '/image?tool=upscale' },
+  { id: 'copiarMovimentos', icon: PersonStanding, href: '/video?tool=motion-control' },
+  { id: 'clonarVoz', icon: MicVocal, href: '/voice?tool=clone' },
+  { id: 'avatar', icon: ScanFace, href: '/avatar' },
+  { id: 'tiktokShop', icon: Flame, href: '/tiktok-shop' },
+  { id: 'clonarPrompt', icon: Copy, href: '/clone-prompt' },
+  { id: 'bibliotecaPrompts', icon: Library, href: '/prompt-library' },
   { id: 'visitarComunidade', icon: Rss, href: '/community' },
-  { id: 'abrirGeradorImagens', icon: Image, href: '/image' },
-  { id: 'abrirTextoParaVoz', icon: Mic, href: '/voice' },
+  { id: 'todasFerramentas', icon: LayoutGrid, href: '/tools' },
+  { id: 'precos', icon: BadgePercent, href: '/pricing' },
+  { id: 'perfil', icon: UserRound, href: '/perfil' },
 ];
 
 /** Recentes padrão exibidos até o usuário usar a palette. */
 export const DEFAULT_PALETTE_RECENTS = [
   'visitarComunidade',
-  'abrirGeradorImagens',
-  'abrirTextoParaVoz',
+  'gerarImagens',
+  'textoParaVoz',
 ];

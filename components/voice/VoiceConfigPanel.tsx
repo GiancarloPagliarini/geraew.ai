@@ -96,6 +96,8 @@ function FieldLabel({ children, right }: { children: React.ReactNode; right?: Re
 interface VoiceConfigPanelProps {
   /** aba inativa: fica montada (mantém estado e polling) porém oculta */
   hidden?: boolean;
+  /** ferramenta pré-selecionada (vinda do ?tool= na URL) */
+  initialTool?: VoiceToolId;
   /** gerações em andamento desta aba (com url quando concluem, para revelar no preview) */
   onPendingChange: (pending: PendingGeneration[]) => void;
   /** registra a função que foca o roteiro desta aba */
@@ -105,6 +107,7 @@ interface VoiceConfigPanelProps {
 /** Painel de configuração de uma aba de Texto para voz. */
 export function VoiceConfigPanel({
   hidden = false,
+  initialTool,
   onPendingChange,
   registerFocus,
 }: VoiceConfigPanelProps) {
@@ -112,7 +115,7 @@ export function VoiceConfigPanel({
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
 
-  const [tool, setTool] = useState<VoiceToolId>('tts');
+  const [tool, setTool] = useState<VoiceToolId>(initialTool ?? 'tts');
   const [voice, setVoice] = useState<VoiceOption | null>(null);
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);

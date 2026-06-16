@@ -96,6 +96,10 @@ interface ImageConfigPanelProps {
   /** aba inativa: fica montada (mantém estado e polling) porém oculta */
   hidden?: boolean;
   initialPrompt?: string;
+  /** ferramenta pré-selecionada (vinda do ?tool= na URL) */
+  initialTool?: ToolId;
+  /** URL de imagem para anexar como referência inicial (ex.: produto do TikTok Shop) */
+  initialRefUrl?: string;
   /** gerações em andamento desta aba (com url quando concluem, para revelar no preview) */
   onPendingChange: (pending: PendingGeneration[]) => void;
   /** registra a função que foca o prompt desta aba */
@@ -106,6 +110,8 @@ interface ImageConfigPanelProps {
 export function ImageConfigPanel({
   hidden = false,
   initialPrompt,
+  initialTool,
+  initialRefUrl,
   onPendingChange,
   registerFocus,
 }: ImageConfigPanelProps) {
@@ -113,7 +119,7 @@ export function ImageConfigPanel({
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
 
-  const [tool, setTool] = useState<ToolId>('generate');
+  const [tool, setTool] = useState<ToolId>(initialTool ?? 'generate');
 
   // gerar imagens
   const [model, setModel] = useState('gpt-image-2');
@@ -213,6 +219,33 @@ export function ImageConfigPanel({
       reader.readAsDataURL(file);
     }
   };
+
+  // anexa a imagem inicial (ex.: produto do TikTok Shop) como referência, uma vez
+  const initialRefLoaded = useRef(false);
+  useEffect(() => {
+    if (!initialRefUrl || initialRefLoaded.current) return;
+    initialRefLoaded.current = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(initialRefUrl)}`);
+        if (!res.ok) return;
+        const blob = await res.blob();
+        if (blob.size > REF_MAX_BYTES) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result as string;
+          setReferences((prev) =>
+            prev.length >= MAX_REFERENCES
+              ? prev
+              : [...prev, { base64: dataUrl.split(',')[1], mime_type: blob.type || 'image/jpeg', preview: dataUrl }],
+          );
+        };
+        reader.readAsDataURL(blob);
+      } catch {
+        /* sem referência — segue sem ela */
+      }
+    })();
+  }, [initialRefUrl]);
 
   const canGenerate = (() => {
     switch (tool) {
