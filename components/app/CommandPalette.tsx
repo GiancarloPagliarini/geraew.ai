@@ -218,13 +218,11 @@ function PaletteDialog({ closing }: { closing: boolean }) {
                       <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-app-text">
                         {t(`palette.commands.${command.id}`)}
                       </span>
-                      {command.soon ? (
+                      {command.soon && (
                         <span className="shrink-0 rounded-md border border-app-hairline-2 px-1.5 py-0.5 font-mono text-[11px] text-app-muted">
                           {t('soon')}
                         </span>
-                      ) : command.shortcut ? (
-                        <Kbd>Ctrl ⇧ {command.shortcut}</Kbd>
-                      ) : null}
+                      )}
                     </button>
                   );
                 })}
@@ -233,8 +231,8 @@ function PaletteDialog({ closing }: { closing: boolean }) {
           })}
         </div>
 
-        {/* rodapé */}
-        <div className="flex items-center gap-5 border-t border-app-hairline px-5 py-3 text-[12.5px] text-app-text-2">
+        {/* rodapé — atalhos de teclado, escondido no mobile */}
+        <div className="hidden items-center gap-5 border-t border-app-hairline px-5 py-3 text-[12.5px] text-app-text-2 lg:flex">
           <span className="flex items-center gap-1.5">
             <Kbd>↑</Kbd>
             <Kbd>↓</Kbd>

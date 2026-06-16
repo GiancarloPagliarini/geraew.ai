@@ -20,6 +20,8 @@ export interface UserProfile extends AuthUser {
   credits: Record<string, unknown> | null;
   subscription: Record<string, unknown> | null;
   feedbackSubmitted: boolean;
+  hasTaxIdOnFile: boolean;
+  taxIdMasked: string | null;
 }
 
 export interface AuthResponse {
@@ -134,6 +136,27 @@ export interface PixCharge {
   brCodeBase64: string;
   expiresAt: string;
   devMode: boolean;
+}
+
+export type PixAutoAuthorizationStatus =
+  | 'PENDING'
+  | 'ACTIVE'
+  | 'CANCELED'
+  | 'EXPIRED'
+  | 'REJECTED';
+
+export interface PixAutoAuthorization {
+  authorizationId: string;
+  qrCodePayload: string;
+  qrCodeEncodedImage: string;
+  expiresAt: string | null;
+  status: PixAutoAuthorizationStatus;
+  /** true se é upgrade — cobra só a diferença pro-rateada agora */
+  isUpgrade: boolean;
+  /** valor cobrado AGORA (em centavos) — em upgrade é a diferença pro-rateada */
+  immediateValueCents: number;
+  /** valor da cobrança recorrente mensal (em centavos) */
+  recurringValueCents: number;
 }
 
 export interface Plan {
@@ -1722,10 +1745,10 @@ export const api = {
   },
 
   payments: {
-    createBoostPix(accessToken: string, packageId: string, taxId: string) {
+    createBoostPix(accessToken: string, packageId: string, taxId?: string) {
       return authRequest<PixCharge>('/api/v1/payments/pix/boost', accessToken, {
         method: 'POST',
-        body: JSON.stringify({ packageId, taxId }),
+        body: JSON.stringify({ packageId, ...(taxId ? { taxId } : {}) }),
       });
     },
     getPixStatus(accessToken: string, paymentId: string) {
@@ -1892,6 +1915,18 @@ export const api = {
       return authRequest<{ portalUrl: string }>('/api/v1/subscriptions/billing-portal', accessToken, {
         method: 'POST',
       });
+    },
+    createPixAuto(accessToken: string, planSlug: string, taxId?: string) {
+      return authRequest<PixAutoAuthorization>('/api/v1/subscriptions/pix-auto', accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ planSlug, ...(taxId ? { taxId } : {}) }),
+      });
+    },
+    pixAutoStatus(accessToken: string, authorizationId: string) {
+      return authRequest<{ status: string; subscriptionActive: boolean }>(
+        `/api/v1/subscriptions/pix-auto/${encodeURIComponent(authorizationId)}/status`,
+        accessToken,
+      );
     },
   },
 

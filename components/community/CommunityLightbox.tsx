@@ -115,19 +115,20 @@ export function CommunityLightbox({
   return (
     <div
       className={cn(
-        'fixed inset-0 z-50 bg-[rgba(8,10,11,0.86)] backdrop-blur-[8px]',
+        'fixed inset-0 z-50 bg-[rgba(8,10,11,0.86)] backdrop-blur-[8px] max-lg:flex max-lg:flex-col',
         closing ? 'pointer-events-none animate-overlay-out' : 'animate-overlay-in',
       )}
       onClick={onClose}
     >
-      {/* mídia centralizada na área livre (painel reserva 372px à direita) */}
+      {/* mídia: no mobile ocupa o espaço acima da folha (coluna única, sem vão);
+          no desktop centralizada na área livre (painel reserva 372px à direita) */}
       <div
-        className="flex h-full items-center justify-center p-6 lg:pr-[372px]"
+        className="relative flex h-full items-center justify-center p-6 max-lg:h-auto max-lg:min-h-0 max-lg:flex-1 max-lg:p-4 lg:pr-[372px]"
         onClick={(e) => e.stopPropagation()}
       >
         <div
           className={cn(
-            'relative max-h-[88vh] w-fit max-w-full overflow-hidden rounded-[14px] border border-app-hairline-2 bg-black',
+            'relative max-h-[40vh] w-fit max-w-full overflow-hidden rounded-[14px] border border-app-hairline-2 bg-black lg:max-h-[88vh]',
             closing ? 'animate-dialog-out' : 'animate-dialog-in',
           )}
         >
@@ -137,14 +138,14 @@ export function CommunityLightbox({
               controls
               autoPlay
               playsInline
-              className="block h-auto max-h-[88vh] w-auto max-w-full"
+              className="block h-auto max-h-[40vh] w-auto max-w-full lg:max-h-[88vh]"
             />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={post.mediaUrl}
               alt={post.prompt}
-              className="block h-auto max-h-[88vh] w-auto max-w-full"
+              className="block h-auto max-h-[40vh] w-auto max-w-full lg:max-h-[88vh]"
             />
           )}
         </div>
@@ -186,7 +187,7 @@ export function CommunityLightbox({
       <aside
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          'absolute inset-x-0 bottom-0 max-h-[60vh] overflow-y-auto rounded-t-[16px] border border-app-hairline-2 bg-app-card p-5 scrollbar-app lg:inset-y-4 lg:left-auto lg:right-4 lg:max-h-none lg:w-[340px] lg:rounded-[16px]',
+          'absolute inset-x-0 bottom-0 max-h-[62vh] overflow-y-auto rounded-t-[16px] border border-app-hairline-2 bg-app-card p-5 scrollbar-app max-lg:static max-lg:shrink-0 lg:inset-y-4 lg:left-auto lg:right-4 lg:max-h-none lg:w-[340px] lg:rounded-[16px]',
           closing ? 'animate-dialog-out' : 'animate-dialog-in',
         )}
       >

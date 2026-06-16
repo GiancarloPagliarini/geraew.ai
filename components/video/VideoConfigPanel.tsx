@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
+  AlertCircle,
   AudioLines,
   Clock,
   Film,
@@ -22,13 +23,15 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { api, ApiError } from '@/lib/api';
+import { api, ApiError, type CreditsEstimateRequest } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
 import type { PendingGeneration } from '@/components/image/types';
 import { useGenerationTracker } from '@/components/image/use-generation-tracker';
+import { useGenerationErrorMessage } from '@/lib/use-generation-error';
 import { ImageDropTile, type UploadedImage } from '@/components/image/ImageDropTile';
 import { MediaFileTile, type MediaFile } from '@/components/app/MediaFileTile';
+import { GenerationCostEstimate } from '@/components/app/GenerationCostEstimate';
 import {
   Select,
   SelectContent,
@@ -49,6 +52,7 @@ const VIDEO_TOOLS: { id: VideoToolId; labelKey: string; icon: LucideIcon }[] = [
 
 /** Resoluções do Motion Control (Kling — preço por segundo: 70/100 cr). */
 const MC_RESOLUTIONS = ['720p', '1080p'];
+const MC_RES_TO_DB: Record<string, string> = { '720p': 'RES_720P', '1080p': 'RES_1080P' };
 
 /** gera opções de duração para modelos com slider no workspace (ex.: 6s–30s) */
 const durationRange = (min: number, max: number) =>
@@ -72,6 +76,8 @@ interface VideoModelConfig {
   /** referências múltiplas (refs) ou primeiro frame único (Grok) */
   refMode: 'refs' | 'first-frame';
   maxRefs: number;
+  /** exibe badge "Novo" no seletor */
+  isNew?: boolean;
 }
 
 const RES_HD = [
@@ -93,9 +99,9 @@ const ASPECTS_VERTICAL_WIDE = [
 const VIDEO_MODELS: VideoModelConfig[] = [
   { value: 'geraew-fast', label: 'Veo 3.1 Fast', variant: 'GERAEW_FAST', api: 'geraew', durations: ['4s', '6s', '8s'], defaultDuration: '8s', audio: 'toggle', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: ASPECTS_VERTICAL_WIDE, defaultAspect: '9:16', refMode: 'refs', maxRefs: 8 },
   { value: 'geraew-quality', label: 'Veo 3.1 Quality', variant: 'GERAEW_QUALITY', api: 'geraew', durations: ['4s', '6s', '8s'], defaultDuration: '8s', audio: 'toggle', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: ASPECTS_VERTICAL_WIDE, defaultAspect: '9:16', refMode: 'refs', maxRefs: 8 },
-  { value: 'gemini-omni-video', label: 'Gemini Omni', variant: 'GEMINI_OMNI', api: 'omni', durations: ['4s', '6s', '8s', '10s'], defaultDuration: '8s', audio: 'always-off', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: ASPECTS_VERTICAL_WIDE, defaultAspect: '9:16', refMode: 'refs', maxRefs: 7 },
-  { value: 'bytedance-seedance-2', label: 'Seedance 2', variant: 'SEEDANCE_2', api: 'seedance', durations: durationRange(4, 15), defaultDuration: '5s', audio: 'toggle', resolutions: [{ value: 'RES_480P', label: '480p' }, { value: 'RES_720P', label: '720p' }, { value: 'RES_1080P', label: '1080p' }], defaultResolution: 'RES_480P', aspects: [{ value: '1:1', label: '1:1' }, { value: '4:3', label: '4:3' }, { value: '3:4', label: '3:4' }, { value: '16:9', label: '16:9' }, { value: '9:16', label: '9:16' }, { value: '21:9', label: '21:9' }], defaultAspect: '9:16', refMode: 'refs', maxRefs: 6 },
-  { value: 'grok-imagine', label: 'Grok Imagine', variant: 'GROK_IMAGINE', api: 'grok', durations: durationRange(6, 30), defaultDuration: '6s', audio: 'always-off', resolutions: [{ value: 'RES_480P', label: '480p' }, { value: 'RES_720P', label: '720p' }], defaultResolution: 'RES_720P', aspects: [{ value: '2:3', label: '2:3' }, { value: '3:2', label: '3:2' }, { value: '1:1', label: '1:1' }, { value: '9:16', label: '9:16' }, { value: '16:9', label: '16:9' }], defaultAspect: '9:16', refMode: 'first-frame', maxRefs: 1 },
+  { value: 'gemini-omni-video', label: 'Gemini Omni', variant: 'GEMINI_OMNI', api: 'omni', durations: ['4s', '6s', '8s', '10s'], defaultDuration: '8s', audio: 'always-off', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: ASPECTS_VERTICAL_WIDE, defaultAspect: '9:16', refMode: 'refs', maxRefs: 7, isNew: true },
+  { value: 'bytedance-seedance-2', label: 'Seedance 2', variant: 'SEEDANCE_2', api: 'seedance', durations: durationRange(4, 15), defaultDuration: '5s', audio: 'toggle', resolutions: [{ value: 'RES_480P', label: '480p' }, { value: 'RES_720P', label: '720p' }, { value: 'RES_1080P', label: '1080p' }], defaultResolution: 'RES_480P', aspects: [{ value: '1:1', label: '1:1' }, { value: '4:3', label: '4:3' }, { value: '3:4', label: '3:4' }, { value: '16:9', label: '16:9' }, { value: '9:16', label: '9:16' }, { value: '21:9', label: '21:9' }], defaultAspect: '9:16', refMode: 'refs', maxRefs: 6, isNew: true },
+  { value: 'grok-imagine', label: 'Grok Imagine', variant: 'GROK_IMAGINE', api: 'grok', durations: durationRange(6, 30), defaultDuration: '6s', audio: 'always-off', resolutions: [{ value: 'RES_480P', label: '480p' }, { value: 'RES_720P', label: '720p' }], defaultResolution: 'RES_720P', aspects: [{ value: '2:3', label: '2:3' }, { value: '3:2', label: '3:2' }, { value: '1:1', label: '1:1' }, { value: '9:16', label: '9:16' }, { value: '16:9', label: '16:9' }], defaultAspect: '9:16', refMode: 'first-frame', maxRefs: 1, isNew: true },
   { value: 'veo3_fast', label: 'Geraew Fast', variant: 'VEO_FAST', api: 'kie', durations: ['8s'], defaultDuration: '8s', audio: 'always-on', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: [{ value: '9:16', label: '9:16' }, { value: 'Auto', label: 'Auto' }, { value: '16:9', label: '16:9' }], defaultAspect: '9:16', refMode: 'refs', maxRefs: 8 },
   { value: 'veo3', label: 'Geraew Quality', variant: 'VEO_MAX', api: 'kie', durations: ['8s'], defaultDuration: '8s', audio: 'always-on', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: [{ value: '9:16', label: '9:16' }, { value: 'Auto', label: 'Auto' }, { value: '16:9', label: '16:9' }], defaultAspect: '9:16', refMode: 'refs', maxRefs: 8 },
 ];
@@ -175,7 +181,11 @@ export function VideoConfigPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const promptRef = useRef<HTMLTextAreaElement>(null);
 
-  const { pending, track } = useGenerationTracker();
+  // banner de erro acima do botão Gerar — só some ao gerar de novo
+  const [generationError, setGenerationError] = useState<string | null>(null);
+
+  const { pending, track } = useGenerationTracker({ onError: setGenerationError });
+  const mapError = useGenerationErrorMessage();
 
   useEffect(() => {
     onPendingChange(pending);
@@ -210,6 +220,7 @@ export function VideoConfigPanel({
         // labels invertidos são intencionais — manter o override local
         label: opt.label,
         disabled: dbModel ? !dbModel.isActive : false,
+        isNew: !!opt.isNew,
       };
     });
   }, [modelsQuery.data]);
@@ -241,6 +252,46 @@ export function VideoConfigPanel({
     // com vídeo anexado, a quota de imagens do Omni cai para 5
     if (file) setReferences((prev) => prev.slice(0, 5));
   };
+
+  // tipo de geração p/ pricing — espelha o painel do workspace
+  const videoType =
+    tool === 'motion-control'
+      ? ('MOTION_CONTROL' as const)
+      : modelConfig.api === 'grok' && firstFrame
+        ? ('IMAGE_TO_VIDEO' as const)
+        : references.length > 0
+          ? ('REFERENCE_VIDEO' as const)
+          : ('TEXT_TO_VIDEO' as const);
+
+  // estimativa de créditos por geração — varia conforme ferramenta/modelo/config
+  const estimateDuration = durationToSeconds(duration);
+  const estimateHasVideoInput = (isOmni && !!omniVideo) || (isSeedance && !!seedanceVideo);
+  const estimateQuery = useQuery({
+    queryKey: ['credits', 'estimate', 'video', tool, videoType, resolution, mcResolution, effectiveAudio, modelConfig.variant, estimateDuration, estimateHasVideoInput, mcVideo?.duration ?? 0],
+    queryFn: () => {
+      const req: CreditsEstimateRequest =
+        tool === 'motion-control'
+          ? {
+              type: 'MOTION_CONTROL',
+              resolution: MC_RES_TO_DB[mcResolution] ?? 'RES_720P',
+              hasAudio: false,
+              durationSeconds: mcVideo?.duration ? Math.ceil(mcVideo.duration) : undefined,
+            }
+          : {
+              type: videoType,
+              resolution,
+              durationSeconds: estimateDuration,
+              hasAudio: effectiveAudio,
+              sampleCount: 1,
+              modelVariant: modelConfig.variant,
+              hasVideoInput: estimateHasVideoInput,
+            };
+      return api.credits.estimate(accessToken!, req);
+    },
+    enabled: !!accessToken && !!user,
+    staleTime: 30_000,
+  });
+  const estimate = estimateQuery.data;
 
   const addReferenceFiles = (files: FileList | null) => {
     if (!files) return;
@@ -285,6 +336,7 @@ export function VideoConfigPanel({
       openLoginModal({ mode: 'login' });
       return;
     }
+    setGenerationError(null); // limpa o banner de erro ao gerar de novo
     setSubmitting(true);
     try {
       if (tool === 'motion-control') {
@@ -435,9 +487,9 @@ export function VideoConfigPanel({
 
       track(result.id, finalPrompt || t('video.tab'));
     } catch (err) {
-      toast.error(
-        err instanceof ApiError || err instanceof Error ? err.message : t('video.failed'),
-      );
+      const msg = mapError(err instanceof ApiError || err instanceof Error ? err.message : null);
+      toast.error(msg);
+      setGenerationError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -447,7 +499,7 @@ export function VideoConfigPanel({
     // painel de configuração — aceita soltar imagens como referência
     <div
       className={cn(
-        'relative flex w-full shrink-0 flex-col border-b border-app-hairline lg:w-[360px] lg:border-b-0 lg:border-r',
+        'relative flex w-full min-h-0 flex-1 flex-col border-b border-app-hairline lg:w-[360px] lg:flex-none lg:border-b-0 lg:border-r',
         hidden && 'hidden',
       )}
       onDragEnter={(e) => {
@@ -548,7 +600,14 @@ export function VideoConfigPanel({
             <SelectContent position="popper" side="bottom" align="start" sideOffset={6} className={selectContentClass}>
               {modelOptions.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled} className={selectItemClass}>
-                  {opt.label}
+                  <span className="flex items-center gap-1.5">
+                    {opt.label}
+                    {opt.isNew && (
+                      <span className="rounded-full border border-app-lime/40 bg-app-lime/15 px-1.5 py-px text-[8px] font-bold uppercase tracking-[0.1em] text-app-lime">
+                        {t('newBadge')}
+                      </span>
+                    )}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -796,6 +855,25 @@ export function VideoConfigPanel({
           </button>
         </div>
         </>
+        )}
+
+        {/* estimativa de custo por geração */}
+        <GenerationCostEstimate
+          credits={estimate?.creditsRequired}
+          loading={estimateQuery.isLoading}
+          free={!!estimate?.canUseFreeGeneration}
+          freeRemaining={estimate?.freeGenerationsRemainingForType}
+        />
+
+        {/* banner de erro — persiste até gerar de novo */}
+        {generationError && (
+          <div className="flex items-start gap-2.5 rounded-[10px] border border-red-500/25 bg-red-500/[0.07] p-3">
+            <AlertCircle className="mt-0.5 size-4 shrink-0 text-red-400" strokeWidth={1.8} />
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-app-text">{t('image.errorTitle')}</p>
+              <p className="mt-0.5 text-[12px] leading-relaxed text-app-text-2">{generationError}</p>
+            </div>
+          </div>
         )}
 
         {/* gerar */}

@@ -3,8 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { FolderOpen, Search, X } from 'lucide-react';
-import { normalizeSearch } from '@/lib/utils';
+import { FolderOpen } from 'lucide-react';
 import { api, type GalleryItem } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { EmptyState } from '@/components/app/EmptyState';
@@ -20,8 +19,6 @@ export function GalleryView() {
   const t = useTranslations('home');
   const { user, accessToken } = useAuth();
   const [filter, setFilter] = useState('all');
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<GalleryItem | null>(null);
   const [selectedRatio, setSelectedRatio] = useState<number | undefined>(undefined);
   const [lightboxClosing, setLightboxClosing] = useState(false);
@@ -64,12 +61,7 @@ export function GalleryView() {
       staleTime: 30_000,
     });
 
-  const items = useMemo(() => {
-    const all = data?.pages.flatMap((p) => p.data) ?? [];
-    const q = normalizeSearch(query.trim());
-    if (!q) return all;
-    return all.filter((i) => normalizeSearch(i.prompt ?? '').includes(q));
-  }, [data, query]);
+  const items = useMemo(() => data?.pages.flatMap((p) => p.data) ?? [], [data]);
 
   // scroll infinito: busca a próxima página quando o sentinela se aproxima
   useEffect(() => {
@@ -97,49 +89,13 @@ export function GalleryView() {
     <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto scrollbar-app">
       <div className="mx-auto w-full max-w-[1600px] px-6 pb-10 lg:px-11">
         <div className="sticky top-0 z-10 bg-app-bg pb-3 pt-6">
-          <div className="flex items-center gap-2">
-            {/* filtros por tipo */}
-            <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {GALLERY_FILTERS.map(({ id, icon }) => (
-                <FilterPill key={id} active={filter === id} onClick={() => selectFilter(id)} icon={icon}>
-                  {t(`gallery.filters.${id}`)}
-                </FilterPill>
-              ))}
-            </div>
-
-            {/* busca expansível */}
-            {searchOpen ? (
-              <div className="flex h-10 w-full max-w-[280px] items-center gap-2 rounded-full border border-app-hairline bg-app-surface px-3.5 transition-colors duration-200 ease-app focus-within:border-[rgba(162,221,0,0.4)]">
-                <Search className="size-4 shrink-0 text-app-muted" strokeWidth={1.8} />
-                <input
-                  autoFocus
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t('gallery.searchPlaceholder')}
-                  className="w-full bg-transparent text-[13.5px] text-app-text outline-none placeholder:text-app-muted"
-                />
-                <button
-                  type="button"
-                  aria-label={t('palette.close')}
-                  onClick={() => {
-                    setSearchOpen(false);
-                    setQuery('');
-                  }}
-                  className="text-app-muted transition-colors duration-200 ease-app hover:text-app-text"
-                >
-                  <X className="size-4" strokeWidth={1.8} />
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                aria-label={t('gallery.searchPlaceholder')}
-                onClick={() => setSearchOpen(true)}
-                className="flex size-10 shrink-0 items-center justify-center rounded-full text-app-text-2 transition-colors duration-200 ease-app hover:bg-app-surface hover:text-app-text"
-              >
-                <Search className="size-[18px]" strokeWidth={1.8} />
-              </button>
-            )}
+          {/* filtros por tipo */}
+          <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {GALLERY_FILTERS.map(({ id, icon }) => (
+              <FilterPill key={id} active={filter === id} onClick={() => selectFilter(id)} icon={icon}>
+                {t(`gallery.filters.${id}`)}
+              </FilterPill>
+            ))}
           </div>
 
           {/* total */}
@@ -148,9 +104,7 @@ export function GalleryView() {
           ) : (
             !isError && (
               <p className="mt-2.5 px-1 font-mono text-[12px] text-app-muted">
-                {t('gallery.count', {
-                  count: query.trim() ? items.length : (data?.pages[0]?.meta.total ?? 0),
-                })}
+                {t('gallery.count', { count: data?.pages[0]?.meta.total ?? 0 })}
               </p>
             )
           )}

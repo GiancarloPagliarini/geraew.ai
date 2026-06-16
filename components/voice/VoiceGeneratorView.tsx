@@ -27,6 +27,8 @@ export function VoiceGeneratorView() {
 
   const [tabs, setTabs] = useState<Tab[]>([{ id: 1 }]);
   const [activeId, setActiveId] = useState(1);
+  // mobile: alterna entre configurar e ver criações (split-view não cabe lado a lado)
+  const [mobileView, setMobileView] = useState<'config' | 'creations'>('config');
   // gerações em andamento por aba — viram os previews aurora nas Criações
   const [pendingByTab, setPendingByTab] = useState<Record<number, PendingGeneration[]>>({});
   const nextId = useRef(2);
@@ -56,6 +58,15 @@ export function VoiceGeneratorView() {
     () => [...recovery.pending, ...Object.values(pendingByTab).flat()],
     [recovery.pending, pendingByTab],
   );
+
+  // no mobile, ao iniciar uma geração (pendência nova), pula para as Criações
+  // para o usuário ver o preview; no desktop é inócuo (toggle escondido)
+  const prevPendingCount = useRef(0);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (allPending.length > prevPendingCount.current) setMobileView('creations');
+    prevPendingCount.current = allPending.length;
+  }, [allPending.length]);
 
   const addTab = () => {
     if (tabs.length >= MAX_TABS) {
@@ -178,26 +189,59 @@ export function VoiceGeneratorView() {
         </button>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        {/* uma instância por aba: inativas ficam montadas (estado + polling vivos), só ocultas */}
-        {tabs.map((tab) => (
-          <VoiceConfigPanel
-            key={tab.id}
-            hidden={tab.id !== activeId}
-            initialTool={tab.id === 1 ? initialTool : undefined}
-            onPendingChange={(pending) => handlePendingChange(tab.id, pending)}
-            registerFocus={(focus) => {
-              promptFocusers.current[tab.id] = focus;
-            }}
-          />
+      {/* mobile: alternância entre configurar e criações (lado a lado só no desktop) */}
+      <div className="flex shrink-0 gap-1 border-b border-app-hairline p-2 lg:hidden">
+        {(['config', 'creations'] as const).map((view) => (
+          <button
+            key={view}
+            type="button"
+            onClick={() => setMobileView(view)}
+            className={cn(
+              'flex-1 rounded-lg py-2 text-[13px] font-semibold transition-colors duration-200 ease-app',
+              mobileView === view ? 'bg-app-surface text-app-text' : 'text-app-text-2 hover:text-app-text',
+            )}
+          >
+            {view === 'config' ? t('image.viewConfig') : t('image.creations')}
+          </button>
         ))}
+      </div>
 
-        {/* criações (compartilhado entre as abas) */}
-        <CreationsPanel
-          pending={allPending}
-          defaultFilter="voice"
-          onCreateNew={() => promptFocusers.current[activeId]?.()}
-        />
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        {/* config — no desktop os painéis viram filhos diretos (lg:contents);
+            no mobile ficam ocultos quando se está vendo as criações */}
+        <div
+          className={cn(
+            'flex min-h-0 w-full flex-1 flex-col lg:contents',
+            mobileView === 'creations' && 'max-lg:hidden',
+          )}
+        >
+          {/* uma instância por aba: inativas ficam montadas (estado + polling vivos), só ocultas */}
+          {tabs.map((tab) => (
+            <VoiceConfigPanel
+              key={tab.id}
+              hidden={tab.id !== activeId}
+              initialTool={tab.id === 1 ? initialTool : undefined}
+              onPendingChange={(pending) => handlePendingChange(tab.id, pending)}
+              registerFocus={(focus) => {
+                promptFocusers.current[tab.id] = focus;
+              }}
+            />
+          ))}
+        </div>
+
+        {/* criações (compartilhado entre as abas) — oculto no mobile ao configurar */}
+        <div
+          className={cn(
+            'flex min-h-0 min-w-0 flex-1',
+            mobileView === 'config' && 'max-lg:hidden',
+          )}
+        >
+          <CreationsPanel
+            pending={allPending}
+            defaultFilter="voice"
+            onCreateNew={() => promptFocusers.current[activeId]?.()}
+          />
+        </div>
       </div>
     </div>
   );

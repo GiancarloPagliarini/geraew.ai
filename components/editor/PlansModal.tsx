@@ -18,6 +18,8 @@ import { clearRecoveryPromo, getStoredRecoveryPromo } from '@/lib/recovery-promo
 import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 import { CreditPackagesGrid } from '@/components/editor/CreditPackagesGrid';
 import { PlansGrid } from '@/components/editor/PlansGrid';
+import { PixAutoCheckoutModal } from '@/components/editor/PixAutoCheckoutModal';
+import type { Plan } from '@/lib/api';
 import { PLAN_ORDER, getPlanFeatureKeys } from '@/lib/plans';
 
 interface PlansModalProps {
@@ -34,6 +36,7 @@ export function PlansModal({ onClose }: PlansModalProps) {
   const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
   const [pendingDowngradeSlug, setPendingDowngradeSlug] = useState<string | null>(null);
   const [isDowngrading, setIsDowngrading] = useState(false);
+  const [pixAutoPlan, setPixAutoPlan] = useState<Plan | null>(null);
 
   const { data: plans, isLoading: plansLoading } = useQuery({
     queryKey: ['plans', uiCurrency],
@@ -241,6 +244,7 @@ export function PlansModal({ onClose }: PlansModalProps) {
               hasActiveSub={hasActiveSub}
               subscribingSlug={subscribingSlug}
               onSubscribe={handleSubscribe}
+              onSubscribePix={(plan) => setPixAutoPlan(plan)}
               compact
               isLoading={isLoading}
             />
@@ -264,6 +268,21 @@ export function PlansModal({ onClose }: PlansModalProps) {
           <CreditPackagesGrid packages={packages} currency={packagesCurrency} compact />
         )}
       </div>
+
+      {/* PIX Automático checkout */}
+      {pixAutoPlan && (
+        <PixAutoCheckoutModal
+          planSlug={pixAutoPlan.slug}
+          planName={pixAutoPlan.name}
+          priceCents={pixAutoPlan.priceCents}
+          onClose={() => setPixAutoPlan(null)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
+            queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
+            onClose();
+          }}
+        />
+      )}
 
       {/* Retention modal for downgrade */}
       {pendingDowngradeSlug && (() => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
@@ -9,6 +9,7 @@ import {
   ChevronRight,
   FolderOpen,
   Image as ImageIcon,
+  ImageOff,
   SquarePlay,
   type LucideIcon,
 } from 'lucide-react';
@@ -40,6 +41,11 @@ function ItemCard({ item }: { item: GalleryItem }) {
   const thumb = item.thumbnailUrl || (kind === 'imagem' ? item.outputUrl : undefined);
   const title = item.prompt?.trim() || t('continue.untitled');
 
+  const [imgError, setImgError] = useState(false);
+  const showImage = !!thumb && !imgError;
+  // ícone de fallback quando não há mídia ou a imagem falhou ao carregar
+  const FallbackIcon = kind === 'audio' ? AudioLines : ImageOff;
+
   return (
     <Link
       href="/workspace"
@@ -49,14 +55,21 @@ function ItemCard({ item }: { item: GalleryItem }) {
       <div className="relative h-[152px] overflow-hidden rounded-xl border border-app-hairline bg-[linear-gradient(135deg,#1d2628,#161d1f)] transition-colors duration-200 ease-app group-hover:border-app-hairline-2">
         {/* brilho lime sutil no canto (fallback sem mídia) */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_15%,rgba(162,221,0,0.08),transparent_55%)]" />
-        {thumb && (
+        {showImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={thumb}
             alt=""
             draggable={false}
+            onError={() => setImgError(true)}
             className="absolute inset-0 size-full object-cover transition-transform duration-300 ease-app group-hover:scale-[1.04]"
             loading="lazy"
+          />
+        ) : (
+          /* preview de erro: thumb indisponível ou falhou ao carregar */
+          <FallbackIcon
+            className="absolute left-1/2 top-1/2 size-7 -translate-x-1/2 -translate-y-1/2 text-app-muted"
+            strokeWidth={1.7}
           />
         )}
         <span className="absolute left-2.5 top-2.5 flex items-center gap-1.5 rounded-full border border-white/10 bg-black/55 py-[5px] pl-2 pr-2.5 backdrop-blur-md">

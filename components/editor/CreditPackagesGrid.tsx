@@ -20,6 +20,7 @@ import { api } from '@/lib/api';
 import type { CreditPackage } from '@/lib/api';
 import { formatCurrency, getBoostMetaKey, getPackageBadge } from '@/lib/plans';
 import { PixCheckoutModal } from './PixCheckoutModal';
+import { PixIcon } from '@/components/icons/PixIcon';
 
 interface CreditPackagesGridProps {
   packages: CreditPackage[];
@@ -271,18 +272,28 @@ export function CreditPackagesGrid({ packages, currency = 'BRL', compact }: Cred
                         )}
                       </button>
 
-                      {/* PIX option (BRL only)
+                      {/* PIX option (BRL only) */}
                       {isBRL && (
                         <button
                           type="button"
                           onClick={() => setPixPkg(pkg)}
                           disabled={!!purchasingId}
-                          className={`mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg text-[#f3f0ed]/55 transition-colors hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40 ${compact ? 'h-8 text-[11px]' : 'h-9 text-[12px]'}`}
+                          className={`group/pix relative mt-2 flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl border border-[#32BCAD]/30 bg-gradient-to-r from-[#32BCAD]/[0.08] via-[#32BCAD]/[0.12] to-[#32BCAD]/[0.08] font-semibold text-[#5BD9CB] transition-all duration-300 hover:border-[#32BCAD]/55 hover:from-[#32BCAD]/[0.14] hover:via-[#32BCAD]/[0.2] hover:to-[#32BCAD]/[0.14] hover:text-[#7BE8DC] hover:shadow-[0_0_20px_rgba(50,188,173,0.18)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${compact ? 'h-9 text-[12px]' : 'h-10 text-[13px]'}`}
                         >
-                          <Zap className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
-                          Pagar com PIX
+                          {/* Subtle shine sweep on hover */}
+                          <span
+                            aria-hidden
+                            className="pointer-events-none absolute inset-y-0 left-0 w-1/3 -translate-x-full skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/15 to-transparent transition-transform duration-700 ease-out group-hover/pix:translate-x-[300%]"
+                          />
+                          <PixIcon className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
+                          <span>Pagar com PIX</span>
+                          {!compact && (
+                            <span className="ml-0.5 rounded-md bg-[#32BCAD]/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-[#7BE8DC]">
+                              Cai na hora
+                            </span>
+                          )}
                         </button>
-                      )} */}
+                      )}
 
                       {/* Trust micro-copy */}
                       {!compact && (

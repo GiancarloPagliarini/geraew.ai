@@ -29,6 +29,8 @@ import { PLAN_ORDER, getPlanFeatures } from '@/lib/plans';
 import { CreditPackagesGrid } from '@/components/editor/CreditPackagesGrid';
 import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 import { PlansGrid } from '@/components/editor/PlansGrid';
+import { PixAutoCheckoutModal } from '@/components/editor/PixAutoCheckoutModal';
+import type { Plan } from '@/lib/api';
 import { useLocale, useTranslations } from 'next-intl';
 
 function CreditosPageContent() {
@@ -43,6 +45,7 @@ function CreditosPageContent() {
   const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
   const [pendingDowngradeSlug, setPendingDowngradeSlug] = useState<string | null>(null);
   const [isDowngrading, setIsDowngrading] = useState(false);
+  const [pixAutoPlan, setPixAutoPlan] = useState<Plan | null>(null);
   const t = useTranslations('account.credits');
   const tCommon = useTranslations('account.common');
   const locale = useLocale();
@@ -488,6 +491,7 @@ function CreditosPageContent() {
                   hasActiveSub={hasActiveSub}
                   subscribingSlug={subscribingSlug}
                   onSubscribe={handleSubscribe}
+                  onSubscribePix={(plan) => setPixAutoPlan(plan)}
                 />
                 <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-[#f3f0ed]/25">
                   <span className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#a2dd00]/50" />{t('noCancelFee')}</span>
@@ -509,6 +513,20 @@ function CreditosPageContent() {
         )}
 
       </div>
+
+      {/* PIX Automático checkout modal */}
+      {pixAutoPlan && (
+        <PixAutoCheckoutModal
+          planSlug={pixAutoPlan.slug}
+          planName={pixAutoPlan.name}
+          priceCents={pixAutoPlan.priceCents}
+          onClose={() => setPixAutoPlan(null)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
+            queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
+          }}
+        />
+      )}
 
       {/* Retention modal for downgrade */}
       {pendingDowngradeSlug && (() => {

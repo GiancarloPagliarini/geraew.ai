@@ -6,4 +6,8 @@ export interface PendingGeneration {
   prompt: string;
   /** definida quando a geração conclui — dispara a revelação no preview */
   url?: string;
+  /** definida quando a geração falha — exibe o card de erro */
+  error?: string;
+  /** tipo da geração — 'voice' usa o card compacto de áudio */
+  kind?: 'image' | 'video' | 'voice';
 }

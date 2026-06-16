@@ -277,10 +277,10 @@ export function WorkspacesView() {
     <div className="min-h-0 flex-1 overflow-y-auto scrollbar-app">
       <div className="mx-auto flex w-full max-w-[1600px] flex-col px-6 pb-16 pt-7 lg:px-11">
         {/* cabeçalho */}
-        <h1 className="text-4xl font-bold tracking-[-0.6px] text-app-text">
+        <h1 className="text-[28px] font-bold tracking-[-0.6px] text-app-text sm:text-4xl">
           {t('workspaces.title')}
         </h1>
-        <p className="mt-1.5 text-[15px] text-app-text-2">{t('workspaces.subtitle')}</p>
+        <p className="mt-1.5 text-[14px] text-app-text-2 sm:text-[15px]">{t('workspaces.subtitle')}</p>
 
         {/* abas + ações */}
         <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -297,7 +297,7 @@ export function WorkspacesView() {
               type="button"
               disabled
               title={t('soon')}
-              className="flex h-10 cursor-not-allowed items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold text-app-muted"
+              className="flex h-10 cursor-not-allowed items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold text-app-muted max-sm:hidden"
             >
               <Lock className="size-4" strokeWidth={1.8} />
               {t('workspaces.shared')}
@@ -309,14 +309,15 @@ export function WorkspacesView() {
               type="button"
               onClick={() => createMutation.mutate()}
               disabled={createMutation.isPending}
-              className="flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-[10px] border border-app-hairline-2 px-4 text-[13.5px] font-semibold text-app-text transition-colors duration-200 ease-app hover:bg-app-surface disabled:opacity-60"
+              aria-label={t('workspaces.new')}
+              className="flex h-10 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-[10px] border border-app-hairline-2 px-4 text-[13.5px] font-semibold text-app-text transition-colors duration-200 ease-app hover:bg-app-surface disabled:opacity-60 max-sm:w-10 max-sm:px-0"
             >
               {createMutation.isPending ? (
                 <Loader2 className="size-4 animate-spin" strokeWidth={1.8} />
               ) : (
                 <Plus className="size-4" strokeWidth={1.8} />
               )}
-              {t('workspaces.new')}
+              <span className="max-sm:hidden">{t('workspaces.new')}</span>
             </button>
             <button
               type="button"
@@ -340,7 +341,7 @@ export function WorkspacesView() {
               disabled
               title={t('soon')}
               aria-label={t('workspaces.filters')}
-              className="flex size-10 shrink-0 cursor-not-allowed items-center justify-center rounded-full text-app-muted"
+              className="flex size-10 shrink-0 cursor-not-allowed items-center justify-center rounded-full text-app-muted max-sm:hidden"
             >
               <SlidersHorizontal className="size-[18px]" strokeWidth={1.8} />
             </button>

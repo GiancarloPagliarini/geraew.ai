@@ -479,15 +479,15 @@ export function ProfileView({ initialTab = 'account' }: { initialTab?: ProfileTa
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto scrollbar-app">
-      <div className="mx-auto w-full max-w-[1500px] px-6 pb-16 pt-7">
+      <div className="mx-auto w-full max-w-[1500px] px-6 pb-16 pt-5 sm:pt-7">
         {/* cabeçalho */}
-        <div className="relative overflow-hidden rounded-[18px] border border-app-hairline bg-app-surface p-6">
+        <div className="relative overflow-hidden rounded-[18px] border border-app-hairline bg-app-surface p-5 sm:p-6">
           <div className="pointer-events-none absolute -right-12 -top-12 size-48 rounded-full bg-[radial-gradient(circle,rgba(162,221,0,0.12),transparent_65%)]" />
           <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
             <AvatarRing avatarUrl={avatarUrl} name={profile.name} fraction={fraction} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h1 className="truncate text-[24px] font-bold tracking-[-0.3px] text-app-text">
+                <h1 className="min-w-0 truncate text-[22px] font-bold tracking-[-0.3px] text-app-text sm:text-[24px]">
                   {profile.name}
                 </h1>
                 {profile.emailVerified && <BadgeCheck className="size-5 shrink-0 text-app-lime" strokeWidth={2} />}
@@ -529,15 +529,15 @@ export function ProfileView({ initialTab = 'account' }: { initialTab?: ProfileTa
           </div>
         </div>
 
-        {/* abas */}
-        <div className="mt-6 flex items-center gap-1 border-b border-app-hairline">
+        {/* abas — roláveis no mobile */}
+        <div className="mt-6 flex items-center gap-1 overflow-x-auto border-b border-app-hairline [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {(['account', 'posts', 'usage'] as const).map((id) => (
             <button
               key={id}
               type="button"
               onClick={() => setTab(id)}
               className={cn(
-                'relative px-4 pb-3 pt-1 text-[14px] font-semibold transition-colors duration-200 ease-app',
+                'relative shrink-0 px-3 pb-3 pt-1 text-[14px] font-semibold transition-colors duration-200 ease-app sm:px-4',
                 tab === id ? 'text-app-text' : 'text-app-muted hover:text-app-text-2',
               )}
             >

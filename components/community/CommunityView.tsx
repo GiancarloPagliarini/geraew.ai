@@ -275,13 +275,19 @@ export function CommunityView() {
     <div className="min-h-0 flex-1 overflow-y-auto scrollbar-app">
       <div className="mx-auto w-full max-w-[1600px] px-6 pb-12 lg:px-11">
         <div className="sticky top-0 z-10 flex items-center gap-3 bg-app-bg pb-4 pt-6">
-          <p className="min-w-0 flex-1 truncate text-[15px] text-app-text-2">
+          <p
+            className={cn(
+              'min-w-0 flex-1 truncate text-[14px] text-app-text-2 sm:text-[15px]',
+              // libera espaço para a busca no mobile quando ela está aberta
+              searchOpen && 'max-sm:hidden',
+            )}
+          >
             {t('community.subtitle')}
           </p>
 
           {/* busca expansível */}
           {searchOpen ? (
-            <div className="flex h-10 w-full max-w-[280px] items-center gap-2 rounded-full border border-app-hairline bg-app-surface px-3.5 transition-colors duration-200 ease-app focus-within:border-[rgba(162,221,0,0.4)]">
+            <div className="flex h-10 max-w-[280px] flex-1 items-center gap-2 rounded-full border border-app-hairline bg-app-surface px-3.5 transition-colors duration-200 ease-app focus-within:border-[rgba(162,221,0,0.4)]">
               <Search className="size-4 shrink-0 text-app-muted" strokeWidth={1.8} />
               <input
                 autoFocus
@@ -313,14 +319,15 @@ export function CommunityView() {
             </button>
           )}
 
-          {/* publicar */}
+          {/* publicar — só ícone no mobile */}
           <button
             type="button"
             onClick={() => setSubmitOpen(true)}
-            className="flex h-10 shrink-0 items-center gap-2 rounded-[10px] bg-app-lime px-4 text-[13.5px] font-semibold text-app-lime-ink transition-colors duration-200 ease-app hover:bg-app-lime-hover"
+            aria-label={t('community.post')}
+            className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-[10px] bg-app-lime px-4 text-[13.5px] font-semibold text-app-lime-ink transition-colors duration-200 ease-app hover:bg-app-lime-hover max-sm:w-10 max-sm:px-0"
           >
             <Plus className="size-4" strokeWidth={2.2} />
-            {t('community.post')}
+            <span className="max-sm:hidden">{t('community.post')}</span>
           </button>
         </div>
 

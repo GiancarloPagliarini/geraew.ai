@@ -494,7 +494,8 @@ export function CancelRetentionModal({
             {accessEndDate && (
               <p className="text-center text-xs text-[#f3f0ed]/30">
                 {t.rich('final.reactivate', {
-                  date: () => <span className="font-medium text-[#f3f0ed]/45">{accessEndDate}</span>,
+                  date: accessEndDate,
+                  accent: (chunks) => <span className="font-medium text-[#f3f0ed]/45">{chunks}</span>,
                 })}
               </p>
             )}

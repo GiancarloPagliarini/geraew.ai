@@ -1,6 +1,26 @@
 {
   "home": {
     "soon": "Muy pronto",
+    "newBadge": "Nuevo",
+    "errors": {
+      "generic": "No se pudo completar la generación. Inténtalo de nuevo en un momento.",
+      "noResult": "No se pudo generar un resultado. Ajusta el prompt o las imágenes.",
+      "blockedContent": "Contenido bloqueado por la IA. Prueba con otras imágenes o instrucciones.",
+      "sensitiveContent": "Contenido sensible detectado. Prueba con otras imágenes o instrucciones.",
+      "insufficientCredits": "Créditos insuficientes para esta generación.",
+      "limitReached": "Has alcanzado el límite de tu plan para esta acción.",
+      "rateLimited": "Demasiadas solicitudes en poco tiempo. Espera unos segundos e inténtalo de nuevo.",
+      "timeout": "La generación tardó más de lo esperado. Inténtalo de nuevo."
+    },
+    "cost": {
+      "label": "Estimación",
+      "credits": "{credits} créditos",
+      "free": "Gratis",
+      "calculating": "Calculando…",
+      "hintSingle": "Costo estimado por generación",
+      "hintMultiple": "{count}× · costo total estimado",
+      "freeHint": "{remaining} generaciones gratis restantes"
+    },
     "shell": {
       "create": "Crear",
       "toggleSidebar": "Contraer menú",
@@ -26,6 +46,7 @@
       "galeria": "Galería",
       "prompts": "Biblioteca de Prompts",
       "todasFerramentas": "Todas las herramientas",
+      "ferramentas": "Herramientas",
       "workspace": "Workspace",
       "gerarImagens": "Generar imágenes",
       "gerarVideos": "Generar videos",
@@ -140,6 +161,7 @@
       "tagPause": "Insertar pausa",
       "pauseTag": "[pausa {s}s]",
       "emotionsMenu": "Insertar emoción",
+      "expressiveUnavailable": "No disponible en voces clonadas",
       "emotions": {
         "laughs": "Risas",
         "whispers": "Susurro",
@@ -225,11 +247,14 @@
       "generate": "Generar",
       "generating": "Generando…",
       "creations": "Creaciones",
+      "viewConfig": "Configurar",
       "favorites": "Favoritos",
       "creationsEmpty": "Esta carpeta está vacía",
       "creationsEmptyCta": "Crear nuevo contenido",
       "success": "¡Imagen generada!",
       "failed": "No se pudo generar la imagen. Inténtalo de nuevo.",
+      "errorTitle": "Error en la generación",
+      "errorSubtitle": "Los créditos fueron reembolsados",
       "refMax": "Máximo de {max} referencias.",
       "dropHint": "Suelta las imágenes para añadirlas como referencia",
       "closeTab": "Cerrar pestaña",
@@ -301,6 +326,8 @@
     },
     "clone": {
       "uploadTitle": "Sube una imagen",
+      "mobileUpload": "Imagen",
+      "mobileResult": "Prompt",
       "uploadSubtitle": "Te devolvemos el prompt listo para recrear esa imagen.",
       "dropzone": "Arrastra una imagen o haz clic para subir",
       "browse": "o elige un archivo",
@@ -319,7 +346,8 @@
       "remove": "Quitar imagen",
       "invalidFormat": "Formato no soportado. Usa PNG, JPG o WebP.",
       "tooLarge": "Imagen demasiado grande (máx. {max}MB).",
-      "failed": "No se pudo analizar la imagen. Inténtalo de nuevo."
+      "failed": "No se pudo analizar la imagen. Inténtalo de nuevo.",
+      "errorTitle": "Error en el análisis"
     },
     "gallery": {
       "filters": {

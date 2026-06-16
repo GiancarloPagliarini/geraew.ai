@@ -174,7 +174,7 @@ export function PromptLibrary({ sections }: { sections: ApiPromptSection[] }) {
         <div className="sticky top-0 z-10 bg-app-bg pb-3 pt-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             {/* busca */}
-            <div className="flex h-[46px] flex-1 items-center gap-3 rounded-[14px] border border-app-hairline bg-app-surface px-4 transition-colors duration-200 ease-app focus-within:border-[rgba(162,221,0,0.4)]">
+            <div className="flex h-[46px] items-center gap-3 rounded-[14px] border border-app-hairline bg-app-surface px-4 transition-colors duration-200 ease-app focus-within:border-[rgba(162,221,0,0.4)] sm:flex-1">
               <Search className="size-[18px] shrink-0 text-app-muted" strokeWidth={1.8} />
               <input
                 value={query}

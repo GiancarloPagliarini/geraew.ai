@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import {
+  AlertCircle,
   Check,
   Copy,
   Image as ImageIcon,
@@ -16,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
+import { useGenerationErrorMessage } from '@/lib/use-generation-error';
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
@@ -59,6 +61,7 @@ function HighlightedJson({ value }: { value: unknown }) {
 
 export function ClonePromptView() {
   const t = useTranslations('home');
+  const mapError = useGenerationErrorMessage();
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
   const [imageData, setImageData] = useState<string | null>(null);
@@ -67,6 +70,10 @@ export function ClonePromptView() {
   const [result, setResult] = useState<CloneResult | null>(null);
   const [mode, setMode] = useState<'string' | 'json'>('string');
   const [copied, setCopied] = useState(false);
+  // mobile: alterna entre envio da imagem e o resultado
+  const [mobileView, setMobileView] = useState<'upload' | 'result'>('upload');
+  // banner de erro acima do botão — só some ao analisar de novo
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback(
@@ -95,6 +102,8 @@ export function ClonePromptView() {
       openLoginModal({ mode: 'login' });
       return;
     }
+    setAnalyzeError(null); // limpa o banner de erro ao analisar de novo
+    setMobileView('result'); // no mobile, mostra o resultado (skeleton enquanto carrega)
     setLoading(true);
     setResult(null);
     try {
@@ -102,7 +111,9 @@ export function ClonePromptView() {
       setResult(data);
       setMode('string');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('clone.failed'));
+      const message = mapError(err instanceof Error ? err.message : null);
+      toast.error(message);
+      setAnalyzeError(message);
     } finally {
       setLoading(false);
     }
@@ -122,9 +133,32 @@ export function ClonePromptView() {
     : '#';
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* mobile: alternância entre imagem e resultado */}
+      <div className="flex shrink-0 gap-1 border-b border-app-hairline p-2 lg:hidden">
+        {(['upload', 'result'] as const).map((view) => (
+          <button
+            key={view}
+            type="button"
+            onClick={() => setMobileView(view)}
+            className={cn(
+              'flex-1 rounded-lg py-2 text-[13px] font-semibold transition-colors duration-200 ease-app',
+              mobileView === view ? 'bg-app-surface text-app-text' : 'text-app-text-2 hover:text-app-text',
+            )}
+          >
+            {view === 'upload' ? t('clone.mobileUpload') : t('clone.mobileResult')}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
       {/* painel esquerdo — upload */}
-      <div className="flex w-full shrink-0 flex-col gap-4 overflow-y-auto border-b border-app-hairline p-6 scrollbar-app lg:w-[380px] lg:border-b-0 lg:border-r">
+      <div
+        className={cn(
+          'flex w-full min-h-0 flex-1 flex-col gap-4 overflow-y-auto border-b border-app-hairline p-6 scrollbar-app lg:w-[380px] lg:flex-none lg:border-b-0 lg:border-r',
+          mobileView === 'result' && 'max-lg:hidden',
+        )}
+      >
         <div>
           <h2 className="text-[16px] font-semibold text-app-text">{t('clone.uploadTitle')}</h2>
           <p className="mt-1 text-[13.5px] leading-relaxed text-app-text-2">
@@ -190,6 +224,18 @@ export function ClonePromptView() {
           </button>
         )}
 
+        {/* banner de erro — persiste até analisar de novo */}
+        {analyzeError && (
+          <div className="flex items-start gap-2.5 rounded-[10px] border border-red-500/25 bg-red-500/[0.07] p-3">
+            <AlertCircle className="mt-0.5 size-4 shrink-0 text-red-400" strokeWidth={1.8} />
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-app-text">{t('clone.errorTitle')}</p>
+              <p className="mt-0.5 text-[12px] leading-relaxed text-app-text-2">{analyzeError}</p>
+            </div>
+          </div>
+        )}
+
+
         {/* CTA */}
         <button
           type="button"
@@ -214,7 +260,12 @@ export function ClonePromptView() {
       </div>
 
       {/* painel direito — resultado */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col p-6">
+      <div
+        className={cn(
+          'flex min-h-0 min-w-0 flex-1 flex-col p-6',
+          mobileView === 'upload' && 'max-lg:hidden',
+        )}
+      >
         <div className="mb-4 flex items-center gap-2.5">
           <Copy className="size-[17px] text-app-lime" strokeWidth={1.8} />
           <h2 className="text-[16px] font-semibold text-app-text">{t('clone.resultTitle')}</h2>
@@ -279,7 +330,7 @@ export function ClonePromptView() {
               <button
                 type="button"
                 onClick={copyResult}
-                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[10px] bg-app-lime text-[14.5px] font-semibold text-app-lime-ink transition-colors duration-200 ease-app hover:bg-app-lime-hover"
+                className="flex h-11 items-center justify-center gap-2 rounded-[10px] bg-app-lime text-[14.5px] font-semibold text-app-lime-ink transition-colors duration-200 ease-app hover:bg-app-lime-hover sm:flex-1"
               >
                 {copied ? (
                   <>
@@ -303,6 +354,7 @@ export function ClonePromptView() {
             </div>
           </>
         )}
+      </div>
       </div>
     </div>
   );

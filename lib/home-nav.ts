@@ -75,6 +75,19 @@ export function stripLocalePrefix(pathname: string): string {
   return pathname;
 }
 
+/**
+ * Navegação inferior do mobile (substitui a sidebar abaixo de `lg`).
+ * Início · Pesquisar · Comunidade · Galeria · Workspace · Ferramentas.
+ */
+export const MOBILE_NAV: HomeNavItem[] = [
+  { id: 'inicio', icon: House, href: '/home' },
+  { id: 'pesquisar', icon: Search, action: 'palette' },
+  { id: 'comunidade', icon: Rss, href: '/community' },
+  { id: 'galeria', icon: FolderOpen, href: '/gallery' },
+  { id: 'workspace', icon: Waypoints, href: '/workspaces' },
+  { id: 'ferramentas', icon: LayoutGrid, href: '/tools' },
+];
+
 export const TOOLS_NAV: HomeNavItem[] = [
   { id: 'todasFerramentas', icon: LayoutGrid, href: '/tools' },
   { id: 'workspace', icon: Waypoints, href: '/workspaces' },
@@ -122,19 +135,17 @@ export interface PaletteCommand {
   icon: LucideIcon;
   href?: string;
   soon?: boolean;
-  /** tecla do atalho global Ctrl+Shift+<tecla> */
-  shortcut?: string;
   /** aparece no grupo Navegação quando não há busca */
   nav?: boolean;
 }
 
 export const PALETTE_COMMANDS: PaletteCommand[] = [
-  // navegação principal (com atalhos) — grupo Navegação por padrão
-  { id: 'gerarImagens', icon: Image, href: '/image', shortcut: 'F', nav: true },
-  { id: 'gerarVideos', icon: SquarePlay, href: '/video', shortcut: 'V', nav: true },
-  { id: 'textoParaVoz', icon: Mic, href: '/voice', shortcut: 'T', nav: true },
-  { id: 'abrirGaleria', icon: FolderOpen, href: '/gallery', shortcut: 'G', nav: true },
-  { id: 'criarWorkspace', icon: Waypoints, href: '/workspaces', shortcut: 'L', nav: true },
+  // navegação principal — grupo Navegação por padrão
+  { id: 'gerarImagens', icon: Image, href: '/image', nav: true },
+  { id: 'gerarVideos', icon: SquarePlay, href: '/video', nav: true },
+  { id: 'textoParaVoz', icon: Mic, href: '/voice', nav: true },
+  { id: 'abrirGaleria', icon: FolderOpen, href: '/gallery', nav: true },
+  { id: 'criarWorkspace', icon: Waypoints, href: '/workspaces', nav: true },
   // demais ferramentas (aparecem na busca)
   { id: 'provadorVirtual', icon: Shirt, href: '/image?tool=try-on' },
   { id: 'trocaDeRosto', icon: Replace, href: '/image?tool=face-swap' },

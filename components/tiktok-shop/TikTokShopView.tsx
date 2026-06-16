@@ -299,24 +299,24 @@ export function TikTokShopView() {
       <div className="mx-auto w-full max-w-[1500px] px-6 pb-16">
         {/* cabeçalho + abas (sticky) — bg estende além do padding para cobrir a
             borda dos cards das pontas ao rolar */}
-        <div className="sticky top-0 z-20 -mx-6 bg-app-bg px-6 pb-4 pt-7">
+        <div className="sticky top-0 z-20 -mx-6 bg-app-bg px-6 pb-4 pt-5 sm:pt-7">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[15px] text-app-text-2">{t(TAB_I18N[activeTab].subtitle)}</p>
+          <p className="text-[14px] text-app-text-2 sm:text-[15px]">{t(TAB_I18N[activeTab].subtitle)}</p>
           <span className="flex items-center gap-1.5 rounded-full bg-app-lime/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-app-lime ring-1 ring-app-lime/25">
             <Spotlight className="size-3.5" />
             {t('top10')}
           </span>
         </div>
 
-        {/* abas */}
-        <div className="mt-4 flex gap-1.5">
+        {/* abas — roláveis no mobile */}
+        <div className="mt-4 flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {TAB_META.map(({ id, icon: Icon }) => (
             <button
               key={id}
               type="button"
               onClick={() => setActiveTab(id)}
               className={cn(
-                'flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold transition-colors duration-200 ease-app',
+                'flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold transition-colors duration-200 ease-app',
                 activeTab === id
                   ? 'bg-app-lime text-app-lime-ink'
                   : 'bg-app-surface text-app-text-2 hover:text-app-text',
@@ -332,7 +332,7 @@ export function TikTokShopView() {
         {/* conteúdo */}
         <div className="relative mt-2">
           {loading ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
               {Array.from({ length: 10 }, (_, i) => (
                 <div key={i} className="overflow-hidden rounded-[16px] border border-app-hairline">
                   <div className="aspect-square skeleton-app bg-app-surface" />
@@ -356,7 +356,7 @@ export function TikTokShopView() {
           ) : (
             <div
               className={cn(
-                'grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5',
+                'grid grid-cols-1 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5',
                 isFreePlan && 'pointer-events-none select-none blur-sm',
               )}
             >

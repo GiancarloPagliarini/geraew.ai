@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
+  AlertCircle,
   Hd,
   Image as ImageIcon,
   Minus,
@@ -19,12 +20,14 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { api, ApiError } from '@/lib/api';
+import { api, ApiError, type CreditsEstimateRequest } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
 import type { PendingGeneration } from '@/components/image/types';
 import { useGenerationTracker } from '@/components/image/use-generation-tracker';
+import { useGenerationErrorMessage } from '@/lib/use-generation-error';
 import { ImageDropTile, type UploadedImage } from '@/components/image/ImageDropTile';
+import { GenerationCostEstimate } from '@/components/app/GenerationCostEstimate';
 import {
   Select,
   SelectContent,
@@ -37,12 +40,16 @@ const MAX_REFERENCES = 8;
 const MAX_QUANTITY = 4;
 const REF_ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
 const REF_MAX_BYTES = 5 * 1024 * 1024;
+// proporções do provador virtual / troca de rosto
 const ASPECT_RATIOS = ['1:1', '4:5', '3:4', '16:9', '9:16'];
-const IMAGE_RESOLUTIONS = [
-  { value: 'RES_1K', label: '1K' },
-  { value: 'RES_2K', label: '2K' },
-  { value: 'RES_4K', label: '4K' },
-];
+
+// ── Capacidades por modelo de imagem (espelha o painel do workspace) ──
+const R1K = { value: 'RES_1K', label: '1K' };
+const R2K = { value: 'RES_2K', label: '2K' };
+const R3K = { value: 'RES_3K', label: '3K' };
+const R4K = { value: 'RES_4K', label: '4K' };
+const ASPECTS_DEFAULT = ['9:16', '1:1', '4:3', '16:9'];
+const ASPECTS_SEEDREAM = ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '21:9'];
 
 type ToolId = 'generate' | 'try-on' | 'face-swap' | 'upscale';
 
@@ -53,19 +60,44 @@ const TOOLS: { id: ToolId; labelKey: string; icon: LucideIcon }[] = [
   { id: 'upscale', labelKey: 'toolUpscale', icon: Wand2 },
 ];
 
-/** Modelos base do gerador (merge com os do banco quando disponíveis). */
-const BASE_MODELS = [
-  { value: 'gpt-image-2', label: 'GPT Image 2' },
-  { value: 'seedream-5-lite', label: 'Seedream Lite' },
-  { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2' },
-  { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro' },
-  { value: 'sem-censura', label: 'Geraew Unlocked' },
+interface ImageModelConfig {
+  value: string;
+  label: string;
+  /** variante usada no pricing (/credits/estimate) */
+  variant: string;
+  /** resoluções aceitas pelo modelo, na ordem de exibição */
+  resolutions: { value: string; label: string }[];
+  defaultResolution: string;
+  /** proporções aceitas */
+  aspects: string[];
+  defaultAspect: string;
+  /** suporta "melhorar prompt" (sem-censura não suporta) */
+  enhance: boolean;
+  /** exibe badge "Novo" no seletor */
+  isNew?: boolean;
+}
+
+/**
+ * Modelos base do gerador (merge com os do banco quando disponíveis).
+ * Cada modelo expõe apenas as resoluções/proporções que de fato suporta:
+ * - Seedream Lite: somente 2K e 3K (sem 1K/4K), com proporções extras.
+ * - Geraew Unlocked (sem-censura): somente 2K e 4K (sem 1K) e sem melhorar prompt.
+ * - GPT Image 2: 1K/2K/4K, mas 4K é bloqueado na proporção 1:1.
+ * - Nano Banana 2 / Pro: 1K/2K/4K.
+ */
+const IMAGE_MODELS: ImageModelConfig[] = [
+  { value: 'gpt-image-2', label: 'GPT Image 2', variant: 'GPT_IMAGE_2', resolutions: [R4K, R2K, R1K], defaultResolution: 'RES_2K', aspects: ASPECTS_DEFAULT, defaultAspect: '1:1', enhance: true, isNew: true },
+  { value: 'seedream-5-lite', label: 'Seedream Lite', variant: 'SEEDREAM_LITE', resolutions: [R3K, R2K], defaultResolution: 'RES_2K', aspects: ASPECTS_SEEDREAM, defaultAspect: '1:1', enhance: true, isNew: true },
+  { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2', variant: 'NB2', resolutions: [R4K, R2K, R1K], defaultResolution: 'RES_2K', aspects: ASPECTS_DEFAULT, defaultAspect: '1:1', enhance: true },
+  { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro', variant: 'NBP', resolutions: [R4K, R2K, R1K], defaultResolution: 'RES_2K', aspects: ASPECTS_DEFAULT, defaultAspect: '1:1', enhance: true },
+  { value: 'sem-censura', label: 'Geraew Unlocked', variant: 'SEM_CENSURA', resolutions: [R4K, R2K], defaultResolution: 'RES_2K', aspects: ASPECTS_DEFAULT, defaultAspect: '1:1', enhance: false },
 ];
 
 /** Mesmo modelo fixo usado pelo painel de Upscale do workspace. */
 const UPSCALE_MODEL = 'gemini-3-pro-image-preview';
 
 const FACESWAP_RESOLUTIONS = ['1K', '2K', '4K'];
+const FACESWAP_RES_TO_DB: Record<string, string> = { '1K': 'RES_1K', '2K': 'RES_2K', '4K': 'RES_4K' };
 const TRYON_RESOLUTIONS = [
   { value: 'RES_1K', label: '1K' },
   { value: 'RES_2K', label: '2K' },
@@ -122,19 +154,35 @@ export function ImageConfigPanel({
   const [tool, setTool] = useState<ToolId>(initialTool ?? 'generate');
 
   // gerar imagens
-  const [model, setModel] = useState('gpt-image-2');
+  const [model, setModel] = useState(IMAGE_MODELS[0].value);
   const [references, setReferences] = useState<UploadedImage[]>([]);
   const [prompt, setPrompt] = useState(initialPrompt ?? '');
   const [enhance, setEnhance] = useState(false);
   const [quantity, setQuantity] = useState(1);
-  const [aspect, setAspect] = useState('1:1');
-  const [resolution, setResolution] = useState('RES_1K');
+  const [aspect, setAspect] = useState(IMAGE_MODELS[0].defaultAspect);
+  const [resolution, setResolution] = useState(IMAGE_MODELS[0].defaultResolution);
+
+  const modelConfig = IMAGE_MODELS.find((m) => m.value === model) ?? IMAGE_MODELS[0];
 
   // GPT Image 2 não suporta 4K com proporção 1:1 (mesma regra do workspace)
   const is4kBlocked = (m: string, a: string) => m === 'gpt-image-2' && a === '1:1';
+
+  // ao trocar de modelo, coage proporção e resolução para o que o modelo aceita
   const selectGenModel = (value: string) => {
     setModel(value);
-    if (is4kBlocked(value, aspect) && resolution === 'RES_4K') setResolution('RES_2K');
+    const cfg = IMAGE_MODELS.find((m) => m.value === value);
+    if (!cfg) return;
+    if (!cfg.enhance) setEnhance(false);
+    const nextAspect = cfg.aspects.includes(aspect) ? aspect : cfg.defaultAspect;
+    if (nextAspect !== aspect) setAspect(nextAspect);
+    const blocked = (r: string) => r === 'RES_4K' && value === 'gpt-image-2' && nextAspect === '1:1';
+    const stillValid = cfg.resolutions.some((r) => r.value === resolution) && !blocked(resolution);
+    if (!stillValid) {
+      const fallback = blocked(cfg.defaultResolution)
+        ? cfg.resolutions.find((r) => !blocked(r.value))?.value ?? cfg.defaultResolution
+        : cfg.defaultResolution;
+      setResolution(fallback);
+    }
   };
   const selectAspect = (value: string) => {
     setAspect(value);
@@ -157,12 +205,15 @@ export function ImageConfigPanel({
   const [upscaleImage, setUpscaleImage] = useState<UploadedImage | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
+  // banner de erro acima do botão Gerar — só some ao gerar de novo
+  const [generationError, setGenerationError] = useState<string | null>(null);
   // contador (e não boolean) para o dragleave dos filhos não piscar o overlay
   const [dragDepth, setDragDepth] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const promptRef = useRef<HTMLTextAreaElement>(null);
 
-  const { pending, track } = useGenerationTracker();
+  const { pending, track } = useGenerationTracker({ onError: setGenerationError });
+  const mapError = useGenerationErrorMessage();
 
   useEffect(() => {
     onPendingChange(pending);
@@ -181,15 +232,42 @@ export function ImageConfigPanel({
 
   const modelOptions = useMemo(() => {
     const dbBySlug = new Map((modelsQuery.data ?? []).map((m) => [m.slug, m]));
-    return BASE_MODELS.map((opt) => {
+    return IMAGE_MODELS.map((opt) => {
       const dbModel = dbBySlug.get(opt.value);
       return {
-        ...opt,
+        value: opt.value,
         label: dbModel?.label ?? opt.label,
         disabled: dbModel ? !dbModel.isActive : false,
+        isNew: !!opt.isNew,
       };
     });
   }, [modelsQuery.data]);
+
+  // variante do modelo p/ pricing
+  const imageModelVariant = modelConfig.variant;
+
+  // estimativa de créditos por geração — varia conforme a ferramenta/config
+  const estimateQuery = useQuery({
+    queryKey: ['credits', 'estimate', 'image', tool, references.length > 0, resolution, imageModelVariant, tryonResolution, fsResolution],
+    queryFn: () => {
+      const req: CreditsEstimateRequest =
+        tool === 'generate'
+          ? {
+              type: references.length > 0 ? 'IMAGE_TO_IMAGE' : 'TEXT_TO_IMAGE',
+              resolution,
+              modelVariant: imageModelVariant,
+            }
+          : tool === 'try-on'
+            ? { type: 'IMAGE_TO_IMAGE', resolution: tryonResolution, hasAudio: false, freeGenerationType: 'VIRTUAL_TRY_ON' }
+            : tool === 'face-swap'
+              ? { type: 'IMAGE_TO_IMAGE', resolution: FACESWAP_RES_TO_DB[fsResolution] ?? 'RES_2K', hasAudio: false, freeGenerationType: 'FACE_SWAP' }
+              : { type: 'IMAGE_TO_IMAGE', resolution: 'RES_2K', modelVariant: 'NBP', freeGenerationType: 'UPSCALE' };
+      return api.credits.estimate(accessToken!, req);
+    },
+    enabled: !!accessToken && !!user,
+    staleTime: 30_000,
+  });
+  const estimate = estimateQuery.data;
 
   const addReferenceFiles = (files: FileList | null) => {
     if (!files) return;
@@ -266,6 +344,7 @@ export function ImageConfigPanel({
       openLoginModal({ mode: 'login' });
       return;
     }
+    setGenerationError(null); // limpa o banner de erro ao gerar de novo
     setSubmitting(true);
     try {
       if (tool === 'generate') {
@@ -295,7 +374,7 @@ export function ImageConfigPanel({
           api.generations.generateImage(accessToken, {
             prompt: finalPrompt,
             model,
-            resolution: resolution as 'RES_1K' | 'RES_2K' | 'RES_4K',
+            resolution: resolution as 'RES_1K' | 'RES_2K' | 'RES_3K' | 'RES_4K',
             aspect_ratio: aspect,
             mime_type: 'image/png',
             ...(references.length > 0 && {
@@ -310,9 +389,9 @@ export function ImageConfigPanel({
           | undefined;
         if (firstFailure) {
           const reason = firstFailure.reason;
-          toast.error(
-            reason instanceof ApiError || reason instanceof Error ? reason.message : t('image.failed'),
-          );
+          const msg = mapError(reason instanceof ApiError || reason instanceof Error ? reason.message : null);
+          toast.error(msg);
+          setGenerationError(msg);
         }
         ids.forEach((id) => track(id, finalPrompt));
         return;
@@ -352,9 +431,9 @@ export function ImageConfigPanel({
       });
       track(id, t('image.toolUpscale'));
     } catch (err) {
-      toast.error(
-        err instanceof ApiError || err instanceof Error ? err.message : t('image.failed'),
-      );
+      const msg = mapError(err instanceof ApiError || err instanceof Error ? err.message : null);
+      toast.error(msg);
+      setGenerationError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -364,7 +443,7 @@ export function ImageConfigPanel({
     // painel de configuração — no modo gerar, aceita soltar imagens como referência
     <div
       className={cn(
-        'relative flex w-full shrink-0 flex-col border-b border-app-hairline lg:w-[360px] lg:border-b-0 lg:border-r',
+        'relative flex w-full min-h-0 flex-1 flex-col border-b border-app-hairline lg:w-[360px] lg:flex-none lg:border-b-0 lg:border-r',
         hidden && 'hidden',
       )}
       onDragEnter={(e) => {
@@ -426,7 +505,14 @@ export function ImageConfigPanel({
                 <SelectContent position="popper" side="bottom" align="start" sideOffset={6} className={selectContentClass}>
                   {modelOptions.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled} className={selectItemClass}>
-                      {opt.label}
+                      <span className="flex items-center gap-1.5">
+                        {opt.label}
+                        {opt.isNew && (
+                          <span className="rounded-full border border-app-lime/40 bg-app-lime/15 px-1.5 py-px text-[8px] font-bold uppercase tracking-[0.1em] text-app-lime">
+                            {t('newBadge')}
+                          </span>
+                        )}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -507,29 +593,31 @@ export function ImageConfigPanel({
                   rows={5}
                   className="w-full resize-none bg-transparent p-3.5 text-[14px] leading-relaxed text-app-text outline-none placeholder:text-app-muted"
                 />
-                {/* melhorar prompt */}
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={enhance}
-                  onClick={() => setEnhance((v) => !v)}
-                  className="flex items-center gap-2.5 px-3.5 pb-3 text-[13px] font-medium text-app-text-2 transition-colors duration-200 ease-app hover:text-app-text"
-                >
-                  <span
-                    className={cn(
-                      'flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ease-app',
-                      enhance ? 'bg-app-lime' : 'bg-app-card-hover',
-                    )}
+                {/* melhorar prompt (modelos sem suporte, ex.: sem-censura, ocultam) */}
+                {modelConfig.enhance && (
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={enhance}
+                    onClick={() => setEnhance((v) => !v)}
+                    className="flex items-center gap-2.5 px-3.5 pb-3 text-[13px] font-medium text-app-text-2 transition-colors duration-200 ease-app hover:text-app-text"
                   >
                     <span
                       className={cn(
-                        'size-4 rounded-full bg-app-text transition-transform duration-200 ease-app',
-                        enhance && 'translate-x-4 !bg-app-lime-ink',
+                        'flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ease-app',
+                        enhance ? 'bg-app-lime' : 'bg-app-card-hover',
                       )}
-                    />
-                  </span>
-                  {t('image.enhance')}
-                </button>
+                    >
+                      <span
+                        className={cn(
+                          'size-4 rounded-full bg-app-text transition-transform duration-200 ease-app',
+                          enhance && 'translate-x-4 !bg-app-lime-ink',
+                        )}
+                      />
+                    </span>
+                    {t('image.enhance')}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -559,7 +647,7 @@ export function ImageConfigPanel({
                 </button>
               </div>
 
-              {/* resolução (GPT Image 2 bloqueia 4K em 1:1) */}
+              {/* resolução (opções variam por modelo; GPT Image 2 bloqueia 4K em 1:1) */}
               <Select value={resolution} onValueChange={setResolution}>
                 <SelectTrigger className={cn(selectTriggerClass, '!h-10 flex-1')}>
                   <Hd className="size-[15px] !text-app-lime" strokeWidth={1.8} />
@@ -568,7 +656,7 @@ export function ImageConfigPanel({
                   </span>
                 </SelectTrigger>
                 <SelectContent position="popper" side="bottom" align="start" sideOffset={6} className={selectContentClass}>
-                  {IMAGE_RESOLUTIONS.map((r) => (
+                  {modelConfig.resolutions.map((r) => (
                     <SelectItem
                       key={r.value}
                       value={r.value}
@@ -581,6 +669,7 @@ export function ImageConfigPanel({
                 </SelectContent>
               </Select>
 
+              {/* proporção (opções variam por modelo) */}
               <Select value={aspect} onValueChange={selectAspect}>
                 <SelectTrigger className={cn(selectTriggerClass, '!h-10 flex-1')}>
                   <ImageIcon className="size-[15px] !text-app-lime" strokeWidth={1.8} />
@@ -589,7 +678,7 @@ export function ImageConfigPanel({
                   </span>
                 </SelectTrigger>
                 <SelectContent position="popper" side="bottom" align="start" sideOffset={6} className={selectContentClass}>
-                  {ASPECT_RATIOS.map((r) => (
+                  {modelConfig.aspects.map((r) => (
                     <SelectItem key={r} value={r} className={cn(selectItemClass, 'font-mono')}>
                       {r}
                     </SelectItem>
@@ -701,6 +790,26 @@ export function ImageConfigPanel({
               accept={['image/jpeg', 'image/png']}
               className="h-[160px]"
             />
+          </div>
+        )}
+
+        {/* estimativa de custo por geração */}
+        <GenerationCostEstimate
+          credits={estimate?.creditsRequired}
+          loading={estimateQuery.isLoading}
+          free={!!estimate?.canUseFreeGeneration}
+          freeRemaining={estimate?.freeGenerationsRemainingForType}
+          count={tool === 'generate' ? quantity : 1}
+        />
+
+        {/* banner de erro — persiste até gerar de novo */}
+        {generationError && (
+          <div className="flex items-start gap-2.5 rounded-[10px] border border-red-500/25 bg-red-500/[0.07] p-3">
+            <AlertCircle className="mt-0.5 size-4 shrink-0 text-red-400" strokeWidth={1.8} />
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-app-text">{t('image.errorTitle')}</p>
+              <p className="mt-0.5 text-[12px] leading-relaxed text-app-text-2">{generationError}</p>
+            </div>
           </div>
         )}
 

@@ -1,6 +1,26 @@
 {
   "home": {
     "soon": "Coming soon",
+    "newBadge": "New",
+    "errors": {
+      "generic": "We couldn't complete the generation. Please try again in a moment.",
+      "noResult": "Couldn't produce a result. Try adjusting the prompt or the images.",
+      "blockedContent": "Content blocked by the AI. Try different images or instructions.",
+      "sensitiveContent": "Sensitive content detected. Try different images or instructions.",
+      "insufficientCredits": "Not enough credits for this generation.",
+      "limitReached": "You've reached your plan limit for this action.",
+      "rateLimited": "Too many requests in a short time. Wait a few seconds and try again.",
+      "timeout": "The generation took longer than expected. Please try again."
+    },
+    "cost": {
+      "label": "Estimate",
+      "credits": "{credits} credits",
+      "free": "Free",
+      "calculating": "Calculating…",
+      "hintSingle": "Estimated cost per generation",
+      "hintMultiple": "{count}× · estimated total cost",
+      "freeHint": "{remaining} free generations left"
+    },
     "shell": {
       "create": "Create",
       "toggleSidebar": "Collapse menu",
@@ -26,6 +46,7 @@
       "galeria": "Gallery",
       "prompts": "Prompt Library",
       "todasFerramentas": "All tools",
+      "ferramentas": "Tools",
       "workspace": "Workspace",
       "gerarImagens": "Generate images",
       "gerarVideos": "Generate videos",
@@ -140,6 +161,7 @@
       "tagPause": "Insert pause",
       "pauseTag": "[pause {s}s]",
       "emotionsMenu": "Insert emotion",
+      "expressiveUnavailable": "Unavailable for cloned voices",
       "emotions": {
         "laughs": "Laughs",
         "whispers": "Whispers",
@@ -225,11 +247,14 @@
       "generate": "Generate",
       "generating": "Generating…",
       "creations": "Creations",
+      "viewConfig": "Configure",
       "favorites": "Favorites",
       "creationsEmpty": "This folder is empty",
       "creationsEmptyCta": "Create new content",
       "success": "Image generated!",
       "failed": "Could not generate the image. Please try again.",
+      "errorTitle": "Generation failed",
+      "errorSubtitle": "Credits were refunded",
       "refMax": "Maximum of {max} references.",
       "dropHint": "Drop images to add as reference",
       "closeTab": "Close tab",
@@ -301,6 +326,8 @@
     },
     "clone": {
       "uploadTitle": "Upload an image",
+      "mobileUpload": "Image",
+      "mobileResult": "Prompt",
       "uploadSubtitle": "We return the prompt ready for you to recreate this image.",
       "dropzone": "Drag an image or click to upload",
       "browse": "or browse files",
@@ -319,7 +346,8 @@
       "remove": "Remove image",
       "invalidFormat": "Unsupported format. Use PNG, JPG or WebP.",
       "tooLarge": "Image too large (max {max}MB).",
-      "failed": "Could not analyze the image. Please try again."
+      "failed": "Could not analyze the image. Please try again.",
+      "errorTitle": "Analysis failed"
     },
     "gallery": {
       "filters": {

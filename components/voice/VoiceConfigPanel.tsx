@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import {
+  AlertCircle,
   Annoyed,
   AudioLines,
   Check,
@@ -38,6 +39,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
 import type { PendingGeneration } from '@/components/image/types';
 import { useGenerationTracker } from '@/components/image/use-generation-tracker';
+import { useGenerationErrorMessage } from '@/lib/use-generation-error';
 import { MediaFileTile, readMediaDuration, type MediaFile } from '@/components/app/MediaFileTile';
 import { VoicePickerModal, type VoiceOption } from '@/components/voice/VoicePickerModal';
 import {
@@ -137,7 +139,11 @@ export function VoiceConfigPanel({
 
   const textRef = useRef<HTMLTextAreaElement>(null);
 
-  const { pending, track } = useGenerationTracker();
+  // banner de erro acima do botão Gerar — só some ao gerar de novo
+  const [generationError, setGenerationError] = useState<string | null>(null);
+
+  const { pending, track } = useGenerationTracker({ onError: setGenerationError });
+  const mapError = useGenerationErrorMessage();
 
   useEffect(() => {
     onPendingChange(pending);
@@ -236,12 +242,18 @@ export function VoiceConfigPanel({
     !!text.trim() &&
     (tool === 'tts' ? !!voice : !!referenceAudio && consent);
 
+  // Emoções e pausas só funcionam no caminho Inworld (vozes padrão do catálogo).
+  // Vozes clonadas e o modo "clonar" usam OmniVoice, que não suporta esse markup
+  // — nesses casos os menus ficam desabilitados.
+  const expressiveSupported = tool === 'tts' && !!voice && !voice.cloned;
+
   const generate = async () => {
     if (!canGenerate || submitting) return;
     if (!user || !accessToken) {
       openLoginModal({ mode: 'login' });
       return;
     }
+    setGenerationError(null); // limpa o banner de erro ao gerar de novo
     setSubmitting(true);
     try {
       const { id } =
@@ -255,11 +267,11 @@ export function VoiceConfigPanel({
               audio: referenceAudio!.base64,
               audio_mime_type: referenceAudio!.mime_type,
             });
-      track(id, text.trim());
+      track(id, text.trim(), 'voice');
     } catch (err) {
-      toast.error(
-        err instanceof ApiError || err instanceof Error ? err.message : t('voice.failed'),
-      );
+      const msg = mapError(err instanceof ApiError || err instanceof Error ? err.message : null);
+      toast.error(msg);
+      setGenerationError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -268,7 +280,7 @@ export function VoiceConfigPanel({
   return (
     <div
       className={cn(
-        'relative flex w-full shrink-0 flex-col border-b border-app-hairline lg:w-[360px] lg:border-b-0 lg:border-r',
+        'relative flex w-full min-h-0 flex-1 flex-col border-b border-app-hairline lg:w-[360px] lg:flex-none lg:border-b-0 lg:border-r',
         hidden && 'hidden',
       )}
     >
@@ -436,17 +448,20 @@ export function VoiceConfigPanel({
                 <DropdownMenu>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <DropdownMenuTrigger asChild>
+                      <DropdownMenuTrigger asChild disabled={!expressiveSupported}>
                         <button
                           type="button"
+                          disabled={!expressiveSupported}
                           aria-label={t('voice.tagPause')}
-                          className="flex size-6 items-center justify-center rounded-md text-app-muted transition-colors duration-200 ease-app hover:bg-app-surface hover:text-app-text"
+                          className="flex size-6 items-center justify-center rounded-md text-app-muted transition-colors duration-200 ease-app hover:bg-app-surface hover:text-app-text disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-app-muted"
                         >
                           <Clock className="size-[14px]" strokeWidth={1.8} />
                         </button>
                       </DropdownMenuTrigger>
                     </TooltipTrigger>
-                    <TooltipContent side="top" sideOffset={6}>{t('voice.tagPause')}</TooltipContent>
+                    <TooltipContent side="top" sideOffset={6}>
+                      {expressiveSupported ? t('voice.tagPause') : t('voice.expressiveUnavailable')}
+                    </TooltipContent>
                   </Tooltip>
                   <DropdownMenuContent
                     align="end"
@@ -469,17 +484,20 @@ export function VoiceConfigPanel({
                 <DropdownMenu>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <DropdownMenuTrigger asChild>
+                      <DropdownMenuTrigger asChild disabled={!expressiveSupported}>
                         <button
                           type="button"
+                          disabled={!expressiveSupported}
                           aria-label={t('voice.emotionsMenu')}
-                          className="flex size-6 items-center justify-center rounded-md text-app-muted transition-colors duration-200 ease-app hover:bg-app-surface hover:text-app-text"
+                          className="flex size-6 items-center justify-center rounded-md text-app-muted transition-colors duration-200 ease-app hover:bg-app-surface hover:text-app-text disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-app-muted"
                         >
                           <Smile className="size-[14px]" strokeWidth={1.8} />
                         </button>
                       </DropdownMenuTrigger>
                     </TooltipTrigger>
-                    <TooltipContent side="top" sideOffset={6}>{t('voice.emotionsMenu')}</TooltipContent>
+                    <TooltipContent side="top" sideOffset={6}>
+                      {expressiveSupported ? t('voice.emotionsMenu') : t('voice.expressiveUnavailable')}
+                    </TooltipContent>
                   </Tooltip>
                   <DropdownMenuContent
                     align="end"
@@ -518,6 +536,18 @@ export function VoiceConfigPanel({
             </span>
           </div>
         </div>
+
+        {/* banner de erro — persiste até gerar de novo */}
+        {generationError && (
+          <div className="flex items-start gap-2.5 rounded-[10px] border border-red-500/25 bg-red-500/[0.07] p-3">
+            <AlertCircle className="mt-0.5 size-4 shrink-0 text-red-400" strokeWidth={1.8} />
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-app-text">{t('image.errorTitle')}</p>
+              <p className="mt-0.5 text-[12px] leading-relaxed text-app-text-2">{generationError}</p>
+            </div>
+          </div>
+        )}
+
 
         {/* gerar */}
         <button

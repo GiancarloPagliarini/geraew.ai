@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   AlertCircle,
@@ -15,10 +14,11 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { api, type UserAvatar, type UserAvatarQuota } from '@/lib/api';
+import { api, type UserAvatar } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { EmptyState } from '@/components/app/EmptyState';
 import { CreateAvatarModal } from '@/components/editor/CreateAvatarModal';
+import { AvatarVideoPanel } from '@/components/avatar/AvatarVideoPanel';
 import {
   Select,
   SelectContent,
@@ -261,17 +261,14 @@ function AvatarCard({
 export function AvatarView() {
   const t = useTranslations('editorDialogs.avatars');
   const tAvatar = useTranslations('home.avatar');
-  const router = useRouter();
+  const tHome = useTranslations('home');
   const { user, accessToken } = useAuth();
+  const queryClient = useQueryClient();
 
   const [tool, setTool] = useState<AvatarToolId>('create');
-  const [avatars, setAvatars] = useState<UserAvatar[]>([]);
-  const [quota, setQuota] = useState<UserAvatarQuota | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
   const [selectedReadyId, setSelectedReadyId] = useState<string>('');
-  const fetchRef = useRef(0);
-  const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // mobile: alterna entre a config (criar/gerar) e a lista de avatares
+  const [mobileView, setMobileView] = useState<'config' | 'list'>('config');
 
   // gate de manutenção do avatar-video (admin pode desligar)
   const { data: videoModels } = useQuery({
@@ -283,77 +280,87 @@ export function AvatarView() {
   const videoDisabled = avatarVideoModel?.isActive === false;
   const videoDisabledMessage = avatarVideoModel?.statusMessage ?? t('maintenance.defaultMessage');
 
-  const fetchAvatars = async (silent = false) => {
-    if (!user || !accessToken) return;
-    const id = ++fetchRef.current;
-    if (!silent) {
-      setLoading(true);
-      setError(false);
-    }
-    try {
-      const res = await api.avatars.list(accessToken);
-      if (id === fetchRef.current) {
-        setAvatars(res.avatars);
-        setQuota(res.quota);
-      }
-    } catch {
-      if (id === fetchRef.current && !silent) setError(true);
-    } finally {
-      if (id === fetchRef.current && !silent) setLoading(false);
-    }
-  };
+  // Lista de avatares — useQuery dedupa chamadas e mantém os dados anteriores
+  // durante o refetch (keepPreviousData), evitando o "piscar" do skeleton.
+  // Faz polling apenas quando há avatar em processamento.
+  const avatarsQuery = useQuery({
+    queryKey: ['avatars'],
+    queryFn: () => api.avatars.list(accessToken as string),
+    enabled: !!user && !!accessToken,
+    placeholderData: keepPreviousData,
+    refetchInterval: (query) => {
+      const list = query.state.data?.avatars ?? [];
+      const transient = list.some(
+        (a) => a.status === 'PENDING' || a.status === 'SUBMITTING' || a.status === 'TRAINING',
+      );
+      return transient ? POLL_INTERVAL_MS : false;
+    },
+  });
 
-  useEffect(() => {
-    void fetchAvatars();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, accessToken]);
+  const avatars = useMemo(() => avatarsQuery.data?.avatars ?? [], [avatarsQuery.data]);
+  const quota = avatarsQuery.data?.quota ?? null;
+  // Só mostra skeleton na primeira carga (sem dados antigos para exibir).
+  const loading = avatarsQuery.isLoading;
+  const error = avatarsQuery.isError;
 
-  useEffect(() => {
-    const transient = avatars.some(
-      (a) => a.status === 'PENDING' || a.status === 'SUBMITTING' || a.status === 'TRAINING',
-    );
-    if (!transient) return;
-    pollTimer.current = setTimeout(() => void fetchAvatars(true), POLL_INTERVAL_MS);
-    return () => {
-      if (pollTimer.current) clearTimeout(pollTimer.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [avatars]);
+  type AvatarsData = Awaited<ReturnType<typeof api.avatars.list>>;
 
   const readyAvatars = useMemo(() => avatars.filter((a) => a.status === 'READY'), [avatars]);
+  const selectedReadyAvatar = useMemo(
+    () => readyAvatars.find((a) => a.id === selectedReadyId) ?? null,
+    [readyAvatars, selectedReadyId],
+  );
 
   const handleCreated = (created: UserAvatar) => {
-    setAvatars((prev) => [created, ...prev]);
-    void fetchAvatars(true);
+    queryClient.setQueryData<AvatarsData>(['avatars'], (old) =>
+      old ? { ...old, avatars: [created, ...old.avatars] } : old,
+    );
+    void avatarsQuery.refetch();
+    // no mobile, mostra a lista para o usuário ver o avatar recém-criado processando
+    setMobileView('list');
   };
 
   const handleDelete = async (avatarId: string) => {
     if (!accessToken) return;
     try {
       await api.avatars.delete(accessToken, avatarId);
-      setAvatars((prev) => prev.filter((a) => a.id !== avatarId));
-      void fetchAvatars(true);
+      queryClient.setQueryData<AvatarsData>(['avatars'], (old) =>
+        old ? { ...old, avatars: old.avatars.filter((a) => a.id !== avatarId) } : old,
+      );
+      void avatarsQuery.refetch();
       toast.success(t('deleteSuccess'));
     } catch {
       toast.error(t('deleteError'));
     }
   };
 
-  // "Gerar vídeo": cria um workspace e abre o formulário de vídeo do avatar no canvas
-  const handleGenerateVideo = async (avatar: UserAvatar) => {
-    if (!accessToken) return;
-    try {
-      const ws = await api.workspaces.create(accessToken, { name: `Avatar — ${avatar.name}` });
-      router.push(`/workspace?id=${ws.id}&avatarVideo=${avatar.id}`);
-    } catch {
-      toast.error(t('deleteError'));
-    }
-  };
-
   return (
-    <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* mobile: alternância entre config (criar/gerar) e lista de avatares */}
+      <div className="flex shrink-0 gap-1 border-b border-app-hairline p-2 lg:hidden">
+        {(['config', 'list'] as const).map((view) => (
+          <button
+            key={view}
+            type="button"
+            onClick={() => setMobileView(view)}
+            className={cn(
+              'flex-1 rounded-lg py-2 text-[13px] font-semibold transition-colors duration-200 ease-app',
+              mobileView === view ? 'bg-app-surface text-app-text' : 'text-app-text-2 hover:text-app-text',
+            )}
+          >
+            {view === 'config' ? tHome('image.viewConfig') : t('sectionTitle')}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
       {/* ── Painel de configuração (esquerda) ── */}
-      <div className="flex w-full min-h-0 shrink-0 flex-col border-app-hairline lg:w-[400px] lg:border-r">
+      <div
+        className={cn(
+          'flex w-full min-h-0 flex-1 flex-col border-app-hairline lg:w-[400px] lg:flex-none lg:border-r',
+          mobileView === 'list' && 'max-lg:hidden',
+        )}
+      >
         {/* seletor de ferramenta */}
         <div className="shrink-0 border-b border-app-hairline p-4">
           <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.9px] text-app-muted">
@@ -379,9 +386,10 @@ export function AvatarView() {
           {tool === 'create' ? (
             <CreateAvatarModal embedded open onClose={() => {}} onCreated={handleCreated} />
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-5 scrollbar-app">
-              <div className="flex flex-col gap-2">
-                <span className="text-[11px] font-bold uppercase tracking-[0.9px] text-app-muted">
+            <div className="flex min-h-0 flex-1 flex-col">
+              {/* seletor de avatar — fixo no topo */}
+              <div className="shrink-0 border-b border-app-hairline p-4">
+                <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.9px] text-app-muted">
                   {tAvatar('selectAvatar')}
                 </span>
                 {readyAvatars.length === 0 ? (
@@ -412,28 +420,33 @@ export function AvatarView() {
                 )}
               </div>
 
-              <button
-                type="button"
-                disabled={!selectedReadyId || videoDisabled}
-                title={videoDisabled ? videoDisabledMessage : undefined}
-                onClick={() => {
-                  const a = readyAvatars.find((x) => x.id === selectedReadyId);
-                  if (a) handleGenerateVideo(a);
-                }}
-                className="flex h-11 items-center justify-center gap-2 rounded-[10px] bg-app-lime text-[14px] font-semibold text-app-lime-ink transition-colors duration-200 ease-app hover:bg-app-lime-hover disabled:opacity-50"
-              >
-                <Video className="size-4" strokeWidth={2} />
-                {tAvatar('generate')}
-              </button>
-
-              <p className="text-[12px] leading-relaxed text-app-muted">{tAvatar('generateHint')}</p>
+              {/* formulário de geração — inline, sem redirecionar ao workspace */}
+              {selectedReadyAvatar ? (
+                <AvatarVideoPanel
+                  key={selectedReadyAvatar.id}
+                  avatar={selectedReadyAvatar}
+                  videoDisabled={videoDisabled}
+                  videoDisabledMessage={videoDisabledMessage}
+                />
+              ) : (
+                <div className="flex flex-1 items-center justify-center p-6">
+                  <p className="max-w-[260px] text-center text-[12.5px] leading-relaxed text-app-muted">
+                    {readyAvatars.length === 0 ? tAvatar('generateHint') : tAvatar('selectAvatarPlaceholder')}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
 
       {/* ── Avatares existentes (direita) ── */}
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div
+        className={cn(
+          'flex min-h-0 flex-1 flex-col',
+          mobileView === 'config' && 'max-lg:hidden',
+        )}
+      >
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-app-hairline px-6 py-4">
           <h2 className="text-[16px] font-bold text-app-text">{t('sectionTitle')}</h2>
           {quota && quota.enabled && (
@@ -459,7 +472,7 @@ export function AvatarView() {
             <EmptyState
               icon={AlertCircle}
               title={t('errorLoad')}
-              cta={{ label: t('retry'), onClick: () => fetchAvatars() }}
+              cta={{ label: t('retry'), onClick: () => void avatarsQuery.refetch() }}
             />
           ) : avatars.length === 0 ? (
             <EmptyState
@@ -475,6 +488,7 @@ export function AvatarView() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

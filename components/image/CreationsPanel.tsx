@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Grid2x2, Heart, Search, X } from 'lucide-react';
+import { AlertCircle, AudioLines, Grid2x2, Heart, Search, X } from 'lucide-react';
 import { cn, normalizeSearch } from '@/lib/utils';
 import { api, type GalleryItem } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -29,10 +29,66 @@ interface CreationsPanelProps {
 }
 
 /** Preview de geração: aurora enquanto processa; ao receber a url, a imagem
- *  esmaece por cima (mesmo efeito do painel do workspace). */
+ *  esmaece por cima (mesmo efeito do painel do workspace). Em caso de falha,
+ *  exibe um card de erro no lugar do preview. */
 function PendingPreview({ gen }: { gen: PendingGeneration }) {
   const t = useTranslations('home');
   const [visible, setVisible] = useState(false);
+
+  // áudio: card compacto no padrão das criações de voz (não quadrado)
+  if (gen.kind === 'voice') {
+    const isError = !!gen.error;
+    const isDone = !!gen.url;
+    return (
+      <div>
+        <div
+          className={cn(
+            'flex h-[120px] w-full flex-col items-center justify-center gap-2 rounded-[14px] border p-4 text-center',
+            isError
+              ? 'border-red-500/25 bg-red-500/[0.06]'
+              : 'border-app-hairline bg-[linear-gradient(135deg,#1d2628,#161d1f)]',
+          )}
+        >
+          {isError ? (
+            <>
+              <AlertCircle className="size-6 text-red-400" strokeWidth={1.8} />
+              <p className="text-[12.5px] font-semibold text-app-text">{t('image.errorTitle')}</p>
+            </>
+          ) : (
+            <>
+              <AudioLines className={cn('size-6', isDone ? 'text-app-lime' : 'animate-pulse text-app-lime')} strokeWidth={1.8} />
+              {!isDone && (
+                <span className="font-mono text-[11px] text-app-muted">{t('image.generating')}</span>
+              )}
+            </>
+          )}
+        </div>
+        <p className="mt-2.5 truncate text-[14px] font-semibold text-app-text">{gen.prompt}</p>
+        {isError ? (
+          <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-red-400/80">{gen.error}</p>
+        ) : (
+          <p className="mt-0.5 font-mono text-[12px] text-app-muted">{t('image.generating')}</p>
+        )}
+      </div>
+    );
+  }
+
+  if (gen.error) {
+    return (
+      <div>
+        <div className="flex aspect-square w-full flex-col items-center justify-center gap-2.5 rounded-xl border border-red-500/25 bg-red-500/[0.06] p-5 text-center">
+          <span className="flex size-11 items-center justify-center rounded-full border border-red-500/30 bg-red-500/10">
+            <AlertCircle className="size-[22px] text-red-400" strokeWidth={1.8} />
+          </span>
+          <p className="text-[13.5px] font-semibold text-app-text">{t('image.errorTitle')}</p>
+          <p className="line-clamp-3 text-[12px] leading-relaxed text-app-text-2">{gen.error}</p>
+        </div>
+        <p className="mt-2.5 truncate text-[14px] font-semibold text-app-text">{gen.prompt}</p>
+        <p className="mt-0.5 font-mono text-[12px] text-red-400/80">{t('image.errorSubtitle')}</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <GenerationPreview
@@ -68,6 +124,8 @@ export function CreationsPanel({
   const scrollRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const lightboxTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // nº de colunas do masonry — calculado pela largura (mesmos breakpoints da antiga classe columns-*)
+  const [columns, setColumns] = useState(3);
 
   const openLightbox = (item: GalleryItem, ratio?: number) => {
     if (lightboxTimer.current) clearTimeout(lightboxTimer.current);
@@ -119,6 +177,38 @@ export function CreationsPanel({
     if (!q) return all;
     return all.filter((i) => normalizeSearch(i.prompt ?? '').includes(q));
   }, [data, query, pending]);
+
+  // colunas responsivas pelo tamanho real do container (ResizeObserver dispara
+  // uma vez ao observar — evita setState síncrono no corpo do effect)
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const w = el.clientWidth;
+      setColumns(w < 560 ? 1 : w < 1024 ? 2 : 3);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // distribui pendentes + criações em colunas (round-robin): o pendente vira o
+  // primeiro item de uma coluna e os existentes ficam ao lado, na mesma linha
+  const columnsData = useMemo(() => {
+    type Entry =
+      | { kind: 'pending'; gen: PendingGeneration }
+      | { kind: 'item'; item: GalleryItem }
+      | { kind: 'skeleton'; height: number };
+    const entries: Entry[] = [
+      ...pending.map((gen) => ({ kind: 'pending', gen }) as Entry),
+      ...items.map((item) => ({ kind: 'item', item }) as Entry),
+    ];
+    if (isFetchingNextPage) {
+      SKELETON_HEIGHTS.slice(0, 6).forEach((height) => entries.push({ kind: 'skeleton', height }));
+    }
+    const cols: Entry[][] = Array.from({ length: columns }, () => []);
+    entries.forEach((entry, i) => cols[i % columns].push(entry));
+    return cols;
+  }, [pending, items, isFetchingNextPage, columns]);
 
   // scroll infinito
   useEffect(() => {
@@ -180,39 +270,41 @@ export function CreationsPanel({
             <Heart className="size-[15px]" strokeWidth={1.8} fill={favOnly ? 'currentColor' : 'none'} />
           </button>
 
-          {/* busca */}
-          {searchOpen ? (
-            <div className="flex h-8 w-[200px] items-center gap-2 rounded-full border border-app-hairline bg-app-surface px-3 transition-colors duration-200 ease-app focus-within:border-[rgba(162,221,0,0.4)]">
-              <Search className="size-3.5 shrink-0 text-app-muted" strokeWidth={1.8} />
-              <input
-                autoFocus
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={t('gallery.searchPlaceholder')}
-                className="w-full bg-transparent text-[12.5px] text-app-text outline-none placeholder:text-app-muted"
-              />
+          {/* busca — escondida no mobile */}
+          <div className="max-lg:hidden lg:contents">
+            {searchOpen ? (
+              <div className="flex h-8 w-[200px] items-center gap-2 rounded-full border border-app-hairline bg-app-surface px-3 transition-colors duration-200 ease-app focus-within:border-[rgba(162,221,0,0.4)]">
+                <Search className="size-3.5 shrink-0 text-app-muted" strokeWidth={1.8} />
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={t('gallery.searchPlaceholder')}
+                  className="w-full bg-transparent text-[12.5px] text-app-text outline-none placeholder:text-app-muted"
+                />
+                <button
+                  type="button"
+                  aria-label={t('palette.close')}
+                  onClick={() => {
+                    setSearchOpen(false);
+                    setQuery('');
+                  }}
+                  className="text-app-muted transition-colors duration-200 ease-app hover:text-app-text"
+                >
+                  <X className="size-3.5" strokeWidth={1.8} />
+                </button>
+              </div>
+            ) : (
               <button
                 type="button"
-                aria-label={t('palette.close')}
-                onClick={() => {
-                  setSearchOpen(false);
-                  setQuery('');
-                }}
-                className="text-app-muted transition-colors duration-200 ease-app hover:text-app-text"
+                aria-label={t('gallery.searchPlaceholder')}
+                onClick={() => setSearchOpen(true)}
+                className="flex size-8 items-center justify-center rounded-full text-app-text-2 transition-colors duration-200 ease-app hover:bg-app-surface hover:text-app-text"
               >
-                <X className="size-3.5" strokeWidth={1.8} />
+                <Search className="size-[15px]" strokeWidth={1.8} />
               </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              aria-label={t('gallery.searchPlaceholder')}
-              onClick={() => setSearchOpen(true)}
-              className="flex size-8 items-center justify-center rounded-full text-app-text-2 transition-colors duration-200 ease-app hover:bg-app-surface hover:text-app-text"
-            >
-              <Search className="size-[15px]" strokeWidth={1.8} />
-            </button>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -241,20 +333,24 @@ export function CreationsPanel({
             </button>
           </div>
         ) : (
-          <div className="columns-1 gap-4 sm:columns-2 xl:columns-3">
-            {/* gerações em andamento — mesmo efeito aurora do workspace */}
-            {pending.map((gen) => (
-              <div key={gen.key} className="mb-5 animate-card-in break-inside-avoid">
-                <PendingPreview gen={gen} />
+          // masonry manual: cada coluna é uma pilha; pendentes entram primeiro
+          // e ficam lado a lado com as criações existentes (sem nova linha)
+          <div className="flex gap-4">
+            {columnsData.map((col, ci) => (
+              <div key={ci} className="flex min-w-0 flex-1 flex-col">
+                {col.map((entry, ri) =>
+                  entry.kind === 'pending' ? (
+                    <div key={entry.gen.key} className="mb-5 animate-card-in">
+                      <PendingPreview gen={entry.gen} />
+                    </div>
+                  ) : entry.kind === 'item' ? (
+                    <GalleryCard key={entry.item.id} item={entry.item} onOpen={openLightbox} />
+                  ) : (
+                    <SkeletonCard key={`skel-${ci}-${ri}`} height={entry.height} index={ri} />
+                  ),
+                )}
               </div>
             ))}
-            {items.map((item) => (
-              <GalleryCard key={item.id} item={item} onOpen={openLightbox} />
-            ))}
-            {isFetchingNextPage &&
-              SKELETON_HEIGHTS.slice(0, 6).map((h, i) => (
-                <SkeletonCard key={`next-${i}`} height={h} index={i} />
-              ))}
           </div>
         )}
         <div ref={sentinelRef} className="h-px" />

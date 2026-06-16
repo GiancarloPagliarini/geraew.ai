@@ -231,7 +231,7 @@
           "creditsReduced": "Seus créditos serão reduzidos",
           "featuresRemoved": "Funcionalidades exclusivas do plano atual serão removidas"
         },
-        "reactivate": "Você pode reativar a qualquer momento antes de {date}.",
+        "reactivate": "Você pode reativar a qualquer momento antes de <accent>{date}</accent>.",
         "keep": "Mudei de ideia, quero manter meu plano",
         "confirmCancel": "Confirmar cancelamento",
         "confirmDowngrade": "Confirmar downgrade"

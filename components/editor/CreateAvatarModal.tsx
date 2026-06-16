@@ -20,6 +20,7 @@ import { useTranslations } from 'next-intl';
 import { api, ApiError, UserAvatar } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
+import { useGenerationErrorMessage } from '@/lib/use-generation-error';
 
 type AvatarKind = 'photo' | 'digital_twin';
 type FileSource = 'upload' | 'webcam';
@@ -43,6 +44,7 @@ export function CreateAvatarModal({ open, onClose, onCreated, embedded = false }
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
   const t = useTranslations('editorDialogs.avatars.create');
+  const mapError = useGenerationErrorMessage();
 
   const [avatarKind, setAvatarKind] = useState<AvatarKind>('photo');
   const [name, setName] = useState('');
@@ -51,6 +53,8 @@ export function CreateAvatarModal({ open, onClose, onCreated, embedded = false }
   const [fileError, setFileError] = useState<string | null>(null);
   const [fileDuration, setFileDuration] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // banner de erro acima do botão Criar — só some ao criar de novo
+  const [createError, setCreateError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [source, setSource] = useState<FileSource>('upload');
@@ -69,6 +73,7 @@ export function CreateAvatarModal({ open, onClose, onCreated, embedded = false }
       setFileError(null);
       setFileDuration(null);
       setSubmitting(false);
+      setCreateError(null);
       setUploadProgress(null);
       setIsDragging(false);
       setSource('upload');
@@ -207,6 +212,7 @@ export function CreateAvatarModal({ open, onClose, onCreated, embedded = false }
     }
     if (!name.trim() || !file || !consent) return;
 
+    setCreateError(null); // limpa o banner de erro ao criar de novo
     setSubmitting(true);
     setUploadProgress(0);
     try {
@@ -235,13 +241,9 @@ export function CreateAvatarModal({ open, onClose, onCreated, embedded = false }
       onCreated(created);
       onClose();
     } catch (err) {
-      const msg =
-        err instanceof ApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : t('toastErrorCreate');
+      const msg = mapError(err instanceof ApiError || err instanceof Error ? err.message : null);
       toast.error(msg);
+      setCreateError(msg);
     } finally {
       setSubmitting(false);
       setUploadProgress(null);
@@ -397,7 +399,18 @@ export function CreateAvatarModal({ open, onClose, onCreated, embedded = false }
         </div>
 
         {/* Footer (sticky) — CTA no padrão do painel de vídeo */}
-        <div className="shrink-0 border-t border-white/[0.05] bg-[#171f21]/95 px-4 py-3 sm:px-5 sm:py-4">
+        <div className="flex shrink-0 flex-col gap-3 border-t border-white/[0.05] bg-[#171f21]/95 px-4 py-3 sm:px-5 sm:py-4">
+          {/* banner de erro — persiste até criar de novo */}
+          {createError && (
+            <div className="flex items-start gap-2.5 rounded-[10px] border border-red-500/25 bg-red-500/[0.07] p-3">
+              <AlertCircle className="mt-0.5 size-4 shrink-0 text-red-400" strokeWidth={1.8} />
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-white/90">{t('errorTitle')}</p>
+                <p className="mt-0.5 text-[12px] leading-relaxed text-white/55">{createError}</p>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={handleSubmitCreate}
             disabled={submitting || !name.trim() || !file || !consent}

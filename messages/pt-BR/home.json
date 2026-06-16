@@ -1,6 +1,26 @@
 {
   "home": {
     "soon": "Em breve",
+    "newBadge": "Novo",
+    "errors": {
+      "generic": "Não foi possível concluir a geração. Tente novamente em instantes.",
+      "noResult": "Não foi possível gerar um resultado. Tente ajustar o prompt ou as imagens.",
+      "blockedContent": "Conteúdo bloqueado pela IA. Tente com outras imagens ou instruções.",
+      "sensitiveContent": "Conteúdo sensível detectado. Tente com outras imagens ou instruções.",
+      "insufficientCredits": "Créditos insuficientes para esta geração.",
+      "limitReached": "Você atingiu o limite do seu plano para esta ação.",
+      "rateLimited": "Muitas requisições em pouco tempo. Aguarde alguns segundos e tente novamente.",
+      "timeout": "A geração demorou mais que o esperado. Tente novamente."
+    },
+    "cost": {
+      "label": "Estimativa",
+      "credits": "{credits} créditos",
+      "free": "Grátis",
+      "calculating": "Calculando…",
+      "hintSingle": "Custo estimado por geração",
+      "hintMultiple": "{count}× · custo estimado total",
+      "freeHint": "{remaining} gerações grátis restantes"
+    },
     "shell": {
       "create": "Criar",
       "toggleSidebar": "Recolher menu",
@@ -26,6 +46,7 @@
       "galeria": "Galeria",
       "prompts": "Biblioteca de Prompts",
       "todasFerramentas": "Todas as ferramentas",
+      "ferramentas": "Ferramentas",
       "workspace": "Workspace",
       "gerarImagens": "Gerar imagens",
       "gerarVideos": "Gerar vídeos",
@@ -140,6 +161,7 @@
       "tagPause": "Inserir pausa",
       "pauseTag": "[pausa {s}s]",
       "emotionsMenu": "Inserir emoção",
+      "expressiveUnavailable": "Indisponível em vozes clonadas",
       "emotions": {
         "laughs": "Risos",
         "whispers": "Sussurro",
@@ -225,11 +247,14 @@
       "generate": "Gerar",
       "generating": "Gerando…",
       "creations": "Criações",
+      "viewConfig": "Configurar",
       "favorites": "Favoritos",
       "creationsEmpty": "Essa pasta está vazia",
       "creationsEmptyCta": "Criar novo conteúdo",
       "success": "Imagem gerada!",
       "failed": "Não foi possível gerar a imagem. Tente novamente.",
+      "errorTitle": "Falha na geração",
+      "errorSubtitle": "Os créditos foram estornados",
       "refMax": "Máximo de {max} referências.",
       "dropHint": "Solte as imagens para adicionar como referência",
       "closeTab": "Fechar aba",
@@ -301,6 +326,8 @@
     },
     "clone": {
       "uploadTitle": "Envie uma imagem",
+      "mobileUpload": "Imagem",
+      "mobileResult": "Prompt",
       "uploadSubtitle": "Devolvemos o prompt pronto para você recriar essa imagem.",
       "dropzone": "Arraste uma imagem ou clique para enviar",
       "browse": "ou escolha um arquivo",
@@ -319,7 +346,8 @@
       "remove": "Remover imagem",
       "invalidFormat": "Formato não suportado. Use PNG, JPG ou WebP.",
       "tooLarge": "Imagem muito grande (máx. {max}MB).",
-      "failed": "Não foi possível analisar a imagem. Tente novamente."
+      "failed": "Não foi possível analisar a imagem. Tente novamente.",
+      "errorTitle": "Falha na análise"
     },
     "gallery": {
       "filters": {

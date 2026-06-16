@@ -12,6 +12,8 @@ import { clearRecoveryPromo, getStoredRecoveryPromo } from '@/lib/recovery-promo
 import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 import { CreditPackagesGrid } from '@/components/editor/CreditPackagesGrid';
 import { PlansGrid } from '@/components/editor/PlansGrid';
+import { PixAutoCheckoutModal } from '@/components/editor/PixAutoCheckoutModal';
+import type { Plan } from '@/lib/api';
 import { PLAN_ORDER, getPlanFeatureKeys } from '@/lib/plans';
 
 /** Faixa de confiança exibida abaixo dos cards (garantias do plano). */
@@ -42,6 +44,7 @@ export function PricingView() {
   const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
   const [pendingDowngradeSlug, setPendingDowngradeSlug] = useState<string | null>(null);
   const [isDowngrading, setIsDowngrading] = useState(false);
+  const [pixAutoPlan, setPixAutoPlan] = useState<Plan | null>(null);
 
   const { data: plans, isLoading: plansLoading } = useQuery({
     queryKey: ['plans', uiCurrency],
@@ -211,6 +214,7 @@ export function PricingView() {
               hasActiveSub={hasActiveSub}
               subscribingSlug={subscribingSlug}
               onSubscribe={handleSubscribe}
+              onSubscribePix={(plan) => setPixAutoPlan(plan)}
               compact
               isLoading={isLoading}
             />
@@ -239,6 +243,20 @@ export function PricingView() {
           </>
         )}
       </div>
+
+      {/* PIX Automático checkout */}
+      {pixAutoPlan && (
+        <PixAutoCheckoutModal
+          planSlug={pixAutoPlan.slug}
+          planName={pixAutoPlan.name}
+          priceCents={pixAutoPlan.priceCents}
+          onClose={() => setPixAutoPlan(null)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
+            queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
+          }}
+        />
+      )}
 
       {/* retenção no downgrade */}
       {pendingDowngradeSlug &&

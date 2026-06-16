@@ -10,8 +10,6 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { useRouter } from 'next/navigation';
-import { PALETTE_COMMANDS } from '@/lib/home-nav';
 
 const SIDEBAR_KEY = 'geraew-app-sidebar-collapsed';
 
@@ -70,7 +68,6 @@ interface ShellContextValue {
 const ShellContext = createContext<ShellContextValue | null>(null);
 
 export function ShellProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const [paletteState, setPaletteState] = useState<PaletteState>('closed');
   const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sidebarCollapsed = useSyncExternalStore(
@@ -119,22 +116,10 @@ export function ShellProvider({ children }: { children: React.ReactNode }) {
         });
         return;
       }
-      // atalhos globais da palette (Ctrl+Shift+G/F/E/V/T/L)
-      // alguns podem ser reservados pelo navegador (ex.: Ctrl+Shift+T)
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-        const cmd = PALETTE_COMMANDS.find(
-          (c) => c.shortcut?.toLowerCase() === e.key.toLowerCase() && c.href && !c.soon,
-        );
-        if (cmd) {
-          e.preventDefault();
-          setPaletteState('closed');
-          router.push(cmd.href!);
-        }
-      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [router]);
+  }, []);
 
   const toggleSidebar = useCallback(() => sidebarStore.set(!sidebarStore.get()), []);
 

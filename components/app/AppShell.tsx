@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { ShellProvider } from '@/components/app/shell-context';
 import { AppSidebar } from '@/components/app/AppSidebar';
 import { AppTopbar } from '@/components/app/AppTopbar';
+import { MobileBottomNav } from '@/components/app/MobileBottomNav';
 import { CommandPalette } from '@/components/app/CommandPalette';
 
 /**
@@ -25,11 +26,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <ShellProvider>
       <div className="flex h-dvh gap-3 bg-app-deep p-3 font-sans text-app-text">
         <AppSidebar />
-        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto rounded-[18px] border border-app-hairline bg-app-bg scrollbar-app">
+        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto rounded-[18px] border border-app-hairline bg-app-bg scrollbar-app max-lg:pb-[84px]">
           <AppTopbar />
           {children}
         </main>
       </div>
+      <MobileBottomNav />
       <CommandPalette />
     </ShellProvider>
   );

@@ -52,7 +52,7 @@ export function GalleryCard({ item, onOpen }: GalleryCardProps) {
               alt={title}
               loading="lazy"
               onError={() => setImgError(true)}
-              className="block w-full transition-transform duration-300 ease-app group-hover:scale-[1.04]"
+              className="relative block w-full transition-transform duration-300 ease-app group-hover:scale-[1.04]"
             />
           ) : kind === 'voice' ? (
             <AudioLines
