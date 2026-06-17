@@ -64,7 +64,7 @@ export default function NewEmailBroadcastPage() {
 
   const [subject, setSubject] = useState('');
   const [format, setFormat] = useState<'markdown' | 'html'>('markdown');
-  const [bodyMarkdown, setBodyMarkdown] = useState(`# Olá!\n\nEscreva sua mensagem aqui em **markdown**.\n\n- Item 1\n- Item 2\n\n[Link de exemplo](https://geraew.com.br)`);
+  const [bodyMarkdown, setBodyMarkdown] = useState(`# Olá!\n\nEscreva sua mensagem aqui em **markdown**.\n\n- Item 1\n- Item 2\n\n[Link de exemplo](https://geraew.ai)`);
   const [recipientType, setRecipientType] = useState<RecipientType>('BY_PLAN');
   const [planSlug, setPlanSlug] = useState('pro');
   const [emailsRaw, setEmailsRaw] = useState('');

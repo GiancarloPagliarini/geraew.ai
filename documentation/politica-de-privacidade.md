@@ -6,7 +6,7 @@
 
 ## 1. Introdução
 
-A Geraew AI ("nós", "nosso" ou "Plataforma"), disponível em www.geraew.com.br, valoriza e respeita a privacidade de seus usuários. Esta Política de Privacidade descreve como coletamos, utilizamos, armazenamos, compartilhamos e protegemos seus dados pessoais em conformidade com a Lei Geral de Proteção de Dados Pessoais (LGPD – Lei nº 13.709/2018).
+A Geraew AI ("nós", "nosso" ou "Plataforma"), disponível em geraew.ai, valoriza e respeita a privacidade de seus usuários. Esta Política de Privacidade descreve como coletamos, utilizamos, armazenamos, compartilhamos e protegemos seus dados pessoais em conformidade com a Lei Geral de Proteção de Dados Pessoais (LGPD – Lei nº 13.709/2018).
 
 Ao utilizar nossa Plataforma, você consente com as práticas descritas nesta Política. Recomendamos a leitura atenta de todo o documento.
 

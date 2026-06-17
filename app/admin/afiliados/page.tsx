@@ -1143,7 +1143,7 @@ function DeleteAffiliateModal({
 
 // ─── Affiliates List ────────────────────────────────────────────────────────
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://geraew.com.br';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://geraew.ai';
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);

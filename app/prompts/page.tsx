@@ -31,7 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title: t('metaTitle'),
       description: t('ogDescription'),
       type: 'website',
-      url: 'https://geraew.com/prompts',
+      url: 'https://geraew.ai/prompts',
     },
     twitter: {
       card: 'summary_large_image',

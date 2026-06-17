@@ -6,7 +6,7 @@
 
 ## 1. Aceitação dos Termos
 
-Ao acessar ou utilizar a plataforma Geraew AI ("Plataforma"), disponível em www.geraew.com.br, você declara que leu, compreendeu e concorda integralmente com estes Termos de Uso. Caso não concorde com qualquer disposição aqui prevista, você não deverá utilizar a Plataforma.
+Ao acessar ou utilizar a plataforma Geraew AI ("Plataforma"), disponível em geraew.ai, você declara que leu, compreendeu e concorda integralmente com estes Termos de Uso. Caso não concorde com qualquer disposição aqui prevista, você não deverá utilizar a Plataforma.
 
 A Geraew AI reserva-se o direito de alterar estes Termos a qualquer momento, sendo o usuário notificado por meio da Plataforma ou por e-mail. O uso continuado após a notificação constitui aceitação das alterações.
 

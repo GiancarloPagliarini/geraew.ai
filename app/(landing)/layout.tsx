@@ -27,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title: t("ogTitle"),
       description: t("ogDescription"),
       type: "website",
-      url: "https://geraew.com",
+      url: "https://geraew.ai",
     },
     twitter: {
       card: "summary_large_image",

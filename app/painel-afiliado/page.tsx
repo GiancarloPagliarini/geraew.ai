@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/table';
 import { toast } from 'sonner';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://geraew.com.br';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://geraew.ai';
 const PIX_TYPE_VALUES: PixKeyType[] = ['CPF', 'CNPJ', 'EMAIL', 'PHONE', 'RANDOM'];
 
 function intlLocale(locale: string) {
