@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Coins } from 'lucide-react';
+import { Coins, Infinity as InfinityIcon } from 'lucide-react';
 
 interface GenerationCostEstimateProps {
   /** créditos por geração (vindo do endpoint /credits/estimate) */
@@ -13,6 +13,8 @@ interface GenerationCostEstimateProps {
   freeRemaining?: number | null;
   /** multiplicador de quantidade (ex.: gerar 3 imagens) — total = credits × count */
   count?: number;
+  /** modo ilimitado ativo — geração não consome créditos */
+  unlimited?: boolean;
 }
 
 /**
@@ -25,10 +27,29 @@ export function GenerationCostEstimate({
   free = false,
   freeRemaining,
   count = 1,
+  unlimited = false,
 }: GenerationCostEstimateProps) {
   const t = useTranslations('home.cost');
 
   const total = typeof credits === 'number' ? credits * Math.max(1, count) : null;
+
+  // modo ilimitado — destaque violeta, sem consumo de créditos
+  if (unlimited) {
+    return (
+      <div className="rounded-xl border border-[#a855f7]/30 bg-[#a855f7]/[0.07] px-3.5 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <InfinityIcon className="size-3.5 text-[#a855f7]" strokeWidth={2} />
+            <span className="text-[11px] font-bold uppercase tracking-[0.9px] text-[#a855f7]/70">
+              {t('label')}
+            </span>
+          </div>
+          <span className="text-[13px] font-bold text-[#a855f7]">{t('unlimited')}</span>
+        </div>
+        <p className="mt-1 text-[11.5px] leading-relaxed text-[#a855f7]/55">{t('unlimitedHint')}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border border-app-hairline bg-app-surface px-3.5 py-3">

@@ -11,6 +11,7 @@ import {
   Film,
   Hd,
   Image as ImageIcon,
+  Infinity as InfinityIcon,
   PersonStanding,
   RefreshCw,
   SquarePlay,
@@ -30,6 +31,16 @@ import { useGenerationErrorMessage } from '@/lib/use-generation-error';
 import { ImageDropTile, type UploadedImage } from '@/components/image/ImageDropTile';
 import { MediaFileTile, type MediaFile } from '@/components/app/MediaFileTile';
 import { GenerationCostEstimate } from '@/components/app/GenerationCostEstimate';
+import { UnlimitedToggle } from '@/components/editor/UnlimitedToggle';
+import { UnlimitedUpgradeModal } from '@/components/editor/UnlimitedUpgradeModal';
+import {
+  useUnlimitedStatus,
+  isModelSlugInUnlimitedPlan,
+  isUnlimitedModelAllowed,
+  getModelVariantFromSlug,
+  getFirstUnlimitedSlugForType,
+  getFirstUnlimitedResolutionForVariant,
+} from '@/hooks/use-unlimited-status';
 import {
   Select,
   SelectContent,
@@ -150,12 +161,18 @@ export function VideoConfigPanel({
   registerFocus,
 }: VideoConfigPanelProps) {
   const t = useTranslations('home');
+  const tUnlimited = useTranslations('editorPanels.unlimited');
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
 
   const [tool, setTool] = useState<VideoToolId>(initialTool ?? 'generate');
   const [model, setModel] = useState('geraew-fast');
   const [references, setReferences] = useState<UploadedImage[]>([]);
+
+  // modo ilimitado
+  const [unlimited, setUnlimited] = useState(false);
+  const [unlimitedModalOpen, setUnlimitedModalOpen] = useState(false);
+  const { data: unlimitedStatus } = useUnlimitedStatus();
 
   // motion control (copiar movimentos)
   const [mcImage, setMcImage] = useState<UploadedImage | null>(null);
@@ -243,6 +260,56 @@ export function VideoConfigPanel({
       setFirstFrame(null);
       setLastFrame(null);
     }
+  };
+
+  // ── modo ilimitado ──
+  const handleToggleUnlimited = (next: boolean) => {
+    if (!next) {
+      setUnlimited(false);
+      return;
+    }
+    let targetModel = model;
+    if (!isModelSlugInUnlimitedPlan(unlimitedStatus, model)) {
+      const fallbackSlug = getFirstUnlimitedSlugForType(unlimitedStatus, 'video');
+      if (!fallbackSlug) {
+        toast.info(tUnlimited('errors.noVideoPlan'));
+        setUnlimitedModalOpen(true);
+        return;
+      }
+      selectModel(fallbackSlug);
+      targetModel = fallbackSlug;
+    }
+    const targetVariant = getModelVariantFromSlug(targetModel);
+    if (!isUnlimitedModelAllowed(unlimitedStatus, targetVariant, resolution)) {
+      const fallbackResolution = getFirstUnlimitedResolutionForVariant(unlimitedStatus, targetVariant);
+      if (fallbackResolution) setResolution(fallbackResolution);
+    }
+    setUnlimited(true);
+  };
+
+  // desliga o ilimitado se o modelo selecionado sair do plano
+  useEffect(() => {
+    if (!unlimited) return;
+    if (!isModelSlugInUnlimitedPlan(unlimitedStatus, model)) setUnlimited(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model, unlimitedStatus]);
+
+  /** Trata erros específicos do modo ilimitado. Retorna true se tratou. */
+  const handleUnlimitedError = (err: ApiError): boolean => {
+    if (err.code === 'UNLIMITED_PLAN_REQUIRED' || err.code === 'UNLIMITED_MODEL_NOT_ALLOWED') {
+      setUnlimited(false);
+      setUnlimitedModalOpen(true);
+      return true;
+    }
+    if (err.code === 'UNLIMITED_DAILY_CAP_REACHED') {
+      toast.error(tUnlimited('errors.serverBusy'));
+      return true;
+    }
+    if (err.code === 'UNLIMITED_LOCK_HELD') {
+      toast.error(tUnlimited('errors.lockHeld'));
+      return true;
+    }
+    return false;
   };
 
   const attachOmniVideo = (file: MediaFile | null) => {
@@ -468,6 +535,7 @@ export function VideoConfigPanel({
             aspect_ratio: aspect,
             generate_audio: effectiveAudio,
             sample_count: 1,
+            ...(unlimited && { unlimited: true }),
           };
           result =
             references.length > 0
@@ -485,9 +553,14 @@ export function VideoConfigPanel({
 
       track(result.id, finalPrompt || t('video.tab'));
     } catch (err) {
-      const msg = mapError(err instanceof ApiError || err instanceof Error ? err.message : null);
-      toast.error(msg);
-      setGenerationError(msg);
+      // erros específicos do modo ilimitado têm tratamento próprio
+      if (err instanceof ApiError && handleUnlimitedError(err)) {
+        // tratado (modal/toast)
+      } else {
+        const msg = mapError(err instanceof ApiError || err instanceof Error ? err.message : null);
+        toast.error(msg);
+        setGenerationError(msg);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -600,6 +673,9 @@ export function VideoConfigPanel({
                 <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled} className={selectItemClass}>
                   <span className="flex items-center gap-1.5">
                     {opt.label}
+                    {unlimited && isModelSlugInUnlimitedPlan(unlimitedStatus, opt.value) && (
+                      <InfinityIcon className="size-3.5 text-[#a855f7]" strokeWidth={2} />
+                    )}
                     {opt.isNew && (
                       <span className="rounded-full border border-app-lime/40 bg-app-lime/15 px-1.5 py-px text-[8px] font-bold uppercase tracking-[0.1em] text-app-lime">
                         {t('newBadge')}
@@ -794,7 +870,12 @@ export function VideoConfigPanel({
             <SelectContent position="popper" side="bottom" align="start" sideOffset={6} className={selectContentClass}>
               {modelConfig.resolutions.map((r) => (
                 <SelectItem key={r.value} value={r.value} className={cn(selectItemClass, 'font-mono')}>
-                  {r.label}
+                  <span className="flex items-center gap-1.5">
+                    {r.label}
+                    {unlimited && isUnlimitedModelAllowed(unlimitedStatus, modelConfig.variant, r.value) && (
+                      <InfinityIcon className="size-3.5 text-[#a855f7] [[data-slot=select-trigger]_&]:hidden" strokeWidth={2} />
+                    )}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -843,6 +924,15 @@ export function VideoConfigPanel({
             </span>
           </button>
         </div>
+
+        {/* modo ilimitado */}
+        <UnlimitedToggle
+          enabled={unlimited}
+          onToggle={handleToggleUnlimited}
+          onRequireUpgrade={() => setUnlimitedModalOpen(true)}
+          eligible={unlimitedStatus?.eligible ?? false}
+          className="px-3.5 py-3"
+        />
         </>
         )}
 
@@ -852,6 +942,7 @@ export function VideoConfigPanel({
           loading={estimateQuery.isLoading}
           free={!!estimate?.canUseFreeGeneration}
           freeRemaining={estimate?.freeGenerationsRemainingForType}
+          unlimited={tool === 'generate' && unlimited}
         />
 
         {/* banner de erro — persiste até gerar de novo */}
@@ -885,6 +976,10 @@ export function VideoConfigPanel({
           )}
         </button>
       </div>
+
+      {unlimitedModalOpen && (
+        <UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />
+      )}
     </div>
   );
 }

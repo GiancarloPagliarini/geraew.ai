@@ -2,6 +2,7 @@
 
 import { Infinity as InfinityIcon, Lock, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { cn } from '@/lib/utils';
 
 interface UnlimitedToggleProps {
   enabled: boolean;
@@ -14,6 +15,8 @@ interface UnlimitedToggleProps {
   eligible: boolean;
   isLoading?: boolean;
   disabled?: boolean;
+  /** classes extras (ex.: ajustar padding no novo layout) */
+  className?: string;
 }
 
 export function UnlimitedToggle({
@@ -23,6 +26,7 @@ export function UnlimitedToggle({
   eligible,
   isLoading = false,
   disabled = false,
+  className,
 }: UnlimitedToggleProps) {
   const t = useTranslations('editorPanels.unlimited');
   const accentColor = '#a855f7'; // violeta — distingue de outros toggles (#a2dd00)
@@ -41,7 +45,7 @@ export function UnlimitedToggle({
     <button
       onClick={handleClick}
       disabled={disabled}
-      className="relative flex w-full items-center justify-between rounded-xl border px-3 py-2 transition-all"
+      className={cn('relative flex w-full items-center justify-between rounded-xl border px-3 py-2 transition-all', className)}
       style={{
         background: enabled ? 'rgba(168,85,247,0.08)' : 'transparent',
         borderColor: enabled ? 'rgba(168,85,247,0.25)' : 'rgba(243,240,237,0.07)',

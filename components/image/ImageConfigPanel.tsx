@@ -8,6 +8,7 @@ import {
   AlertCircle,
   Hd,
   Image as ImageIcon,
+  Infinity as InfinityIcon,
   Minus,
   Plus,
   RefreshCw,
@@ -28,6 +29,16 @@ import { useGenerationTracker } from '@/components/image/use-generation-tracker'
 import { useGenerationErrorMessage } from '@/lib/use-generation-error';
 import { ImageDropTile, type UploadedImage } from '@/components/image/ImageDropTile';
 import { GenerationCostEstimate } from '@/components/app/GenerationCostEstimate';
+import { UnlimitedToggle } from '@/components/editor/UnlimitedToggle';
+import { UnlimitedUpgradeModal } from '@/components/editor/UnlimitedUpgradeModal';
+import {
+  useUnlimitedStatus,
+  isModelSlugInUnlimitedPlan,
+  isUnlimitedModelAllowed,
+  getModelVariantFromSlug,
+  getFirstUnlimitedSlugForType,
+  getFirstUnlimitedResolutionForVariant,
+} from '@/hooks/use-unlimited-status';
 import {
   Select,
   SelectContent,
@@ -148,10 +159,16 @@ export function ImageConfigPanel({
   registerFocus,
 }: ImageConfigPanelProps) {
   const t = useTranslations('home');
+  const tUnlimited = useTranslations('editorPanels.unlimited');
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
 
   const [tool, setTool] = useState<ToolId>(initialTool ?? 'generate');
+
+  // modo ilimitado
+  const [unlimited, setUnlimited] = useState(false);
+  const [unlimitedModalOpen, setUnlimitedModalOpen] = useState(false);
+  const { data: unlimitedStatus } = useUnlimitedStatus();
 
   // gerar imagens
   const [model, setModel] = useState(IMAGE_MODELS[0].value);
@@ -187,6 +204,58 @@ export function ImageConfigPanel({
   const selectAspect = (value: string) => {
     setAspect(value);
     if (is4kBlocked(model, value) && resolution === 'RES_4K') setResolution('RES_2K');
+  };
+
+  // ── modo ilimitado ──
+  // ao ativar: garante que modelo + resolução estão liberados no plano,
+  // trocando automaticamente quando o atual está fora.
+  const handleToggleUnlimited = (next: boolean) => {
+    if (!next) {
+      setUnlimited(false);
+      return;
+    }
+    let targetModel = model;
+    if (!isModelSlugInUnlimitedPlan(unlimitedStatus, model)) {
+      const fallbackSlug = getFirstUnlimitedSlugForType(unlimitedStatus, 'image');
+      if (!fallbackSlug) {
+        toast.info(tUnlimited('errors.noImagePlan'));
+        setUnlimitedModalOpen(true);
+        return;
+      }
+      selectGenModel(fallbackSlug);
+      targetModel = fallbackSlug;
+    }
+    const targetVariant = getModelVariantFromSlug(targetModel);
+    if (!isUnlimitedModelAllowed(unlimitedStatus, targetVariant, resolution)) {
+      const fallbackResolution = getFirstUnlimitedResolutionForVariant(unlimitedStatus, targetVariant);
+      if (fallbackResolution) setResolution(fallbackResolution);
+    }
+    setUnlimited(true);
+  };
+
+  // desliga o ilimitado se o modelo selecionado sair do plano
+  useEffect(() => {
+    if (!unlimited) return;
+    if (!isModelSlugInUnlimitedPlan(unlimitedStatus, model)) setUnlimited(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model, unlimitedStatus]);
+
+  /** Trata erros específicos do modo ilimitado. Retorna true se tratou. */
+  const handleUnlimitedError = (err: ApiError): boolean => {
+    if (err.code === 'UNLIMITED_PLAN_REQUIRED' || err.code === 'UNLIMITED_MODEL_NOT_ALLOWED') {
+      setUnlimited(false);
+      setUnlimitedModalOpen(true);
+      return true;
+    }
+    if (err.code === 'UNLIMITED_DAILY_CAP_REACHED') {
+      toast.error(tUnlimited('errors.serverBusy'));
+      return true;
+    }
+    if (err.code === 'UNLIMITED_LOCK_HELD') {
+      toast.error(tUnlimited('errors.lockHeld'));
+      return true;
+    }
+    return false;
   };
 
   // provador virtual
@@ -370,7 +439,9 @@ export function ImageConfigPanel({
           } catch { /* segue com o prompt original */ }
         }
 
-        const requests = Array.from({ length: quantity }, () =>
+        // no ilimitado é 1 por vez (há lock que impede gerações concorrentes)
+        const genCount = unlimited ? 1 : quantity;
+        const requests = Array.from({ length: genCount }, () =>
           api.generations.generateImage(accessToken, {
             prompt: finalPrompt,
             model,
@@ -380,6 +451,7 @@ export function ImageConfigPanel({
             ...(references.length > 0 && {
               images: references.map(({ base64, mime_type }) => ({ base64, mime_type })),
             }),
+            ...(unlimited && { unlimited: true }),
           }),
         );
         const results = await Promise.allSettled(requests);
@@ -389,9 +461,14 @@ export function ImageConfigPanel({
           | undefined;
         if (firstFailure) {
           const reason = firstFailure.reason;
-          const msg = mapError(reason instanceof ApiError || reason instanceof Error ? reason.message : null);
-          toast.error(msg);
-          setGenerationError(msg);
+          // erros específicos do modo ilimitado têm tratamento próprio
+          if (reason instanceof ApiError && handleUnlimitedError(reason)) {
+            // tratado (modal/toast) — não mostra o banner genérico
+          } else {
+            const msg = mapError(reason instanceof ApiError || reason instanceof Error ? reason.message : null);
+            toast.error(msg);
+            setGenerationError(msg);
+          }
         }
         ids.forEach((id) => track(id, finalPrompt));
         return;
@@ -507,6 +584,9 @@ export function ImageConfigPanel({
                     <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled} className={selectItemClass}>
                       <span className="flex items-center gap-1.5">
                         {opt.label}
+                        {unlimited && isModelSlugInUnlimitedPlan(unlimitedStatus, opt.value) && (
+                          <InfinityIcon className="size-3.5 text-[#a855f7]" strokeWidth={2} />
+                        )}
                         {opt.isNew && (
                           <span className="rounded-full border border-app-lime/40 bg-app-lime/15 px-1.5 py-px text-[8px] font-bold uppercase tracking-[0.1em] text-app-lime">
                             {t('newBadge')}
@@ -614,25 +694,26 @@ export function ImageConfigPanel({
 
             {/* quantidade + proporção */}
             <div className="flex items-center gap-3">
-              <div className="flex h-10 items-center rounded-[10px] border border-app-hairline bg-app-surface">
+              {/* no ilimitado é 1 por vez (lock impede gerações simultâneas) */}
+              <div className={cn('flex h-10 items-center rounded-[10px] border border-app-hairline bg-app-surface', unlimited && 'opacity-50')}>
                 <button
                   type="button"
                   aria-label={t('image.less')}
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                   className="flex h-full w-9 items-center justify-center text-app-text-2 transition-colors duration-200 ease-app hover:text-app-text disabled:opacity-40"
-                  disabled={quantity <= 1}
+                  disabled={unlimited || quantity <= 1}
                 >
                   <Minus className="size-3.5" strokeWidth={2} />
                 </button>
                 <span className="w-6 text-center font-mono text-[13.5px] font-semibold text-app-text">
-                  {quantity}
+                  {unlimited ? 1 : quantity}
                 </span>
                 <button
                   type="button"
                   aria-label={t('image.more')}
                   onClick={() => setQuantity((q) => Math.min(MAX_QUANTITY, q + 1))}
                   className="flex h-full w-9 items-center justify-center text-app-text-2 transition-colors duration-200 ease-app hover:text-app-text disabled:opacity-40"
-                  disabled={quantity >= MAX_QUANTITY}
+                  disabled={unlimited || quantity >= MAX_QUANTITY}
                 >
                   <Plus className="size-3.5" strokeWidth={2} />
                 </button>
@@ -654,7 +735,12 @@ export function ImageConfigPanel({
                       disabled={r.value === 'RES_4K' && is4kBlocked(model, aspect)}
                       className={cn(selectItemClass, 'font-mono')}
                     >
-                      {r.label}
+                      <span className="flex items-center gap-1.5">
+                        {r.label}
+                        {unlimited && isUnlimitedModelAllowed(unlimitedStatus, imageModelVariant, r.value) && (
+                          <InfinityIcon className="size-3.5 text-[#a855f7] [[data-slot=select-trigger]_&]:hidden" strokeWidth={2} />
+                        )}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -677,6 +763,15 @@ export function ImageConfigPanel({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* modo ilimitado */}
+            <UnlimitedToggle
+              enabled={unlimited}
+              onToggle={handleToggleUnlimited}
+              onRequireUpgrade={() => setUnlimitedModalOpen(true)}
+              eligible={unlimitedStatus?.eligible ?? false}
+              className="px-3.5 py-3"
+            />
           </>
         )}
 
@@ -791,6 +886,7 @@ export function ImageConfigPanel({
           free={!!estimate?.canUseFreeGeneration}
           freeRemaining={estimate?.freeGenerationsRemainingForType}
           count={tool === 'generate' ? quantity : 1}
+          unlimited={tool === 'generate' && unlimited}
         />
 
         {/* banner de erro — persiste até gerar de novo */}
@@ -824,6 +920,10 @@ export function ImageConfigPanel({
           )}
         </button>
       </div>
+
+      {unlimitedModalOpen && (
+        <UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />
+      )}
     </div>
   );
 }

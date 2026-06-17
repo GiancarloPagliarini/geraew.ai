@@ -19,7 +19,9 @@
       "calculating": "Calculando…",
       "hintSingle": "Costo estimado por generación",
       "hintMultiple": "{count}× · costo total estimado",
-      "freeHint": "{remaining} generaciones gratis restantes"
+      "freeHint": "{remaining} generaciones gratis restantes",
+      "unlimited": "Ilimitado",
+      "unlimitedHint": "Sin consumir créditos en el modo ilimitado"
     },
     "shell": {
       "create": "Crear",
