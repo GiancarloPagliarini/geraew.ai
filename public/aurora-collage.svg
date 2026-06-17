@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 252 168" width="756" height="504">
+  <defs>
+    
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1a2123"></stop>
+      <stop offset="1" stop-color="#11161a"></stop>
+    </linearGradient>
+    
+    <radialGradient id="b1" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#a2dd00" stop-opacity="1"></stop><stop offset="100%" stop-color="#a2dd00" stop-opacity="0"></stop></radialGradient>
+    <radialGradient id="b2" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#1e494b" stop-opacity="1"></stop><stop offset="100%" stop-color="#1e494b" stop-opacity="0"></stop></radialGradient>
+    <radialGradient id="b3" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#2f9c8b" stop-opacity="1"></stop><stop offset="100%" stop-color="#2f9c8b" stop-opacity="0"></stop></radialGradient>
+    <radialGradient id="b4" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#c8ff3f" stop-opacity="1"></stop><stop offset="100%" stop-color="#c8ff3f" stop-opacity="0"></stop></radialGradient>
+    
+    <linearGradient id="p1" x1="0" y1="0" x2="1" y2="1"><stop offset="0.1" stop-color="#1e494b"></stop><stop offset="0.95" stop-color="#a2dd00"></stop></linearGradient>
+    <linearGradient id="p2" x1="0" y1="0" x2="1" y2="1"><stop offset="0.1" stop-color="#243032"></stop><stop offset="0.95" stop-color="#2f9c8b"></stop></linearGradient>
+    <radialGradient id="hero" cx="50%" cy="20%" r="120%"><stop offset="0" stop-color="#e7f6c4"></stop><stop offset="0.45" stop-color="#a2dd00"></stop><stop offset="1" stop-color="#1e494b"></stop></radialGradient>
+
+    <filter id="blur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="14"></feGaussianBlur></filter>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#000" flood-opacity="0.32"></feDropShadow></filter>
+  </defs>
+
+  
+  <rect width="252" height="168" fill="url(#base)"></rect>
+
+  
+  <g filter="url(#blur)">
+    <ellipse cx="55" cy="54" rx="80" ry="70" fill="url(#b1)"></ellipse>
+    <ellipse cx="186" cy="34" rx="74" ry="58" fill="url(#b2)"></ellipse>
+    <ellipse cx="207" cy="124" rx="86" ry="64" fill="url(#b3)"></ellipse>
+    <ellipse cx="76" cy="141" rx="80" ry="60" fill="url(#b3)"></ellipse>
+    <ellipse cx="141" cy="84" rx="62" ry="50" fill="url(#b4)"></ellipse>
+  </g>
+
+  
+  <g filter="url(#shadow)">
+    
+    <rect x="18" y="96" width="50" height="56" rx="7" fill="url(#p1)" stroke="#ffffff" stroke-opacity="0.5" stroke-width="2"></rect>
+    <rect x="170" y="16" width="52" height="60" rx="7" fill="url(#p2)" stroke="#ffffff" stroke-opacity="0.5" stroke-width="2"></rect>
+    
+    <rect x="78" y="64" width="78" height="48" rx="8" fill="url(#hero)" stroke="#ffffff" stroke-opacity="0.6" stroke-width="2"></rect>
+
+    
+    <g>
+      <rect x="16" y="20" width="60" height="50" rx="5" fill="#ffffff" fill-opacity="0.92"></rect>
+      <g fill="#282a2e" fill-opacity="0.32">
+        <rect x="24" y="28" width="40" height="3" rx="1.5"></rect>
+        <rect x="24" y="35" width="46" height="3" rx="1.5"></rect>
+        <rect x="24" y="42" width="34" height="3" rx="1.5"></rect>
+        <rect x="24" y="49" width="44" height="3" rx="1.5"></rect>
+        <rect x="24" y="56" width="24" height="3" rx="1.5"></rect>
+      </g>
+    </g>
+
+    
+    <g>
+      <rect x="204" y="70" width="34" height="38" rx="5" fill="#ffffff" fill-opacity="0.92"></rect>
+      <g fill="#282a2e" fill-opacity="0.32">
+        <rect x="210" y="78" width="22" height="3" rx="1.5"></rect>
+        <rect x="210" y="85" width="18" height="3" rx="1.5"></rect>
+        <rect x="210" y="92" width="20" height="3" rx="1.5"></rect>
+      </g>
+    </g>
+
+    
+    <g>
+      <rect x="80" y="134" width="92" height="18" rx="9" fill="#ffffff" fill-opacity="0.94"></rect>
+      <circle cx="91" cy="143" r="2.5" fill="#a2dd00"></circle>
+      <rect x="98" y="141.5" width="46" height="3" rx="1.5" fill="#282a2e" fill-opacity="0.3"></rect>
+    </g>
+  </g>
+</svg>

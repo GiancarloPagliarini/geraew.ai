@@ -19,7 +19,6 @@ import { api, type WorkspaceContentInput, type WorkspaceDetail } from '@/lib/api
 import { useWorkspaceAutosave } from '@/components/workspaces/use-workspace-autosave';
 import { WorkspaceLoading } from '@/components/workspaces/WorkspaceLoading';
 import { FeedbackRewardModal } from '@/components/FeedbackRewardModal';
-import { AnnouncementsManager } from '@/components/editor/AnnouncementsManager';
 
 function RegisterModalTrigger() {
   const searchParams = useSearchParams();
@@ -220,7 +219,6 @@ export default function Home() {
         <Suspense><PromptFromQueryTrigger /></Suspense>
         <Suspense><AvatarVideoFromQueryTrigger /></Suspense>
         <FeedbackRewardTrigger />
-        <AnnouncementsManager />
       </InfluencerBuilderProvider>
     </EditorProvider>
   );

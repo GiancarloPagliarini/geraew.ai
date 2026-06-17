@@ -20,6 +20,7 @@ import { api } from '@/lib/api';
 import type {
   Announcement,
   AnnouncementAction,
+  AnnouncementTranslations,
   AnnouncementVariant,
   CreateAnnouncementInput,
   UpdateAnnouncementInput,
@@ -67,6 +68,15 @@ interface FormState {
   hrefUrl: string;
   isActive: boolean;
   sortOrder: number;
+  // traduções (pt-BR é a base nos campos acima)
+  enBadge: string;
+  enTitle: string;
+  enDescription: string;
+  enCtaLabel: string;
+  esBadge: string;
+  esTitle: string;
+  esDescription: string;
+  esCtaLabel: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -81,9 +91,19 @@ const EMPTY_FORM: FormState = {
   hrefUrl: '',
   isActive: true,
   sortOrder: 0,
+  enBadge: '',
+  enTitle: '',
+  enDescription: '',
+  enCtaLabel: '',
+  esBadge: '',
+  esTitle: '',
+  esDescription: '',
+  esCtaLabel: '',
 };
 
 function announcementToForm(a: Announcement): FormState {
+  const en = a.translations?.en ?? {};
+  const es = a.translations?.es ?? {};
   return {
     slug: a.slug,
     variant: (a.variant as AnnouncementVariant) ?? '',
@@ -96,7 +116,30 @@ function announcementToForm(a: Announcement): FormState {
     hrefUrl: a.ctaAction?.type === 'href' ? a.ctaAction.url : '',
     isActive: a.isActive,
     sortOrder: a.sortOrder,
+    enBadge: en.badge ?? '',
+    enTitle: en.title ?? '',
+    enDescription: en.description ?? '',
+    enCtaLabel: en.ctaLabel ?? '',
+    esBadge: es.badge ?? '',
+    esTitle: es.title ?? '',
+    esDescription: es.description ?? '',
+    esCtaLabel: es.ctaLabel ?? '',
   };
+}
+
+/** Monta o objeto de traduções a partir do form (campos vazios são omitidos). */
+function translationsFromForm(f: FormState): AnnouncementTranslations {
+  const locale = (badge: string, title: string, description: string, ctaLabel: string) => {
+    const o: AnnouncementTranslations['en'] = {};
+    if (badge.trim()) o.badge = badge.trim();
+    if (title.trim()) o.title = title.trim();
+    if (description.trim()) o.description = description.trim();
+    if (ctaLabel.trim()) o.ctaLabel = ctaLabel.trim();
+    return Object.keys(o).length > 0 ? o : undefined;
+  };
+  const en = locale(f.enBadge, f.enTitle, f.enDescription, f.enCtaLabel);
+  const es = locale(f.esBadge, f.esTitle, f.esDescription, f.esCtaLabel);
+  return { ...(en && { en }), ...(es && { es }) };
 }
 
 function formToCreatePayload(f: FormState): CreateAnnouncementInput {
@@ -109,6 +152,7 @@ function formToCreatePayload(f: FormState): CreateAnnouncementInput {
     imageUrl: f.imageUrl.trim() || undefined,
     ctaLabel: f.ctaLabel.trim() || undefined,
     ctaAction: actionFromForm(f),
+    translations: translationsFromForm(f),
     isActive: f.isActive,
     sortOrder: f.sortOrder,
   };
@@ -123,6 +167,7 @@ function formToUpdatePayload(f: FormState): UpdateAnnouncementInput {
     imageUrl: f.imageUrl.trim() || undefined,
     ctaLabel: f.ctaLabel.trim() || undefined,
     ctaAction: actionFromForm(f),
+    translations: translationsFromForm(f),
     isActive: f.isActive,
     sortOrder: f.sortOrder,
   };
@@ -597,6 +642,64 @@ function AnnouncementEditor({ mode, announcement, accessToken, onClose, onSaved 
                 className="w-full resize-none rounded-lg border border-[#f3f0ed]/10 bg-[#0e1213] px-3 py-2.5 text-sm leading-relaxed text-[#f3f0ed] placeholder:text-[#f3f0ed]/25 transition-colors focus:border-[#a2dd00]/50 focus:outline-none focus:ring-2 focus:ring-[#a2dd00]/15"
               />
             </Field>
+          </Section>
+
+          {/* ── Traduções ── */}
+          <Section
+            title="Traduções"
+            subtitle="Preenchido = usado no idioma; vazio cai no texto em PT acima."
+          >
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+              {(['en', 'es'] as const).map((lng) => {
+                const labelLng = lng === 'en' ? 'Inglês (EN)' : 'Espanhol (ES)';
+                const k = (suffix: 'Badge' | 'Title' | 'Description' | 'CtaLabel') =>
+                  `${lng}${suffix}` as keyof FormState;
+                return (
+                  <div key={lng} className="flex flex-col gap-3 rounded-xl border border-[#f3f0ed]/[0.08] bg-[#f3f0ed]/[0.02] p-4">
+                    <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#a2dd00]">
+                      {labelLng}
+                    </span>
+                    <Field label="Badge">
+                      <input
+                        value={form[k('Badge')] as string}
+                        onChange={(e) => update(k('Badge'), e.target.value.toUpperCase() as never)}
+                        placeholder={form.badge || 'NEW MODEL'}
+                        className={`${inputClass} uppercase tracking-wider`}
+                        maxLength={40}
+                      />
+                    </Field>
+                    <Field label="Título">
+                      <input
+                        value={form[k('Title')] as string}
+                        onChange={(e) => update(k('Title'), e.target.value as never)}
+                        placeholder={form.title || 'Announcement title'}
+                        className={inputClass}
+                        maxLength={160}
+                      />
+                    </Field>
+                    <Field label="Descrição">
+                      <textarea
+                        value={form[k('Description')] as string}
+                        onChange={(e) => update(k('Description'), e.target.value as never)}
+                        placeholder={form.description || 'Announcement description...'}
+                        rows={3}
+                        maxLength={600}
+                        className="w-full resize-none rounded-lg border border-[#f3f0ed]/10 bg-[#0e1213] px-3 py-2.5 text-sm leading-relaxed text-[#f3f0ed] placeholder:text-[#f3f0ed]/25 transition-colors focus:border-[#a2dd00]/50 focus:outline-none focus:ring-2 focus:ring-[#a2dd00]/15"
+                      />
+                    </Field>
+                    <Field label="Texto do botão">
+                      <input
+                        value={form[k('CtaLabel')] as string}
+                        onChange={(e) => update(k('CtaLabel'), e.target.value as never)}
+                        placeholder={form.ctaLabel || 'Try it now'}
+                        className={inputClass}
+                        maxLength={40}
+                      />
+                    </Field>
+                  </div>
+                );
+              })}
+            </div>
           </Section>
 
           {/* ── Mídia ── */}

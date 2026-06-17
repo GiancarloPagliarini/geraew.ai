@@ -48,6 +48,8 @@ function WorkspaceCard({ item, onOpen, onRename, onToggleFavorite, onDelete }: C
   const locale = useLocale();
   const [renaming, setRenaming] = useState(false);
   const [deleteArmed, setDeleteArmed] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const showThumb = !!item.thumbnailUrl && !imgError;
   // ao escolher "Renomear", impede o menu de devolver o foco ao trigger
   // (senão ele rouba o autoFocus do input)
   const renameFocusRef = useRef(false);
@@ -78,14 +80,21 @@ function WorkspaceCard({ item, onOpen, onRename, onToggleFavorite, onDelete }: C
         className="block w-full text-left transition-transform duration-200 ease-app hover:-translate-y-0.5"
       >
         <div className="relative aspect-[3/2] overflow-hidden rounded-xl border border-app-hairline bg-[linear-gradient(135deg,#1d2628,#161d1f)] transition-colors duration-200 ease-app group-hover:border-app-hairline-2">
-          {/* brilho lime sutil (fallback sem thumbnail) */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_25%,rgba(162,221,0,0.1),transparent_60%)]" />
-          {item.thumbnailUrl && (
+          {showThumb ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={item.thumbnailUrl}
+              src={item.thumbnailUrl!}
               alt=""
               loading="lazy"
+              onError={() => setImgError(true)}
+              className="absolute inset-0 size-full object-cover"
+            />
+          ) : (
+            /* sem thumbnail (ou falhou): preview abstrato de canvas (aurora) */
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src="/aurora-collage.svg"
+              alt=""
               className="absolute inset-0 size-full object-cover"
             />
           )}

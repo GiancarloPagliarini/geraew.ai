@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { Megaphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -106,14 +106,16 @@ function NewsCard({ item, tintIndex }: { item: Announcement; tintIndex: number }
 
 /** Seção "Novidades" da home — carousel com os avisos ativos do admin. */
 export function NewsSection() {
+  const t = useTranslations('home');
+  const locale = useLocale();
   const { user, accessToken } = useAuth();
   const trackRef = useRef<HTMLDivElement>(null);
   const drag = useRef({ down: false, moved: false, startX: 0, startScroll: 0 });
   const [active, setActive] = useState(0);
 
   const { data, isPending } = useQuery({
-    queryKey: ['announcements', 'active'],
-    queryFn: () => api.announcements.active(accessToken!),
+    queryKey: ['announcements', 'active', locale],
+    queryFn: () => api.announcements.active(accessToken!, locale),
     enabled: !!accessToken && !!user,
     staleTime: 5 * 60_000,
   });
@@ -139,6 +141,11 @@ export function NewsSection() {
 
   return (
     <section>
+      {/* label da seção */}
+      <span className="mb-4 inline-flex items-center rounded-full border border-app-hairline-2 bg-app-surface px-3.5 py-1.5 text-[12px] font-semibold text-app-text">
+        {t('news.title')}
+      </span>
+
       {isPending ? (
         <div className="flex gap-5 overflow-hidden">
           {Array.from({ length: 3 }, (_, i) => (

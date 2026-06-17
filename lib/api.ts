@@ -1289,6 +1289,18 @@ export type AnnouncementAction =
   | { type: 'open-unlimited-modal' }
   | { type: 'href'; url: string };
 
+/** Campos traduzíveis de um aviso (pt-BR é a base nos campos principais). */
+export interface AnnouncementLocaleText {
+  badge?: string;
+  title?: string;
+  description?: string;
+  ctaLabel?: string;
+}
+export interface AnnouncementTranslations {
+  en?: AnnouncementLocaleText;
+  es?: AnnouncementLocaleText;
+}
+
 export interface Announcement {
   id: string;
   slug: string;
@@ -1299,6 +1311,8 @@ export interface Announcement {
   imageUrl: string | null;
   ctaLabel: string | null;
   ctaAction: AnnouncementAction | null;
+  /** só presente nas respostas do admin (removido na rota pública /active) */
+  translations?: AnnouncementTranslations | null;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;
@@ -1314,6 +1328,7 @@ export interface CreateAnnouncementInput {
   imageUrl?: string;
   ctaLabel?: string;
   ctaAction?: AnnouncementAction;
+  translations?: AnnouncementTranslations;
   isActive?: boolean;
   sortOrder?: number;
 }
@@ -2036,8 +2051,9 @@ export const api = {
   },
 
   announcements: {
-    active(accessToken: string) {
-      return authRequest<Announcement[]>('/api/v1/announcements/active', accessToken);
+    active(accessToken: string, locale?: string) {
+      const qs = locale ? `?locale=${encodeURIComponent(locale)}` : '';
+      return authRequest<Announcement[]>(`/api/v1/announcements/active${qs}`, accessToken);
     },
   },
 
@@ -2121,6 +2137,11 @@ export const api = {
     readAll(accessToken: string) {
       return authRequest<{ success: boolean }>('/api/v1/notifications/read-all', accessToken, {
         method: 'POST',
+      });
+    },
+    clear(accessToken: string) {
+      return authRequest<{ success: boolean }>('/api/v1/notifications', accessToken, {
+        method: 'DELETE',
       });
     },
   },

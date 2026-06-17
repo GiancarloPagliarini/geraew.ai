@@ -12,10 +12,8 @@ import {
   Hd,
   Image as ImageIcon,
   PersonStanding,
-  Plus,
   RefreshCw,
   SquarePlay,
-  UserRound,
   Volume2,
   VolumeOff,
   Wand2,
@@ -708,22 +706,13 @@ export function VideoConfigPanel({
                 />
               </>
             )}
-            {/* personagem (avatares — em breve) */}
-            <button
-              type="button"
-              onClick={() => toast.info(t('soon'))}
-              className="flex h-[76px] flex-col items-center justify-center gap-1.5 rounded-xl border border-app-hairline bg-app-surface text-app-text-2 transition-colors duration-200 ease-app hover:border-app-hairline-2 hover:text-app-text"
-            >
-              <UserRound className="size-[19px]" strokeWidth={1.8} />
-              <span className="text-[12px] font-semibold">{t('image.persona')}</span>
-            </button>
             {references.length < effectiveMaxRefs && (
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="flex h-[76px] flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-app-hairline-2 text-app-text-2 transition-colors duration-200 ease-app hover:border-[rgba(162,221,0,0.4)] hover:text-app-text"
               >
-                <Plus className="size-[19px]" strokeWidth={1.8} />
+                <ImageIcon className="size-[19px]" strokeWidth={1.8} />
                 <span className="text-[12px] font-semibold">{t('image.addReference')}</span>
               </button>
             )}
@@ -741,7 +730,7 @@ export function VideoConfigPanel({
               onChange={(e) => setPrompt(e.target.value)}
               placeholder={t('video.promptPlaceholder')}
               rows={5}
-              className="w-full resize-none bg-transparent p-3.5 text-[14px] leading-relaxed text-app-text outline-none placeholder:text-app-muted"
+              className="w-full resize-none bg-transparent px-3.5 pb-2.5 pt-3.5 text-[14px] leading-relaxed text-app-text outline-none placeholder:text-app-muted"
             />
             {/* melhorar prompt */}
             <button
@@ -749,7 +738,7 @@ export function VideoConfigPanel({
               role="switch"
               aria-checked={enhance}
               onClick={() => setEnhance((v) => !v)}
-              className="flex items-center gap-2.5 px-3.5 pb-3 text-[13px] font-medium text-app-text-2 transition-colors duration-200 ease-app hover:text-app-text"
+              className="flex items-center gap-2.5 border-t border-app-hairline px-3.5 py-3 text-[13px] font-medium text-app-text-2 transition-colors duration-200 ease-app hover:text-app-text"
             >
               <span
                 className={cn(

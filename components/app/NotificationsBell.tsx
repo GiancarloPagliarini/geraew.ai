@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from 'next-intl';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, CheckCircle2, Hourglass, UserPlus, XCircle, type LucideIcon } from 'lucide-react';
+import { Bell, CheckCircle2, Hourglass, Loader2, UserPlus, XCircle, type LucideIcon } from 'lucide-react';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import { api, type AppNotification } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -11,6 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const TYPE_ICONS: Record<string, { icon: LucideIcon; className: string }> = {
   'community-submitted': { icon: Hourglass, className: 'text-app-text-2' },
@@ -82,6 +83,12 @@ export function NotificationsBell() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
   });
 
+  const clearMutation = useMutation({
+    mutationFn: () => api.notifications.clear(accessToken!),
+    onSuccess: () =>
+      queryClient.setQueryData(['notifications'], { data: [], unreadCount: 0 }),
+  });
+
   const items = data?.data ?? [];
   const unreadCount = data?.unreadCount ?? 0;
 
@@ -92,29 +99,45 @@ export function NotificationsBell() {
         if (!open && unreadCount > 0) readAllMutation.mutate();
       }}
     >
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          aria-label={t('shell.notifications')}
-          className="relative flex size-8 items-center justify-center rounded-lg text-app-text-2 transition-colors duration-200 ease-app hover:bg-app-surface hover:text-app-text data-[state=open]:bg-app-surface data-[state=open]:text-app-text"
-        >
-          <Bell className="size-[18px]" strokeWidth={1.8} />
-          {unreadCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-app-lime px-1 text-[10px] font-bold leading-none text-app-lime-ink">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </button>
-      </DropdownMenuTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label={t('shell.notifications')}
+              className="relative flex size-8 items-center justify-center rounded-lg text-app-text-2 transition-colors duration-200 ease-app hover:bg-app-surface hover:text-app-text data-[state=open]:bg-app-surface data-[state=open]:text-app-text"
+            >
+              <Bell className="size-[18px]" strokeWidth={1.8} />
+              {unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-app-lime px-1 text-[10px] font-bold leading-none text-app-lime-ink">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="top" sideOffset={6}>{t('shell.notifications')}</TooltipContent>
+      </Tooltip>
       <DropdownMenuContent
         side="top"
         align="start"
         sideOffset={10}
         className="w-[340px] rounded-xl border-app-hairline-2 bg-app-card p-2 text-app-text shadow-[0_12px_30px_rgba(0,0,0,0.45)]"
       >
-        <p className="px-3 pb-2 pt-1.5 text-[13px] font-semibold text-app-text">
-          {t('notifications.title')}
-        </p>
+        <div className="flex items-center justify-between px-3 pb-2 pt-1.5">
+          <p className="text-[13px] font-semibold text-app-text">{t('notifications.title')}</p>
+          {items.length > 0 && (
+            <button
+              type="button"
+              onClick={() => clearMutation.mutate()}
+              disabled={clearMutation.isPending}
+              className="flex items-center gap-1 text-[12px] font-semibold text-app-muted transition-colors duration-200 ease-app hover:text-app-text disabled:opacity-50"
+            >
+              {clearMutation.isPending && <Loader2 className="size-3 animate-spin" strokeWidth={2} />}
+              {t('notifications.clear')}
+            </button>
+          )}
+        </div>
         {items.length === 0 ? (
           <p className="px-3 pb-4 pt-2 text-center text-[13px] text-app-muted">
             {t('notifications.empty')}

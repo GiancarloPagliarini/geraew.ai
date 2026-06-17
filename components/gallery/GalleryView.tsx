@@ -22,6 +22,9 @@ export function GalleryView() {
   const [selected, setSelected] = useState<GalleryItem | null>(null);
   const [selectedRatio, setSelectedRatio] = useState<number | undefined>(undefined);
   const [lightboxClosing, setLightboxClosing] = useState(false);
+  // nº de colunas do masonry — calculado pela largura real (round-robin estável,
+  // sem o reembaralhamento do CSS `columns` quando as imagens carregam)
+  const [columns, setColumns] = useState(4);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const lightboxTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -62,6 +65,32 @@ export function GalleryView() {
     });
 
   const items = useMemo(() => data?.pages.flatMap((p) => p.data) ?? [], [data]);
+
+  // colunas responsivas pela largura do container (uma vez ao observar)
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const w = el.clientWidth;
+      setColumns(w < 560 ? 1 : w < 880 ? 2 : w < 1200 ? 3 : 4);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // distribui itens (+ skeletons da próxima página) em colunas round-robin.
+  // Cada item fica fixo na sua coluna — ao carregar as imagens as colunas só
+  // crescem na vertical, sem os itens pularem de coluna.
+  const columnsData = useMemo(() => {
+    type Entry = { kind: 'item'; item: GalleryItem } | { kind: 'skeleton'; height: number };
+    const entries: Entry[] = items.map((item) => ({ kind: 'item', item }));
+    if (isFetchingNextPage) {
+      SKELETON_HEIGHTS.slice(0, 8).forEach((height) => entries.push({ kind: 'skeleton', height }));
+    }
+    const cols: Entry[][] = Array.from({ length: columns }, () => []);
+    entries.forEach((entry, i) => cols[i % columns].push(entry));
+    return cols;
+  }, [items, isFetchingNextPage, columns]);
 
   // scroll infinito: busca a próxima página quando o sentinela se aproxima
   useEffect(() => {
@@ -121,15 +150,18 @@ export function GalleryView() {
             cta={{ label: t('gallery.emptyCta'), href: '/workspace' }}
           />
         ) : (
-          <div className="columns-1 gap-5 sm:columns-2 lg:columns-3 xl:columns-4">
-            {items.map((item) => (
-              <GalleryCard key={item.id} item={item} onOpen={openLightbox} />
+          <div className="flex gap-5">
+            {columnsData.map((col, ci) => (
+              <div key={ci} className="flex min-w-0 flex-1 flex-col">
+                {col.map((entry, ri) =>
+                  entry.kind === 'item' ? (
+                    <GalleryCard key={entry.item.id} item={entry.item} onOpen={openLightbox} />
+                  ) : (
+                    <SkeletonCard key={`skel-${ci}-${ri}`} height={entry.height} index={ri} />
+                  ),
+                )}
+              </div>
             ))}
-            {/* skeletons da próxima página entram no próprio masonry */}
-            {isFetchingNextPage &&
-              SKELETON_HEIGHTS.slice(0, 8).map((h, i) => (
-                <SkeletonCard key={`next-${i}`} height={h} index={i} />
-              ))}
           </div>
         )}
         {/* sentinela do scroll infinito */}

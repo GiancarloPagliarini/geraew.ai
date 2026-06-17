@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Plus, Search } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
 import { useShell } from '@/components/app/shell-context';
 import { useTypewriter } from '@/components/app/use-typewriter';
 import { CreateMenu } from '@/components/app/CreateMenu';
@@ -12,15 +13,18 @@ import { NewsSection } from '@/components/home/NewsSection';
 
 export default function InicioPage() {
   const t = useTranslations('home');
+  const { user } = useAuth();
   const { openPalette } = useShell();
   const searchTyped = useTypewriter(t('hero.searchPlaceholder'));
+
+  const firstName = user?.name?.trim().split(/\s+/)[0] ?? '';
 
   return (
     <div className="mx-auto w-full max-w-[1280px] px-6 pb-16 pt-8 lg:px-11">
       {/* saudação + Criar */}
       <div className="mb-7 flex items-end justify-between gap-4">
         <h1 className="text-[28px] font-bold leading-tight tracking-[-0.4px] text-app-text md:text-[38px]">
-          {t('hero.greeting')}
+          {firstName ? t('hero.greetingNamed', { name: firstName }) : t('hero.greeting')}
         </h1>
         <CreateMenu align="end">
           <button

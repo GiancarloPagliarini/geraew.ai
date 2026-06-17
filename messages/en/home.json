@@ -105,6 +105,7 @@
     },
     "notifications": {
       "title": "Notifications",
+      "clear": "Clear",
       "empty": "Nothing here yet.",
       "generic": "You have a new notification.",
       "types": {
@@ -262,6 +263,7 @@
     },
     "hero": {
       "greeting": "Hello! What are we creating today?",
+      "greetingNamed": "Hello, {name}! What are we creating today?",
       "searchPlaceholder": "Search projects, features and much more"
     },
     "quick": {

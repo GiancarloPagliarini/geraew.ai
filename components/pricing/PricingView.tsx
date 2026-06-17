@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { BadgePercent, Check, CircleOff, Coins, Flame, Zap, type LucideIcon } from 'lucide-react';
+import { BadgePercent, Check, CircleOff, Coins, Flame, Infinity as InfinityIcon, Zap, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -238,6 +238,7 @@ export function PricingView() {
               items={[
                 { icon: Coins, label: t('plansModal.stackWithPlan') },
                 { icon: Zap, label: t('plansModal.instant') },
+                { icon: InfinityIcon, label: t('plansModal.neverExpire') },
               ]}
             />
           </>

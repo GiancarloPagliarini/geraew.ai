@@ -22,8 +22,9 @@ type MediaKind = 'imagem' | 'video' | 'audio';
 
 function kindOf(type: string): MediaKind {
   const t = type.toUpperCase();
+  // voz = VOICE_CLONE (mesma regra do kindOf da galeria); demais áudios por substring
+  if (t === 'VOICE_CLONE' || t.includes('SPEECH') || t.includes('AUDIO') || t.includes('TTS') || t.includes('MUSIC')) return 'audio';
   if (t.includes('VIDEO') || t.includes('MOTION')) return 'video';
-  if (t.includes('SPEECH') || t.includes('AUDIO') || t.includes('TTS') || t.includes('MUSIC')) return 'audio';
   return 'imagem';
 }
 

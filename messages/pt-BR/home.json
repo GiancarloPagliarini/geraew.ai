@@ -105,6 +105,7 @@
     },
     "notifications": {
       "title": "Notificações",
+      "clear": "Limpar",
       "empty": "Nenhuma notificação por aqui.",
       "generic": "Você tem uma nova notificação.",
       "types": {
@@ -262,6 +263,7 @@
     },
     "hero": {
       "greeting": "Olá! O que vamos criar hoje?",
+      "greetingNamed": "Olá, {name}! O que vamos criar hoje?",
       "searchPlaceholder": "Pesquise projetos, recursos e muito mais"
     },
     "quick": {

@@ -115,16 +115,17 @@ export const QUICK_ACTIONS: QuickAction[] = [
   { id: 'tiktokShop', icon: Flame, href: '/tiktok-shop' },
 ];
 
-/** Painel "Ferramentas" do dashboard (atalhos fixados — só telas já em produção) */
+/** Painel "Ferramentas" do dashboard (atalhos fixados — só telas já em produção).
+ *  Os atalhos de sub-ferramentas já abrem com a ferramenta certa selecionada (?tool=). */
 export const PINNED_TOOLS: QuickAction[] = [
   { id: 'workspace', icon: Waypoints, href: '/workspaces' },
   { id: 'gerarImagens', icon: Image, href: '/image' },
   { id: 'gerarVideos', icon: SquarePlay, href: '/video' },
   { id: 'textoParaVoz', icon: Mic, href: '/voice' },
-  { id: 'melhorarImagem', icon: Wand2, href: '/image' },
+  { id: 'melhorarImagem', icon: Wand2, href: '/image?tool=upscale' },
   { id: 'clonarPrompt', icon: Copy, href: '/clone-prompt' },
-  { id: 'copiarMovimentos', icon: PersonStanding, href: '/video' },
-  { id: 'clonarVoz', icon: AudioLines, href: '/voice' },
+  { id: 'copiarMovimentos', icon: PersonStanding, href: '/video?tool=motion-control' },
+  { id: 'clonarVoz', icon: AudioLines, href: '/voice?tool=clone' },
 ];
 
 // ─── Command palette (Ctrl K) ────────────────────────────────────────────────

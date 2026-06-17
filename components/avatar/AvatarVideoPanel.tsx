@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import {
   api,
@@ -133,6 +134,7 @@ interface AvatarVideoPanelProps {
  */
 export function AvatarVideoPanel({ avatar, videoDisabled, videoDisabledMessage }: AvatarVideoPanelProps) {
   const { accessToken } = useAuth();
+  const queryClient = useQueryClient();
   const t = useTranslations('editorDialogs.avatars.form');
   const tMaint = useTranslations('editorDialogs.avatars.maintenance');
   const mapError = useGenerationErrorMessage();
@@ -245,6 +247,8 @@ export function AvatarVideoPanel({ avatar, videoDisabled, videoDisabledMessage }
         }
         if (gen.status === 'FAILED') {
           setErrorMsg(mapError(gen.errorMessage));
+          // falha estorna os créditos — reflete o saldo de volta
+          queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
           setGenState('idle');
           return;
         }
@@ -458,6 +462,8 @@ export function AvatarVideoPanel({ avatar, videoDisabled, videoDisabledMessage }
 
       const res = await api.avatars.generateVideo(accessToken, avatar.id, payload);
       toast.success(t('queuedToast', { credits: res.creditsConsumed }));
+      // créditos debitados — atualiza o saldo (topbar/perfil)
+      queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
       setGenerationId(res.generationId);
       setVideoUrl(null);
       setVideoVisible(false);

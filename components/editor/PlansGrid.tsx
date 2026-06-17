@@ -376,12 +376,11 @@ function PlanSection({
   const colClass = cols === 4 ? 'sm:grid-cols-2 lg:grid-cols-4' : cols === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3';
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <div className="h-px flex-1 bg-[#f3f0ed]/[0.08]" />
-        <p className={`font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/50 ${compact ? 'text-[9px]' : 'text-[11px]'}`}>
+      <div className="flex items-center gap-2.5">
+        <span className={`shrink-0 rounded-full bg-app-lime ${compact ? 'h-4 w-1' : 'h-5 w-[5px]'}`} />
+        <h3 className={`font-bold tracking-[-0.2px] text-app-text ${compact ? 'text-[16px]' : 'text-[19px]'}`}>
           {t(`planSections.${sectionKey}` as 'planSections.entry')}
-        </p>
-        <div className="h-px flex-1 bg-[#f3f0ed]/[0.08]" />
+        </h3>
       </div>
       <div className={`grid grid-cols-1 items-stretch ${colClass} ${gap}`}>
         {plans.map((plan) => (
@@ -415,8 +414,8 @@ export function PlansGrid({
     return (
       <div className={`flex flex-col ${compact ? 'gap-4' : 'gap-6'}`}>
         {PLAN_SECTIONS.map((section) => (
-          <div key={section.key} className="flex flex-col gap-2">
-            <div className={`${compact ? 'h-2.5 w-24' : 'h-3 w-32'} rounded bg-[#f3f0ed]/[0.06]`} />
+          <div key={section.key} className="flex flex-col gap-3">
+            <div className={`${compact ? 'h-4 w-40' : 'h-5 w-52'} rounded bg-[#f3f0ed]/[0.06]`} />
             <div className={`grid grid-cols-1 items-stretch sm:grid-cols-2 lg:grid-cols-3 ${compact ? 'gap-3' : 'gap-4 lg:gap-3'}`}>
               {section.slugs.map((_, i) => <SkeletonCard key={i} compact={compact} />)}
             </div>

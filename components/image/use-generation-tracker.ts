@@ -49,6 +49,8 @@ export function useGenerationTracker(options?: { onError?: (message: string) => 
       if (!accessToken || trackedIds.current.has(id)) return;
       trackedIds.current.add(id);
       setPending((list) => [...list, { key: id, prompt, kind }]);
+      // créditos são debitados no início da geração — atualiza o saldo (topbar/perfil)
+      queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
 
       const started = Date.now();
       const remove = () => setPending((list) => list.filter((p) => p.key !== id));
@@ -86,6 +88,8 @@ export function useGenerationTracker(options?: { onError?: (message: string) => 
             const message = mapErrorRef.current(gen.errorMessage);
             // mostra o card de erro no painel e remove depois de um tempo
             setPending((list) => list.map((p) => (p.key === id ? { ...p, error: message } : p)));
+            // falha estorna os créditos — reflete o saldo de volta
+            queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
             toast.error(message);
             onErrorRef.current?.(message);
             const errorTimer = setTimeout(() => {

@@ -79,12 +79,11 @@ export function CreditPackagesGrid({ packages, currency = 'BRL', compact }: Cred
 
   function SectionTitle({ label }: { label: string }) {
     return (
-      <div className="flex items-center gap-2">
-        <div className="h-px flex-1 bg-[#f3f0ed]/[0.08]" />
-        <p className={`font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/50 ${compact ? 'text-[9px]' : 'text-[11px]'}`}>
+      <div className="flex items-center gap-2.5">
+        <span className={`shrink-0 rounded-full bg-app-lime ${compact ? 'h-4 w-1' : 'h-5 w-[5px]'}`} />
+        <h3 className={`font-bold tracking-[-0.2px] text-app-text ${compact ? 'text-[16px]' : 'text-[19px]'}`}>
           {label}
-        </p>
-        <div className="h-px flex-1 bg-[#f3f0ed]/[0.08]" />
+        </h3>
       </div>
     );
   }
