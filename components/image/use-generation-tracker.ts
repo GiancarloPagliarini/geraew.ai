@@ -45,10 +45,10 @@ export function useGenerationTracker(options?: { onError?: (message: string) => 
   }, []);
 
   const track = useCallback(
-    (id: string, prompt: string, kind?: PendingGeneration['kind']) => {
+    (id: string, prompt: string, kind?: PendingGeneration['kind'], unlimited?: boolean) => {
       if (!accessToken || trackedIds.current.has(id)) return;
       trackedIds.current.add(id);
-      setPending((list) => [...list, { key: id, prompt, kind }]);
+      setPending((list) => [...list, { key: id, prompt, kind, unlimited }]);
       // créditos são debitados no início da geração — atualiza o saldo (topbar/perfil)
       queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
 

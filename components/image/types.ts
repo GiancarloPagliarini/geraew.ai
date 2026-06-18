@@ -10,4 +10,6 @@ export interface PendingGeneration {
   error?: string;
   /** tipo da geração — 'voice' usa o card compacto de áudio */
   kind?: 'image' | 'video' | 'voice';
+  /** geração no modo ilimitado — pinta o preview de violeta */
+  unlimited?: boolean;
 }

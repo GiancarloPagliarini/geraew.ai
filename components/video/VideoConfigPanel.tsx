@@ -551,7 +551,7 @@ export function VideoConfigPanel({
         }
       }
 
-      track(result.id, finalPrompt || t('video.tab'));
+      track(result.id, finalPrompt || t('video.tab'), undefined, unlimited);
     } catch (err) {
       // erros específicos do modo ilimitado têm tratamento próprio
       if (err instanceof ApiError && handleUnlimitedError(err)) {

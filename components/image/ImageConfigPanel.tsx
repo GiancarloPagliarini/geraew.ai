@@ -470,7 +470,7 @@ export function ImageConfigPanel({
             setGenerationError(msg);
           }
         }
-        ids.forEach((id) => track(id, finalPrompt));
+        ids.forEach((id) => track(id, finalPrompt, undefined, unlimited));
         return;
       }
 

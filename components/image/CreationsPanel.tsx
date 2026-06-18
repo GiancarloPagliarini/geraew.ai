@@ -96,6 +96,7 @@ function PendingPreview({ gen }: { gen: PendingGeneration }) {
         imageVisible={visible && !!gen.url}
         progress={0}
         proportion="1-1"
+        accent={gen.unlimited ? 'violet' : undefined}
         generatedImageUrl={gen.url ?? null}
         onImageLoad={() => setVisible(true)}
         onImageError={() => setVisible(true)}
