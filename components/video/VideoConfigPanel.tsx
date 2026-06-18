@@ -12,6 +12,7 @@ import {
   Hd,
   Image as ImageIcon,
   Infinity as InfinityIcon,
+  Loader2,
   PersonStanding,
   RefreshCw,
   SquarePlay,
@@ -29,6 +30,7 @@ import type { PendingGeneration } from '@/components/image/types';
 import { useGenerationTracker } from '@/components/image/use-generation-tracker';
 import { useGenerationErrorMessage } from '@/lib/use-generation-error';
 import { ImageDropTile, type UploadedImage } from '@/components/image/ImageDropTile';
+import { GALLERY_IMAGE_DRAG_TYPE } from '@/components/gallery/GalleryCard';
 import { MediaFileTile, type MediaFile } from '@/components/app/MediaFileTile';
 import { GenerationCostEstimate } from '@/components/app/GenerationCostEstimate';
 import { UnlimitedToggle } from '@/components/editor/UnlimitedToggle';
@@ -51,6 +53,13 @@ import {
 
 const REF_ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
 const REF_MAX_BYTES = 5 * 1024 * 1024;
+const blobToDataUrl = (blob: Blob) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
 
 type VideoToolId = 'generate' | 'motion-control';
 
@@ -168,6 +177,8 @@ export function VideoConfigPanel({
   const [tool, setTool] = useState<VideoToolId>(initialTool ?? 'generate');
   const [model, setModel] = useState('geraew-fast');
   const [references, setReferences] = useState<UploadedImage[]>([]);
+  // referência sendo baixada de uma URL arrastada — mostra o loader no tile de adicionar
+  const [refLoading, setRefLoading] = useState(false);
 
   // modo ilimitado
   const [unlimited, setUnlimited] = useState(false);
@@ -388,6 +399,36 @@ export function VideoConfigPanel({
     }
   };
 
+  // adiciona uma referência a partir de uma URL (ex.: imagem arrastada das criações).
+  // usa o proxy para contornar CORS antes de converter para base64.
+  const addReferenceFromUrl = async (url: string) => {
+    const maxRefs = effectiveMaxRefs;
+    if (references.length >= maxRefs) {
+      toast.error(t('image.refMax', { max: maxRefs }));
+      return;
+    }
+    setRefLoading(true);
+    try {
+      const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(url)}`);
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      if (blob.size > REF_MAX_BYTES) {
+        toast.error(t('clone.tooLarge', { max: 5 }));
+        return;
+      }
+      const dataUrl = await blobToDataUrl(blob);
+      setReferences((prev) =>
+        prev.length >= maxRefs
+          ? prev
+          : [...prev, { base64: dataUrl.split(',')[1], mime_type: blob.type || 'image/jpeg', preview: dataUrl }],
+      );
+    } catch {
+      toast.error(t('clone.invalidFormat'));
+    } finally {
+      setRefLoading(false);
+    }
+  };
+
   const canGenerate =
     tool === 'motion-control'
       ? !!mcImage && !!mcVideo
@@ -574,14 +615,24 @@ export function VideoConfigPanel({
         hidden && 'hidden',
       )}
       onDragEnter={(e) => {
-        if (e.dataTransfer.types.includes('Files')) setDragDepth((c) => c + 1);
+        if (
+          e.dataTransfer.types.includes('Files') ||
+          (tool === 'generate' && e.dataTransfer.types.includes(GALLERY_IMAGE_DRAG_TYPE))
+        ) {
+          setDragDepth((c) => c + 1);
+        }
       }}
       onDragLeave={() => setDragDepth((c) => Math.max(0, c - 1))}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault();
         setDragDepth(0);
-        addReferenceFiles(e.dataTransfer.files);
+        const droppedUrl = e.dataTransfer.getData(GALLERY_IMAGE_DRAG_TYPE);
+        if (droppedUrl) {
+          if (tool === 'generate') void addReferenceFromUrl(droppedUrl);
+        } else {
+          addReferenceFiles(e.dataTransfer.files);
+        }
       }}
     >
       {dragDepth > 0 && (
@@ -782,15 +833,21 @@ export function VideoConfigPanel({
                 />
               </>
             )}
-            {references.length < effectiveMaxRefs && (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex h-[76px] flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-app-hairline-2 text-app-text-2 transition-colors duration-200 ease-app hover:border-[rgba(162,221,0,0.4)] hover:text-app-text"
-              >
-                <ImageIcon className="size-[19px]" strokeWidth={1.8} />
-                <span className="text-[12px] font-semibold">{t('image.addReference')}</span>
-              </button>
+            {refLoading ? (
+              <div className="flex h-[76px] flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-[rgba(162,221,0,0.4)] bg-[rgba(162,221,0,0.05)] text-app-text-2">
+                <Loader2 className="size-[19px] animate-spin text-app-lime" strokeWidth={2} />
+              </div>
+            ) : (
+              references.length < effectiveMaxRefs && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex h-[76px] flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-app-hairline-2 text-app-text-2 transition-colors duration-200 ease-app hover:border-[rgba(162,221,0,0.4)] hover:text-app-text"
+                >
+                  <ImageIcon className="size-[19px]" strokeWidth={1.8} />
+                  <span className="text-[12px] font-semibold">{t('image.addReference')}</span>
+                </button>
+              )
             )}
           </div>
         </div>

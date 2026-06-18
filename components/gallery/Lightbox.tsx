@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { AudioLines, ImageOff, X } from 'lucide-react';
+import { AudioLines, Heart, ImageOff, X } from 'lucide-react';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import type { GalleryItem } from '@/lib/api';
 import { CopyPromptButton } from '@/components/app/CopyPromptButton';
@@ -14,9 +14,11 @@ interface LightboxProps {
   ratio?: number;
   closing: boolean;
   onClose: () => void;
+  /** quando definido, exibe o botão de favoritar nas ações */
+  onToggleFavorite?: (item: GalleryItem) => void;
 }
 
-export function Lightbox({ item, ratio, closing, onClose }: LightboxProps) {
+export function Lightbox({ item, ratio, closing, onClose, onToggleFavorite }: LightboxProps) {
   const t = useTranslations('home');
   const locale = useLocale();
   const kind = kindOf(item.type);
@@ -166,6 +168,20 @@ export function Lightbox({ item, ratio, closing, onClose }: LightboxProps) {
               </p>
             )}
           </div>
+          {onToggleFavorite && (
+            <button
+              type="button"
+              aria-label={item.isFavorited ? t('gallery.unfavorite') : t('gallery.favorite')}
+              title={item.isFavorited ? t('gallery.unfavorite') : t('gallery.favorite')}
+              onClick={() => onToggleFavorite(item)}
+              className={cn(
+                'flex size-9 shrink-0 items-center justify-center rounded-[10px] border border-app-hairline bg-app-surface transition-colors duration-200 ease-app hover:bg-app-card-hover',
+                item.isFavorited ? 'text-app-lime' : 'text-app-text',
+              )}
+            >
+              <Heart className="size-4" strokeWidth={2} fill={item.isFavorited ? 'currentColor' : 'none'} />
+            </button>
+          )}
           {item.prompt?.trim() && (
             <CopyPromptButton
               prompt={item.prompt}

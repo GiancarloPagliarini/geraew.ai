@@ -373,7 +373,12 @@
       "empty": "Your gallery is empty",
       "emptyCta": "Create my first generation",
       "loadError": "Could not load the gallery. Please try again shortly.",
-      "mediaError": "Could not load the media."
+      "mediaError": "Could not load the media.",
+      "favorite": "Favorite",
+      "unfavorite": "Remove from favorites",
+      "favorited": "Added to favorites",
+      "unfavorited": "Removed from favorites",
+      "favoriteError": "Could not update favorite."
     },
     "library": {
       "searchPlaceholder": "Search prompts...",

@@ -373,7 +373,12 @@
       "empty": "Tu galería está vacía",
       "emptyCta": "Crear mi primera generación",
       "loadError": "No se pudo cargar la galería. Inténtalo de nuevo en unos instantes.",
-      "mediaError": "No se pudo cargar el contenido."
+      "mediaError": "No se pudo cargar el contenido.",
+      "favorite": "Favorito",
+      "unfavorite": "Quitar de favoritos",
+      "favorited": "Añadida a favoritos",
+      "unfavorited": "Eliminada de favoritos",
+      "favoriteError": "No se pudo actualizar el favorito."
     },
     "library": {
       "searchPlaceholder": "Buscar prompt...",

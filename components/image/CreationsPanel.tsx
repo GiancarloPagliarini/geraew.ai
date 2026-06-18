@@ -7,6 +7,7 @@ import { AlertCircle, AudioLines, Grid2x2, Heart, Search, X } from 'lucide-react
 import { cn, normalizeSearch } from '@/lib/utils';
 import { api, type GalleryItem } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { useToggleFavorite } from '@/lib/use-toggle-favorite';
 import { FilterPill } from '@/components/app/FilterPill';
 import { GalleryCard } from '@/components/gallery/GalleryCard';
 import { Lightbox } from '@/components/gallery/Lightbox';
@@ -128,11 +129,20 @@ export function CreationsPanel({
   // nº de colunas do masonry — calculado pela largura (mesmos breakpoints da antiga classe columns-*)
   const [columns, setColumns] = useState(3);
 
+  const toggleFavorite = useToggleFavorite();
+
   const openLightbox = (item: GalleryItem, ratio?: number) => {
     if (lightboxTimer.current) clearTimeout(lightboxTimer.current);
     setLightboxClosing(false);
     setSelectedRatio(ratio);
     setSelected(item);
+  };
+
+  // o update otimista do cache já reflete nos cards; no lightbox o item é uma
+  // cópia em estado, então atualizamos localmente para o coração mudar na hora
+  const handleToggleFavorite = (item: GalleryItem) => {
+    toggleFavorite.mutate(item);
+    setSelected((s) => (s && s.id === item.id ? { ...s, isFavorited: !s.isFavorited } : s));
   };
 
   const closeLightbox = () => {
@@ -345,7 +355,12 @@ export function CreationsPanel({
                       <PendingPreview gen={entry.gen} />
                     </div>
                   ) : entry.kind === 'item' ? (
-                    <GalleryCard key={entry.item.id} item={entry.item} onOpen={openLightbox} />
+                    <GalleryCard
+                      key={entry.item.id}
+                      item={entry.item}
+                      onOpen={openLightbox}
+                      onToggleFavorite={handleToggleFavorite}
+                    />
                   ) : (
                     <SkeletonCard key={`skel-${ci}-${ri}`} height={entry.height} index={ri} />
                   ),
@@ -363,6 +378,7 @@ export function CreationsPanel({
           ratio={selectedRatio}
           closing={lightboxClosing}
           onClose={closeLightbox}
+          onToggleFavorite={handleToggleFavorite}
         />
       )}
     </div>
