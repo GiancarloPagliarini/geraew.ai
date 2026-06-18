@@ -378,7 +378,8 @@
       "unfavorite": "Remover dos favoritos",
       "favorited": "Adicionada aos favoritos",
       "unfavorited": "Removida dos favoritos",
-      "favoriteError": "Não foi possível atualizar o favorito."
+      "favoriteError": "Não foi possível atualizar o favorito.",
+      "download": "Baixar"
     },
     "library": {
       "searchPlaceholder": "Buscar prompt...",

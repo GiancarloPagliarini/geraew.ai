@@ -117,7 +117,7 @@ export function GalleryView() {
     // toda a área é o container de scroll; filtros ficam sticky no topo
     <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto scrollbar-app">
       <div className="mx-auto w-full max-w-[1600px] px-6 pb-10 lg:px-11">
-        <div className="sticky top-0 z-10 bg-app-bg pb-3 pt-6">
+        <div className="sticky top-0 z-20 bg-app-bg pb-3 pt-6">
           {/* filtros por tipo */}
           <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {GALLERY_FILTERS.map(({ id, icon }) => (

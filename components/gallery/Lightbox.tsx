@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { AudioLines, Heart, ImageOff, X } from 'lucide-react';
+import { AudioLines, Download, Heart, ImageOff, X } from 'lucide-react';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import type { GalleryItem } from '@/lib/api';
+import { downloadMedia } from '@/lib/download-media';
 import { CopyPromptButton } from '@/components/app/CopyPromptButton';
 import { kindOf } from '@/components/gallery/kind';
 
@@ -168,6 +169,17 @@ export function Lightbox({ item, ratio, closing, onClose, onToggleFavorite }: Li
               </p>
             )}
           </div>
+          {src && (
+            <button
+              type="button"
+              aria-label={t('gallery.download')}
+              title={t('gallery.download')}
+              onClick={() => downloadMedia(src, kind)}
+              className="flex size-9 shrink-0 items-center justify-center rounded-[10px] border border-app-hairline bg-app-surface text-app-text transition-colors duration-200 ease-app hover:bg-app-card-hover"
+            >
+              <Download className="size-4" strokeWidth={2} />
+            </button>
+          )}
           {onToggleFavorite && (
             <button
               type="button"

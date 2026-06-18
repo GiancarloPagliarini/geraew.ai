@@ -378,7 +378,8 @@
       "unfavorite": "Remove from favorites",
       "favorited": "Added to favorites",
       "unfavorited": "Removed from favorites",
-      "favoriteError": "Could not update favorite."
+      "favoriteError": "Could not update favorite.",
+      "download": "Download"
     },
     "library": {
       "searchPlaceholder": "Search prompts...",
