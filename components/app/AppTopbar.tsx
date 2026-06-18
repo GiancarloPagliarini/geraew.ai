@@ -50,8 +50,10 @@ export function AppTopbar() {
 
   return (
     <header className="flex items-center justify-between gap-5 bg-app-bg px-7 pt-5">
-      {/* título da tela (vazio no Início no desktop; logo no mobile) */}
-      <div className="flex min-w-0 items-center gap-3 max-lg:mb-4">
+      {/* título da tela (vazio no Início no desktop; logo no mobile). o mb dá
+          altura à linha do header para o avatar (com seu anel) não encostar no
+          topo arredondado do main e ser cortado — em telas com título */}
+      <div className="flex min-w-0 items-center gap-3 mb-4">
         {screen ? (
           <>
             <span className="flex size-[34px] shrink-0 items-center justify-center rounded-[10px] border border-app-hairline bg-app-surface">

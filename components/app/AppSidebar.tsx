@@ -124,24 +124,27 @@ export function AppSidebar() {
         </button>
       </CreateMenu>
 
-      {/* navegação principal */}
-      <nav className="flex flex-col gap-0.5">
-        {MAIN_NAV.map((item) => (
-          <NavRow key={item.id} item={item} collapsed={collapsed} />
-        ))}
-      </nav>
+      {/* navegação — rola internamente quando a tela é baixa (notebooks), sem
+          empurrar o rodapé nem criar scroll na página */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto no-scrollbar">
+        <nav className="flex flex-col gap-0.5">
+          {MAIN_NAV.map((item) => (
+            <NavRow key={item.id} item={item} collapsed={collapsed} />
+          ))}
+        </nav>
 
-      <div className="my-4 h-px bg-app-hairline" />
+        <div className="my-4 h-px shrink-0 bg-app-hairline" />
 
-      {/* ferramentas */}
-      <nav className="flex flex-col gap-0.5">
-        {TOOLS_NAV.map((item) => (
-          <NavRow key={item.id} item={item} collapsed={collapsed} />
-        ))}
-      </nav>
+        {/* ferramentas */}
+        <nav className="flex flex-col gap-0.5">
+          {TOOLS_NAV.map((item) => (
+            <NavRow key={item.id} item={item} collapsed={collapsed} />
+          ))}
+        </nav>
+      </div>
 
       {/* rodapé */}
-      <div className={cn('mt-auto flex items-center gap-1 pt-4', collapsed && 'flex-col')}>
+      <div className={cn('flex shrink-0 items-center gap-1 pt-4', collapsed && 'flex-col')}>
         <Tooltip>
           <TooltipTrigger asChild>
             <a

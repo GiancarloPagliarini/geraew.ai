@@ -24,7 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <ShellProvider>
-      <div className="flex h-dvh gap-3 bg-app-deep p-3 font-sans text-app-text">
+      <div className="flex h-dvh gap-3 overflow-hidden bg-app-deep p-3 font-sans text-app-text">
         <AppSidebar />
         <main className="flex min-w-0 flex-1 flex-col overflow-y-auto rounded-[18px] border border-app-hairline bg-app-bg scrollbar-app max-lg:pb-[84px]">
           <AppTopbar />
