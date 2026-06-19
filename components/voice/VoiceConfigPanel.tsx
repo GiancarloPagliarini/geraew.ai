@@ -95,6 +95,13 @@ function FieldLabel({ children, right }: { children: React.ReactNode; right?: Re
   );
 }
 
+/** snapshot da configuração de uma aba — usado ao duplicar a aba */
+export interface VoicePanelSeed {
+  tool: VoiceToolId;
+  voice: VoiceOption | null;
+  text: string;
+}
+
 interface VoiceConfigPanelProps {
   /** aba inativa: fica montada (mantém estado e polling) porém oculta */
   hidden?: boolean;
@@ -104,6 +111,10 @@ interface VoiceConfigPanelProps {
   onPendingChange: (pending: PendingGeneration[]) => void;
   /** registra a função que foca o roteiro desta aba */
   registerFocus?: (focus: () => void) => void;
+  /** config inicial ao duplicar uma aba (tem prioridade sobre os initial*) */
+  seed?: VoicePanelSeed;
+  /** registra a função que devolve o snapshot atual desta aba (para duplicar) */
+  registerSnapshot?: (get: () => VoicePanelSeed) => void;
 }
 
 /** Painel de configuração de uma aba de Texto para voz. */
@@ -112,14 +123,16 @@ export function VoiceConfigPanel({
   initialTool,
   onPendingChange,
   registerFocus,
+  seed,
+  registerSnapshot,
 }: VoiceConfigPanelProps) {
   const t = useTranslations('home');
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
 
-  const [tool, setTool] = useState<VoiceToolId>(initialTool ?? 'tts');
-  const [voice, setVoice] = useState<VoiceOption | null>(null);
-  const [text, setText] = useState('');
+  const [tool, setTool] = useState<VoiceToolId>(seed?.tool ?? initialTool ?? 'tts');
+  const [voice, setVoice] = useState<VoiceOption | null>(seed?.voice ?? null);
+  const [text, setText] = useState(seed?.text ?? '');
   const [submitting, setSubmitting] = useState(false);
 
   // clonar voz
@@ -152,6 +165,13 @@ export function VoiceConfigPanel({
   useEffect(() => {
     registerFocus?.(() => textRef.current?.focus());
   }, [registerFocus]);
+
+  // mantém o snapshot atual num ref e o expõe para a aba ser duplicada
+  const snapshotRef = useRef<VoicePanelSeed | null>(null);
+  snapshotRef.current = { tool, voice, text };
+  useEffect(() => {
+    registerSnapshot?.(() => snapshotRef.current!);
+  }, [registerSnapshot]);
 
   // consentimento é por amostra: limpa quando o áudio muda
   useEffect(() => {

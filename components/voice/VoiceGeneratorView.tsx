@@ -4,12 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { Mic, Plus, X } from 'lucide-react';
+import { Mic, Pin, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { TabContextMenu } from '@/components/app/TabContextMenu';
 import { CreationsPanel } from '@/components/image/CreationsPanel';
-import { VoiceConfigPanel } from '@/components/voice/VoiceConfigPanel';
+import { VoiceConfigPanel, type VoicePanelSeed } from '@/components/voice/VoiceConfigPanel';
 import { useGenerationTracker } from '@/components/image/use-generation-tracker';
 import { kindOf } from '@/components/gallery/kind';
 import type { PendingGeneration } from '@/components/image/types';
@@ -18,6 +19,9 @@ const MAX_TABS = 10;
 
 interface Tab {
   id: number;
+  pinned?: boolean;
+  /** config copiada ao duplicar uma aba */
+  seed?: VoicePanelSeed;
 }
 
 export function VoiceGeneratorView() {
@@ -33,6 +37,7 @@ export function VoiceGeneratorView() {
   const [pendingByTab, setPendingByTab] = useState<Record<number, PendingGeneration[]>>({});
   const nextId = useRef(2);
   const promptFocusers = useRef<Record<number, () => void>>({});
+  const snapshotters = useRef<Record<number, () => VoicePanelSeed>>({});
 
   // recupera gerações ainda em andamento após um reload da página
   const { accessToken } = useAuth();
@@ -95,6 +100,32 @@ export function VoiceGeneratorView() {
       return next;
     });
     delete promptFocusers.current[id];
+    delete snapshotters.current[id];
+  };
+
+  // duplica a aba: cria uma nova logo após, com a config atual da original
+  const duplicateTab = (id: number) => {
+    if (tabs.length >= MAX_TABS) {
+      toast.info(t('image.maxTabs', { max: MAX_TABS }));
+      return;
+    }
+    const seed = snapshotters.current[id]?.();
+    const newId = nextId.current++;
+    setTabs((prev) => {
+      const idx = prev.findIndex((tab) => tab.id === id);
+      const next = [...prev];
+      next.splice(idx + 1, 0, { id: newId, seed });
+      return next;
+    });
+    setActiveId(newId);
+  };
+
+  // fixa/desafixa a aba; abas fixadas vão para a frente (mantendo a ordem relativa)
+  const togglePin = (id: number) => {
+    setTabs((prev) => {
+      const updated = prev.map((tab) => (tab.id === id ? { ...tab, pinned: !tab.pinned } : tab));
+      return [...updated].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
+    });
   };
 
   const handlePendingChange = useCallback((tabId: number, pending: PendingGeneration[]) => {
@@ -128,55 +159,67 @@ export function VoiceGeneratorView() {
         {tabs.map((tab) => {
           const active = tab.id === activeId;
           return (
-            <div
+            <TabContextMenu
               key={tab.id}
-              role="tab"
-              aria-selected={active}
-              tabIndex={0}
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/plain', String(tab.id));
-                setDraggingId(tab.id);
-                setActiveId(tab.id);
-              }}
-              onDragOver={(e) => {
-                e.preventDefault();
-                reorderOnDragOver(tab.id);
-              }}
-              onDrop={(e) => e.preventDefault()}
-              onDragEnd={() => setDraggingId(null)}
-              onClick={() => setActiveId(tab.id)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') setActiveId(tab.id);
-              }}
-              className={cn(
-                'group flex shrink-0 cursor-pointer items-center gap-2 rounded-t-[10px] px-4 py-2.5 text-[13px] font-semibold transition-colors duration-200 ease-app',
-                active
-                  ? '-mb-px border border-b-0 border-app-hairline bg-app-bg text-app-text'
-                  : 'text-app-text-2 hover:bg-app-surface/60 hover:text-app-text',
-                draggingId === tab.id && 'opacity-60',
-              )}
+              pinned={tab.pinned}
+              canClose={tabs.length > 1}
+              onDuplicate={() => duplicateTab(tab.id)}
+              onTogglePin={() => togglePin(tab.id)}
+              onClose={() => closeTab(tab.id)}
             >
-              <Mic
-                className={cn('size-[15px]', active ? 'text-app-lime' : 'text-app-muted')}
-                strokeWidth={1.8}
-              />
-              {t('voice.tab')}
-              {tabs.length > 1 && (
-                <button
-                  type="button"
-                  aria-label={t('image.closeTab')}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    closeTab(tab.id);
-                  }}
-                  className="-mr-1 flex size-[18px] items-center justify-center rounded-md text-app-muted opacity-0 transition-opacity duration-150 ease-app hover:bg-app-card-hover hover:text-app-text group-hover:opacity-100"
-                >
-                  <X className="size-3" strokeWidth={2} />
-                </button>
-              )}
-            </div>
+              <div
+                role="tab"
+                aria-selected={active}
+                tabIndex={0}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = 'move';
+                  e.dataTransfer.setData('text/plain', String(tab.id));
+                  setDraggingId(tab.id);
+                  setActiveId(tab.id);
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  reorderOnDragOver(tab.id);
+                }}
+                onDrop={(e) => e.preventDefault()}
+                onDragEnd={() => setDraggingId(null)}
+                onClick={() => setActiveId(tab.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') setActiveId(tab.id);
+                }}
+                className={cn(
+                  'group flex shrink-0 cursor-pointer items-center gap-2 rounded-t-[10px] px-4 py-2.5 text-[13px] font-semibold transition-colors duration-200 ease-app',
+                  active
+                    ? '-mb-px border border-b-0 border-app-hairline bg-app-bg text-app-text'
+                    : 'text-app-text-2 hover:bg-app-surface/60 hover:text-app-text',
+                  draggingId === tab.id && 'opacity-60',
+                )}
+              >
+                <Mic
+                  className={cn('size-[15px]', active ? 'text-app-lime' : 'text-app-muted')}
+                  strokeWidth={1.8}
+                />
+                {t('voice.tab')}
+                {tab.pinned ? (
+                  <Pin className="-mr-1 size-3 shrink-0 fill-current text-app-lime" strokeWidth={1.8} />
+                ) : (
+                  tabs.length > 1 && (
+                    <button
+                      type="button"
+                      aria-label={t('image.closeTab')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        closeTab(tab.id);
+                      }}
+                      className="-mr-1 flex size-[18px] items-center justify-center rounded-md text-app-muted opacity-0 transition-opacity duration-150 ease-app hover:bg-app-card-hover hover:text-app-text group-hover:opacity-100"
+                    >
+                      <X className="size-3" strokeWidth={2} />
+                    </button>
+                  )
+                )}
+              </div>
+            </TabContextMenu>
           );
         })}
         <button
@@ -221,9 +264,13 @@ export function VoiceGeneratorView() {
               key={tab.id}
               hidden={tab.id !== activeId}
               initialTool={tab.id === 1 ? initialTool : undefined}
+              seed={tab.seed}
               onPendingChange={(pending) => handlePendingChange(tab.id, pending)}
               registerFocus={(focus) => {
                 promptFocusers.current[tab.id] = focus;
+              }}
+              registerSnapshot={(get) => {
+                snapshotters.current[tab.id] = get;
               }}
             />
           ))}

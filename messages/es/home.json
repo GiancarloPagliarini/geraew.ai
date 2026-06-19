@@ -41,6 +41,13 @@
       "usage": "Mi uso",
       "logout": "Cerrar sesión"
     },
+    "weeklyClaim": {
+      "title": "Recompensa semanal",
+      "available": "Disponible ahora",
+      "locked": "Exclusivo Premium",
+      "nextIn": "En {countdown}",
+      "videos": "+{amount} videos cada miércoles"
+    },
     "nav": {
       "inicio": "Inicio",
       "pesquisar": "Buscar",
@@ -261,7 +268,10 @@
       "refMax": "Máximo de {max} referencias.",
       "dropHint": "Suelta las imágenes para añadirlas como referencia",
       "closeTab": "Cerrar pestaña",
-      "maxTabs": "Máximo de {max} pestañas simultáneas."
+      "maxTabs": "Máximo de {max} pestañas simultáneas.",
+      "duplicateTab": "Duplicar pestaña",
+      "pinTab": "Fijar pestaña",
+      "unpinTab": "Quitar fijación"
     },
     "hero": {
       "greeting": "¡Hola! ¿Qué vamos a crear hoy?",

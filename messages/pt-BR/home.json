@@ -41,6 +41,13 @@
       "usage": "Meu uso",
       "logout": "Sair"
     },
+    "weeklyClaim": {
+      "title": "Resgate semanal",
+      "available": "Disponível agora",
+      "locked": "Exclusivo Premium",
+      "nextIn": "Em {countdown}",
+      "videos": "+{amount} vídeos toda quarta"
+    },
     "nav": {
       "inicio": "Início",
       "pesquisar": "Pesquisar",
@@ -261,7 +268,10 @@
       "refMax": "Máximo de {max} referências.",
       "dropHint": "Solte as imagens para adicionar como referência",
       "closeTab": "Fechar aba",
-      "maxTabs": "Máximo de {max} abas simultâneas."
+      "maxTabs": "Máximo de {max} abas simultâneas.",
+      "duplicateTab": "Duplicar aba",
+      "pinTab": "Fixar aba",
+      "unpinTab": "Desafixar aba"
     },
     "hero": {
       "greeting": "Olá! O que vamos criar hoje?",

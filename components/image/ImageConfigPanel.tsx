@@ -144,6 +144,19 @@ function FieldLabel({ children, right }: { children: React.ReactNode; right?: Re
   );
 }
 
+/** snapshot da configuração de uma aba — usado ao duplicar a aba */
+export interface ImagePanelSeed {
+  tool: ToolId;
+  model: string;
+  prompt: string;
+  enhance: boolean;
+  quantity: number;
+  aspect: string;
+  resolution: string;
+  references: UploadedImage[];
+  unlimited: boolean;
+}
+
 interface ImageConfigPanelProps {
   /** aba inativa: fica montada (mantém estado e polling) porém oculta */
   hidden?: boolean;
@@ -156,6 +169,10 @@ interface ImageConfigPanelProps {
   onPendingChange: (pending: PendingGeneration[]) => void;
   /** registra a função que foca o prompt desta aba */
   registerFocus?: (focus: () => void) => void;
+  /** config inicial ao duplicar uma aba (tem prioridade sobre os initial*) */
+  seed?: ImagePanelSeed;
+  /** registra a função que devolve o snapshot atual desta aba (para duplicar) */
+  registerSnapshot?: (get: () => ImagePanelSeed) => void;
 }
 
 /** Painel de configuração de uma aba de geração de imagens. */
@@ -166,29 +183,31 @@ export function ImageConfigPanel({
   initialRefUrl,
   onPendingChange,
   registerFocus,
+  seed,
+  registerSnapshot,
 }: ImageConfigPanelProps) {
   const t = useTranslations('home');
   const tUnlimited = useTranslations('editorPanels.unlimited');
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
 
-  const [tool, setTool] = useState<ToolId>(initialTool ?? 'generate');
+  const [tool, setTool] = useState<ToolId>(seed?.tool ?? initialTool ?? 'generate');
 
   // modo ilimitado
-  const [unlimited, setUnlimited] = useState(false);
+  const [unlimited, setUnlimited] = useState(seed?.unlimited ?? false);
   const [unlimitedModalOpen, setUnlimitedModalOpen] = useState(false);
   const { data: unlimitedStatus } = useUnlimitedStatus();
 
   // gerar imagens
-  const [model, setModel] = useState(IMAGE_MODELS[0].value);
-  const [references, setReferences] = useState<UploadedImage[]>([]);
+  const [model, setModel] = useState(seed?.model ?? IMAGE_MODELS[0].value);
+  const [references, setReferences] = useState<UploadedImage[]>(seed?.references ?? []);
   // referência sendo baixada de uma URL arrastada — mostra o loader no tile de adicionar
   const [refLoading, setRefLoading] = useState(false);
-  const [prompt, setPrompt] = useState(initialPrompt ?? '');
-  const [enhance, setEnhance] = useState(false);
-  const [quantity, setQuantity] = useState(1);
-  const [aspect, setAspect] = useState(IMAGE_MODELS[0].defaultAspect);
-  const [resolution, setResolution] = useState(IMAGE_MODELS[0].defaultResolution);
+  const [prompt, setPrompt] = useState(seed?.prompt ?? initialPrompt ?? '');
+  const [enhance, setEnhance] = useState(seed?.enhance ?? false);
+  const [quantity, setQuantity] = useState(seed?.quantity ?? 1);
+  const [aspect, setAspect] = useState(seed?.aspect ?? IMAGE_MODELS[0].defaultAspect);
+  const [resolution, setResolution] = useState(seed?.resolution ?? IMAGE_MODELS[0].defaultResolution);
 
   const modelConfig = IMAGE_MODELS.find((m) => m.value === model) ?? IMAGE_MODELS[0];
 
@@ -302,6 +321,13 @@ export function ImageConfigPanel({
   useEffect(() => {
     registerFocus?.(() => promptRef.current?.focus());
   }, [registerFocus]);
+
+  // mantém o snapshot atual num ref e o expõe para a aba ser duplicada
+  const snapshotRef = useRef<ImagePanelSeed | null>(null);
+  snapshotRef.current = { tool, model, prompt, enhance, quantity, aspect, resolution, references, unlimited };
+  useEffect(() => {
+    registerSnapshot?.(() => snapshotRef.current!);
+  }, [registerSnapshot]);
 
   // modelos do banco sobrescrevem labels/disponibilidade dos base
   const modelsQuery = useQuery({

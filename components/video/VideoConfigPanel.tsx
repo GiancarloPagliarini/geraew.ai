@@ -149,6 +149,20 @@ function FieldLabel({ children, right }: { children: React.ReactNode; right?: Re
   );
 }
 
+/** snapshot da configuração de uma aba — usado ao duplicar a aba */
+export interface VideoPanelSeed {
+  tool: VideoToolId;
+  model: string;
+  prompt: string;
+  enhance: boolean;
+  duration: string;
+  resolution: string;
+  aspect: string;
+  audio: boolean;
+  references: UploadedImage[];
+  unlimited: boolean;
+}
+
 interface VideoConfigPanelProps {
   /** aba inativa: fica montada (mantém estado e polling) porém oculta */
   hidden?: boolean;
@@ -159,6 +173,10 @@ interface VideoConfigPanelProps {
   onPendingChange: (pending: PendingGeneration[]) => void;
   /** registra a função que foca o prompt desta aba */
   registerFocus?: (focus: () => void) => void;
+  /** config inicial ao duplicar uma aba (tem prioridade sobre os initial*) */
+  seed?: VideoPanelSeed;
+  /** registra a função que devolve o snapshot atual desta aba (para duplicar) */
+  registerSnapshot?: (get: () => VideoPanelSeed) => void;
 }
 
 /** Painel de configuração de uma aba de geração de vídeos. */
@@ -168,20 +186,22 @@ export function VideoConfigPanel({
   initialTool,
   onPendingChange,
   registerFocus,
+  seed,
+  registerSnapshot,
 }: VideoConfigPanelProps) {
   const t = useTranslations('home');
   const tUnlimited = useTranslations('editorPanels.unlimited');
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
 
-  const [tool, setTool] = useState<VideoToolId>(initialTool ?? 'generate');
-  const [model, setModel] = useState('geraew-fast');
-  const [references, setReferences] = useState<UploadedImage[]>([]);
+  const [tool, setTool] = useState<VideoToolId>(seed?.tool ?? initialTool ?? 'generate');
+  const [model, setModel] = useState(seed?.model ?? 'geraew-fast');
+  const [references, setReferences] = useState<UploadedImage[]>(seed?.references ?? []);
   // referência sendo baixada de uma URL arrastada — mostra o loader no tile de adicionar
   const [refLoading, setRefLoading] = useState(false);
 
   // modo ilimitado
-  const [unlimited, setUnlimited] = useState(false);
+  const [unlimited, setUnlimited] = useState(seed?.unlimited ?? false);
   const [unlimitedModalOpen, setUnlimitedModalOpen] = useState(false);
   const { data: unlimitedStatus } = useUnlimitedStatus();
 
@@ -195,12 +215,12 @@ export function VideoConfigPanel({
   const [omniVideo, setOmniVideo] = useState<MediaFile | null>(null);
   const [seedanceVideo, setSeedanceVideo] = useState<MediaFile | null>(null);
   const [seedanceAudio, setSeedanceAudio] = useState<MediaFile | null>(null);
-  const [prompt, setPrompt] = useState(initialPrompt ?? '');
-  const [enhance, setEnhance] = useState(false);
-  const [duration, setDuration] = useState('8s');
-  const [resolution, setResolution] = useState('RES_1080P');
-  const [aspect, setAspect] = useState('9:16');
-  const [audio, setAudio] = useState(true);
+  const [prompt, setPrompt] = useState(seed?.prompt ?? initialPrompt ?? '');
+  const [enhance, setEnhance] = useState(seed?.enhance ?? false);
+  const [duration, setDuration] = useState(seed?.duration ?? '8s');
+  const [resolution, setResolution] = useState(seed?.resolution ?? 'RES_1080P');
+  const [aspect, setAspect] = useState(seed?.aspect ?? '9:16');
+  const [audio, setAudio] = useState(seed?.audio ?? true);
   const [submitting, setSubmitting] = useState(false);
   // contador (e não boolean) para o dragleave dos filhos não piscar o overlay
   const [dragDepth, setDragDepth] = useState(0);
@@ -220,6 +240,13 @@ export function VideoConfigPanel({
   useEffect(() => {
     registerFocus?.(() => promptRef.current?.focus());
   }, [registerFocus]);
+
+  // mantém o snapshot atual num ref e o expõe para a aba ser duplicada
+  const snapshotRef = useRef<VideoPanelSeed | null>(null);
+  snapshotRef.current = { tool, model, prompt, enhance, duration, resolution, aspect, audio, references, unlimited };
+  useEffect(() => {
+    registerSnapshot?.(() => snapshotRef.current!);
+  }, [registerSnapshot]);
 
   const modelConfig = VIDEO_MODELS.find((m) => m.value === model) ?? VIDEO_MODELS[0];
   const audioLocked = modelConfig.audio !== 'toggle';

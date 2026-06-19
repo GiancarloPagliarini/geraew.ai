@@ -41,6 +41,13 @@
       "usage": "My usage",
       "logout": "Log out"
     },
+    "weeklyClaim": {
+      "title": "Weekly reward",
+      "available": "Available now",
+      "locked": "Premium only",
+      "nextIn": "In {countdown}",
+      "videos": "+{amount} videos every Wednesday"
+    },
     "nav": {
       "inicio": "Home",
       "pesquisar": "Search",
@@ -261,7 +268,10 @@
       "refMax": "Maximum of {max} references.",
       "dropHint": "Drop images to add as reference",
       "closeTab": "Close tab",
-      "maxTabs": "Maximum of {max} simultaneous tabs."
+      "maxTabs": "Maximum of {max} simultaneous tabs.",
+      "duplicateTab": "Duplicate tab",
+      "pinTab": "Pin tab",
+      "unpinTab": "Unpin tab"
     },
     "hero": {
       "greeting": "Hello! What are we creating today?",
