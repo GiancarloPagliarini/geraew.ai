@@ -3,8 +3,9 @@
 import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { Plus, X, type LucideIcon } from 'lucide-react';
+import { Pencil, Plus, X, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ImageCropModal } from '@/components/image/ImageCropModal';
 
 const DEFAULT_MAX_MB = 5;
 
@@ -42,6 +43,7 @@ export function ImageDropTile({
   const t = useTranslations('home');
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [cropOpen, setCropOpen] = useState(false);
 
   const handleFile = (file: File | undefined) => {
     if (!file) return;
@@ -80,14 +82,33 @@ export function ImageDropTile({
           <span className="absolute bottom-1.5 left-1.5 rounded-full bg-[rgba(13,16,17,0.7)] px-2 py-0.5 text-[10.5px] font-semibold text-app-text backdrop-blur-sm">
             {label}
           </span>
-          <button
-            type="button"
-            aria-label={t('clone.remove')}
-            onClick={() => onChange(null)}
-            className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-[rgba(13,16,17,0.75)] text-app-text-2 opacity-0 backdrop-blur-sm transition-opacity duration-200 ease-app hover:text-app-text group-hover:opacity-100"
-          >
-            <X className="size-3" strokeWidth={2} />
-          </button>
+          <div className="absolute right-1.5 top-1.5 flex items-center gap-1 opacity-0 transition-opacity duration-200 ease-app group-hover:opacity-100">
+            <button
+              type="button"
+              aria-label={t('image.cropEdit')}
+              title={t('image.cropEdit')}
+              onClick={() => setCropOpen(true)}
+              className="flex size-5 items-center justify-center rounded-full bg-[rgba(13,16,17,0.75)] text-app-text-2 backdrop-blur-sm transition-colors duration-200 ease-app hover:text-app-lime"
+            >
+              <Pencil className="size-3" strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              aria-label={t('clone.remove')}
+              onClick={() => onChange(null)}
+              className="flex size-5 items-center justify-center rounded-full bg-[rgba(13,16,17,0.75)] text-app-text-2 backdrop-blur-sm transition-colors duration-200 ease-app hover:text-app-text"
+            >
+              <X className="size-3" strokeWidth={2} />
+            </button>
+          </div>
+          {cropOpen && (
+            <ImageCropModal
+              src={value.preview}
+              mimeType={value.mime_type}
+              onClose={() => setCropOpen(false)}
+              onCrop={(result) => onChange(result)}
+            />
+          )}
         </div>
       ) : (
         <button

@@ -11,6 +11,7 @@ import {
   Infinity as InfinityIcon,
   Loader2,
   Minus,
+  Pencil,
   Plus,
   RefreshCw,
   Replace,
@@ -29,6 +30,8 @@ import type { PendingGeneration } from '@/components/image/types';
 import { useGenerationTracker } from '@/components/image/use-generation-tracker';
 import { useGenerationErrorMessage } from '@/lib/use-generation-error';
 import { ImageDropTile, type UploadedImage } from '@/components/image/ImageDropTile';
+import { ImageCropModal } from '@/components/image/ImageCropModal';
+import { loadPersisted, savePersisted } from '@/lib/panel-persistence';
 import { GALLERY_IMAGE_DRAG_TYPE } from '@/components/gallery/GalleryCard';
 import { GenerationCostEstimate } from '@/components/app/GenerationCostEstimate';
 import { UnlimitedToggle } from '@/components/editor/UnlimitedToggle';
@@ -173,6 +176,8 @@ interface ImageConfigPanelProps {
   seed?: ImagePanelSeed;
   /** registra a função que devolve o snapshot atual desta aba (para duplicar) */
   registerSnapshot?: (get: () => ImagePanelSeed) => void;
+  /** chave de localStorage para persistir a config desta aba (sobrevive troca de rota) */
+  persistKey?: string;
 }
 
 /** Painel de configuração de uma aba de geração de imagens. */
@@ -185,29 +190,36 @@ export function ImageConfigPanel({
   registerFocus,
   seed,
   registerSnapshot,
+  persistKey,
 }: ImageConfigPanelProps) {
   const t = useTranslations('home');
   const tUnlimited = useTranslations('editorPanels.unlimited');
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
 
-  const [tool, setTool] = useState<ToolId>(seed?.tool ?? initialTool ?? 'generate');
+  // config restaurada do localStorage (lida uma vez, antes dos efeitos); seed (duplicação) tem prioridade
+  const stored = useMemo(() => (persistKey ? loadPersisted<ImagePanelSeed>(persistKey) : null), [persistKey]);
+  const init = seed ?? stored;
+
+  const [tool, setTool] = useState<ToolId>(seed?.tool ?? initialTool ?? stored?.tool ?? 'generate');
 
   // modo ilimitado
-  const [unlimited, setUnlimited] = useState(seed?.unlimited ?? false);
+  const [unlimited, setUnlimited] = useState(init?.unlimited ?? false);
   const [unlimitedModalOpen, setUnlimitedModalOpen] = useState(false);
   const { data: unlimitedStatus } = useUnlimitedStatus();
 
   // gerar imagens
-  const [model, setModel] = useState(seed?.model ?? IMAGE_MODELS[0].value);
-  const [references, setReferences] = useState<UploadedImage[]>(seed?.references ?? []);
+  const [model, setModel] = useState(init?.model ?? IMAGE_MODELS[0].value);
+  const [references, setReferences] = useState<UploadedImage[]>(init?.references ?? []);
   // referência sendo baixada de uma URL arrastada — mostra o loader no tile de adicionar
   const [refLoading, setRefLoading] = useState(false);
-  const [prompt, setPrompt] = useState(seed?.prompt ?? initialPrompt ?? '');
-  const [enhance, setEnhance] = useState(seed?.enhance ?? false);
-  const [quantity, setQuantity] = useState(seed?.quantity ?? 1);
-  const [aspect, setAspect] = useState(seed?.aspect ?? IMAGE_MODELS[0].defaultAspect);
-  const [resolution, setResolution] = useState(seed?.resolution ?? IMAGE_MODELS[0].defaultResolution);
+  // índice da referência aberta no editor de recorte (null = fechado)
+  const [cropIndex, setCropIndex] = useState<number | null>(null);
+  const [prompt, setPrompt] = useState(seed?.prompt ?? initialPrompt ?? stored?.prompt ?? '');
+  const [enhance, setEnhance] = useState(init?.enhance ?? false);
+  const [quantity, setQuantity] = useState(init?.quantity ?? 1);
+  const [aspect, setAspect] = useState(init?.aspect ?? IMAGE_MODELS[0].defaultAspect);
+  const [resolution, setResolution] = useState(init?.resolution ?? IMAGE_MODELS[0].defaultResolution);
 
   const modelConfig = IMAGE_MODELS.find((m) => m.value === model) ?? IMAGE_MODELS[0];
 
@@ -328,6 +340,11 @@ export function ImageConfigPanel({
   useEffect(() => {
     registerSnapshot?.(() => snapshotRef.current!);
   }, [registerSnapshot]);
+
+  // persiste a config desta aba a cada mudança (sobrevive a troca de rota/reload)
+  useEffect(() => {
+    if (persistKey) savePersisted(persistKey, snapshotRef.current);
+  }, [persistKey, tool, model, prompt, enhance, quantity, aspect, resolution, references, unlimited]);
 
   // modelos do banco sobrescrevem labels/disponibilidade dos base
   const modelsQuery = useQuery({
@@ -701,14 +718,25 @@ export function ImageConfigPanel({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={ref.preview} alt="" className="size-full object-cover" />
-                    <button
-                      type="button"
-                      aria-label={t('clone.remove')}
-                      onClick={() => setReferences((prev) => prev.filter((_, idx) => idx !== i))}
-                      className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-[rgba(13,16,17,0.75)] text-app-text-2 opacity-0 backdrop-blur-sm transition-opacity duration-200 ease-app hover:text-app-text group-hover:opacity-100"
-                    >
-                      <X className="size-3" strokeWidth={2} />
-                    </button>
+                    <div className="absolute right-1.5 top-1.5 flex items-center gap-1 opacity-0 transition-opacity duration-200 ease-app group-hover:opacity-100">
+                      <button
+                        type="button"
+                        aria-label={t('image.cropEdit')}
+                        title={t('image.cropEdit')}
+                        onClick={() => setCropIndex(i)}
+                        className="flex size-5 items-center justify-center rounded-full bg-[rgba(13,16,17,0.75)] text-app-text-2 backdrop-blur-sm transition-colors duration-200 ease-app hover:text-app-lime"
+                      >
+                        <Pencil className="size-3" strokeWidth={2} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={t('clone.remove')}
+                        onClick={() => setReferences((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="flex size-5 items-center justify-center rounded-full bg-[rgba(13,16,17,0.75)] text-app-text-2 backdrop-blur-sm transition-colors duration-200 ease-app hover:text-app-text"
+                      >
+                        <X className="size-3" strokeWidth={2} />
+                      </button>
+                    </div>
                   </div>
                 ))}
                 {refLoading ? (
@@ -1001,6 +1029,17 @@ export function ImageConfigPanel({
 
       {unlimitedModalOpen && (
         <UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />
+      )}
+
+      {cropIndex !== null && references[cropIndex] && (
+        <ImageCropModal
+          src={references[cropIndex].preview}
+          mimeType={references[cropIndex].mime_type}
+          onClose={() => setCropIndex(null)}
+          onCrop={(result) =>
+            setReferences((prev) => prev.map((r, idx) => (idx === cropIndex ? result : r)))
+          }
+        />
       )}
     </div>
   );

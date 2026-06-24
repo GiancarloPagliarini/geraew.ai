@@ -26,8 +26,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { loadPersisted, savePersisted } from '@/lib/panel-persistence';
 
 const POLL_INTERVAL_MS = 5000;
+const STORAGE_KEY = 'geraew-avatar';
+
+interface PersistedAvatar {
+  tool: AvatarToolId;
+  selectedReadyId: string;
+}
 
 const selectTriggerClass =
   "w-full shrink-0 !h-11 rounded-[10px] border-app-hairline bg-app-surface px-3.5 text-[14px] font-semibold text-app-text shadow-none transition-colors duration-200 ease-app hover:border-app-hairline-2 focus-visible:border-[rgba(162,221,0,0.4)] focus-visible:ring-0 dark:bg-app-surface dark:hover:bg-app-surface [&_svg:not([class*='text-'])]:text-app-muted";
@@ -265,10 +272,17 @@ export function AvatarView() {
   const { user, accessToken } = useAuth();
   const queryClient = useQueryClient();
 
-  const [tool, setTool] = useState<AvatarToolId>('create');
-  const [selectedReadyId, setSelectedReadyId] = useState<string>('');
+  // ── persistência: restaura do localStorage no mount (lazy init) ──
+  const boot = useMemo(() => loadPersisted<PersistedAvatar>(STORAGE_KEY), []);
+  const [tool, setTool] = useState<AvatarToolId>(boot?.tool ?? 'create');
+  const [selectedReadyId, setSelectedReadyId] = useState<string>(boot?.selectedReadyId ?? '');
   // mobile: alterna entre a config (criar/gerar) e a lista de avatares
   const [mobileView, setMobileView] = useState<'config' | 'list'>('config');
+
+  // salva ferramenta/avatar selecionado a cada mudança (sobrevive a troca de rota/reload)
+  useEffect(() => {
+    savePersisted<PersistedAvatar>(STORAGE_KEY, { tool, selectedReadyId });
+  }, [tool, selectedReadyId]);
 
   // gate de manutenção do avatar-video (admin pode desligar)
   const { data: videoModels } = useQuery({

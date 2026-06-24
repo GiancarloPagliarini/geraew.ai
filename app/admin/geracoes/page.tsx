@@ -113,6 +113,57 @@ function formatDuration(ms: number | null) {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
+type OutputKind = 'image' | 'video' | 'audio';
+
+function outputKind(url: string, type: string): OutputKind {
+  const u = url.split('?')[0].toLowerCase();
+  if (/\.(mp4|webm|mov|m4v)$/.test(u)) return 'video';
+  if (/\.(mp3|wav|m4a|ogg|aac)$/.test(u)) return 'audio';
+  if (/\.(png|jpe?g|webp|gif|avif)$/.test(u)) return 'image';
+  // fallback pelo tipo da geração quando a URL não tem extensão clara
+  const t = type.toUpperCase();
+  if (['TEXT_TO_VIDEO', 'IMAGE_TO_VIDEO', 'MOTION_CONTROL', 'REFERENCE_VIDEO', 'SPOKEN_VIDEO', 'AVATAR_VIDEO'].includes(t))
+    return 'video';
+  if (t === 'VOICE_CLONE') return 'audio';
+  return 'image';
+}
+
+interface HoverPreview {
+  url: string;
+  kind: OutputKind;
+  anchorTop: number;
+  anchorLeft: number;
+  anchorRight: number;
+}
+
+function GenerationHoverPreview({ url, kind, anchorTop, anchorLeft, anchorRight }: HoverPreview) {
+  const W = 300;
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1920;
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 1080;
+  const left = vw - anchorRight > W + 24 ? anchorRight + 16 : Math.max(12, anchorLeft - W - 16);
+  const top = Math.min(Math.max(anchorTop - 8, 12), vh - 340);
+
+  return (
+    <div
+      className="pointer-events-none fixed z-[100] overflow-hidden rounded-2xl border border-[#f3f0ed]/12 bg-[#0c1012] p-1.5 shadow-2xl shadow-black/60"
+      style={{ left, top, width: W }}
+    >
+      {kind === 'video' ? (
+        <video src={url} autoPlay muted loop playsInline className="h-auto max-h-[300px] w-full rounded-xl object-contain" />
+      ) : kind === 'audio' ? (
+        <div className="flex flex-col gap-2 p-3">
+          <span className="text-xs text-[#f3f0ed]/50">Áudio gerado</span>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <audio src={url} controls autoPlay className="w-full" />
+        </div>
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={url} alt="Geração" className="h-auto max-h-[300px] w-full rounded-xl object-contain" />
+      )}
+    </div>
+  );
+}
+
 export default function AdminGenerationsPage() {
   const { accessToken } = useAuth();
   const router = useRouter();
@@ -125,6 +176,25 @@ export default function AdminGenerationsPage() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [modelFilter, setModelFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  // Preview flutuante ao passar o mouse sobre a linha
+  const [preview, setPreview] = useState<HoverPreview | null>(null);
+
+  function showPreview(gen: { outputUrls?: string[]; type: string }, el: HTMLElement) {
+    const url = gen.outputUrls?.[0];
+    if (!url) {
+      setPreview(null);
+      return;
+    }
+    const rect = el.getBoundingClientRect();
+    setPreview({
+      url,
+      kind: outputKind(url, gen.type),
+      anchorTop: rect.top,
+      anchorLeft: rect.left,
+      anchorRight: rect.right,
+    });
+  }
 
   // Debounce da busca
   useEffect(() => {
@@ -278,7 +348,12 @@ export default function AdminGenerationsPage() {
             </TableHeader>
             <TableBody>
               {generations.map((gen) => (
-                <TableRow key={gen.id} className="border-[#f3f0ed]/4">
+                <TableRow
+                  key={gen.id}
+                  className="border-[#f3f0ed]/4 transition-colors hover:bg-[#f3f0ed]/[0.03]"
+                  onMouseEnter={(e) => showPreview(gen, e.currentTarget)}
+                  onMouseLeave={() => setPreview(null)}
+                >
                   <TableCell>
                     <button
                       onClick={() => router.push(`/admin/usuarios/${gen.user.id}`)}
@@ -375,6 +450,9 @@ export default function AdminGenerationsPage() {
           </div>
         </div>
       )}
+
+      {/* Preview flutuante da geração */}
+      {preview && <GenerationHoverPreview {...preview} />}
     </div>
   );
 }

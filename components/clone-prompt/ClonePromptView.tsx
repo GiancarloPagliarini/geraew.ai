@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import {
@@ -18,13 +18,21 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
 import { useGenerationErrorMessage } from '@/lib/use-generation-error';
+import { loadPersisted, savePersisted } from '@/lib/panel-persistence';
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
+const STORAGE_KEY = 'geraew-clone-prompt';
 
 interface CloneResult {
   json: unknown;
   compiledPrompt: string;
+}
+
+interface PersistedClone {
+  imageData: string | null;
+  result: CloneResult | null;
+  mode: 'string' | 'json';
 }
 
 /** Realça o JSON no padrão do design system: chaves em lime, strings em #cdbfae. */
@@ -64,17 +72,24 @@ export function ClonePromptView() {
   const mapError = useGenerationErrorMessage();
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
-  const [imageData, setImageData] = useState<string | null>(null);
+  // ── persistência: restaura do localStorage no mount (lazy init) ──
+  const boot = useMemo(() => loadPersisted<PersistedClone>(STORAGE_KEY), []);
+  const [imageData, setImageData] = useState<string | null>(boot?.imageData ?? null);
   const [dragOver, setDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<CloneResult | null>(null);
-  const [mode, setMode] = useState<'string' | 'json'>('string');
+  const [result, setResult] = useState<CloneResult | null>(boot?.result ?? null);
+  const [mode, setMode] = useState<'string' | 'json'>(boot?.mode ?? 'string');
   const [copied, setCopied] = useState(false);
   // mobile: alterna entre envio da imagem e o resultado
   const [mobileView, setMobileView] = useState<'upload' | 'result'>('upload');
   // banner de erro acima do botão — só some ao analisar de novo
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // salva imagem/resultado a cada mudança (sobrevive a troca de rota/reload)
+  useEffect(() => {
+    savePersisted<PersistedClone>(STORAGE_KEY, { imageData, result, mode });
+  }, [imageData, result, mode]);
 
   const handleFile = useCallback(
     (file: File) => {

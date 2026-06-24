@@ -18,8 +18,31 @@ type FeedPages = {
   pageParams: unknown[];
 };
 
+/**
+ * Razão de aspecto do card a partir de settings (ex.: "9:16").
+ * Serve para reservar a altura do card no masonry antes da mídia carregar,
+ * evitando salto de layout e a caixa colapsada com o autor "flutuando".
+ */
+function aspectFromSettings(settings: string[] | null): number {
+  const tag = settings?.find((s) => /^\d+\s*:\s*\d+$/.test(s));
+  if (tag) {
+    const [w, h] = tag.split(':').map((n) => Number(n.trim()));
+    if (w > 0 && h > 0) return w / h;
+  }
+  // padrão vertical (maioria do conteúdo do nicho é 9:16 / 4:5)
+  return 4 / 5;
+}
+
 /** Vídeo do feed: toca em loop, mutado, só enquanto visível na viewport. */
-function FeedVideo({ post, onError }: { post: CommunityFeedPost; onError: () => void }) {
+function FeedVideo({
+  post,
+  onReady,
+  onError,
+}: {
+  post: CommunityFeedPost;
+  onReady: () => void;
+  onError: () => void;
+}) {
   const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -48,6 +71,7 @@ function FeedVideo({ post, onError }: { post: CommunityFeedPost; onError: () => 
       loop
       playsInline
       preload="metadata"
+      onLoadedData={onReady}
       onError={onError}
       className="relative block w-full transition-transform duration-300 ease-app group-hover:scale-[1.04]"
     />
@@ -62,10 +86,15 @@ function PostCard({
   onOpen: (post: CommunityFeedPost) => void;
 }) {
   const [mediaError, setMediaError] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const isVideo = post.kind === 'video';
-  const showImage = !isVideo && !mediaError;
-  const showVideo = isVideo && !mediaError;
   const showFallback = mediaError;
+  const aspect = aspectFromSettings(post.settings);
+
+  // captura imagens já em cache: o onLoad pode não disparar se a <img> já estava completa
+  const imgRef = (el: HTMLImageElement | null) => {
+    if (el?.complete && el.naturalWidth > 0) setLoaded(true);
+  };
 
   return (
     <article className="group mb-5 break-inside-avoid">
@@ -75,55 +104,99 @@ function PostCard({
             'relative w-full overflow-hidden rounded-[14px] border border-app-hairline bg-[linear-gradient(135deg,#1d2628,#161d1f)] transition-colors duration-200 ease-app group-hover:border-app-hairline-2',
             showFallback && 'h-[240px]',
           )}
+          // reserva o espaço do card enquanto a mídia não carregou (evita salto no masonry)
+          style={!loaded && !showFallback ? { aspectRatio: String(aspect) } : undefined}
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_15%,rgba(162,221,0,0.08),transparent_55%)]" />
-          {showImage ? (
-            // a mídia define a altura do card (masonry estilo Pinterest)
+
+          {/* preview borrado de baixa qualidade (quando há thumbnail) enquanto a mídia carrega */}
+          {!loaded && !showFallback && post.thumbnailUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={post.mediaUrl}
-              alt={post.prompt}
-              loading="lazy"
-              onError={() => setMediaError(true)}
-              className="relative block w-full transition-transform duration-300 ease-app group-hover:scale-[1.04]"
+              src={post.thumbnailUrl}
+              alt=""
+              aria-hidden
+              className="absolute inset-0 size-full scale-110 object-cover blur-xl"
             />
-          ) : showVideo ? (
-            <FeedVideo post={post} onError={() => setMediaError(true)} />
-          ) : (
+          )}
+
+          {/* shimmer enquanto carrega */}
+          {!loaded && !showFallback && (
+            <div className="skeleton-app absolute inset-0 bg-app-surface" />
+          )}
+
+          {showFallback ? (
             <ImageOff
               className="absolute left-1/2 top-1/2 size-7 -translate-x-1/2 -translate-y-1/2 text-app-muted"
               strokeWidth={1.6}
             />
+          ) : isVideo ? (
+            <div
+              className={cn(
+                'transition-opacity duration-500 ease-app',
+                loaded ? 'opacity-100' : 'opacity-0',
+              )}
+            >
+              <FeedVideo
+                post={post}
+                onReady={() => setLoaded(true)}
+                onError={() => setMediaError(true)}
+              />
+            </div>
+          ) : (
+            // a mídia define a altura do card (masonry estilo Pinterest)
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              ref={imgRef}
+              src={post.mediaUrl}
+              alt={post.prompt}
+              loading="lazy"
+              decoding="async"
+              onLoad={() => setLoaded(true)}
+              onError={() => setMediaError(true)}
+              className={cn(
+                'relative block w-full transition-[opacity,transform] duration-500 ease-app group-hover:scale-[1.04]',
+                loaded ? 'opacity-100' : 'opacity-0',
+              )}
+            />
           )}
         </div>
       </button>
-      {/* autor + curtidas (só exibição — interações ficam no lightbox) */}
-      <div className="mt-2.5 flex cursor-default select-none items-center gap-2">
-        <span className="flex size-[22px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-app-hairline-2 bg-app-surface text-[10px] font-bold text-app-lime">
-          {post.author.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={post.author.avatarUrl} alt={post.author.name} className="size-full object-cover" />
-          ) : (
-            post.author.name.charAt(0).toUpperCase()
-          )}
-        </span>
-        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-app-text">
-          {post.author.name}
-        </span>
-        <span
-          className={cn(
-            'flex shrink-0 items-center gap-1 font-mono text-[12px]',
-            post.likedByMe ? 'text-app-lime' : 'text-app-muted',
-          )}
-        >
-          <Heart
-            className="size-3.5"
-            strokeWidth={1.8}
-            fill={post.likedByMe ? 'currentColor' : 'none'}
-          />
-          {post.likesCount}
-        </span>
-      </div>
+
+      {/* autor + curtidas — só aparecem quando a mídia carrega (antes, vira skeleton) */}
+      {loaded || showFallback ? (
+        <div className="mt-2.5 flex cursor-default select-none items-center gap-2">
+          <span className="flex size-[22px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-app-hairline-2 bg-app-surface text-[10px] font-bold text-app-lime">
+            {post.author.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={post.author.avatarUrl} alt={post.author.name} className="size-full object-cover" />
+            ) : (
+              post.author.name.charAt(0).toUpperCase()
+            )}
+          </span>
+          <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-app-text">
+            {post.author.name}
+          </span>
+          <span
+            className={cn(
+              'flex shrink-0 items-center gap-1 font-mono text-[12px]',
+              post.likedByMe ? 'text-app-lime' : 'text-app-muted',
+            )}
+          >
+            <Heart
+              className="size-3.5"
+              strokeWidth={1.8}
+              fill={post.likedByMe ? 'currentColor' : 'none'}
+            />
+            {post.likesCount}
+          </span>
+        </div>
+      ) : (
+        <div className="mt-2.5 flex items-center gap-2">
+          <span className="skeleton-app size-[22px] shrink-0 rounded-full bg-app-surface" />
+          <span className="skeleton-app h-3.5 w-2/5 rounded bg-app-surface" />
+        </div>
+      )}
     </article>
   );
 }

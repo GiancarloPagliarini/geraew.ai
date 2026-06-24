@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import {
@@ -40,6 +40,7 @@ import { useLoginModal } from '@/lib/login-modal-context';
 import type { PendingGeneration } from '@/components/image/types';
 import { useGenerationTracker } from '@/components/image/use-generation-tracker';
 import { useGenerationErrorMessage } from '@/lib/use-generation-error';
+import { loadPersisted, savePersisted } from '@/lib/panel-persistence';
 import { MediaFileTile, readMediaDuration, type MediaFile } from '@/components/app/MediaFileTile';
 import { VoicePickerModal, type VoiceOption } from '@/components/voice/VoicePickerModal';
 import {
@@ -115,6 +116,8 @@ interface VoiceConfigPanelProps {
   seed?: VoicePanelSeed;
   /** registra a função que devolve o snapshot atual desta aba (para duplicar) */
   registerSnapshot?: (get: () => VoicePanelSeed) => void;
+  /** chave de localStorage para persistir a config desta aba (sobrevive troca de rota) */
+  persistKey?: string;
 }
 
 /** Painel de configuração de uma aba de Texto para voz. */
@@ -125,14 +128,19 @@ export function VoiceConfigPanel({
   registerFocus,
   seed,
   registerSnapshot,
+  persistKey,
 }: VoiceConfigPanelProps) {
   const t = useTranslations('home');
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
 
-  const [tool, setTool] = useState<VoiceToolId>(seed?.tool ?? initialTool ?? 'tts');
-  const [voice, setVoice] = useState<VoiceOption | null>(seed?.voice ?? null);
-  const [text, setText] = useState(seed?.text ?? '');
+  // config restaurada do localStorage (lida uma vez); seed (duplicação) tem prioridade
+  const stored = useMemo(() => (persistKey ? loadPersisted<VoicePanelSeed>(persistKey) : null), [persistKey]);
+  const init = seed ?? stored;
+
+  const [tool, setTool] = useState<VoiceToolId>(seed?.tool ?? initialTool ?? stored?.tool ?? 'tts');
+  const [voice, setVoice] = useState<VoiceOption | null>(init?.voice ?? null);
+  const [text, setText] = useState(init?.text ?? '');
   const [submitting, setSubmitting] = useState(false);
 
   // clonar voz
@@ -172,6 +180,11 @@ export function VoiceConfigPanel({
   useEffect(() => {
     registerSnapshot?.(() => snapshotRef.current!);
   }, [registerSnapshot]);
+
+  // persiste a config desta aba a cada mudança (sobrevive a troca de rota/reload)
+  useEffect(() => {
+    if (persistKey) savePersisted(persistKey, snapshotRef.current);
+  }, [persistKey, tool, voice, text]);
 
   // consentimento é por amostra: limpa quando o áudio muda
   useEffect(() => {

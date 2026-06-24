@@ -14,14 +14,24 @@ import { VideoConfigPanel, type VideoPanelSeed } from '@/components/video/VideoC
 import { useGenerationTracker } from '@/components/image/use-generation-tracker';
 import { kindOf } from '@/components/gallery/kind';
 import type { PendingGeneration } from '@/components/image/types';
+import { clearPersisted, loadPersisted, savePersisted } from '@/lib/panel-persistence';
 
 const MAX_TABS = 10;
+const STORAGE_KEY = 'geraew-tabs-video';
+/** chave de persistência da config de cada aba (o painel se auto-salva por aqui) */
+const tabKey = (id: number) => `geraew-video-tab-${id}`;
 
 interface Tab {
   id: number;
   pinned?: boolean;
   /** config copiada ao duplicar uma aba */
   seed?: VideoPanelSeed;
+}
+
+interface PersistedTabs {
+  tabs: { id: number; pinned?: boolean }[];
+  activeId: number;
+  nextId: number;
 }
 
 export function VideoGeneratorView() {
@@ -31,15 +41,37 @@ export function VideoGeneratorView() {
   const toolParam = searchParams.get('tool');
   const initialTool = (['generate', 'motion-control'] as const).find((id) => id === toolParam);
 
-  const [tabs, setTabs] = useState<Tab[]>([{ id: 1 }]);
-  const [activeId, setActiveId] = useState(1);
+  // ── estado das abas: restaurado do localStorage no mount (lazy init) ──
+  const hasUrlIntent = !!(initialPrompt || initialTool);
+  const boot = useMemo(
+    () => (hasUrlIntent ? null : loadPersisted<PersistedTabs>(STORAGE_KEY)),
+    [hasUrlIntent],
+  );
+  const [tabs, setTabs] = useState<Tab[]>(() =>
+    boot?.tabs?.length ? boot.tabs.map((tb) => ({ id: tb.id, pinned: tb.pinned })) : [{ id: 1 }],
+  );
+  const [activeId, setActiveId] = useState(() => {
+    if (boot?.tabs?.some((tb) => tb.id === boot.activeId)) return boot.activeId;
+    return boot?.tabs?.[0]?.id ?? 1;
+  });
   // mobile: alterna entre configurar e ver criações (split-view não cabe lado a lado)
   const [mobileView, setMobileView] = useState<'config' | 'creations'>('config');
   // gerações em andamento por aba — viram os previews aurora nas Criações
   const [pendingByTab, setPendingByTab] = useState<Record<number, PendingGeneration[]>>({});
-  const nextId = useRef(2);
+  const nextId = useRef(
+    boot?.tabs?.length ? Math.max(boot.nextId ?? 1, ...boot.tabs.map((tb) => tb.id)) + 1 : 2,
+  );
   const promptFocusers = useRef<Record<number, () => void>>({});
   const snapshotters = useRef<Record<number, () => VideoPanelSeed>>({});
+
+  // salva a estrutura das abas a cada mudança (cada aba salva sua própria config via persistKey)
+  useEffect(() => {
+    savePersisted<PersistedTabs>(STORAGE_KEY, {
+      tabs: tabs.map((tb) => ({ id: tb.id, pinned: tb.pinned })),
+      activeId,
+      nextId: nextId.current,
+    });
+  }, [tabs, activeId]);
 
   // recupera gerações ainda em andamento após um reload da página
   const { accessToken } = useAuth();
@@ -103,6 +135,7 @@ export function VideoGeneratorView() {
     });
     delete promptFocusers.current[id];
     delete snapshotters.current[id];
+    clearPersisted(tabKey(id));
   };
 
   // duplica a aba: cria uma nova logo após, com a config atual da original
@@ -268,6 +301,7 @@ export function VideoGeneratorView() {
               initialPrompt={tab.id === 1 ? initialPrompt : undefined}
               initialTool={tab.id === 1 ? initialTool : undefined}
               seed={tab.seed}
+              persistKey={tabKey(tab.id)}
               onPendingChange={(pending) => handlePendingChange(tab.id, pending)}
               registerFocus={(focus) => {
                 promptFocusers.current[tab.id] = focus;

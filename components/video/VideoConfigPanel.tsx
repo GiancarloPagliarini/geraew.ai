@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
   Infinity as InfinityIcon,
   Loader2,
+  Pencil,
   PersonStanding,
   RefreshCw,
   SquarePlay,
@@ -30,6 +31,8 @@ import type { PendingGeneration } from '@/components/image/types';
 import { useGenerationTracker } from '@/components/image/use-generation-tracker';
 import { useGenerationErrorMessage } from '@/lib/use-generation-error';
 import { ImageDropTile, type UploadedImage } from '@/components/image/ImageDropTile';
+import { ImageCropModal } from '@/components/image/ImageCropModal';
+import { loadPersisted, savePersisted } from '@/lib/panel-persistence';
 import { GALLERY_IMAGE_DRAG_TYPE } from '@/components/gallery/GalleryCard';
 import { MediaFileTile, type MediaFile } from '@/components/app/MediaFileTile';
 import { GenerationCostEstimate } from '@/components/app/GenerationCostEstimate';
@@ -177,6 +180,8 @@ interface VideoConfigPanelProps {
   seed?: VideoPanelSeed;
   /** registra a função que devolve o snapshot atual desta aba (para duplicar) */
   registerSnapshot?: (get: () => VideoPanelSeed) => void;
+  /** chave de localStorage para persistir a config desta aba (sobrevive troca de rota) */
+  persistKey?: string;
 }
 
 /** Painel de configuração de uma aba de geração de vídeos. */
@@ -188,20 +193,27 @@ export function VideoConfigPanel({
   registerFocus,
   seed,
   registerSnapshot,
+  persistKey,
 }: VideoConfigPanelProps) {
   const t = useTranslations('home');
   const tUnlimited = useTranslations('editorPanels.unlimited');
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
 
-  const [tool, setTool] = useState<VideoToolId>(seed?.tool ?? initialTool ?? 'generate');
-  const [model, setModel] = useState(seed?.model ?? 'geraew-fast');
-  const [references, setReferences] = useState<UploadedImage[]>(seed?.references ?? []);
+  // config restaurada do localStorage (lida uma vez); seed (duplicação) tem prioridade
+  const stored = useMemo(() => (persistKey ? loadPersisted<VideoPanelSeed>(persistKey) : null), [persistKey]);
+  const init = seed ?? stored;
+
+  const [tool, setTool] = useState<VideoToolId>(seed?.tool ?? initialTool ?? stored?.tool ?? 'generate');
+  const [model, setModel] = useState(init?.model ?? 'geraew-fast');
+  const [references, setReferences] = useState<UploadedImage[]>(init?.references ?? []);
+  // índice da referência aberta no editor de recorte (null = fechado)
+  const [cropIndex, setCropIndex] = useState<number | null>(null);
   // referência sendo baixada de uma URL arrastada — mostra o loader no tile de adicionar
   const [refLoading, setRefLoading] = useState(false);
 
   // modo ilimitado
-  const [unlimited, setUnlimited] = useState(seed?.unlimited ?? false);
+  const [unlimited, setUnlimited] = useState(init?.unlimited ?? false);
   const [unlimitedModalOpen, setUnlimitedModalOpen] = useState(false);
   const { data: unlimitedStatus } = useUnlimitedStatus();
 
@@ -215,12 +227,12 @@ export function VideoConfigPanel({
   const [omniVideo, setOmniVideo] = useState<MediaFile | null>(null);
   const [seedanceVideo, setSeedanceVideo] = useState<MediaFile | null>(null);
   const [seedanceAudio, setSeedanceAudio] = useState<MediaFile | null>(null);
-  const [prompt, setPrompt] = useState(seed?.prompt ?? initialPrompt ?? '');
-  const [enhance, setEnhance] = useState(seed?.enhance ?? false);
-  const [duration, setDuration] = useState(seed?.duration ?? '8s');
-  const [resolution, setResolution] = useState(seed?.resolution ?? 'RES_1080P');
-  const [aspect, setAspect] = useState(seed?.aspect ?? '9:16');
-  const [audio, setAudio] = useState(seed?.audio ?? true);
+  const [prompt, setPrompt] = useState(seed?.prompt ?? initialPrompt ?? stored?.prompt ?? '');
+  const [enhance, setEnhance] = useState(init?.enhance ?? false);
+  const [duration, setDuration] = useState(init?.duration ?? '8s');
+  const [resolution, setResolution] = useState(init?.resolution ?? 'RES_1080P');
+  const [aspect, setAspect] = useState(init?.aspect ?? '9:16');
+  const [audio, setAudio] = useState(init?.audio ?? true);
   const [submitting, setSubmitting] = useState(false);
   // contador (e não boolean) para o dragleave dos filhos não piscar o overlay
   const [dragDepth, setDragDepth] = useState(0);
@@ -247,6 +259,11 @@ export function VideoConfigPanel({
   useEffect(() => {
     registerSnapshot?.(() => snapshotRef.current!);
   }, [registerSnapshot]);
+
+  // persiste a config desta aba a cada mudança (sobrevive a troca de rota/reload)
+  useEffect(() => {
+    if (persistKey) savePersisted(persistKey, snapshotRef.current);
+  }, [persistKey, tool, model, prompt, enhance, duration, resolution, aspect, audio, references, unlimited]);
 
   const modelConfig = VIDEO_MODELS.find((m) => m.value === model) ?? VIDEO_MODELS[0];
   const audioLocked = modelConfig.audio !== 'toggle';
@@ -815,14 +832,25 @@ export function VideoConfigPanel({
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={ref.preview} alt="" className="size-full object-cover" />
-                <button
-                  type="button"
-                  aria-label={t('clone.remove')}
-                  onClick={() => setReferences((prev) => prev.filter((_, idx) => idx !== i))}
-                  className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-[rgba(13,16,17,0.75)] text-app-text-2 opacity-0 backdrop-blur-sm transition-opacity duration-200 ease-app hover:text-app-text group-hover:opacity-100"
-                >
-                  <X className="size-3" strokeWidth={2} />
-                </button>
+                <div className="absolute right-1.5 top-1.5 flex items-center gap-1 opacity-0 transition-opacity duration-200 ease-app group-hover:opacity-100">
+                  <button
+                    type="button"
+                    aria-label={t('image.cropEdit')}
+                    title={t('image.cropEdit')}
+                    onClick={() => setCropIndex(i)}
+                    className="flex size-5 items-center justify-center rounded-full bg-[rgba(13,16,17,0.75)] text-app-text-2 backdrop-blur-sm transition-colors duration-200 ease-app hover:text-app-lime"
+                  >
+                    <Pencil className="size-3" strokeWidth={2} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t('clone.remove')}
+                    onClick={() => setReferences((prev) => prev.filter((_, idx) => idx !== i))}
+                    className="flex size-5 items-center justify-center rounded-full bg-[rgba(13,16,17,0.75)] text-app-text-2 backdrop-blur-sm transition-colors duration-200 ease-app hover:text-app-text"
+                  >
+                    <X className="size-3" strokeWidth={2} />
+                  </button>
+                </div>
               </div>
             ))}
             {/* vídeo de referência (Omni: corta em 10s; Seedance: até 15s) */}
@@ -1063,6 +1091,17 @@ export function VideoConfigPanel({
 
       {unlimitedModalOpen && (
         <UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />
+      )}
+
+      {cropIndex !== null && references[cropIndex] && (
+        <ImageCropModal
+          src={references[cropIndex].preview}
+          mimeType={references[cropIndex].mime_type}
+          onClose={() => setCropIndex(null)}
+          onCrop={(result) =>
+            setReferences((prev) => prev.map((r, idx) => (idx === cropIndex ? result : r)))
+          }
+        />
       )}
     </div>
   );
