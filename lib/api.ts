@@ -2235,6 +2235,29 @@ export const api = {
         accessToken,
       );
     },
+    userTransactions(
+      accessToken: string,
+      userId: string,
+      page = 1,
+      limit = 20,
+      filters?: { type?: string; startDate?: string; endDate?: string },
+    ) {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
+      if (filters?.type) params.set('type', filters.type);
+      if (filters?.startDate) params.set('startDate', filters.startDate);
+      if (filters?.endDate) params.set('endDate', filters.endDate);
+      return authRequest<
+        AdminPaginatedResponse<CreditTransaction> & {
+          summary: { spent: number; received: number; net: number };
+        }
+      >(
+        `/api/v1/admin/users/${userId}/transactions?${params.toString()}`,
+        accessToken,
+      );
+    },
     changeUserPlan(accessToken: string, userId: string, planSlug: string) {
       return authRequest<{ success: boolean; message: string }>(
         `/api/v1/admin/users/${userId}/plan`,

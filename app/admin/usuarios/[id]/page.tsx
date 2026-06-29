@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import type { AdminUserGeneration, FreeGenerationType } from '@/lib/api';
+import type { AdminUserGeneration, FreeGenerationType, CreditTransaction } from '@/lib/api';
 
 const FREE_GEN_TYPES: FreeGenerationType[] = ['NB2', 'NB_PRO', 'FACE_SWAP', 'VIRTUAL_TRY_ON', 'GERAEW_FAST', 'UPSCALE'];
 
@@ -45,7 +45,15 @@ import {
   AudioLines,
   AlertTriangle,
   RefreshCw,
+  Receipt,
+  Zap,
+  Gift,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  ChevronDown,
+  X,
 } from 'lucide-react';
+import { FilterSelect, FilterField } from '@/components/admin/filter-controls';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
@@ -103,6 +111,86 @@ function statusBadge(status: string) {
       <Icon className="h-3 w-3" />
       {status}
     </Badge>
+  );
+}
+
+const TX_TYPE_LABELS: Record<string, string> = {
+  GENERATION_DEBIT: 'Geração',
+  GENERATION_REFUND: 'Estorno de geração',
+  SUBSCRIPTION_RENEWAL: 'Renovação de plano',
+  PURCHASE: 'Compra de créditos',
+  REFERRAL_BONUS: 'Bônus de indicação',
+  ADMIN_ADJUSTMENT: 'Ajuste manual',
+  ONBOARDING_BONUS: 'Bônus de boas-vindas',
+  FEEDBACK_REWARD: 'Recompensa de feedback',
+  AVATAR_TRAINING_DEBIT: 'Treino de avatar',
+  AVATAR_TRAINING_REFUND: 'Estorno de treino',
+};
+
+// Same order/values as the Prisma CreditTransactionType enum
+const TX_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'all', label: 'Todos os tipos' },
+  ...Object.entries(TX_TYPE_LABELS).map(([value, label]) => ({ value, label })),
+];
+
+function txTypeLabel(type: string) {
+  return TX_TYPE_LABELS[type] ?? type;
+}
+
+function txIcon(type: string, description: string) {
+  const desc = (description ?? '').toLowerCase();
+  if (type === 'GENERATION_DEBIT') {
+    if (desc.includes('video') || desc.includes('vídeo')) return <Video className="h-4 w-4" />;
+    if (desc.includes('image') || desc.includes('imagem')) return <Image className="h-4 w-4" />;
+    return <Zap className="h-4 w-4" />;
+  }
+  if (type.includes('PURCHASE') || type.includes('PAYMENT')) return <CreditCard className="h-4 w-4" />;
+  if (type.includes('BONUS')) return <Gift className="h-4 w-4" />;
+  if (type.includes('PLAN') || type.includes('RENEWAL')) return <Sparkles className="h-4 w-4" />;
+  if (type.includes('DEBIT')) return <ArrowDownCircle className="h-4 w-4" />;
+  return <ArrowUpCircle className="h-4 w-4" />;
+}
+
+function TransactionRow({ tx }: { tx: CreditTransaction }) {
+  const debit = tx.amount < 0;
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 sm:gap-4">
+      <div
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+        style={{
+          background: debit ? 'rgba(239,68,68,0.08)' : 'rgba(162,221,0,0.08)',
+          color: debit ? 'rgba(239,68,68,0.7)' : 'rgba(162,221,0,0.8)',
+        }}
+      >
+        {txIcon(tx.type, tx.description)}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-medium text-[#f3f0ed]/80 sm:text-sm">{tx.description || txTypeLabel(tx.type)}</p>
+        <div className="mt-0.5 flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+          <span className="text-[10px] text-[#f3f0ed]/30 sm:text-[11px]">{txTypeLabel(tx.type)}</span>
+          <span className="hidden h-0.5 w-0.5 rounded-full bg-[#f3f0ed]/20 sm:block" />
+          <span className="text-[10px] text-[#f3f0ed]/25 sm:text-[11px]">{formatDate(tx.createdAt)}</span>
+        </div>
+      </div>
+      <div className="shrink-0 text-right">
+        <span
+          className="text-sm font-bold tabular-nums"
+          style={{ color: debit ? 'rgba(239,68,68,0.75)' : 'rgba(162,221,0,0.9)' }}
+        >
+          {debit ? '' : '+'}{tx.amount.toLocaleString('pt-BR')}
+        </span>
+        <p className="text-[10px] text-[#f3f0ed]/25">créditos</p>
+      </div>
+    </div>
   );
 }
 
@@ -220,6 +308,11 @@ export default function AdminUserDetailPage() {
   const [freeGenType, setFreeGenType] = useState<FreeGenerationType>('NB2');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [genPage, setGenPage] = useState(1);
+  const [txPage, setTxPage] = useState(1);
+  const [txExpanded, setTxExpanded] = useState(false);
+  const [txType, setTxType] = useState('all');
+  const [txStart, setTxStart] = useState('');
+  const [txEnd, setTxEnd] = useState('');
   const [selectedPlan, setSelectedPlan] = useState('');
 
   const { data: user, isLoading } = useQuery({
@@ -232,6 +325,18 @@ export default function AdminUserDetailPage() {
     queryKey: ['admin', 'user', id, 'generations', genPage],
     queryFn: () => api.admin.userGenerations(accessToken!, id, genPage, 12),
     enabled: !!accessToken && !!id,
+  });
+
+  const { data: txData, isLoading: txLoading, isFetching: txFetching } = useQuery({
+    queryKey: ['admin', 'user', id, 'transactions', txPage, txType, txStart, txEnd],
+    queryFn: () =>
+      api.admin.userTransactions(accessToken!, id, txPage, 15, {
+        type: txType !== 'all' ? txType : undefined,
+        startDate: txStart || undefined,
+        endDate: txEnd || undefined,
+      }),
+    enabled: !!accessToken && !!id && txExpanded,
+    placeholderData: (prev) => prev,
   });
 
   const { data: plans } = useQuery({
@@ -337,6 +442,11 @@ export default function AdminUserDetailPage() {
 
   const generations = genData?.data ?? [];
   const genTotalPages = genData?.meta?.totalPages ?? 1;
+
+  const transactions = txData?.data ?? [];
+  const txMeta = txData?.meta;
+  const txSummary = txData?.summary;
+  const txTotalPages = txMeta?.totalPages ?? 1;
 
   return (
     <div className="flex flex-col gap-8">
@@ -723,6 +833,145 @@ export default function AdminUserDetailPage() {
             Definir
           </button>
         </div>
+      </div>
+
+      {/* Usage / credit transactions history (collapsible) */}
+      <div className="flex flex-col overflow-hidden rounded-2xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/[0.02]">
+        <button
+          onClick={() => setTxExpanded((v) => !v)}
+          className="flex items-center justify-between px-4 py-3.5 text-left transition-colors hover:bg-[#f3f0ed]/[0.03]"
+        >
+          <div className="flex items-center gap-2">
+            <Receipt className="h-4 w-4 text-[#f3f0ed]/40" />
+            <h3 className="text-sm font-semibold text-[#f3f0ed]">Uso e Gastos de Créditos</h3>
+            {txMeta && (
+              <span className="text-xs text-[#f3f0ed]/30">
+                ({txMeta.total.toLocaleString('pt-BR')} transações)
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {txFetching && !txLoading && (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-[#f3f0ed]/30" />
+            )}
+            <ChevronDown
+              className={`h-4 w-4 text-[#f3f0ed]/40 transition-transform ${txExpanded ? 'rotate-180' : ''}`}
+            />
+          </div>
+        </button>
+
+        {txExpanded && (
+          <div className="flex flex-col border-t border-[#f3f0ed]/6">
+            {/* Filters */}
+            <div className="flex flex-wrap items-end gap-3 border-b border-[#f3f0ed]/6 px-4 py-3">
+              <FilterField label="De" className="min-w-[140px]">
+                <input
+                  type="date"
+                  value={txStart}
+                  max={txEnd || undefined}
+                  onChange={(e) => { setTxStart(e.target.value); setTxPage(1); }}
+                  className="h-9 w-full rounded-lg border border-[#f3f0ed]/10 bg-[#141a1c] px-3 text-sm text-[#f3f0ed] outline-none transition-colors [color-scheme:dark] focus:border-[#a2dd00]/50"
+                />
+              </FilterField>
+              <FilterField label="Até" className="min-w-[140px]">
+                <input
+                  type="date"
+                  value={txEnd}
+                  min={txStart || undefined}
+                  onChange={(e) => { setTxEnd(e.target.value); setTxPage(1); }}
+                  className="h-9 w-full rounded-lg border border-[#f3f0ed]/10 bg-[#141a1c] px-3 text-sm text-[#f3f0ed] outline-none transition-colors [color-scheme:dark] focus:border-[#a2dd00]/50"
+                />
+              </FilterField>
+              <FilterField label="Tipo" className="min-w-[170px] flex-1">
+                <FilterSelect
+                  value={txType}
+                  onChange={(v) => { setTxType(v); setTxPage(1); }}
+                  options={TX_TYPE_OPTIONS}
+                />
+              </FilterField>
+              {(txType !== 'all' || txStart || txEnd) && (
+                <button
+                  onClick={() => { setTxType('all'); setTxStart(''); setTxEnd(''); setTxPage(1); }}
+                  className="flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-[#f3f0ed]/50 transition-colors hover:bg-[#f3f0ed]/5 hover:text-[#f3f0ed]/80"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Limpar
+                </button>
+              )}
+            </div>
+
+            {/* Summary strip (respects filters, spans all pages) */}
+            {txSummary && (
+              <div className="grid grid-cols-3 divide-x divide-[#f3f0ed]/6 border-b border-[#f3f0ed]/6">
+                <div className="flex flex-col gap-1 px-4 py-3">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
+                    Total gasto
+                  </span>
+                  <span className="text-lg font-bold tabular-nums text-red-400 sm:text-xl">
+                    {txSummary.spent.toLocaleString('pt-BR')}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1 px-4 py-3">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
+                    Total recebido
+                  </span>
+                  <span className="text-lg font-bold tabular-nums text-[#a2dd00] sm:text-xl">
+                    {txSummary.received.toLocaleString('pt-BR')}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1 px-4 py-3">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f3f0ed]/30">
+                    Saldo líquido
+                  </span>
+                  <span
+                    className={`text-lg font-bold tabular-nums sm:text-xl ${txSummary.net < 0 ? 'text-red-400' : 'text-[#f3f0ed]'}`}
+                  >
+                    {txSummary.net > 0 ? '+' : ''}{txSummary.net.toLocaleString('pt-BR')}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="sidebar-scroll divide-y divide-[#f3f0ed]/4 overflow-y-auto" style={{ maxHeight: '28rem' }}>
+              {txLoading ? (
+                <div className="flex h-32 items-center justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin text-[#a2dd00]" />
+                </div>
+              ) : transactions.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-12 text-center">
+                  <Receipt className="h-7 w-7 text-[#f3f0ed]/15" />
+                  <p className="text-sm text-[#f3f0ed]/30">Nenhuma transação encontrada</p>
+                </div>
+              ) : (
+                transactions.map((tx) => <TransactionRow key={tx.id} tx={tx} />)
+              )}
+            </div>
+
+            {txMeta && txTotalPages > 1 && (
+              <div className="flex items-center justify-between border-t border-[#f3f0ed]/6 px-4 py-3">
+                <span className="text-xs text-[#f3f0ed]/30">
+                  Página {txPage} de {txTotalPages}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    disabled={txPage <= 1}
+                    onClick={() => setTxPage((p) => Math.max(1, p - 1))}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#f3f0ed]/8 text-[#f3f0ed]/50 transition-colors hover:bg-[#f3f0ed]/5 disabled:opacity-30"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    disabled={txPage >= txTotalPages}
+                    onClick={() => setTxPage((p) => Math.min(txTotalPages, p + 1))}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#f3f0ed]/8 text-[#f3f0ed]/50 transition-colors hover:bg-[#f3f0ed]/5 disabled:opacity-30"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* User Generations Gallery */}
