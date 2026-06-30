@@ -1391,6 +1391,56 @@ const INWORLD_VOICES_CACHE_TTL = 60 * 60 * 1000; // 1h
 let inworldVoicesCache: { at: number; voices: InworldVoice[] } | null = null;
 let inworldVoicesInFlight: Promise<InworldVoiceListResponse> | null = null;
 
+// ─── Precificação (admin) ──────────────────────────────────────────────────
+export interface PricingInfraCost { name: string; monthlyBRL: number; note?: string }
+export interface PricingAiCost {
+  group: string; model: string; provider: string; variant: string; unit: string; usd: number;
+  brl: number; exampleBRL: number | null;
+}
+export interface PricingConfig {
+  exchangeRate: number;
+  kieCreditUsd: number;
+  blendedCostPerCreditBRL: number;
+  videoSeconds: number;
+  motionSeconds: number;
+  infra: PricingInfraCost[];
+  aiCosts: { group: string; model: string; provider: string; variant: string; unit: string; usd: number }[];
+  team: { people: number; monthlyCostBRL: number; hoursPerDay: number };
+  acquisition: { channel: string; cacBRL: number; notes: string };
+  toolsByDelivery: { delivery: string; tools: string[] }[];
+}
+export interface PricingFinance {
+  mrrCents: number;
+  mrrByCurrency: { currency: string; nativeCents: number; subscriptions: number }[];
+  mrrExchangeRateUsd: number;
+  arpuCents: number; payingCustomers: number; pastDueCustomers: number; pastDueMrrCents: number;
+  churnRateMonthly: number; churnedLast30d: number; newCustomersLast30d: number;
+  ltvCents: number; ltvMonths: number; marginLast30d: number; costLast30dBrlCents: number;
+  netRevenueLast30dCents: number;
+}
+export interface PricingReport {
+  generatedAt: number;
+  config: PricingConfig;
+  costs: {
+    exchangeRate: number; kieCreditUsd: number; blendedCostPerCreditBRL: number;
+    videoSeconds: number; motionSeconds: number;
+    aiCosts: PricingAiCost[];
+    infra: PricingInfraCost[]; infraTotalBRL: number;
+    cheapest: PricingAiCost[]; mostExpensive: PricingAiCost[];
+  };
+  finance: PricingFinance | null;
+  consumption: {
+    payingUsers: number; normalP50: number; mean: number; p75: number; heavyP90: number; p95: number;
+    max: number; zeroConsumo: number; gensMedian: number; gensMax: number;
+    perPlan: { plan: string; n: number; avgConsumo: number; franquia: number; pctFranquia: number | null }[];
+  };
+  features: {
+    totalGens: number; totalCredits: number;
+    byType: { type: string; gens: number; credits: number; usuarios: number; pctGens: number; pctCredits: number; creditsPerGen: number }[];
+    byModel: { model_used: string; gens: number; credits: number; usuarios: number; pctGens: number; pctCredits: number; creditsPerGen: number }[];
+  };
+}
+
 export const api = {
   gallery: {
     list(accessToken: string, page = 1, limit = 20, filters?: { type?: string; favorited?: boolean; folderId?: string }) {
@@ -2149,6 +2199,20 @@ export const api = {
   admin: {
     stats(accessToken: string) {
       return authRequest<AdminStats>('/api/v1/admin/stats', accessToken);
+    },
+    pricingReport(accessToken: string) {
+      return authRequest<PricingReport>('/api/v1/admin/precificacao', accessToken);
+    },
+    pricingRefresh(accessToken: string) {
+      return authRequest<PricingReport>('/api/v1/admin/precificacao/refresh', accessToken, {
+        method: 'POST',
+      });
+    },
+    pricingSaveConfig(accessToken: string, config: Partial<PricingConfig>) {
+      return authRequest<PricingConfig>('/api/v1/admin/precificacao/config', accessToken, {
+        method: 'PATCH',
+        body: JSON.stringify(config),
+      });
     },
     unlimitedQueueStats(accessToken: string) {
       return authRequest<UnlimitedQueueStats>(
