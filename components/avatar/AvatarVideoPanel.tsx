@@ -243,6 +243,9 @@ export function AvatarVideoPanel({ avatar, videoDisabled, videoDisabledMessage }
         if (gen.status === 'COMPLETED' && gen.outputs.length > 0) {
           setVideoUrl(gen.outputs[0].url);
           setGenState('done');
+          // o vídeo pronto entra na aba Criações / galeria — atualiza as listas
+          queryClient.invalidateQueries({ queryKey: ['image-creations'] });
+          queryClient.invalidateQueries({ queryKey: ['gallery'] });
           return;
         }
         if (gen.status === 'FAILED') {

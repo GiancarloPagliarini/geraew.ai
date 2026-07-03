@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   AlertCircle,
   Annoyed,
   AudioLines,
+  Bookmark,
   Check,
   CircleHelp,
   Clock,
@@ -133,6 +135,7 @@ export function VoiceConfigPanel({
   const t = useTranslations('home');
   const { user, accessToken } = useAuth();
   const { openLoginModal } = useLoginModal();
+  const queryClient = useQueryClient();
 
   // config restaurada do localStorage (lida uma vez); seed (duplicação) tem prioridade
   const stored = useMemo(() => (persistKey ? loadPersisted<VoicePanelSeed>(persistKey) : null), [persistKey]);
@@ -146,6 +149,11 @@ export function VoiceConfigPanel({
   // clonar voz
   const [referenceAudio, setReferenceAudio] = useState<MediaFile | null>(null);
   const [consent, setConsent] = useState(false);
+
+  // salvar voz clonada: última clonagem desta aba (ready quando conclui)
+  const [cloneGen, setCloneGen] = useState<{ id: string; ready: boolean } | null>(null);
+  const [voiceName, setVoiceName] = useState('');
+  const [savingVoice, setSavingVoice] = useState(false);
 
   // gravação via microfone
   const [recording, setRecording] = useState(false);
@@ -169,6 +177,57 @@ export function VoiceConfigPanel({
   useEffect(() => {
     onPendingChange(pending);
   }, [pending, onPendingChange]);
+
+  // quando a clonagem rastreada conclui, libera o card de salvar; falha descarta
+  useEffect(() => {
+    if (!cloneGen || cloneGen.ready) return;
+    const gen = pending.find((p) => p.key === cloneGen.id);
+    if (gen?.url) setCloneGen({ id: cloneGen.id, ready: true });
+    else if (gen?.error) setCloneGen(null);
+  }, [pending, cloneGen]);
+
+  // cota de vozes salvas (mesma queryKey do picker — compartilha o cache)
+  const savedVoicesQuery = useQuery({
+    queryKey: ['saved-voices'],
+    queryFn: () => api.voices.list(accessToken!),
+    enabled: !!accessToken && !!user && !!cloneGen?.ready,
+    staleTime: 60_000,
+  });
+  const quota = savedVoicesQuery.data?.quota ?? null;
+  const quotaBlocked = !!quota && (quota.limit === 0 || quota.used >= quota.limit);
+
+  const saveVoice = async () => {
+    if (!accessToken || !cloneGen?.ready || savingVoice) return;
+    const trimmed = voiceName.trim();
+    if (!trimmed) {
+      toast.error(t('voice.voiceNameRequired'));
+      return;
+    }
+    setSavingVoice(true);
+    try {
+      const saved = await api.voices.create(accessToken, {
+        generationId: cloneGen.id,
+        name: trimmed,
+      });
+      queryClient.invalidateQueries({ queryKey: ['saved-voices'] });
+      toast.success(t('voice.voiceSaved', { name: saved.name }));
+      setCloneGen(null);
+      setVoiceName('');
+      // troca para Texto para voz já com a voz recém-salva selecionada
+      setTool('tts');
+      setVoice({
+        id: `clone:${saved.id}`,
+        name: saved.name,
+        hint: saved.language,
+        cloned: true,
+        previewUrl: saved.previewUrl ?? saved.sampleUrl,
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('voice.voiceSaveFailed'));
+    } finally {
+      setSavingVoice(false);
+    }
+  };
 
   useEffect(() => {
     registerFocus?.(() => textRef.current?.focus());
@@ -300,6 +359,11 @@ export function VoiceConfigPanel({
               audio: referenceAudio!.base64,
               audio_mime_type: referenceAudio!.mime_type,
             });
+      // nova clonagem substitui a anterior no card de salvar voz
+      if (tool === 'clone') {
+        setCloneGen({ id, ready: false });
+        setVoiceName('');
+      }
       track(id, text.trim(), 'voice');
     } catch (err) {
       const msg = mapError(err instanceof ApiError || err instanceof Error ? err.message : null);
@@ -581,6 +645,81 @@ export function VoiceConfigPanel({
           </div>
         )}
 
+
+        {/* salvar voz clonada — aparece quando a clonagem conclui */}
+        {tool === 'clone' && cloneGen?.ready && (
+          <div className="flex flex-col gap-3 rounded-xl border border-[rgba(162,221,0,0.3)] bg-[rgba(162,221,0,0.05)] p-3.5">
+            <div className="flex items-start gap-2.5">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-[8px] border border-[rgba(162,221,0,0.25)] bg-[rgba(162,221,0,0.08)]">
+                <Bookmark className="size-4 text-app-lime" strokeWidth={1.8} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-semibold text-app-text">{t('voice.saveVoiceTitle')}</p>
+                <p className="mt-0.5 text-[12px] leading-relaxed text-app-text-2">
+                  {t('voice.saveVoiceSubtitle')}
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label={t('palette.close')}
+                onClick={() => {
+                  setCloneGen(null);
+                  setVoiceName('');
+                }}
+                disabled={savingVoice}
+                className="flex size-6 shrink-0 items-center justify-center rounded-md text-app-muted transition-colors duration-200 ease-app hover:bg-app-card-hover hover:text-app-text"
+              >
+                <X className="size-3.5" strokeWidth={2} />
+              </button>
+            </div>
+
+            <div className="flex h-10 items-center rounded-[10px] border border-app-hairline bg-app-surface transition-colors duration-200 ease-app focus-within:border-[rgba(162,221,0,0.4)]">
+              <input
+                type="text"
+                maxLength={40}
+                value={voiceName}
+                onChange={(e) => setVoiceName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !savingVoice && voiceName.trim()) saveVoice();
+                }}
+                placeholder={t('voice.voiceNamePlaceholder')}
+                className="w-full bg-transparent px-3 text-[13px] text-app-text outline-none placeholder:text-app-muted"
+              />
+              <span className="pointer-events-none shrink-0 px-3 font-mono text-[11px] tabular-nums text-app-muted">
+                {voiceName.length}/40
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={saveVoice}
+              disabled={savingVoice || !voiceName.trim() || quotaBlocked}
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-app-lime text-[13.5px] font-semibold text-app-lime-ink transition-colors duration-200 ease-app hover:bg-app-lime-hover disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {savingVoice ? (
+                <>
+                  <RefreshCw className="size-[15px] animate-spin" strokeWidth={2} />
+                  {t('voice.savingVoice')}
+                </>
+              ) : (
+                <>
+                  <Bookmark className="size-[15px]" strokeWidth={2} />
+                  {t('voice.saveVoiceButton')}
+                </>
+              )}
+            </button>
+
+            {quota && (
+              <p className="text-center text-[11px] text-app-muted">
+                {quota.limit === 0
+                  ? t('voice.quotaNone')
+                  : quota.used >= quota.limit
+                    ? t('voice.quotaReached', { used: quota.used, total: quota.limit })
+                    : t('voice.quotaSaved', { used: quota.used, total: quota.limit })}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* gerar */}
         <button

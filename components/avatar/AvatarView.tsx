@@ -8,6 +8,7 @@ import {
   AlertCircle,
   Loader2,
   ScanFace,
+  SquarePlay,
   Trash2,
   UserPlus,
   Video,
@@ -17,6 +18,8 @@ import { cn } from '@/lib/utils';
 import { api, type UserAvatar } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { EmptyState } from '@/components/app/EmptyState';
+import { FilterPill } from '@/components/app/FilterPill';
+import { CreationsPanel } from '@/components/image/CreationsPanel';
 import { CreateAvatarModal } from '@/components/editor/CreateAvatarModal';
 import { AvatarVideoPanel } from '@/components/avatar/AvatarVideoPanel';
 import {
@@ -30,11 +33,22 @@ import { loadPersisted, savePersisted } from '@/lib/panel-persistence';
 
 const POLL_INTERVAL_MS = 5000;
 const STORAGE_KEY = 'geraew-avatar';
+/**
+ * Flag local "gravação de consentimento enviada" — a API da HeyGen não expõe
+ * esse estado (consent_status fica "pending" antes E depois da gravação), então
+ * marcamos ao voltar do redirect (?consent=done&avatarId=...) para o card
+ * mostrar "validando" em vez do botão de aprovar.
+ */
+const consentSentKey = (avatarId: string) => `geraew-consent-sent-${avatarId}`;
 
 interface PersistedAvatar {
   tool: AvatarToolId;
   selectedReadyId: string;
+  /** aba do painel direito: lista de avatares ou criações (vídeos gerados) */
+  rightView?: RightView;
 }
+
+type RightView = 'avatars' | 'creations';
 
 const selectTriggerClass =
   "w-full shrink-0 !h-11 rounded-[10px] border-app-hairline bg-app-surface px-3.5 text-[14px] font-semibold text-app-text shadow-none transition-colors duration-200 ease-app hover:border-app-hairline-2 focus-visible:border-[rgba(162,221,0,0.4)] focus-visible:ring-0 dark:bg-app-surface dark:hover:bg-app-surface [&_svg:not([class*='text-'])]:text-app-muted";
@@ -90,6 +104,21 @@ function AvatarCard({
   const [videoError, setVideoError] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // gravação de consentimento já enviada? (flag local setada ao voltar da HeyGen)
+  const [consentSent, setConsentSent] = useState(false);
+  useEffect(() => {
+    if (!isPendingConsent) {
+      // saiu de PENDING_CONSENT (READY/FAILED) — a flag não vale mais
+      if (status !== 'DELETING') {
+        try { window.localStorage.removeItem(consentSentKey(avatar.id)); } catch { /* ignora */ }
+      }
+      return;
+    }
+    try {
+      setConsentSent(!!window.localStorage.getItem(consentSentKey(avatar.id)));
+    } catch { /* ignora */ }
+  }, [isPendingConsent, status, avatar.id]);
 
   useEffect(() => {
     setImgError(false);
@@ -164,9 +193,13 @@ function AvatarCard({
 
         {isPendingConsent && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-yellow-500/15 backdrop-blur-sm">
-            <AlertCircle className="size-6 text-yellow-300" />
+            {consentSent ? (
+              <Loader2 className="size-6 animate-spin text-yellow-300" />
+            ) : (
+              <AlertCircle className="size-6 text-yellow-300" />
+            )}
             <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-yellow-300">
-              {t('pendingConsent')}
+              {consentSent ? t('consentReview') : t('pendingConsent')}
             </span>
           </div>
         )}
@@ -201,7 +234,9 @@ function AvatarCard({
               : isFailed
                 ? t('trainingFailed')
                 : isPendingConsent
-                  ? t('pendingConsentLabel')
+                  ? consentSent
+                    ? t('consentReviewLabel')
+                    : t('pendingConsentLabel')
                   : status === 'TRAINING'
                     ? t('training')
                     : t('initiating')}
@@ -215,14 +250,27 @@ function AvatarCard({
         )}
 
         {isPendingConsent && avatar.consentUrl && (
-          <a
-            href={avatar.consentUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-auto flex h-8 w-full items-center justify-center gap-1.5 rounded-lg bg-yellow-400/20 text-[10.5px] font-extrabold text-yellow-300 ring-1 ring-yellow-400/35 transition-colors hover:bg-yellow-400/30"
-          >
-            {t('approveConsent')}
-          </a>
+          consentSent ? (
+            /* já gravou — HeyGen valida em background; deixa só um link discreto
+               para regravar caso a validação demore/falhe */
+            <a
+              href={avatar.consentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-auto py-1 text-center text-[10.5px] font-bold text-app-muted transition-colors hover:text-app-text"
+            >
+              {t('recordAgain')}
+            </a>
+          ) : (
+            <a
+              href={avatar.consentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-auto flex h-8 w-full items-center justify-center gap-1.5 rounded-lg bg-yellow-400/20 text-[10.5px] font-extrabold text-yellow-300 ring-1 ring-yellow-400/35 transition-colors hover:bg-yellow-400/30"
+            >
+              {t('approveConsent')}
+            </a>
+          )
         )}
       </div>
 
@@ -272,17 +320,54 @@ export function AvatarView() {
   const { user, accessToken } = useAuth();
   const queryClient = useQueryClient();
 
-  // ── persistência: restaura do localStorage no mount (lazy init) ──
-  const boot = useMemo(() => loadPersisted<PersistedAvatar>(STORAGE_KEY), []);
-  const [tool, setTool] = useState<AvatarToolId>(boot?.tool ?? 'create');
-  const [selectedReadyId, setSelectedReadyId] = useState<string>(boot?.selectedReadyId ?? '');
+  // ── persistência ──
+  // Esta view é renderizada no servidor (sem Suspense/useSearchParams como as
+  // outras), então o localStorage NÃO pode ser lido no init do estado — o HTML
+  // do SSR (defaults) divergiria do primeiro render do cliente (hydration
+  // mismatch). Restauramos num effect pós-mount; `booted` impede o effect de
+  // salvar de sobrescrever o valor guardado com os defaults antes da restauração.
+  const [tool, setTool] = useState<AvatarToolId>('create');
+  const [selectedReadyId, setSelectedReadyId] = useState<string>('');
+  // painel direito: lista de avatares ou criações (vídeos gerados com avatar)
+  const [rightView, setRightView] = useState<RightView>('avatars');
   // mobile: alterna entre a config (criar/gerar) e a lista de avatares
   const [mobileView, setMobileView] = useState<'config' | 'list'>('config');
+  const [booted, setBooted] = useState(false);
+
+  useEffect(() => {
+    const boot = loadPersisted<PersistedAvatar>(STORAGE_KEY);
+    if (boot) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTool(boot.tool ?? 'create');
+      setSelectedReadyId(boot.selectedReadyId ?? '');
+      setRightView(boot.rightView ?? 'avatars');
+    }
+    setBooted(true);
+  }, []);
 
   // salva ferramenta/avatar selecionado a cada mudança (sobrevive a troca de rota/reload)
   useEffect(() => {
-    savePersisted<PersistedAvatar>(STORAGE_KEY, { tool, selectedReadyId });
-  }, [tool, selectedReadyId]);
+    if (!booted) return;
+    savePersisted<PersistedAvatar>(STORAGE_KEY, { tool, selectedReadyId, rightView });
+  }, [booted, tool, selectedReadyId, rightView]);
+
+  // retorno do fluxo de consentimento da HeyGen (?consent=done&avatarId=...):
+  // marca a gravação como enviada (o card troca o botão por "validando") e
+  // limpa os parâmetros da URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('consent') !== 'done') return;
+    const avatarId = params.get('avatarId');
+    if (avatarId) {
+      try {
+        window.localStorage.setItem(consentSentKey(avatarId), String(Date.now()));
+      } catch { /* ignora */ }
+    }
+    params.delete('consent');
+    params.delete('avatarId');
+    const qs = params.toString();
+    window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : ''));
+  }, []);
 
   // gate de manutenção do avatar-video (admin pode desligar)
   const { data: videoModels } = useQuery({
@@ -304,8 +389,14 @@ export function AvatarView() {
     placeholderData: keepPreviousData,
     refetchInterval: (query) => {
       const list = query.state.data?.avatars ?? [];
+      // PENDING_CONSENT também é transitório: a aprovação acontece fora do app
+      // (link da HeyGen) e só chega via polling do backend → seguimos atualizando
       const transient = list.some(
-        (a) => a.status === 'PENDING' || a.status === 'SUBMITTING' || a.status === 'TRAINING',
+        (a) =>
+          a.status === 'PENDING' ||
+          a.status === 'SUBMITTING' ||
+          a.status === 'TRAINING' ||
+          a.status === 'PENDING_CONSENT',
       );
       return transient ? POLL_INTERVAL_MS : false;
     },
@@ -454,15 +545,41 @@ export function AvatarView() {
         </div>
       </div>
 
-      {/* ── Avatares existentes (direita) ── */}
+      {/* ── Avatares existentes / criações (direita) ── */}
       <div
         className={cn(
-          'flex min-h-0 flex-1 flex-col',
+          'flex min-h-0 min-w-0 flex-1 flex-col',
           mobileView === 'config' && 'max-lg:hidden',
         )}
       >
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-app-hairline px-6 py-4">
-          <h2 className="text-[16px] font-bold text-app-text">{t('sectionTitle')}</h2>
+        {rightView === 'creations' ? (
+          /* vídeos gerados com avatar — mesma galeria das telas de imagem/vídeo,
+             travada no filtro de avatares (AVATAR_VIDEO) */
+          <CreationsPanel
+            defaultFilter="avatars"
+            filters={['avatars']}
+            titleSlot={
+              <RightViewTabs
+                view={rightView}
+                onChange={setRightView}
+                avatarsLabel={t('sectionTitle')}
+                creationsLabel={tHome('image.creations')}
+              />
+            }
+            onCreateNew={() => {
+              setTool('video');
+              setMobileView('config');
+            }}
+          />
+        ) : (
+          <>
+        <div className="flex shrink-0 items-center justify-between gap-3 px-5 pt-4 pb-4">
+          <RightViewTabs
+            view={rightView}
+            onChange={setRightView}
+            avatarsLabel={t('sectionTitle')}
+            creationsLabel={tHome('image.creations')}
+          />
           {quota && quota.enabled && (
             <span className="rounded-full border border-app-hairline bg-app-surface px-3 py-1 text-[12px] font-semibold text-app-text-2">
               {quota.used} / {quota.limit}
@@ -470,7 +587,7 @@ export function AvatarView() {
           )}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-6 scrollbar-app">
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 scrollbar-app">
           {loading ? (
             <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]">
               {Array.from({ length: 6 }, (_, i) => (
@@ -502,8 +619,44 @@ export function AvatarView() {
             </div>
           )}
         </div>
+          </>
+        )}
       </div>
       </div>
+    </div>
+  );
+}
+
+/** Abas do painel direito: alterna entre a lista de avatares e as criações. */
+function RightViewTabs({
+  view,
+  onChange,
+  avatarsLabel,
+  creationsLabel,
+}: {
+  view: RightView;
+  onChange: (view: RightView) => void;
+  avatarsLabel: string;
+  creationsLabel: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-1.5">
+      <FilterPill
+        active={view === 'avatars'}
+        onClick={() => onChange('avatars')}
+        icon={ScanFace}
+        className="px-3.5 py-1.5 text-[12.5px]"
+      >
+        {avatarsLabel}
+      </FilterPill>
+      <FilterPill
+        active={view === 'creations'}
+        onClick={() => onChange('creations')}
+        icon={SquarePlay}
+        className="px-3.5 py-1.5 text-[12.5px]"
+      >
+        {creationsLabel}
+      </FilterPill>
     </div>
   );
 }

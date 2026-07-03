@@ -27,6 +27,10 @@ interface CreationsPanelProps {
   defaultFilter?: string;
   /** chamado pelo CTA do estado vazio (ex.: focar o prompt) */
   onCreateNew?: () => void;
+  /** subconjunto de filtros de tipo exibidos; com 1 só, as pílulas somem (filtro travado) */
+  filters?: string[];
+  /** substitui o título padrão do cabeçalho (ex.: abas Avatares/Criações) */
+  titleSlot?: React.ReactNode;
 }
 
 /** Preview de geração: aurora enquanto processa; ao receber a url, a imagem
@@ -113,6 +117,8 @@ export function CreationsPanel({
   pending = [],
   defaultFilter = 'all',
   onCreateNew,
+  filters,
+  titleSlot,
 }: CreationsPanelProps) {
   const t = useTranslations('home');
   const { user, accessToken } = useAuth();
@@ -160,6 +166,11 @@ export function CreationsPanel({
   }, []);
 
   const types = GALLERY_FILTERS.find((f) => f.id === filter)?.types;
+
+  // filtros de tipo visíveis no cabeçalho (telas podem restringir, ex.: só avatares)
+  const visibleFilters = filters
+    ? GALLERY_FILTERS.filter((f) => filters.includes(f.id))
+    : GALLERY_FILTERS;
 
   const { data, isPending, isError, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useInfiniteQuery({
@@ -241,31 +252,39 @@ export function CreationsPanel({
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       {/* cabeçalho */}
       <div className="flex items-center gap-2 px-5 pt-4 pb-4">
-        <Grid2x2 className="size-[17px] text-app-lime" strokeWidth={1.8} />
-        <h2 className="text-[15px] font-semibold text-app-text">{t('image.creations')}</h2>
+        {titleSlot ?? (
+          <>
+            <Grid2x2 className="size-[17px] text-app-lime" strokeWidth={1.8} />
+            <h2 className="text-[15px] font-semibold text-app-text">{t('image.creations')}</h2>
+          </>
+        )}
 
         <div className="ml-auto flex min-w-0 items-center gap-1.5">
           {/* filtros por tipo: ativo mostra label, inativos só ícone */}
-          {GALLERY_FILTERS.map(({ id, icon: Icon }) =>
-            filter === id ? (
-              <FilterPill key={id} active onClick={() => setFilter(id)} icon={Icon} className="px-3.5 py-1.5 text-[12.5px]">
-                {t(`gallery.filters.${id}`)}
-              </FilterPill>
-            ) : (
-              <button
-                key={id}
-                type="button"
-                aria-label={t(`gallery.filters.${id}`)}
-                title={t(`gallery.filters.${id}`)}
-                onClick={() => setFilter(id)}
-                className="flex size-8 items-center justify-center rounded-full text-app-text-2 transition-colors duration-200 ease-app hover:bg-app-surface hover:text-app-text"
-              >
-                <Icon className="size-[15px]" strokeWidth={1.8} />
-              </button>
-            ),
-          )}
+          {visibleFilters.length > 1 && (
+            <>
+              {visibleFilters.map(({ id, icon: Icon }) =>
+                filter === id ? (
+                  <FilterPill key={id} active onClick={() => setFilter(id)} icon={Icon} className="px-3.5 py-1.5 text-[12.5px]">
+                    {t(`gallery.filters.${id}`)}
+                  </FilterPill>
+                ) : (
+                  <button
+                    key={id}
+                    type="button"
+                    aria-label={t(`gallery.filters.${id}`)}
+                    title={t(`gallery.filters.${id}`)}
+                    onClick={() => setFilter(id)}
+                    className="flex size-8 items-center justify-center rounded-full text-app-text-2 transition-colors duration-200 ease-app hover:bg-app-surface hover:text-app-text"
+                  >
+                    <Icon className="size-[15px]" strokeWidth={1.8} />
+                  </button>
+                ),
+              )}
 
-          <div className="mx-1 h-5 w-px bg-app-hairline" />
+              <div className="mx-1 h-5 w-px bg-app-hairline" />
+            </>
+          )}
 
           {/* favoritos */}
           <button

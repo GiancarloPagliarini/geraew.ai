@@ -300,6 +300,9 @@
         "generateVideo": "Generate video",
         "maintenance": "Maintenance",
         "approveConsent": "Approve consent",
+        "consentReview": "Validating consent",
+        "consentReviewLabel": "Recording submitted — HeyGen is validating it (may take a few hours)",
+        "recordAgain": "Record again",
         "delete": "Delete"
       },
       "deleteConfirm": {
