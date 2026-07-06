@@ -42,6 +42,7 @@ import { Suspense } from "react";
 import { ReferralCapture } from "@/components/ReferralCapture";
 import { TrackingCapture } from "@/components/TrackingCapture";
 import { MetaPixel } from "@/components/MetaPixel";
+import { UtmfyScripts } from "@/components/UtmfyScripts";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
@@ -64,6 +65,7 @@ export default async function RootLayout({
             <LoginModalProvider>
             <TooltipProvider delayDuration={0}>
               <MetaPixel />
+              <UtmfyScripts />
               <Suspense fallback={null}><ReferralCapture /></Suspense>
               <Suspense fallback={null}><TrackingCapture /></Suspense>
               {children}

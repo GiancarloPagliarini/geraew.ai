@@ -1237,6 +1237,49 @@ export interface FinancialStats {
   marginPercent: number;
 }
 
+export interface UtmConversionRow {
+  utmSource: string | null;
+  utmCampaign: string | null;
+  utmContent: string | null;
+  utmMedium: string | null;
+  signups: number;
+  customers: number;
+  revenueCents: number;
+}
+
+export interface UtmConversions {
+  days: number;
+  since: string;
+  totals: { signups: number; customers: number; revenueCents: number };
+  rows: UtmConversionRow[];
+}
+
+export interface UtmRequestRow {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: string;
+  country: string | null;
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  utmContent: string | null;
+  utmTerm: string | null;
+  fbclid: string | null;
+  gclid: string | null;
+  referrer: string | null;
+  landingPage: string | null;
+  signupIp: string | null;
+  signupUserAgent: string | null;
+}
+
+export interface UtmRequests {
+  page: number;
+  limit: number;
+  total: number;
+  data: UtmRequestRow[];
+}
+
 export interface UserStats {
   newUsersToday: number;
   newUsersWeek: number;
@@ -2378,6 +2421,12 @@ export const api = {
     },
     financialStats(accessToken: string, days = 30) {
       return authRequest<FinancialStats>(`/api/v1/admin/stats/financial?days=${days}`, accessToken);
+    },
+    utmConversions(accessToken: string, days = 30) {
+      return authRequest<UtmConversions>(`/api/v1/admin/stats/utm-conversions?days=${days}`, accessToken);
+    },
+    utmRequests(accessToken: string, page = 1, limit = 30) {
+      return authRequest<UtmRequests>(`/api/v1/admin/stats/utm-requests?page=${page}&limit=${limit}`, accessToken);
     },
     userStats(accessToken: string, days = 30) {
       return authRequest<UserStats>(`/api/v1/admin/stats/users?days=${days}`, accessToken);

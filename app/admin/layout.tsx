@@ -26,6 +26,7 @@ import {
   Clock,
   Cloud,
   Tags,
+  TrendingUp,
   ChevronDown,
   Settings,
 } from 'lucide-react';
@@ -74,6 +75,7 @@ const NAV_GROUPS: NavGroup[] = [
     icon: Banknote,
     items: [
       { href: '/admin/assinaturas', label: 'Assinaturas', icon: CreditCard },
+      { href: '/admin/conversoes', label: 'Conversões', icon: TrendingUp },
       { href: '/admin/stripe', label: 'Stripe', icon: Banknote },
       { href: '/admin/precificacao', label: 'Precificação', icon: Tags },
       { href: '/admin/afiliados', label: 'Afiliados', icon: Handshake },
