@@ -40,6 +40,8 @@ import { LoginModal } from "@/components/LoginModal";
 import { Toaster } from "sonner";
 import { Suspense } from "react";
 import { ReferralCapture } from "@/components/ReferralCapture";
+import { TrackingCapture } from "@/components/TrackingCapture";
+import { MetaPixel } from "@/components/MetaPixel";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
@@ -61,7 +63,9 @@ export default async function RootLayout({
           <AuthProvider>
             <LoginModalProvider>
             <TooltipProvider delayDuration={0}>
+              <MetaPixel />
               <Suspense fallback={null}><ReferralCapture /></Suspense>
+              <Suspense fallback={null}><TrackingCapture /></Suspense>
               {children}
               <LoginModal />
               <Toaster

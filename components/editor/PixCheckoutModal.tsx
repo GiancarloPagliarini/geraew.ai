@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-context';
 import { api, type CreditPackage, type PixCharge } from '@/lib/api';
 import { formatCurrency } from '@/lib/plans';
+import { trackInitiateCheckout, trackPurchase } from '@/lib/pixel';
 import {
   formatTaxIdMask,
   getTaxIdKind,
@@ -71,6 +72,12 @@ export function PixCheckoutModal({ pkg, onClose }: PixCheckoutModalProps) {
         const charge = await api.payments.createBoostPix(accessToken, pkg.id, taxIdToSend);
         setPix(charge);
         setStep('qr');
+        // InitiateCheckout no Pixel (o server registra waiting_payment na UTMfy).
+        trackInitiateCheckout({
+          valueBRL: pkg.priceCents / 100,
+          contentId: pkg.id,
+          contentName: pkg.name,
+        });
         // Atualiza o profile cache caso o user tenha trocado CPF
         queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
       } catch (err) {
@@ -116,6 +123,13 @@ export function PixCheckoutModal({ pkg, onClose }: PixCheckoutModalProps) {
         if (res.paid) {
           setPaid(true);
           stoppedRef.current = true;
+          // Purchase no Pixel. eventId = paymentId → mesmo id do CAPI (server) → dedup.
+          trackPurchase({
+            eventId: pix.paymentId,
+            valueBRL: pkg.priceCents / 100,
+            contentId: pkg.id,
+            contentName: pkg.name,
+          });
           queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
           queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
           toast.success('Pagamento confirmado! Créditos liberados.');

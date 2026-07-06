@@ -1,4 +1,5 @@
 import { readAttribution } from './tracking';
+import { trackInitiateCheckout } from './pixel';
 
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -1795,11 +1796,13 @@ export const api = {
         body: JSON.stringify(payload),
       });
     },
-    purchase(accessToken: string, packageId: string, currency?: string) {
-      return authRequest<{ checkoutUrl: string }>('/api/v1/credits/purchase', accessToken, {
+    async purchase(accessToken: string, packageId: string, currency?: string) {
+      const res = await authRequest<{ checkoutUrl: string }>('/api/v1/credits/purchase', accessToken, {
         method: 'POST',
         body: JSON.stringify({ packageId, ...(currency ? { currency } : {}) }),
       });
+      trackInitiateCheckout({ contentId: packageId, contentName: `Créditos ${packageId}` });
+      return res;
     },
     transactions(accessToken: string, page = 1, limit = 20) {
       return authRequest<PaginatedResponse<CreditTransaction>>(
@@ -1925,8 +1928,8 @@ export const api = {
   },
 
   subscriptions: {
-    create(accessToken: string, planSlug: string, currency?: string, recoveryPromoCode?: string) {
-      return authRequest<{ checkoutUrl: string }>('/api/v1/subscriptions', accessToken, {
+    async create(accessToken: string, planSlug: string, currency?: string, recoveryPromoCode?: string) {
+      const res = await authRequest<{ checkoutUrl: string }>('/api/v1/subscriptions', accessToken, {
         method: 'POST',
         body: JSON.stringify({
           planSlug,
@@ -1934,6 +1937,10 @@ export const api = {
           ...(recoveryPromoCode ? { recoveryPromoCode } : {}),
         }),
       });
+      // InitiateCheckout no Pixel antes do redirect pro Stripe (server manda
+      // waiting_payment pra UTMfy). Só em assinatura nova — upgrade é outro método.
+      trackInitiateCheckout({ contentId: planSlug, contentName: `Assinatura ${planSlug}` });
+      return res;
     },
     current(accessToken: string) {
       return authRequest<Record<string, unknown> | null>('/api/v1/subscriptions/current', accessToken);

@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, AuthUser, setRefreshHandler } from './api';
 import { captureRecoveryPromoFromUrl } from './recovery-promo';
+import { trackCompleteRegistration } from './pixel';
 
 interface AuthState {
   user: AuthUser | null;
@@ -118,8 +119,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ user: res.user, accessToken: res.accessToken, refreshToken: res.refreshToken, loading: false });
   }, []);
 
+  // Cadastro por email é sempre um novo usuário → dispara CompleteRegistration
+  // no Pixel (novo lead) além de estabelecer a sessão.
+  const handleRegisterSuccess = useCallback(
+    (res: { accessToken: string; refreshToken: string; user: AuthUser }) => {
+      handleAuthSuccess(res);
+      trackCompleteRegistration();
+    },
+    [handleAuthSuccess],
+  );
+
   const loginMutation = useLoginMutation(handleAuthSuccess);
-  const registerMutation = useRegisterMutation(handleAuthSuccess);
+  const registerMutation = useRegisterMutation(handleRegisterSuccess);
   const googleLoginMutation = useGoogleLoginMutation(handleAuthSuccess);
 
   // Captura ?recovery_promo=RECOVERY20 da URL e persiste em sessionStorage

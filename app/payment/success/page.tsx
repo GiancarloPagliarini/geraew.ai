@@ -1,20 +1,37 @@
 'use client';
 
 import { CheckCircle, ArrowRight } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
+import { trackPurchase } from '@/lib/pixel';
 
 export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={null}>
+      <PaymentSuccessContent />
+    </Suspense>
+  );
+}
+
+function PaymentSuccessContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const t = useTranslations('checkout.success');
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['credits'] });
     queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
-  }, [queryClient]);
+
+    // Purchase no navegador. eventId = session_id do Stripe → mesmo id do CAPI
+    // (orderId no backend), então o Meta deduplica browser + servidor.
+    const sessionId = searchParams.get('session_id');
+    if (sessionId) {
+      trackPurchase({ eventId: sessionId });
+    }
+  }, [queryClient, searchParams]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-[#1a2123] px-4">
