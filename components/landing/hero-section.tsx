@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "next-intl";
+import { Vsl } from "@/components/landing/vsl";
 
 const HERO_CARDS: { h: number; delay: string; float: string; rotate: number; src: string | null; video?: string | null }[] = [
   { h: 280, delay: "0s", float: "landing-float", rotate: -3, src: null, video: "https://cdn.geraew.com.br/storage/v1/object/public/ai-generations/generations/cmmo0y3ig001pmj012ef18i2x/f8b501b1-404e-4f90-80e5-6369dd0a1c85/output_1.mp4" },
@@ -164,6 +165,9 @@ export function HeroSection() {
           <p className="mt-5 max-w-[620px] text-[15px] leading-relaxed text-landing-text-secondary sm:mt-7 sm:text-[17px] lg:text-[19px]">
             {t("subtitle")}
           </p>
+
+          {/* VSL */}
+          <Vsl />
 
           {/* CTA */}
           <div className="mt-8 flex flex-col items-center gap-4 sm:mt-10 sm:flex-row sm:gap-5">
