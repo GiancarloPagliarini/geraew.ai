@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import type { Affiliate, AffiliateEarning, AffiliateDashboard, AffiliateEarningsResponse, AffiliateReferredUser, AffiliateDiscountScope } from '@/lib/api';
+import type { Affiliate, AffiliateEarning, AffiliateCurrencySummary, AffiliateDashboard, AffiliateEarningsResponse, AffiliateReferredUser, AffiliateDiscountScope } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import {
@@ -39,9 +39,42 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
+import { formatMoney } from '@/lib/utils';
 
-function formatCents(cents: number) {
-  return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+/** Formata na moeda do próprio registro — comissões existem em BRL, USD e EUR. */
+function formatCents(cents: number, currency = 'BRL') {
+  return formatMoney(cents, currency, 'pt-BR');
+}
+
+/** Soma comissões agrupando por moeda — BRL e USD nunca entram no mesmo total. */
+function sumByCurrency(items: { commissionCents: number; currency: string }[]) {
+  const totals = new Map<string, number>();
+  for (const item of items) {
+    totals.set(item.currency, (totals.get(item.currency) ?? 0) + item.commissionCents);
+  }
+  return [...totals.entries()]
+    .map(([currency, cents]) => ({ currency, cents }))
+    .sort((a, b) => (a.currency === 'BRL' ? -1 : b.currency === 'BRL' ? 1 : a.currency.localeCompare(b.currency)));
+}
+
+/** Um valor por moeda, empilhados. Somar moedas diferentes seria mentira. */
+function MoneyByCurrency({
+  values,
+  className,
+}: {
+  values: { currency: string; cents: number }[];
+  className?: string;
+}) {
+  if (!values.length) return <span className={className}>{formatCents(0)}</span>;
+  return (
+    <div className="flex flex-col">
+      {values.map(({ currency, cents }) => (
+        <span key={currency} className={className}>
+          {formatCents(cents, currency)}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 function formatDate(date: string) {
@@ -61,13 +94,17 @@ function DashboardView({ dashboard, isLoading }: { dashboard: AffiliateDashboard
 
   if (!dashboard) return null;
 
+  // cada card de dinheiro empilha um valor por moeda
+  const money = (pick: (c: AffiliateDashboard['byCurrency'][number]) => number) =>
+    dashboard.byCurrency.map((c) => ({ currency: c.currency, cents: pick(c) ?? 0 }));
+
   const cards = [
-    { label: 'Afiliados Ativos', value: `${dashboard.activeAffiliates}/${dashboard.totalAffiliates}`, icon: Users, color: 'text-blue-400' },
-    { label: 'Usuários Indicados', value: dashboard.referredUsers.toLocaleString('pt-BR'), icon: TrendingUp, color: 'text-[#a2dd00]' },
-    { label: 'Comissão Pendente', value: formatCents(dashboard.pendingCommissionCents), icon: Clock, color: 'text-yellow-400' },
-    { label: 'Comissão Paga', value: formatCents(dashboard.paidCommissionCents), icon: CheckCircle2, color: 'text-green-400' },
-    { label: 'Total Comissões', value: formatCents(dashboard.totalCommissionCents), icon: DollarSign, color: 'text-violet-400' },
-    { label: 'Receita Gerada', value: formatCents(dashboard.totalRevenueCents), icon: DollarSign, color: 'text-[#f3f0ed]/60' },
+    { label: 'Afiliados Ativos', values: null, value: `${dashboard.activeAffiliates}/${dashboard.totalAffiliates}`, icon: Users, color: 'text-blue-400' },
+    { label: 'Usuários Indicados', values: null, value: dashboard.referredUsers.toLocaleString('pt-BR'), icon: TrendingUp, color: 'text-[#a2dd00]' },
+    { label: 'Comissão Pendente', values: money((c) => c.pendingCommissionCents), icon: Clock, color: 'text-yellow-400' },
+    { label: 'Comissão Paga', values: money((c) => c.paidCommissionCents), icon: CheckCircle2, color: 'text-green-400' },
+    { label: 'Total Comissões', values: money((c) => c.totalCommissionCents), icon: DollarSign, color: 'text-violet-400' },
+    { label: 'Receita Gerada', values: money((c) => c.totalRevenueCents), icon: DollarSign, color: 'text-[#f3f0ed]/60' },
   ];
 
   return (
@@ -83,7 +120,14 @@ function DashboardView({ dashboard, isLoading }: { dashboard: AffiliateDashboard
               <Icon className={`h-4 w-4 ${card.color}`} />
               <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#f3f0ed]/30">{card.label}</span>
             </div>
-            <span className="text-lg font-bold tabular-nums text-[#f3f0ed]">{card.value}</span>
+            {card.values ? (
+              <MoneyByCurrency
+                values={card.values}
+                className="text-lg font-bold tabular-nums text-[#f3f0ed]"
+              />
+            ) : (
+              <span className="text-lg font-bold tabular-nums text-[#f3f0ed]">{card.value}</span>
+            )}
           </div>
         );
       })}
@@ -576,14 +620,17 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
-          { label: 'Receita Gerada', value: formatCents(summary.totalRevenueCents), color: 'text-[#f3f0ed]/60' },
-          { label: 'Total Comissões', value: formatCents(summary.totalCommissionCents), color: 'text-violet-400' },
-          { label: 'Pendente', value: formatCents(summary.pendingCommissionCents), color: 'text-yellow-400' },
-          { label: 'Pago', value: formatCents(summary.paidCommissionCents), color: 'text-green-400' },
+          { label: 'Receita Gerada', pick: (c: AffiliateCurrencySummary) => c.totalRevenueCents, color: 'text-[#f3f0ed]/60' },
+          { label: 'Total Comissões', pick: (c: AffiliateCurrencySummary) => c.totalCommissionCents, color: 'text-violet-400' },
+          { label: 'Pendente', pick: (c: AffiliateCurrencySummary) => c.pendingCommissionCents, color: 'text-yellow-400' },
+          { label: 'Pago', pick: (c: AffiliateCurrencySummary) => c.paidCommissionCents, color: 'text-green-400' },
         ].map((card) => (
           <div key={card.label} className="flex flex-col gap-1 rounded-2xl border border-[#f3f0ed]/6 bg-[#f3f0ed]/2 p-4">
             <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#f3f0ed]/30">{card.label}</span>
-            <span className={`text-lg font-bold tabular-nums ${card.color}`}>{card.value}</span>
+            <MoneyByCurrency
+              values={summary.byCurrency.map((c) => ({ currency: c.currency, cents: card.pick(c) ?? 0 }))}
+              className={`text-lg font-bold tabular-nums ${card.color}`}
+            />
           </div>
         ))}
       </div>
@@ -660,11 +707,9 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
             {selectedIds.size} selecionada{selectedIds.size > 1 ? 's' : ''}
             {' · '}
             <span className="font-bold text-[#a2dd00]">
-              {formatCents(
-                pendingEarnings
-                  .filter((e) => selectedIds.has(e.id))
-                  .reduce((sum, e) => sum + e.commissionCents, 0),
-              )}
+              {sumByCurrency(pendingEarnings.filter((e) => selectedIds.has(e.id)))
+                .map(({ currency, cents }) => formatCents(cents, currency))
+                .join(' + ')}
             </span>
           </span>
           <button
@@ -725,7 +770,7 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <span className="text-sm font-bold tabular-nums text-[#a2dd00]">{formatCents(earning.commissionCents)}</span>
+                    <span className="text-sm font-bold tabular-nums text-[#a2dd00]">{formatCents(earning.commissionCents, earning.currency)}</span>
                     <Badge
                       variant="outline"
                       className={
@@ -788,12 +833,12 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
                       </TableCell>
                       <TableCell>
                         <span className="text-sm tabular-nums text-[#f3f0ed]/60">
-                          {formatCents(earning.amountCents)}
+                          {formatCents(earning.amountCents, earning.currency)}
                         </span>
                       </TableCell>
                       <TableCell>
                         <span className="text-sm font-bold tabular-nums text-[#a2dd00]">
-                          {formatCents(earning.commissionCents)}
+                          {formatCents(earning.commissionCents, earning.currency)}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -836,7 +881,9 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
           affiliateName={affiliate.name}
           affiliateCode={affiliate.code}
           earningsCount={earnings.length}
-          pendingCents={summary.pendingCommissionCents ?? 0}
+          pending={summary.byCurrency
+            .filter((c) => (c.pendingCommissionCents ?? 0) > 0)
+            .map((c) => ({ currency: c.currency, cents: c.pendingCommissionCents }))}
           isPending={deleteMutation.isPending}
           onConfirm={() => deleteMutation.mutate()}
           onClose={() => setShowDelete(false)}
@@ -848,9 +895,7 @@ function AffiliateDetailView({ affiliateId, onBack }: { affiliateId: string; onB
         <PayCommissionsModal
           affiliateName={affiliate.name}
           affiliateEmail={affiliate.user?.email ?? null}
-          totalCents={pendingEarnings
-            .filter((e) => selectedIds.has(e.id))
-            .reduce((sum, e) => sum + e.commissionCents, 0)}
+          totals={sumByCurrency(pendingEarnings.filter((e) => selectedIds.has(e.id)))}
           earningsCount={selectedIds.size}
           isPending={markPaidMutation.isPending}
           onConfirm={(receipt) =>
@@ -871,7 +916,7 @@ const ALLOWED_RECEIPT_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'im
 function PayCommissionsModal({
   affiliateName,
   affiliateEmail,
-  totalCents,
+  totals,
   earningsCount,
   isPending,
   onConfirm,
@@ -879,7 +924,8 @@ function PayCommissionsModal({
 }: {
   affiliateName: string;
   affiliateEmail: string | null;
-  totalCents: number;
+  /** total a pagar por moeda — o Pix é em BRL, então saldo em outra moeda precisa de câmbio */
+  totals: { currency: string; cents: number }[];
   earningsCount: number;
   isPending: boolean;
   onConfirm: (receipt?: { base64: string; filename: string; mimeType: string }) => void;
@@ -952,12 +998,27 @@ function PayCommissionsModal({
             </div>
             <div className="rounded-xl border border-[#a2dd00]/20 bg-[#a2dd00]/5 px-4 py-3">
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#a2dd00]/70">Total</p>
-              <p className="mt-1 text-sm font-bold tabular-nums text-[#a2dd00]">{formatCents(totalCents)}</p>
+              <MoneyByCurrency
+                values={totals}
+                className="mt-1 text-sm font-bold tabular-nums text-[#a2dd00]"
+              />
               <p className="mt-0.5 text-xs text-[#f3f0ed]/40">
                 {earningsCount} comissã{earningsCount === 1 ? 'o' : 'ões'}
               </p>
             </div>
           </div>
+
+          {/* O Pix só existe em real — saldo em moeda estrangeira precisa ser
+              convertido na mão, com o câmbio do dia do pagamento */}
+          {totals.some((t) => t.currency !== 'BRL') && (
+            <div className="flex gap-2.5 rounded-xl border border-yellow-500/20 bg-yellow-500/5 px-4 py-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-400" />
+              <p className="text-xs leading-relaxed text-[#f3f0ed]/60">
+                Há comissões em moeda estrangeira nesta seleção. O Pix é em reais — converta o
+                valor pelo câmbio do dia antes de enviar e anexe o comprovante.
+              </p>
+            </div>
+          )}
 
           <div>
             <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-[#f3f0ed]/40">
@@ -1042,7 +1103,7 @@ function DeleteAffiliateModal({
   affiliateName,
   affiliateCode,
   earningsCount,
-  pendingCents,
+  pending,
   isPending,
   onConfirm,
   onClose,
@@ -1050,7 +1111,8 @@ function DeleteAffiliateModal({
   affiliateName: string;
   affiliateCode: string;
   earningsCount: number;
-  pendingCents: number;
+  /** comissões pendentes por moeda — só as que têm saldo */
+  pending: { currency: string; cents: number }[];
   isPending: boolean;
   onConfirm: () => void;
   onClose: () => void;
@@ -1087,11 +1149,11 @@ function DeleteAffiliateModal({
             <p className="text-[11px] font-bold uppercase tracking-wide text-red-400">Impacto</p>
             <ul className="mt-2 flex flex-col gap-1 text-xs text-[#f3f0ed]/60">
               <li>• {earningsCount} comissão(ões) serão apagadas em cascata</li>
-              {pendingCents > 0 && (
-                <li className="text-red-300">
-                  • {formatCents(pendingCents)} em comissões <strong>PENDENTES</strong> serão perdidas
+              {pending.map(({ currency, cents }) => (
+                <li key={currency} className="text-red-300">
+                  • {formatCents(cents, currency)} em comissões <strong>PENDENTES</strong> serão perdidas
                 </li>
-              )}
+              ))}
               <li>• Usuários indicados permanecem, mas perdem a origem</li>
             </ul>
           </div>
@@ -1300,7 +1362,10 @@ export default function AdminAffiliatosPage() {
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
-                  <span className="text-sm font-bold tabular-nums text-[#a2dd00]">{formatCents(aff.pendingEarningsCents)}</span>
+                  <MoneyByCurrency
+                    values={aff.earningsByCurrency.map((c) => ({ currency: c.currency, cents: c.pendingEarningsCents }))}
+                    className="text-sm font-bold tabular-nums text-[#a2dd00]"
+                  />
                   <span className="flex items-center gap-1 text-[11px] text-[#f3f0ed]/30">
                     <Users className="h-3 w-3" />
                     {aff.referredUsersCount.toLocaleString('pt-BR')}
@@ -1359,12 +1424,20 @@ export default function AdminAffiliatosPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm tabular-nums text-[#f3f0ed]">{formatCents(aff.totalEarningsCents)}</span>
+                      <MoneyByCurrency
+                        values={aff.earningsByCurrency.map((c) => ({ currency: c.currency, cents: c.totalEarningsCents }))}
+                        className="text-sm tabular-nums text-[#f3f0ed]"
+                      />
                     </TableCell>
                     <TableCell>
-                      <span className={`text-sm font-bold tabular-nums ${aff.pendingEarningsCents > 0 ? 'text-yellow-400' : 'text-[#f3f0ed]/40'}`}>
-                        {formatCents(aff.pendingEarningsCents)}
-                      </span>
+                      <MoneyByCurrency
+                        values={aff.earningsByCurrency.map((c) => ({ currency: c.currency, cents: c.pendingEarningsCents }))}
+                        className={`text-sm font-bold tabular-nums ${
+                          aff.earningsByCurrency.some((c) => c.pendingEarningsCents > 0)
+                            ? 'text-yellow-400'
+                            : 'text-[#f3f0ed]/40'
+                        }`}
+                      />
                     </TableCell>
                     <TableCell>
                       {aff.pixKey ? (

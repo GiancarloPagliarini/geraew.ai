@@ -988,6 +988,21 @@ export interface InworldVoiceListResponse {
 export type AffiliateDiscountScope = 'FIRST_PURCHASE' | 'ALL_PURCHASES';
 export type PixKeyType = 'CPF' | 'CNPJ' | 'EMAIL' | 'PHONE' | 'RANDOM';
 
+/**
+ * Saldos de afiliado em uma moeda. O produto vende em BRL, USD e EUR e as
+ * comissões ficam na moeda da compra — nunca some blocos de moedas diferentes.
+ */
+export interface AffiliateCurrencySummary {
+  currency: string;
+  totalPayments: number;
+  totalRevenueCents: number;
+  totalCommissionCents: number;
+  pendingCommissionCents: number;
+  availableCommissionCents: number;
+  maturingCommissionCents: number;
+  paidCommissionCents: number;
+}
+
 export interface Affiliate {
   id: string;
   userId: string | null;
@@ -1002,8 +1017,11 @@ export interface Affiliate {
   createdAt: string;
   user: { id: string; email: string; name: string } | null;
   _count: { earnings: number };
-  totalEarningsCents: number;
-  pendingEarningsCents: number;
+  earningsByCurrency: {
+    currency: string;
+    totalEarningsCents: number;
+    pendingEarningsCents: number;
+  }[];
   referralsCount: number;
   referredUsersCount: number;
 }
@@ -1015,22 +1033,20 @@ export interface AffiliateEarning {
   userId: string;
   amountCents: number;
   commissionCents: number;
+  /** moeda da compra que gerou a comissão */
+  currency: string;
   status: 'PENDING' | 'PAID';
   paidAt: string | null;
   createdAt: string;
   user: { id: string; email: string; name: string };
-  payment: { id: string; type: string; amountCents: number; createdAt: string };
+  payment: { id: string; type: string; amountCents: number; currency: string; createdAt: string };
 }
 
 export interface AffiliateDashboard {
   totalAffiliates: number;
   activeAffiliates: number;
   referredUsers: number;
-  totalPayments: number;
-  totalRevenueCents: number;
-  totalCommissionCents: number;
-  pendingCommissionCents: number;
-  paidCommissionCents: number;
+  byCurrency: AffiliateCurrencySummary[];
 }
 
 export interface AffiliateReferredUser {
@@ -1042,13 +1058,10 @@ export interface AffiliateReferredUser {
 }
 
 export interface AffiliateEarningsResponse {
-  affiliate: Omit<Affiliate, '_count' | 'totalEarningsCents' | 'pendingEarningsCents' | 'referralsCount'>;
+  affiliate: Omit<Affiliate, '_count' | 'earningsByCurrency' | 'referralsCount'>;
   earnings: AffiliateEarning[];
   summary: {
-    totalRevenueCents: number;
-    totalCommissionCents: number;
-    pendingCommissionCents: number;
-    paidCommissionCents: number;
+    byCurrency: AffiliateCurrencySummary[];
   };
 }
 
@@ -2998,19 +3011,14 @@ export const api = {
         };
         summary: {
           referredUsers: number;
-          totalPayments: number;
-          totalRevenueCents: number;
-          totalCommissionCents: number;
-          pendingCommissionCents: number;
-          availableCommissionCents: number;
-          maturingCommissionCents: number;
-          paidCommissionCents: number;
           maturationDays: number;
+          byCurrency: AffiliateCurrencySummary[];
         };
         earnings: {
           id: string;
           amountCents: number;
           commissionCents: number;
+          currency: string;
           status: 'PENDING' | 'PAID';
           paidAt: string | null;
           createdAt: string;
@@ -3018,6 +3026,7 @@ export const api = {
           payment: {
             type: string;
             amountCents: number;
+            currency: string;
             subscription: { plan: { name: string; slug: string } } | null;
             creditPackage: { name: string; credits: number } | null;
           };

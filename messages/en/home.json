@@ -405,7 +405,14 @@
       "favorited": "Added to favorites",
       "unfavorited": "Removed from favorites",
       "favoriteError": "Could not update favorite.",
-      "download": "Download"
+      "download": "Download",
+      "delete": "Delete",
+      "deleteTitle": "Delete this generation?",
+      "deleteDescription": "It will be removed from your gallery and cannot be recovered.",
+      "deleteConfirm": "Delete",
+      "deleteCancel": "Cancel",
+      "deleted": "Generation deleted",
+      "deleteError": "Could not delete the generation. Please try again."
     },
     "library": {
       "searchPlaceholder": "Search prompts...",

@@ -405,7 +405,14 @@
       "favorited": "Adicionada aos favoritos",
       "unfavorited": "Removida dos favoritos",
       "favoriteError": "Não foi possível atualizar o favorito.",
-      "download": "Baixar"
+      "download": "Baixar",
+      "delete": "Excluir",
+      "deleteTitle": "Excluir esta geração?",
+      "deleteDescription": "Ela será removida da sua galeria e não poderá ser recuperada.",
+      "deleteConfirm": "Excluir",
+      "deleteCancel": "Cancelar",
+      "deleted": "Geração excluída",
+      "deleteError": "Não foi possível excluir a geração. Tente novamente."
     },
     "library": {
       "searchPlaceholder": "Buscar prompt...",

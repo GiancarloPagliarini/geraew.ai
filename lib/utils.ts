@@ -10,6 +10,19 @@ export function normalizeSearch(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
+/**
+ * Formata centavos na moeda do próprio valor. O produto cobra em BRL, USD e EUR,
+ * então a moeda vem sempre do registro — assumir um padrão exibe o símbolo errado.
+ */
+export function formatMoney(cents: number, currency: string, locale: string) {
+  try {
+    return (cents / 100).toLocaleString(locale, { style: 'currency', currency });
+  } catch {
+    // moeda desconhecida: o código é menos enganoso que um símbolo chutado
+    return `${currency} ${(cents / 100).toFixed(2)}`;
+  }
+}
+
 /** "há 2 minutos" / "ontem" — tempo relativo localizado. */
 export function formatRelativeTime(date: string | Date, locale: string) {
   const d = typeof date === 'string' ? new Date(date) : date;

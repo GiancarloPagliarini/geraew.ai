@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { AudioLines, Download, Heart, ImageOff } from 'lucide-react';
+import { AudioLines, Download, Heart, ImageOff, Trash2 } from 'lucide-react';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import type { GalleryItem } from '@/lib/api';
 import { downloadMedia } from '@/lib/download-media';
@@ -17,9 +17,11 @@ interface GalleryCardProps {
   onOpen: (item: GalleryItem, ratio?: number) => void;
   /** quando definido, exibe o botão de favoritar sobre o card */
   onToggleFavorite?: (item: GalleryItem) => void;
+  /** quando definido, exibe o botão de excluir sobre o card */
+  onDelete?: (item: GalleryItem) => void;
 }
 
-export function GalleryCard({ item, onOpen, onToggleFavorite }: GalleryCardProps) {
+export function GalleryCard({ item, onOpen, onToggleFavorite, onDelete }: GalleryCardProps) {
   const t = useTranslations('home');
   const locale = useLocale();
   const kind = kindOf(item.type);
@@ -130,6 +132,20 @@ export function GalleryCard({ item, onOpen, onToggleFavorite }: GalleryCardProps
             )}
           >
             <Heart className="size-4" strokeWidth={2} fill={item.isFavorited ? 'currentColor' : 'none'} />
+          </button>
+        )}
+        {onDelete && (
+          <button
+            type="button"
+            aria-label={t('gallery.delete')}
+            title={t('gallery.delete')}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(item);
+            }}
+            className="flex size-8 items-center justify-center rounded-full bg-[rgba(13,16,17,0.65)] text-app-text opacity-0 backdrop-blur-md transition-all duration-200 ease-app hover:bg-[rgba(220,38,38,0.85)] group-hover:opacity-100"
+          >
+            <Trash2 className="size-4" strokeWidth={2} />
           </button>
         )}
       </div>

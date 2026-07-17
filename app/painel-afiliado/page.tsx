@@ -43,8 +43,17 @@ function intlLocale(locale: string) {
   return 'en-US';
 }
 
-function formatCents(cents: number, locale: string) {
-  return (cents / 100).toLocaleString(intlLocale(locale), { style: 'currency', currency: 'BRL' });
+/**
+ * A comissão é gravada na moeda da compra (BRL, USD ou EUR) — sempre formate
+ * com a moeda do próprio registro, nunca com um padrão fixo.
+ */
+function formatCents(cents: number, locale: string, currency = 'BRL') {
+  try {
+    return (cents / 100).toLocaleString(intlLocale(locale), { style: 'currency', currency });
+  } catch {
+    // moeda desconhecida: melhor mostrar o código do que um símbolo errado
+    return `${currency} ${(cents / 100).toFixed(2)}`;
+  }
 }
 
 function formatDate(date: string, locale: string) {
@@ -280,11 +289,20 @@ export default function PainelAfiliadoPage() {
   const maturationDays = summary.maturationDays ?? 30;
   const referralLink = `${SITE_URL}/?ref=${affiliate.code}`;
 
+  // saldos vêm separados por moeda e nunca são somados entre si — cada card
+  // empilha um valor por moeda (só BRL para a maioria dos afiliados)
+  const byCurrency = summary.byCurrency?.length
+    ? summary.byCurrency
+    : [{ currency: 'BRL', availableCommissionCents: 0, maturingCommissionCents: 0, paidCommissionCents: 0 }];
+
+  const money = (pick: (c: (typeof byCurrency)[number]) => number) =>
+    byCurrency.map((c) => formatCents(pick(c) ?? 0, locale, c.currency));
+
   const statCards = [
-    { label: t('stats.referredUsers'), value: summary.referredUsers.toLocaleString(intlLocale(locale)), icon: Users, color: 'text-blue-400' },
-    { label: t('stats.available'), value: formatCents(summary.availableCommissionCents ?? 0, locale), icon: Wallet, color: 'text-emerald-400' },
-    { label: t('stats.maturing'), value: formatCents(summary.maturingCommissionCents ?? 0, locale), icon: Timer, color: 'text-yellow-400' },
-    { label: t('stats.paid'), value: formatCents(summary.paidCommissionCents ?? 0, locale), icon: CheckCircle2, color: 'text-green-400' },
+    { label: t('stats.referredUsers'), values: [summary.referredUsers.toLocaleString(intlLocale(locale))], icon: Users, color: 'text-blue-400' },
+    { label: t('stats.available'), values: money((c) => c.availableCommissionCents), icon: Wallet, color: 'text-emerald-400' },
+    { label: t('stats.maturing'), values: money((c) => c.maturingCommissionCents), icon: Timer, color: 'text-yellow-400' },
+    { label: t('stats.paid'), values: money((c) => c.paidCommissionCents), icon: CheckCircle2, color: 'text-green-400' },
   ];
 
   return (
@@ -344,7 +362,13 @@ export default function PainelAfiliadoPage() {
                       {card.label}
                     </span>
                   </div>
-                  <span className="text-lg font-bold tabular-nums text-[#f3f0ed]">{card.value}</span>
+                  <div className="flex flex-col gap-0.5">
+                    {card.values.map((value) => (
+                      <span key={value} className="text-lg font-bold tabular-nums text-[#f3f0ed]">
+                        {value}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               );
             })}
@@ -464,7 +488,7 @@ export default function PainelAfiliadoPage() {
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         <span className="text-sm font-bold tabular-nums text-[#a2dd00]">
-                          {formatCents(earning.commissionCents, locale)}
+                          {formatCents(earning.commissionCents, locale, earning.currency)}
                         </span>
                         {earning.status === 'PAID' ? (
                           <Badge variant="outline" className="border-green-500/30 bg-green-500/10 text-green-400">
@@ -537,12 +561,12 @@ export default function PainelAfiliadoPage() {
                           </TableCell>
                           <TableCell>
                             <span className="text-sm tabular-nums text-[#f3f0ed]/60">
-                              {formatCents(earning.amountCents, locale)}
+                              {formatCents(earning.amountCents, locale, earning.currency)}
                             </span>
                           </TableCell>
                           <TableCell>
                             <span className="text-sm font-bold tabular-nums text-[#a2dd00]">
-                              {formatCents(earning.commissionCents, locale)}
+                              {formatCents(earning.commissionCents, locale, earning.currency)}
                             </span>
                           </TableCell>
                           <TableCell>

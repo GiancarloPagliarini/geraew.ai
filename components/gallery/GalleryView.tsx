@@ -2,13 +2,20 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+  type InfiniteData,
+} from '@tanstack/react-query';
 import { FolderOpen } from 'lucide-react';
-import { api, type GalleryItem } from '@/lib/api';
+import { toast } from 'sonner';
+import { api, type GalleryItem, type PaginatedResponse } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { EmptyState } from '@/components/app/EmptyState';
 import { FilterPill } from '@/components/app/FilterPill';
 import { GalleryCard } from '@/components/gallery/GalleryCard';
+import { DeleteConfirmDialog } from '@/components/gallery/DeleteConfirmDialog';
 import { Lightbox } from '@/components/gallery/Lightbox';
 import { SKELETON_HEIGHTS, SkeletonCard, SkeletonMasonry } from '@/components/gallery/GallerySkeletons';
 import { GALLERY_FILTERS } from '@/components/gallery/kind';
@@ -18,10 +25,14 @@ const PAGE_LIMIT = 30;
 export function GalleryView() {
   const t = useTranslations('home');
   const { user, accessToken } = useAuth();
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState('all');
   const [selected, setSelected] = useState<GalleryItem | null>(null);
   const [selectedRatio, setSelectedRatio] = useState<number | undefined>(undefined);
   const [lightboxClosing, setLightboxClosing] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<GalleryItem | null>(null);
+  const [confirmClosing, setConfirmClosing] = useState(false);
+  const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // nº de colunas do masonry — calculado pela largura real (round-robin estável,
   // sem o reembaralhamento do CSS `columns` quando as imagens carregam)
   const [columns, setColumns] = useState(4);
@@ -44,11 +55,69 @@ export function GalleryView() {
     }, 180);
   };
 
+  const closeConfirm = () => {
+    setConfirmClosing(true);
+    confirmTimer.current = setTimeout(() => {
+      setPendingDelete(null);
+      setConfirmClosing(false);
+    }, 180);
+  };
+
+  const askDelete = (item: GalleryItem) => {
+    if (confirmTimer.current) clearTimeout(confirmTimer.current);
+    setConfirmClosing(false);
+    setPendingDelete(item);
+  };
+
   useEffect(() => {
     return () => {
       if (lightboxTimer.current) clearTimeout(lightboxTimer.current);
+      if (confirmTimer.current) clearTimeout(confirmTimer.current);
     };
   }, []);
+
+  // exclui a geração e a remove de todos os filtros já cacheados do masonry
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.generations.delete(accessToken!, id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['gallery', 'masonry'] });
+      const snapshots = queryClient.getQueriesData<InfiniteData<PaginatedResponse<GalleryItem>>>({
+        queryKey: ['gallery', 'masonry'],
+      });
+      for (const [key, prev] of snapshots) {
+        if (!prev) continue;
+        // o total é lido da primeira página, então só decrementa quando o item
+        // realmente estava neste cache (o filtro pode não conter esse tipo)
+        const had = prev.pages.some((page) => page.data.some((g) => g.id === id));
+        if (!had) continue;
+        queryClient.setQueryData<InfiniteData<PaginatedResponse<GalleryItem>>>(key, {
+          ...prev,
+          pages: prev.pages.map((page) => ({
+            ...page,
+            data: page.data.filter((g) => g.id !== id),
+            meta: { ...page.meta, total: page.meta.total - 1 },
+          })),
+        });
+      }
+      return { snapshots };
+    },
+    onSuccess: () => {
+      setSelected(null);
+      toast.success(t('gallery.deleted'));
+    },
+    onError: (_err, _id, context) => {
+      for (const [key, prev] of context?.snapshots ?? []) {
+        if (prev) queryClient.setQueryData(key, prev);
+      }
+      toast.error(t('gallery.deleteError'));
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      // o carrossel "continuar" da home lista as mesmas gerações
+      queryClient.invalidateQueries({ queryKey: ['home', 'recent-generations'] });
+      closeConfirm();
+    },
+  });
 
   const types = GALLERY_FILTERS.find((f) => f.id === filter)?.types;
 
@@ -155,7 +224,12 @@ export function GalleryView() {
               <div key={ci} className="flex min-w-0 flex-1 flex-col">
                 {col.map((entry, ri) =>
                   entry.kind === 'item' ? (
-                    <GalleryCard key={entry.item.id} item={entry.item} onOpen={openLightbox} />
+                    <GalleryCard
+                      key={entry.item.id}
+                      item={entry.item}
+                      onOpen={openLightbox}
+                      onDelete={askDelete}
+                    />
                   ) : (
                     <SkeletonCard key={`skel-${ci}-${ri}`} height={entry.height} index={ri} />
                   ),
@@ -174,6 +248,16 @@ export function GalleryView() {
           ratio={selectedRatio}
           closing={lightboxClosing}
           onClose={closeLightbox}
+          onDelete={askDelete}
+        />
+      )}
+
+      {pendingDelete && (
+        <DeleteConfirmDialog
+          closing={confirmClosing}
+          pending={deleteMutation.isPending}
+          onCancel={closeConfirm}
+          onConfirm={() => deleteMutation.mutate(pendingDelete.id)}
         />
       )}
     </div>

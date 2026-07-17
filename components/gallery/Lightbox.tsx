@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { AudioLines, Download, Heart, ImageOff, X } from 'lucide-react';
+import { AudioLines, Download, Heart, ImageOff, Trash2, X } from 'lucide-react';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import type { GalleryItem } from '@/lib/api';
 import { downloadMedia } from '@/lib/download-media';
@@ -17,9 +17,11 @@ interface LightboxProps {
   onClose: () => void;
   /** quando definido, exibe o botão de favoritar nas ações */
   onToggleFavorite?: (item: GalleryItem) => void;
+  /** quando definido, exibe o botão de excluir nas ações */
+  onDelete?: (item: GalleryItem) => void;
 }
 
-export function Lightbox({ item, ratio, closing, onClose, onToggleFavorite }: LightboxProps) {
+export function Lightbox({ item, ratio, closing, onClose, onToggleFavorite, onDelete }: LightboxProps) {
   const t = useTranslations('home');
   const locale = useLocale();
   const kind = kindOf(item.type);
@@ -192,6 +194,17 @@ export function Lightbox({ item, ratio, closing, onClose, onToggleFavorite }: Li
               )}
             >
               <Heart className="size-4" strokeWidth={2} fill={item.isFavorited ? 'currentColor' : 'none'} />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              aria-label={t('gallery.delete')}
+              title={t('gallery.delete')}
+              onClick={() => onDelete(item)}
+              className="flex size-9 shrink-0 items-center justify-center rounded-[10px] border border-app-hairline bg-app-surface text-app-text transition-colors duration-200 ease-app hover:border-red-500/40 hover:bg-red-500/15 hover:text-red-400"
+            >
+              <Trash2 className="size-4" strokeWidth={2} />
             </button>
           )}
           {item.prompt?.trim() && (

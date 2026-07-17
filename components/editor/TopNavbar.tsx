@@ -14,13 +14,24 @@ import { PlansModal } from './PlansModal';
 import { AffiliateProgramModal } from './AffiliateProgramModal';
 import { WeeklyClaimWidget } from './WeeklyClaimWidget';
 import { useLoginModal } from '@/lib/login-modal-context';
+import { formatMoney } from '@/lib/utils';
 
-function formatCents(cents: number, locale: string) {
-  const intlLocale = locale === 'pt-BR' ? 'pt-BR' : locale === 'es' ? 'es' : 'en-US';
-  return (cents / 100).toLocaleString(intlLocale, {
-    style: 'currency',
-    currency: 'BRL',
-  });
+function intlLocale(locale: string) {
+  return locale === 'pt-BR' ? 'pt-BR' : locale === 'es' ? 'es' : 'en-US';
+}
+
+/**
+ * Saldo disponível do afiliado, uma linha por moeda. O menu é estreito, então
+ * na prática mostra só BRL para quase todo mundo — mas somar moedas seria errado.
+ */
+function availableBalances(
+  byCurrency: { currency: string; availableCommissionCents: number }[] | undefined,
+  locale: string,
+) {
+  if (!byCurrency?.length) return [formatMoney(0, 'BRL', intlLocale(locale))];
+  return byCurrency.map((c) =>
+    formatMoney(c.availableCommissionCents ?? 0, c.currency, intlLocale(locale)),
+  );
 }
 
 export function TopNavbar() {
@@ -188,9 +199,11 @@ export function TopNavbar() {
                                   {t('affiliateAvailable')}
                                 </span>
                               </div>
-                              <p className="text-sm font-bold tabular-nums text-[#f3f0ed]">
-                                {formatCents(affiliateData.summary.availableCommissionCents ?? 0, locale)}
-                              </p>
+                              {availableBalances(affiliateData.summary.byCurrency, locale).map((value) => (
+                                <p key={value} className="text-sm font-bold tabular-nums text-[#f3f0ed]">
+                                  {value}
+                                </p>
+                              ))}
                             </div>
                             <div className="flex flex-col gap-1 rounded-lg bg-[#f3f0ed]/[0.03] p-3">
                               <div className="flex items-center gap-1.5">
@@ -397,9 +410,11 @@ export function TopNavbar() {
                                 {t('affiliateAvailable')}
                               </span>
                             </div>
-                            <p className="text-sm font-bold tabular-nums text-[#f3f0ed]">
-                              {formatCents(affiliateData.summary.availableCommissionCents ?? 0, locale)}
-                            </p>
+                            {availableBalances(affiliateData.summary.byCurrency, locale).map((value) => (
+                              <p key={value} className="text-sm font-bold tabular-nums text-[#f3f0ed]">
+                                {value}
+                              </p>
+                            ))}
                           </div>
                           <div className="flex flex-col gap-1 rounded-lg border border-[#f3f0ed]/6 bg-[#f3f0ed]/3 p-3">
                             <div className="flex items-center gap-1.5">
