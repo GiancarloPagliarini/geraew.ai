@@ -84,10 +84,12 @@ const KIE_VEO: VideoModelCapabilities = {
 };
 
 const GEMINI_OMNI: VideoModelCapabilities = {
+  // 4K removido: o Omni Flash (Vertex Interactions) não controla resolução —
+  // o modelo decide. 720p/1080p têm o mesmo preço; oferecer 4K cobrava o
+  // premium sem entregar. Ver plans.service.ts OMNI_PRICING.
   resolutions: [
     { value: 'RES_720P', label: '720p' },
     { value: 'RES_1080P', label: '1080p' },
-    { value: 'RES_4K', label: '4K' },
   ],
   aspectRatios: [
     { value: '16-9', apiValue: '16:9', label: '16:9' },
