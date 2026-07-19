@@ -273,6 +273,10 @@ export function VideoConfigPanel({
   const isSeedance = modelConfig.api === 'seedance';
   // quota KIE do Omni: imagens + 2×vídeos ≤ 7 — com vídeo anexado sobram 5
   const effectiveMaxRefs = isOmni && omniVideo ? 5 : modelConfig.maxRefs;
+  // o Veo 3.1 só gera 8s quando há imagens de referência — 4s/6s dão erro na API.
+  // o custo em créditos é fixo por geração, então travar em 8s não cobra a mais.
+  const durationLocked = modelConfig.api === 'geraew' && references.length > 0;
+  const effectiveDuration = durationLocked ? '8s' : duration;
 
   // modelos do banco sobrescrevem labels/disponibilidade dos base
   const modelsQuery = useQuery({
@@ -384,7 +388,7 @@ export function VideoConfigPanel({
           : ('TEXT_TO_VIDEO' as const);
 
   // estimativa de créditos por geração — varia conforme ferramenta/modelo/config
-  const estimateDuration = durationToSeconds(duration);
+  const estimateDuration = durationToSeconds(effectiveDuration);
   const estimateHasVideoInput = (isOmni && !!omniVideo) || (isSeedance && !!seedanceVideo);
   const estimateQuery = useQuery({
     queryKey: ['credits', 'estimate', 'video', tool, videoType, resolution, mcResolution, effectiveAudio, modelConfig.variant, estimateDuration, estimateHasVideoInput, mcVideo?.duration ?? 0],
@@ -616,7 +620,7 @@ export function VideoConfigPanel({
             prompt: finalPrompt,
             model,
             resolution,
-            duration_seconds: durationToSeconds(duration),
+            duration_seconds: durationToSeconds(effectiveDuration),
             aspect_ratio: aspect,
             generate_audio: effectiveAudio,
             sample_count: 1,
@@ -948,8 +952,11 @@ export function VideoConfigPanel({
 
         {/* duração + resolução / proporção + áudio */}
         <div className="grid grid-cols-2 gap-3">
-          <Select value={duration} onValueChange={setDuration}>
-            <SelectTrigger className={cn(selectTriggerClass, '!h-10')}>
+          <Select value={effectiveDuration} onValueChange={setDuration} disabled={durationLocked}>
+            <SelectTrigger
+              className={cn(selectTriggerClass, '!h-10', durationLocked && 'opacity-60')}
+              title={durationLocked ? t('video.durationLockedRefs') : undefined}
+            >
               <Clock className="size-[15px] !text-app-lime" strokeWidth={1.8} />
               <span className="flex-1 truncate text-left font-mono text-[13px]">
                 <SelectValue />

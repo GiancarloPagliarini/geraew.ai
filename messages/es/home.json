@@ -218,6 +218,7 @@
     },
     "video": {
       "tab": "Video",
+      "durationLockedRefs": "Con imágenes de referencia, Veo 3.1 solo genera videos de 8s.",
       "toolGenerateVideos": "Generar videos",
       "toolMotionControl": "Motion Control",
       "mcImage": "Imagen",
