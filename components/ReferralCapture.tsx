@@ -2,17 +2,17 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
-
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+import { readReferralCookie, writeReferralCookie } from '@/lib/referral';
 
 export function ReferralCapture() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
     const ref = searchParams.get('ref');
-    if (ref) {
-      document.cookie = `geraew-ref=${encodeURIComponent(ref)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
-    }
+    // grava só código válido; sem ?ref= na URL, revalida o cookie existente
+    // (apaga sozinho se for lixo de campanha antiga)
+    if (ref) writeReferralCookie(ref);
+    else readReferralCookie();
   }, [searchParams]);
 
   return null;

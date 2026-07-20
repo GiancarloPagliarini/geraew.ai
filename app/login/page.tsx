@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { api, ApiError } from '@/lib/api';
+import { readReferralCookie, sanitizeReferralCode, writeReferralCookie } from '@/lib/referral';
 
 const slideMedia = [
   {
@@ -60,9 +61,8 @@ function LoginPageContent() {
 
   // Salvar referral code em cookie para persistir durante OAuth redirect
   useEffect(() => {
-    if (refParam) {
-      document.cookie = `geraew-ref=${refParam};path=/;max-age=2592000;samesite=lax`; // 30 dias
-    }
+    if (refParam) writeReferralCookie(refParam);
+    else readReferralCookie(); // revalida/limpa cookie antigo inválido
   }, [refParam]);
 
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -367,8 +367,8 @@ function LoginPageContent() {
         await login(email, password);
         router.push(redirectAfterLogin);
       } else {
-        // Buscar referral code da URL ou cookie
-        const referralCode = refParam || document.cookie.match(/(?:^|; )geraew-ref=([^;]*)/)?.[1];
+        // Buscar referral code da URL ou cookie (só se for um código válido)
+        const referralCode = sanitizeReferralCode(refParam) ?? readReferralCookie();
         await api.auth.register(email, name, password, referralCode || undefined);
         setView('verify');
       }
@@ -436,10 +436,10 @@ function LoginPageContent() {
                 if (planParam) {
                   document.cookie = `geraew-plan-redirect=${planParam};path=/;max-age=600;samesite=lax`;
                 }
-                const ref = refParam || document.cookie.match(/(?:^|; )geraew-ref=([^;]*)/)?.[1];
-                if (ref) {
-                  document.cookie = `geraew-ref=${ref};path=/;max-age=2592000;samesite=lax`;
-                }
+                // regrava só se for válido; um cookie ruim é apagado aqui e o
+                // login com Google não quebra por causa dele
+                if (refParam) writeReferralCookie(refParam);
+                else readReferralCookie();
                 window.location.href = '/api/v1/auth/google';
               }}
               disabled={loading || googleLoading}

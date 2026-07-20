@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { REFERRAL_COOKIE, sanitizeReferralCode } from '@/lib/referral';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+// tolera a env com ou sem barra no fim — sem isso o join vira `...hostapi/v1/...`
+const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? '').replace(/\/+$/, '');
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 export async function GET(request: NextRequest) {
@@ -27,6 +29,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!tokenRes.ok) {
+      console.error('[google-callback] token exchange failed', tokenRes.status, await tokenRes.text());
       return NextResponse.redirect(new URL('/login?error=google_exchange_failed', origin));
     }
 
@@ -37,17 +40,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/login?error=google_no_token', origin));
     }
 
-    // Read referral code from cookie if present
-    const referralCode = request.cookies.get('geraew-ref')?.value;
+    // Read referral code from cookie if present.
+    // Só enviamos se for um código válido — um cookie com URL/lixo de campanha
+    // faz a API devolver 400 e o usuário fica sem conseguir logar naquele navegador.
+    const rawReferral = request.cookies.get(REFERRAL_COOKIE)?.value;
+    const referralCode = sanitizeReferralCode(rawReferral);
+    const dropInvalidReferral = !!rawReferral && !referralCode;
+    if (dropInvalidReferral) {
+      console.warn('[google-callback] discarding invalid referral cookie:', rawReferral.slice(0, 80));
+    }
 
     // Send ID token to backend (same endpoint used before)
-    const authRes = await fetch(`${BASE_URL}api/v1/auth/google`, {
+    const authRes = await fetch(`${BASE_URL}/api/v1/auth/google`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ googleToken: idToken, ...(referralCode && { referralCode }) }),
     });
 
     if (!authRes.ok) {
+      console.error('[google-callback] backend auth failed', authRes.status, await authRes.text());
       return NextResponse.redirect(new URL('/login?error=auth_failed', origin));
     }
 
@@ -63,6 +74,11 @@ export async function GET(request: NextRequest) {
     // Clear the plan redirect cookie
     if (planRedirect) {
       response.cookies.set('geraew-plan-redirect', '', { path: '/', maxAge: 0 });
+    }
+
+    // Limpa o cookie de referral inválido para não estourar em futuras chamadas
+    if (dropInvalidReferral) {
+      response.cookies.set(REFERRAL_COOKIE, '', { path: '/', maxAge: 0 });
     }
 
     response.cookies.set('geraew-access-token', authData.accessToken, {
@@ -82,7 +98,8 @@ export async function GET(request: NextRequest) {
     });
 
     return response;
-  } catch {
+  } catch (err) {
+    console.error('[google-callback] unexpected error', err);
     return NextResponse.redirect(new URL('/login?error=google_failed', origin));
   }
 }

@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { api, ApiError } from '@/lib/api';
+import { readReferralCookie } from '@/lib/referral';
 import { useLoginModal } from '@/lib/login-modal-context';
 
 const slides = [
@@ -303,7 +304,7 @@ function LoginModalContent() {
         await login(email, password);
         handleLoginSuccess();
       } else {
-        const referralCode = document.cookie.match(/(?:^|; )geraew-ref=([^;]*)/)?.[1];
+        const referralCode = readReferralCookie();
         await api.auth.register(email, name, password, referralCode || undefined);
         setView('verify');
       }
@@ -361,9 +362,8 @@ function LoginModalContent() {
                 onClick={() => {
                   setGoogleLoading(true);
                   if (planParam) document.cookie = `geraew-plan-redirect=${planParam};path=/;max-age=600;samesite=lax`;
-                  // Preservar referral code no cookie para Google OAuth
-                  const ref = document.cookie.match(/(?:^|; )geraew-ref=([^;]*)/)?.[1];
-                  if (ref) document.cookie = `geraew-ref=${ref};path=/;max-age=2592000;samesite=lax`;
+                  // revalida o referral: cookie inválido é apagado antes do OAuth
+                  readReferralCookie();
                   window.location.href = '/api/v1/auth/google';
                 }}
                 disabled={loading || googleLoading}
