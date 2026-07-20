@@ -2,6 +2,7 @@
   "home": {
     "soon": "Coming soon",
     "newBadge": "New",
+    "modelMaintenanceTooltip": "Model under maintenance. It will be available soon.",
     "errors": {
       "generic": "We couldn't complete the generation. Please try again in a moment.",
       "noResult": "Couldn't produce a result. Try adjusting the prompt or the images.",

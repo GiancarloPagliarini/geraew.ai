@@ -408,6 +408,7 @@
     },
     "unlimited": {
       "toggleLabel": "ILIMITADO",
+      "maintenanceTooltip": "Modelos do ilimitado em manutenção. Logo estarão disponíveis.",
       "costLabel": "Ilimitado",
       "errors": {
         "noImagePlan": "Seu plano não inclui imagens no modo ilimitado. Faça upgrade para gerar imagens sem créditos.",

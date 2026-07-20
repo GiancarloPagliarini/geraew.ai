@@ -2,6 +2,7 @@
   "home": {
     "soon": "Muy pronto",
     "newBadge": "Nuevo",
+    "modelMaintenanceTooltip": "Modelo en mantenimiento. Pronto estará disponible.",
     "errors": {
       "generic": "No se pudo completar la generación. Inténtalo de nuevo en un momento.",
       "noResult": "No se pudo generar un resultado. Ajusta el prompt o las imágenes.",

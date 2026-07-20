@@ -17,6 +17,7 @@ import {
   PersonStanding,
   RefreshCw,
   SquarePlay,
+  TriangleAlert,
   Volume2,
   VolumeOff,
   Wand2,
@@ -24,6 +25,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { api, ApiError, type CreditsEstimateRequest } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useLoginModal } from '@/lib/login-modal-context';
@@ -300,6 +302,8 @@ export function VideoConfigPanel({
   }, [modelsQuery.data]);
 
   const selectModel = (value: string) => {
+    // o item desabilitado continua recebendo hover (pro tooltip), então bloqueamos aqui
+    if (modelOptions.find((opt) => opt.value === value)?.disabled) return;
     setModel(value);
     const cfg = VIDEO_MODELS.find((m) => m.value === value);
     if (!cfg) return;
@@ -321,7 +325,23 @@ export function VideoConfigPanel({
     }
   };
 
+  // modelo desativado no admin não pode ficar selecionado — cai no primeiro ativo
+  useEffect(() => {
+    if (!modelsQuery.data) return;
+    const current = modelOptions.find((opt) => opt.value === model);
+    if (!current?.disabled) return;
+    const fallback = modelOptions.find((opt) => !opt.disabled);
+    if (fallback) selectModel(fallback.value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modelsQuery.data, modelOptions, model]);
+
   // ── modo ilimitado ──
+  // todo modelo do plano ilimitado está desativado no admin → o modo não tem onde rodar
+  const unlimitedInMaintenance = useMemo(() => {
+    const inPlan = modelOptions.filter((opt) => isModelSlugInUnlimitedPlan(unlimitedStatus, opt.value));
+    return inPlan.length > 0 && inPlan.every((opt) => opt.disabled);
+  }, [modelOptions, unlimitedStatus]);
+
   const handleToggleUnlimited = (next: boolean) => {
     if (!next) {
       setUnlimited(false);
@@ -346,12 +366,12 @@ export function VideoConfigPanel({
     setUnlimited(true);
   };
 
-  // desliga o ilimitado se o modelo selecionado sair do plano
+  // desliga o ilimitado se o modelo selecionado sair do plano ou entrar em manutenção
   useEffect(() => {
     if (!unlimited) return;
-    if (!isModelSlugInUnlimitedPlan(unlimitedStatus, model)) setUnlimited(false);
+    if (unlimitedInMaintenance || !isModelSlugInUnlimitedPlan(unlimitedStatus, model)) setUnlimited(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [model, unlimitedStatus]);
+  }, [model, unlimitedStatus, unlimitedInMaintenance]);
 
   /** Trata erros específicos do modo ilimitado. Retorna true se tratou. */
   const handleUnlimitedError = (err: ApiError): boolean => {
@@ -768,9 +788,10 @@ export function VideoConfigPanel({
               </span>
             </SelectTrigger>
             <SelectContent position="popper" side="bottom" align="start" sideOffset={6} className={selectContentClass}>
-              {modelOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled} className={selectItemClass}>
+              {modelOptions.map((opt) => {
+                const content = (
                   <span className="flex items-center gap-1.5">
+                    {opt.disabled && <TriangleAlert className="size-3 shrink-0 text-amber-400" strokeWidth={2} />}
                     {opt.label}
                     {unlimited && isModelSlugInUnlimitedPlan(unlimitedStatus, opt.value) && (
                       <InfinityIcon className="size-3.5 text-[#a855f7]" strokeWidth={2} />
@@ -781,8 +802,31 @@ export function VideoConfigPanel({
                       </span>
                     )}
                   </span>
-                </SelectItem>
-              ))}
+                );
+                return (
+                  <SelectItem
+                    key={opt.value}
+                    value={opt.value}
+                    disabled={opt.disabled}
+                    // pointer-events liberado para o tooltip aparecer no hover do item desativado
+                    className={cn(
+                      selectItemClass,
+                      opt.disabled && 'data-[disabled]:pointer-events-auto',
+                    )}
+                  >
+                    {opt.disabled ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>{content}</TooltipTrigger>
+                        <TooltipContent side="right" sideOffset={8} className="max-w-[168px]">
+                          {t('modelMaintenanceTooltip')}
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      content
+                    )}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
@@ -1050,6 +1094,7 @@ export function VideoConfigPanel({
           onToggle={handleToggleUnlimited}
           onRequireUpgrade={() => setUnlimitedModalOpen(true)}
           eligible={unlimitedStatus?.eligible ?? false}
+          inMaintenance={unlimitedInMaintenance}
           className="px-3.5 py-3"
         />
         </>

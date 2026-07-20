@@ -408,6 +408,7 @@
     },
     "unlimited": {
       "toggleLabel": "UNLIMITED",
+      "maintenanceTooltip": "Unlimited models under maintenance. They will be available soon.",
       "costLabel": "Unlimited",
       "errors": {
         "noImagePlan": "Your plan doesn't include images in unlimited mode. Upgrade to generate images without using credits.",
