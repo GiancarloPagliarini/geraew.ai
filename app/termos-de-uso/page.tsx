@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 type Subsection = {
   title: string;
   content: string[];
+  list?: string[];
 };
 
 type Section = {
@@ -15,6 +16,20 @@ type Section = {
   after?: string;
   subsections?: Subsection[];
 };
+
+/** Bulleted list — used by both sections and subsections. */
+function BulletList({ items, className = 'mb-3' }: { items: string[]; className?: string }) {
+  return (
+    <ul className={`flex flex-col gap-2 ${className}`}>
+      {items.map((item, i) => (
+        <li key={i} className="flex items-start gap-2.5 text-sm text-white/60">
+          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#a2dd00]/60" />
+          {item}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function TermosDeUsoPage() {
   const t = useTranslations('legal');
@@ -42,7 +57,7 @@ export default function TermosDeUsoPage() {
             {t('common.tag')}
           </div>
           <h1 className="text-3xl font-bold text-white">{t('terms.title')}</h1>
-          <p className="mt-2 text-sm text-white/40">{t('common.lastUpdated')}</p>
+          <p className="mt-2 text-sm text-white/40">{t('terms.lastUpdated')}</p>
         </div>
 
         {/* Sections */}
@@ -51,7 +66,15 @@ export default function TermosDeUsoPage() {
             <section key={section.title} className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6">
               <h2 className="mb-4 text-base font-semibold text-white">{section.title}</h2>
 
-              {section.subsections ? (
+              {section.content?.map((p, i) => (
+                <p key={i} className="text-sm leading-relaxed text-white/60 mb-3">{p}</p>
+              ))}
+              {section.list && <BulletList items={section.list} />}
+              {section.after && (
+                <p className="text-sm leading-relaxed text-white/60">{section.after}</p>
+              )}
+
+              {section.subsections && (
                 <div className="flex flex-col gap-5">
                   {section.subsections.map((sub) => (
                     <div key={sub.title}>
@@ -59,28 +82,10 @@ export default function TermosDeUsoPage() {
                       {sub.content.map((p, i) => (
                         <p key={i} className="text-sm leading-relaxed text-white/60 mb-2 last:mb-0">{p}</p>
                       ))}
+                      {sub.list && <BulletList items={sub.list} className="mt-3" />}
                     </div>
                   ))}
                 </div>
-              ) : (
-                <>
-                  {section.content?.map((p, i) => (
-                    <p key={i} className="text-sm leading-relaxed text-white/60 mb-3">{p}</p>
-                  ))}
-                  {section.list && (
-                    <ul className="mb-3 flex flex-col gap-2">
-                      {section.list.map((item, i) => (
-                        <li key={i} className="flex items-start gap-2.5 text-sm text-white/60">
-                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#a2dd00]/60" />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {section.after && (
-                    <p className="text-sm leading-relaxed text-white/60">{section.after}</p>
-                  )}
-                </>
               )}
             </section>
           ))}

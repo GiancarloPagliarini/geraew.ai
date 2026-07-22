@@ -457,6 +457,7 @@
     },
     "terms": {
       "title": "Terms of Service",
+      "lastUpdated": "Last updated: July 22, 2026",
       "sections": [
         {
           "title": "1. Acceptance of Terms",
@@ -527,8 +528,23 @@
         {
           "title": "6. Plans and Payments",
           "content": [
-            "Geraew AI may offer free and paid plans. By contracting a paid plan, the user agrees to the prices and conditions in effect at the time of contracting. The specific conditions of each plan, including generation limits, available features, and refund policies, will be described on the Platform's pricing page.",
+            "Geraew AI may offer free and paid plans, as well as one-off credit packages. By contracting a paid plan or credit package, the user agrees to the prices and conditions in effect at the time of contracting. The specific conditions of each plan, including generation limits and available features, will be described on the Platform's pricing page.",
             "Non-payment may result in suspension of access to the features of the contracted plan."
+          ],
+          "subsections": [
+            {
+              "title": "6.1. Refund and Cancellation Policy",
+              "content": [
+                "Geraew AI is a digital service in which the amount paid grants immediate access to credits and artificial intelligence generation features. Accordingly, the following rules apply:"
+              ],
+              "list": [
+                "Right of withdrawal (art. 49 of the Brazilian Consumer Protection Code): the user may request a full refund within 7 (seven) calendar days from the date of purchase, provided that no credit made available by the plan or package purchased has been used.",
+                "After any credit has been used: the user forfeits the right to a refund, even within the 7-day period, since the digital service will have been partially consumed. In this case, the user may, at any time, cancel the automatic renewal of the subscription, retaining access until the end of the period already paid for, with no further billing cycles.",
+                "Subscription cancellation: cancellation may be requested directly from the user's dashboard on the Platform or via the support email. Cancellation ends the renewal but does not generate a pro-rata refund of the current period when credits have been used.",
+                "One-off credit packages: these do not renew automatically. Once any credit from the package has been used, no refund of the amount paid will be granted.",
+                "Exceptions: in the event of an improper charge, a technical failure attributable to the Platform that prevents the use of credits, or failure to deliver the contracted service, the user may request a refund subject to review, regardless of the rules above."
+              ]
+            }
           ]
         },
         {

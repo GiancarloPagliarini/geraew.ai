@@ -457,6 +457,7 @@
     },
     "terms": {
       "title": "Términos de Uso",
+      "lastUpdated": "Última actualización: 22 de julio de 2026",
       "sections": [
         {
           "title": "1. Aceptación de los Términos",
@@ -527,8 +528,23 @@
         {
           "title": "6. Planes y Pagos",
           "content": [
-            "Geraew AI puede ofrecer planes gratuitos y pagos. Al contratar un plan pago, el usuario acepta los precios y condiciones vigentes al momento de la contratación. Las condiciones específicas de cada plan, incluyendo límites de generación, funcionalidades disponibles y políticas de reembolso, estarán descritas en la página de precios de la Plataforma.",
+            "Geraew AI puede ofrecer planes gratuitos y pagos, así como paquetes sueltos de créditos. Al contratar un plan pago o paquete de créditos, el usuario acepta los precios y condiciones vigentes al momento de la contratación. Las condiciones específicas de cada plan, incluyendo límites de generación y funcionalidades disponibles, estarán descritas en la página de precios de la Plataforma.",
             "La falta de pago podrá resultar en la suspensión del acceso a las funcionalidades del plan contratado."
+          ],
+          "subsections": [
+            {
+              "title": "6.1. Política de Reembolso y Cancelación",
+              "content": [
+                "Geraew AI es un servicio digital en el que el importe contratado da acceso inmediato a créditos y funcionalidades de generación por inteligencia artificial. En consecuencia, se aplican las siguientes reglas:"
+              ],
+              "list": [
+                "Derecho de arrepentimiento (art. 49 del Código de Defensa del Consumidor brasileño): el usuario podrá solicitar el reembolso íntegro en un plazo de 7 (siete) días corridos contados a partir de la contratación, siempre que no haya utilizado ningún crédito puesto a disposición por el plan o paquete adquirido.",
+                "Tras la utilización de cualquier crédito: el usuario pierde el derecho al reembolso, aun dentro del plazo de 7 días, dado que el servicio digital ya habrá sido parcialmente consumido. En ese caso, el usuario podrá, en cualquier momento, cancelar la renovación automática de la suscripción, manteniendo el acceso hasta el fin del período ya pagado, sin cobro de nuevos ciclos.",
+                "Cancelación de la suscripción: la cancelación puede solicitarse directamente desde el panel del usuario en la Plataforma o mediante el correo de soporte. La cancelación finaliza la renovación, pero no genera reembolso proporcional del período en curso cuando hubo uso de créditos.",
+                "Paquetes sueltos de créditos: no tienen renovación automática. Una vez utilizado cualquier crédito del paquete, no se concederá reembolso del importe pagado.",
+                "Excepciones: en caso de cobro indebido, falla técnica imputable a la Plataforma que impida el uso de los créditos, o incumplimiento del servicio contratado, el usuario podrá solicitar reembolso previo análisis, independientemente de las reglas anteriores."
+              ]
+            }
           ]
         },
         {
