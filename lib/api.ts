@@ -11,6 +11,8 @@ export interface AuthUser {
   role: string;
   emailVerified: boolean;
   hasCompletedOnboarding: boolean;
+  /** false enquanto o usuário não respondeu o cadastro de perfil (nicho + contato). */
+  profileCompleted: boolean;
   createdAt: string;
 }
 
@@ -23,6 +25,29 @@ export interface UserProfile extends AuthUser {
   feedbackSubmitted: boolean;
   hasTaxIdOnFile: boolean;
   taxIdMasked: string | null;
+  profileType: string | null;
+  /** Texto livre preenchido quando profileType = 'OTHER'. */
+  profileTypeOther: string | null;
+  niche: string | null;
+  /** Texto livre preenchido quando niche = 'OTHER'. */
+  nicheOther: string | null;
+  salesChannels: string[];
+  phone: string | null;
+  instagramHandle: string | null;
+}
+
+/** Respostas do cadastro de perfil pedido no primeiro acesso. */
+export interface OnboardingProfileInput {
+  profileType: string;
+  /** Obrigatório quando profileType = 'OTHER'. */
+  profileTypeOther?: string;
+  niche: string;
+  /** Obrigatório quando niche = 'OTHER'. */
+  nicheOther?: string;
+  salesChannels?: string[];
+  /** E.164, ex: +5511912345678 */
+  phone: string;
+  instagramHandle?: string;
 }
 
 export interface AuthResponse {
@@ -1149,6 +1174,28 @@ export interface AdminFeedbackStats {
   npsDetractors: number;
 }
 
+/** Agregações do cadastro de perfil para o dashboard de público do admin. */
+export interface AudienceInsights {
+  /** null = todo o histórico. */
+  periodDays: number | null;
+  totals: {
+    activeUsers: number;
+    answered: number;
+    pending: number;
+    withPhone: number;
+    withInstagram: number;
+  };
+  /** Distribuição por perfil, com quantos viraram pagantes. */
+  profileTypes: { id: string; users: number; paidUsers: number }[];
+  niches: { id: string; users: number; paidUsers: number }[];
+  /** Múltipla escolha — a soma passa do total de usuários. */
+  channels: { id: string; users: number }[];
+  otherProfileTypes: { text: string; users: number }[];
+  otherNiches: { text: string; users: number }[];
+  /** Respostas por dia (YYYY-MM-DD). */
+  daily: { date: string; count: number }[];
+}
+
 export interface AdminUserDetail {
   id: string;
   email: string;
@@ -1160,6 +1207,15 @@ export interface AdminUserDetail {
   oauthProvider: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Cadastro de perfil respondido no primeiro acesso (null = ainda não respondeu). */
+  profileCompletedAt: string | null;
+  profileType: string | null;
+  profileTypeOther: string | null;
+  niche: string | null;
+  nicheOther: string | null;
+  salesChannels: string[];
+  phone: string | null;
+  instagramHandle: string | null;
   subscription: {
     id: string;
     planSlug: string;
@@ -1923,6 +1979,12 @@ export const api = {
         body: JSON.stringify(body),
       });
     },
+    completeOnboardingProfile(accessToken: string, body: OnboardingProfileInput) {
+      return authRequest<UserProfile>('/api/v1/users/me/onboarding-profile', accessToken, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+    },
   },
 
   videoEditor: {
@@ -2434,6 +2496,11 @@ export const api = {
     },
     financialStats(accessToken: string, days = 30) {
       return authRequest<FinancialStats>(`/api/v1/admin/stats/financial?days=${days}`, accessToken);
+    },
+    /** Dashboard de público. `days` omitido = todo o histórico. */
+    audienceInsights(accessToken: string, days?: number) {
+      const qs = days ? `?days=${days}` : '';
+      return authRequest<AudienceInsights>(`/api/v1/admin/stats/audience${qs}`, accessToken);
     },
     utmConversions(accessToken: string, days = 30) {
       return authRequest<UtmConversions>(`/api/v1/admin/stats/utm-conversions?days=${days}`, accessToken);

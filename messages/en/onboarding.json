@@ -1,0 +1,76 @@
+{
+  "onboarding": {
+    "optional": "(optional)",
+    "timeHint": "Takes 20 seconds",
+    "actions": {
+      "next": "Continue",
+      "back": "Back",
+      "finish": "Finish"
+    },
+    "errors": {
+      "generic": "We couldn't save that. Please try again."
+    },
+    "step1": {
+      "title": "Welcome to Geraew",
+      "subtitle": "Before you start, tell us who you are — that's how we surface the right models and prompts for your kind of content.",
+      "otherPlaceholder": "Describe what you do"
+    },
+    "step2": {
+      "title": "About your business",
+      "subtitle": "Two quick picks and your contact. That's it.",
+      "nicheLabel": "Which niche do you work in?",
+      "nicheOtherPlaceholder": "What's your niche?",
+      "channelsLabel": "Where do you sell or post today?",
+      "phoneLabel": "Mobile (WhatsApp)",
+      "phoneHelper": "We use it for important account notices and support. No spam.",
+      "phonePlaceholder": "Number with area code",
+      "dialLabel": "Country code",
+      "instagramLabel": "Instagram",
+      "instagramPlaceholder": "your_handle"
+    },
+    "options": {
+      "profileType": {
+        "SELLER": "I sell products online",
+        "AFFILIATE": "Affiliate / digital products",
+        "PHOTOGRAPHER": "Product photographer",
+        "SOCIAL_MEDIA": "Social media / creator",
+        "BRAND_AGENCY": "Brand or agency",
+        "AI_SERVICES": "I sell AI services",
+        "OTHER": "Something else"
+      },
+      "niche": {
+        "FASHION": "Fashion and apparel",
+        "BEAUTY": "Beauty and cosmetics",
+        "HEALTH": "Health and supplements",
+        "FITNESS": "Fitness",
+        "HOME": "Home and decor",
+        "ELECTRONICS": "Electronics and accessories",
+        "PET": "Pet",
+        "FOOD": "Food and beverage",
+        "INFOPRODUCT": "Courses and digital products",
+        "SERVICES": "Services",
+        "OTHER": "Other"
+      },
+      "salesChannel": {
+        "TIKTOK_SHOP": "TikTok Shop",
+        "SHOPEE": "Shopee",
+        "MERCADO_LIVRE": "Mercado Livre",
+        "AMAZON": "Amazon",
+        "INSTAGRAM": "Instagram",
+        "META_ADS": "Meta Ads",
+        "OWN_STORE": "Own store",
+        "WHATSAPP": "WhatsApp",
+        "NOT_SELLING_YET": "Not selling yet"
+      }
+    },
+    "summary": {
+      "title": "Your creator profile",
+      "profileType": "Profile",
+      "niche": "Niche",
+      "channels": "Channels",
+      "phone": "WhatsApp",
+      "instagram": "Instagram",
+      "empty": "—"
+    }
+  }
+}

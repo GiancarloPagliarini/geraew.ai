@@ -317,6 +317,7 @@ export type ProfileTab = 'account' | 'posts' | 'usage';
 export function ProfileView({ initialTab = 'account' }: { initialTab?: ProfileTab }) {
   const t = useTranslations('home');
   const tp = useTranslations('account.profile');
+  const tOnb = useTranslations('onboarding');
   const locale = useLocale();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -615,6 +616,48 @@ export function ProfileView({ initialTab = 'account' }: { initialTab?: ProfileTa
               </section>
             )}
 
+            {/* perfil de criador (respostas do cadastro inicial) */}
+            {profile?.profileCompleted && (
+              <section>
+                <SectionHeader icon={BadgeCheck} title={tOnb('summary.title')} />
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <InfoTile
+                    label={tOnb('summary.profileType')}
+                    value={
+                      profile.profileTypeOther?.trim() ||
+                      (profile.profileType
+                        ? tOnb(`options.profileType.${profile.profileType}`)
+                        : tOnb('summary.empty'))
+                    }
+                  />
+                  <InfoTile
+                    label={tOnb('summary.niche')}
+                    value={
+                      profile.nicheOther?.trim() ||
+                      (profile.niche
+                        ? tOnb(`options.niche.${profile.niche}`)
+                        : tOnb('summary.empty'))
+                    }
+                  />
+                  <InfoTile
+                    label={tOnb('summary.channels')}
+                    value={
+                      profile.salesChannels?.length
+                        ? profile.salesChannels
+                            .map((c) => tOnb(`options.salesChannel.${c}`))
+                            .join(' · ')
+                        : tOnb('summary.empty')
+                    }
+                  />
+                  <InfoTile
+                    label={tOnb('summary.phone')}
+                    value={profile.phone ?? tOnb('summary.empty')}
+                    extra={profile.instagramHandle ? `@${profile.instagramHandle}` : undefined}
+                  />
+                </div>
+              </section>
+            )}
+
             {/* plano + assinatura */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="rounded-[14px] border border-app-hairline bg-app-surface p-4">
@@ -728,6 +771,17 @@ function SectionHeader({ icon: Icon, title }: { icon: typeof Coins; title: strin
     <div className="flex items-center gap-2">
       <Icon className="size-4 text-app-lime" strokeWidth={1.8} />
       <h2 className="text-[14px] font-bold text-app-text">{title}</h2>
+    </div>
+  );
+}
+
+/** Card de texto (rótulo + valor) — usado no resumo do perfil de criador. */
+function InfoTile({ label, value, extra }: { label: string; value: string; extra?: string }) {
+  return (
+    <div className="rounded-[14px] border border-app-hairline bg-app-surface p-4">
+      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-app-muted">{label}</p>
+      <p className="mt-1.5 text-[14px] font-semibold leading-snug text-app-text">{value}</p>
+      {extra && <p className="mt-0.5 text-[12.5px] text-app-muted">{extra}</p>}
     </div>
   );
 }

@@ -32,6 +32,7 @@ async function loadPartials(locale: Locale): Promise<Record<string, unknown>> {
     'editor-misc',
     'editor-rewards',
     'feedback',
+    'onboarding',
   ] as const;
   const partials: Record<string, unknown> = {};
   for (const name of names) {

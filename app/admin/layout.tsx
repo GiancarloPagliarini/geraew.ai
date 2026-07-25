@@ -16,6 +16,7 @@ import {
   FileText,
   Banknote,
   MessageSquareHeart,
+  PieChart,
   ThumbsUp,
   Rss,
   BrainCircuit,
@@ -47,6 +48,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/geracoes', label: 'Gerações', icon: Image },
       { href: '/admin/filas-ilimitado', label: 'Fila Ilimitada', icon: InfinityIcon },
       { href: '/admin/feedback', label: 'Feedback', icon: MessageSquareHeart },
+      { href: '/admin/publico', label: 'Público', icon: PieChart },
     ],
   },
   {

@@ -8,6 +8,7 @@ import { AppSidebar } from '@/components/app/AppSidebar';
 import { AppTopbar } from '@/components/app/AppTopbar';
 import { MobileBottomNav } from '@/components/app/MobileBottomNav';
 import { CommandPalette } from '@/components/app/CommandPalette';
+import { OnboardingProfileGate } from '@/components/onboarding/OnboardingProfileGate';
 
 /**
  * Shell da plataforma logada (Geraew 2.0): dois "cards gigantes" (sidebar +
@@ -33,6 +34,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
       <MobileBottomNav />
       <CommandPalette />
+      <OnboardingProfileGate />
     </ShellProvider>
   );
 }

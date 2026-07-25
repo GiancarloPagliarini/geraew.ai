@@ -19,6 +19,10 @@ import { api, type WorkspaceContentInput, type WorkspaceDetail } from '@/lib/api
 import { useWorkspaceAutosave } from '@/components/workspaces/use-workspace-autosave';
 import { WorkspaceLoading } from '@/components/workspaces/WorkspaceLoading';
 import { FeedbackRewardModal } from '@/components/FeedbackRewardModal';
+const OnboardingProfileGate = dynamic(
+  () => import('@/components/onboarding/OnboardingProfileGate').then((m) => m.OnboardingProfileGate),
+  { ssr: false },
+);
 
 function RegisterModalTrigger() {
   const searchParams = useSearchParams();
@@ -213,6 +217,7 @@ export default function Home() {
         <Suspense fallback={<WorkspaceLoading />}>
           <WorkspaceGate />
         </Suspense>
+        <OnboardingProfileGate />
         <OnboardingTour />
         <SupportButton />
         <Suspense><RegisterModalTrigger /></Suspense>

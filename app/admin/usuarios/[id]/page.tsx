@@ -16,6 +16,66 @@ function freeGenLabel(type: FreeGenerationType): string {
     case 'UPSCALE': return 'Upscale';
   }
 }
+
+// ─── Cadastro de perfil (nicho + contato) — rótulos e chip ───────────────────
+
+const PROFILE_TYPE_LABELS: Record<string, string> = {
+  SELLER: 'Vende produtos online',
+  AFFILIATE: 'Afiliado / infoprodutos',
+  PHOTOGRAPHER: 'Fotógrafo de produtos',
+  SOCIAL_MEDIA: 'Social media / criador',
+  BRAND_AGENCY: 'Marca ou agência',
+  AI_SERVICES: 'Vende serviços de IA',
+  OTHER: 'Outro',
+};
+
+const NICHE_LABELS: Record<string, string> = {
+  FASHION: 'Moda e vestuário',
+  BEAUTY: 'Beleza e cosméticos',
+  HEALTH: 'Saúde e suplementos',
+  FITNESS: 'Fitness',
+  HOME: 'Casa e decoração',
+  ELECTRONICS: 'Eletrônicos e acessórios',
+  PET: 'Pet',
+  FOOD: 'Alimentos e bebidas',
+  INFOPRODUCT: 'Infoprodutos e cursos',
+  SERVICES: 'Serviços',
+  OTHER: 'Outro',
+};
+
+const SALES_CHANNEL_LABELS: Record<string, string> = {
+  TIKTOK_SHOP: 'TikTok Shop',
+  SHOPEE: 'Shopee',
+  MERCADO_LIVRE: 'Mercado Livre',
+  AMAZON: 'Amazon',
+  INSTAGRAM: 'Instagram',
+  META_ADS: 'Meta Ads',
+  OWN_STORE: 'Loja própria',
+  WHATSAPP: 'WhatsApp',
+  NOT_SELLING_YET: 'Ainda não vende',
+};
+
+/**
+ * Rótulo da opção escolhida. Em "Outro" mostra o texto que o usuário digitou,
+ * marcado como resposta aberta.
+ */
+function optionLabel(
+  labels: Record<string, string>,
+  value: string,
+  other: string | null,
+): string {
+  if (value === 'OTHER' && other?.trim()) return `Outro: ${other.trim()}`;
+  return labels[value] ?? value;
+}
+
+function ProfileChip({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="flex items-center gap-1.5 rounded-lg border border-[#f3f0ed]/8 bg-[#f3f0ed]/[0.03] px-2 py-1 text-[11px]">
+      <span className="font-bold uppercase tracking-[0.08em] text-[#f3f0ed]/30">{label}</span>
+      <span className="text-[#f3f0ed]/70">{value}</span>
+    </span>
+  );
+}
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useMemo } from 'react';
@@ -492,6 +552,40 @@ export default function AdminUserDetailPage() {
               </span>
             )}
           </div>
+
+          {/* cadastro de perfil (nicho + contato) respondido no 1º acesso */}
+          {user.profileCompletedAt ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {user.profileType && (
+                <ProfileChip
+                  label="Perfil"
+                  value={optionLabel(PROFILE_TYPE_LABELS, user.profileType, user.profileTypeOther)}
+                />
+              )}
+              {user.niche && (
+                <ProfileChip
+                  label="Nicho"
+                  value={optionLabel(NICHE_LABELS, user.niche, user.nicheOther)}
+                />
+              )}
+              {user.salesChannels?.length > 0 && (
+                <ProfileChip
+                  label="Canais"
+                  value={user.salesChannels
+                    .map((c) => SALES_CHANNEL_LABELS[c] ?? c)
+                    .join(' · ')}
+                />
+              )}
+              {user.phone && <ProfileChip label="WhatsApp" value={user.phone} />}
+              {user.instagramHandle && (
+                <ProfileChip label="Instagram" value={`@${user.instagramHandle}`} />
+              )}
+            </div>
+          ) : (
+            <span className="w-fit rounded-lg border border-yellow-500/25 bg-yellow-500/[0.08] px-2 py-1 text-[11px] text-yellow-400/90">
+              Cadastro de perfil não respondido
+            </span>
+          )}
         </div>
 
         {/* Actions + Credits */}
