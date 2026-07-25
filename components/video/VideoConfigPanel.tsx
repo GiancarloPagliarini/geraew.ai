@@ -57,7 +57,8 @@ import {
 } from '@/components/ui/select';
 
 const REF_ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
-const REF_MAX_BYTES = 5 * 1024 * 1024;
+const REF_MAX_MB = 10;
+const REF_MAX_BYTES = REF_MAX_MB * 1024 * 1024;
 const blobToDataUrl = (blob: Blob) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -445,7 +446,7 @@ export function VideoConfigPanel({
         continue;
       }
       if (file.size > REF_MAX_BYTES) {
-        toast.error(t('clone.tooLarge', { max: 5 }));
+        toast.error(t('clone.tooLarge', { max: REF_MAX_MB }));
         continue;
       }
       const maxRefs = effectiveMaxRefs;
@@ -481,7 +482,7 @@ export function VideoConfigPanel({
       if (!res.ok) throw new Error();
       const blob = await res.blob();
       if (blob.size > REF_MAX_BYTES) {
-        toast.error(t('clone.tooLarge', { max: 5 }));
+        toast.error(t('clone.tooLarge', { max: REF_MAX_MB }));
         return;
       }
       const dataUrl = await blobToDataUrl(blob);

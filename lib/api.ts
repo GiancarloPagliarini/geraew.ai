@@ -500,7 +500,7 @@ export interface GenerateImageRequest {
 
 export interface UpscaleRequest {
   image: string;
-  mime_type?: 'image/jpeg' | 'image/png';
+  mime_type?: 'image/jpeg' | 'image/png' | 'image/webp';
   model: string;
   model_variant?: string;
 }

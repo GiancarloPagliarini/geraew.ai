@@ -55,7 +55,8 @@ import {
 const MAX_REFERENCES = 8;
 const MAX_QUANTITY = 4;
 const REF_ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
-const REF_MAX_BYTES = 5 * 1024 * 1024;
+const REF_MAX_MB = 10;
+const REF_MAX_BYTES = REF_MAX_MB * 1024 * 1024;
 const blobToDataUrl = (blob: Blob) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -400,7 +401,7 @@ export function ImageConfigPanel({
         continue;
       }
       if (file.size > REF_MAX_BYTES) {
-        toast.error(t('clone.tooLarge', { max: 5 }));
+        toast.error(t('clone.tooLarge', { max: REF_MAX_MB }));
         continue;
       }
       const reader = new FileReader();
@@ -434,7 +435,7 @@ export function ImageConfigPanel({
       if (!res.ok) throw new Error();
       const blob = await res.blob();
       if (blob.size > REF_MAX_BYTES) {
-        toast.error(t('clone.tooLarge', { max: 5 }));
+        toast.error(t('clone.tooLarge', { max: REF_MAX_MB }));
         return;
       }
       const dataUrl = await blobToDataUrl(blob);
@@ -586,7 +587,7 @@ export function ImageConfigPanel({
       // upscale
       const { id } = await api.generations.upscale(accessToken, {
         image: upscaleImage!.base64,
-        mime_type: upscaleImage!.mime_type as 'image/jpeg' | 'image/png',
+        mime_type: upscaleImage!.mime_type as 'image/jpeg' | 'image/png' | 'image/webp',
         model: UPSCALE_MODEL,
       });
       track(id, t('image.toolUpscale'));
@@ -979,7 +980,7 @@ export function ImageConfigPanel({
               label={t('image.imageToUpscale')}
               value={upscaleImage}
               onChange={setUpscaleImage}
-              accept={['image/jpeg', 'image/png']}
+              accept={['image/jpeg', 'image/png', 'image/webp']}
               className="h-[160px]"
             />
           </div>

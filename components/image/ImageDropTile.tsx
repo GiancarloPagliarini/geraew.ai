@@ -7,7 +7,7 @@ import { Pencil, Plus, X, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ImageCropModal } from '@/components/image/ImageCropModal';
 
-const DEFAULT_MAX_MB = 5;
+const DEFAULT_MAX_MB = 10;
 
 export interface UploadedImage {
   /** base64 cru (sem prefixo dataURL) — formato esperado pela API */
@@ -25,7 +25,7 @@ interface ImageDropTileProps {
   icon?: LucideIcon;
   /** mime types aceitos (default: jpeg/png/webp) */
   accept?: string[];
-  /** tamanho máximo em MB (default: 5) */
+  /** tamanho máximo em MB (default: 10) */
   maxMB?: number;
   className?: string;
 }
