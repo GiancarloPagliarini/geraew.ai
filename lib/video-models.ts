@@ -40,6 +40,9 @@ export interface VideoModelCapabilities {
   supportsTextMode: boolean;
   supportsImageMode: boolean;
   supportsReferenceMode: boolean;
+
+  /** Máximo de imagens de referência no modo texto. Default: 3. */
+  maxReferenceImages?: number;
 }
 
 // ─── Definições por família ──────────────────────────────────────────
@@ -131,6 +134,14 @@ const SEEDANCE: VideoModelCapabilities = {
   supportsReferenceMode: true,
 };
 
+// Seedance 2.5: mesma base do 2.0, mas aceita até 30 imagens de referência
+// e vídeos de até 30s.
+const SEEDANCE_2_5: VideoModelCapabilities = {
+  ...SEEDANCE,
+  duration: { type: 'slider', min: 4, max: 30, step: 1, default: '5s' },
+  maxReferenceImages: 30,
+};
+
 const GROK_IMAGINE: VideoModelCapabilities = {
   resolutions: [
     { value: 'RES_480P', label: '480p' },
@@ -160,6 +171,7 @@ const VIDEO_MODEL_CAPABILITIES: Record<string, VideoModelCapabilities> = {
   'grok-imagine': GROK_IMAGINE,
   'gemini-omni-video': GEMINI_OMNI,
   'bytedance-seedance-2': SEEDANCE,
+  'bytedance-seedance-2-5': SEEDANCE_2_5,
 };
 
 export function getVideoModelCapabilities(slug: string): VideoModelCapabilities {

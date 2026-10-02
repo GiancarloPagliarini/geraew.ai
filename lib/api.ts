@@ -727,10 +727,10 @@ export interface SeedanceReferenceAudio {
 export interface SeedanceVideoRequest {
   prompt: string;
   resolution: string; // 'RES_480P' | 'RES_720P' | 'RES_1080P'
-  duration_seconds: number; // 4-15
+  duration_seconds: number; // Seedance 2: 4-15 · Seedance 2.5: 4-30
   aspect_ratio?: '1:1' | '4:3' | '3:4' | '16:9' | '9:16' | '21:9';
   generate_audio?: boolean;
-  reference_images?: SeedanceReferenceImage[]; // até 6
+  reference_images?: SeedanceReferenceImage[]; // Seedance 2: até 6 · Seedance 2.5: até 30
   reference_video?: SeedanceReferenceVideo; // 1 vídeo, ativa pricing "with video"
   reference_audio?: SeedanceReferenceAudio; // 1 áudio, sem efeito no pricing
   model_variant?: string;

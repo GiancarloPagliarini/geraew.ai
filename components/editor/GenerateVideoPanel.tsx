@@ -81,7 +81,9 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const MAX_REFERENCE_SIZE = 1920;
 const REFERENCE_QUALITY = 0.85;
 
-async function compressImage(dataUrl: string, mimeType: string): Promise<{ dataUrl: string; mimeType: string }> {
+// `forceJpeg`: PNG em 1920px pode passar de 4 MB; com 30 refs (Seedance 2.5)
+// o body estoura o limite de 150 MB da API. Nesses casos converte tudo pra JPEG.
+async function compressImage(dataUrl: string, mimeType: string, forceJpeg = false): Promise<{ dataUrl: string; mimeType: string }> {
   return new Promise((resolve) => {
     const img = new window.Image();
     img.onload = () => {
@@ -92,7 +94,7 @@ async function compressImage(dataUrl: string, mimeType: string): Promise<{ dataU
       canvas.height = Math.round(h * scale);
       const ctx = canvas.getContext('2d')!;
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const outMime = mimeType === 'image/png' ? 'image/png' : 'image/jpeg';
+      const outMime = mimeType === 'image/png' && !forceJpeg ? 'image/png' : 'image/jpeg';
       const compressed = canvas.toDataURL(outMime, REFERENCE_QUALITY);
       resolve({ dataUrl: compressed, mimeType: outMime });
     };
@@ -213,9 +215,11 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       'grok-imagine': 'Grok Imagine',
       'gemini-omni-video': 'Gemini Omni',
       'bytedance-seedance-2': 'Seedance 2',
+      'bytedance-seedance-2-5': 'Seedance 2.5',
     };
     const fallback: { value: string; label: string; disabled?: boolean; unlimited?: boolean }[] = [
       { value: 'gemini-omni-video', label: labelOverride['gemini-omni-video'] },
+      { value: 'bytedance-seedance-2-5', label: labelOverride['bytedance-seedance-2-5'] },
       { value: 'bytedance-seedance-2', label: labelOverride['bytedance-seedance-2'] },
       { value: 'grok-imagine', label: labelOverride['grok-imagine'] },
       { value: 'geraew-quality', label: labelOverride['geraew-quality'] },
@@ -235,7 +239,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     return raw.map((opt) => ({
       ...opt,
       unlimited: unlimited && isModelSlugInUnlimitedPlan(unlimitedStatus, opt.value),
-      isNew: opt.value === 'grok-imagine' || opt.value === 'gemini-omni-video' || opt.value === 'bytedance-seedance-2',
+      isNew: opt.value === 'grok-imagine' || opt.value === 'gemini-omni-video' || opt.value === 'bytedance-seedance-2' || opt.value === 'bytedance-seedance-2-5',
     }));
   }, [videoModelsQuery.data, unlimited, unlimitedStatus]);
 
@@ -334,8 +338,9 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   const isKieModel = model === 'veo3_fast' || model === 'veo3';
   const isGrokModel = model === 'grok-imagine';
   const isOmniModel = model === 'gemini-omni-video';
-  const isSeedanceModel = model === 'bytedance-seedance-2';
+  const isSeedanceModel = model === 'bytedance-seedance-2' || model === 'bytedance-seedance-2-5';
   const caps = useMemo(() => getVideoModelCapabilities(model), [model]);
+  const maxRefImages = caps.maxReferenceImages ?? 3;
   const videoModelVariant = ({
     'geraew-fast': 'GERAEW_FAST',
     'geraew-quality': 'GERAEW_QUALITY',
@@ -344,6 +349,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     'grok-imagine': 'GROK_IMAGINE',
     'gemini-omni-video': 'GEMINI_OMNI',
     'bytedance-seedance-2': 'SEEDANCE_2',
+    'bytedance-seedance-2-5': 'SEEDANCE_2_5',
   } as Record<string, string>)[model] ?? 'GERAEW_QUALITY';
 
   const effectiveAudio = caps.audio === 'always-on' ? true : caps.audio === 'always-off' ? false : audio;
@@ -352,7 +358,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   // Seedance: default 480p sempre que o modelo é selecionado.
   // Não dispara quando o usuário muda manualmente a resolução depois.
   useEffect(() => {
-    if (model === 'bytedance-seedance-2') {
+    if (isSeedanceModel) {
       setResolution('RES_480P');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -384,6 +390,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     if (!isSeedanceModel && seedanceVideoFile) setSeedanceVideoFile(null);
     if (!isSeedanceModel && seedanceAudioFile) setSeedanceAudioFile(null);
     if (!isSeedanceModel && isSeedanceRecording) stopSeedanceRecording();
+    // Corta refs excedentes ao trocar pra um modelo com limite menor (ex.: Seedance 2.5 → outro).
+    if (refImages.length > maxRefImages) setRefImages((prev) => prev.slice(0, maxRefImages));
     if (!caps.supportsNegativePrompt && editingNegative) setEditingNegative(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [caps]);
@@ -765,12 +773,12 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   }
 
   function processFiles(files: File[]) {
-    const remaining = 3 - refImages.length;
+    const remaining = maxRefImages - refImages.length;
     files.filter((f) => f.type.startsWith('image/')).slice(0, remaining).forEach((file) => {
       const reader = new FileReader();
       reader.onload = async (ev) => {
         const rawDataUrl = ev.target?.result as string;
-        const { dataUrl, mimeType } = await compressImage(rawDataUrl, file.type);
+        const { dataUrl, mimeType } = await compressImage(rawDataUrl, file.type, maxRefImages > 8);
         setRefImages((prev) => [...prev, { base64: dataUrl.split(',')[1], mime_type: mimeType, preview: dataUrl }]);
         toast.success(tCommon('imageAddedAsReference'));
       };
@@ -805,10 +813,10 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       const reader = new FileReader();
       reader.onload = async (ev) => {
         const rawDataUrl = ev.target?.result as string;
-        const { dataUrl, mimeType } = await compressImage(rawDataUrl, rawMime);
+        const { dataUrl, mimeType } = await compressImage(rawDataUrl, rawMime, maxRefImages > 8);
         const base64 = dataUrl.split(',')[1];
         setRefImages((prev) => {
-          if (prev.length >= 3) return prev;
+          if (prev.length >= maxRefImages) return prev;
           return [...prev, { base64, mime_type: mimeType, preview: dataUrl }];
         });
       };
@@ -826,9 +834,9 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     } else if (isOmniModel || isSeedanceModel) {
       // Aceita imagem (ref) ou vídeo (reference_video). Vídeo só se ainda não tiver um.
       const acceptingVideo = isOmniModel ? !omniVideoFile : !seedanceVideoFile;
-      if (refImages.length < 6 || acceptingVideo) setIsDraggingOver(true);
+      if (refImages.length < maxRefImages || acceptingVideo) setIsDraggingOver(true);
     } else {
-      if (refImages.length < 3) setIsDraggingOver(true);
+      if (refImages.length < maxRefImages) setIsDraggingOver(true);
     }
   }
 
@@ -1046,7 +1054,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
         if (!finalPrompt) {
           throw new Error(t('errors.seedanceRequiresPrompt'));
         }
-        // Seedance multimodal: text + refImages (até 6) + opcional reference_video.
+        // Seedance multimodal: text + refImages (até maxRefImages) + opcional reference_video.
         // Vídeo de referência ativa pricing "with video" (mais barato) no backend.
         result = await api.generations.seedanceVideo(accessToken, {
           prompt: finalPrompt,
@@ -1056,7 +1064,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           generate_audio: effectiveAudio,
           model_variant: videoModelVariant,
           ...(refImages.length > 0 && {
-            reference_images: refImages.slice(0, 6).map(({ base64, mime_type }) => ({ base64, mime_type })),
+            reference_images: refImages.slice(0, maxRefImages).map(({ base64, mime_type }) => ({ base64, mime_type })),
           }),
           ...(seedanceVideoFile && {
             reference_video: {
@@ -1642,7 +1650,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       <TooltipTrigger asChild>
                         <button
                           onClick={() => fileInputRef.current?.click()}
-                          disabled={isGenerating || refImages.length >= 3}
+                          disabled={isGenerating || refImages.length >= maxRefImages}
                           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f3f0ed]/5 text-[#f3f0ed]/50 transition-all hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <Plus className="h-3.5 w-3.5" />
@@ -1653,8 +1661,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
-                          onClick={() => openGalleryPicker({ nodeId, remaining: 3 - refImages.length, onSelect: (url) => { addImageFromUrl(url); } })}
-                          disabled={isGenerating || refImages.length >= 3}
+                          onClick={() => openGalleryPicker({ nodeId, remaining: maxRefImages - refImages.length, onSelect: (url) => { addImageFromUrl(url); } })}
+                          disabled={isGenerating || refImages.length >= maxRefImages}
                           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f3f0ed]/5 text-[#f3f0ed]/50 transition-all hover:text-[#a2dd00] disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <FolderOpen className="h-3.5 w-3.5" />
@@ -2672,7 +2680,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       <label className="text-[10px] font-bold tracking-[0.15em] text-[#f3f0ed]/35">
                         {t('labels.referenceImages')}
                       </label>
-                      <span className="text-[10px] text-[#f3f0ed]/25">{refImages.length}/3</span>
+                      <span className="text-[10px] text-[#f3f0ed]/25">{refImages.length}/{maxRefImages}</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {refImages.map((img, i) => (
@@ -2687,7 +2695,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                           </button>
                         </div>
                       ))}
-                      {refImages.length < 3 && (
+                      {refImages.length < maxRefImages && (
                         <>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -2703,7 +2711,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
-                                onClick={() => openGalleryPicker({ nodeId, remaining: 3 - refImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success(tCommon('imageAddedAsReference')); } })}
+                                onClick={() => openGalleryPicker({ nodeId, remaining: maxRefImages - refImages.length, onSelect: (url) => { addImageFromUrl(url); toast.success(tCommon('imageAddedAsReference')); } })}
                                 className={`flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-[#f3f0ed]/10 text-[#f3f0ed]/25 transition-all ${refHoverClass}`}
                               >
                                 <FolderOpen className="h-5 w-5" />
