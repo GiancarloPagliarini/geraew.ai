@@ -67,6 +67,31 @@ const blobToDataUrl = (blob: Blob) =>
     reader.readAsDataURL(blob);
   });
 
+// Modelos com muitas refs (Seedance 2.5: 30) estouram o limite de body da API
+// (150 MB) se as fotos forem cruas. Acima desse limite de refs, normaliza
+// cada imagem pra JPEG de no máx 1920px (~0,5-1 MB).
+const REF_COMPRESS_ABOVE = 8;
+const REF_COMPRESS_MAX_SIZE = 1920;
+const REF_COMPRESS_QUALITY = 0.85;
+
+const compressRefToJpeg = (dataUrl: string) =>
+  new Promise<string>((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const scale = Math.min(1, REF_COMPRESS_MAX_SIZE / Math.max(img.naturalWidth, img.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', REF_COMPRESS_QUALITY));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+
 type VideoToolId = 'generate' | 'motion-control';
 
 const VIDEO_TOOLS: { id: VideoToolId; labelKey: string; icon: LucideIcon }[] = [
@@ -124,6 +149,7 @@ const VIDEO_MODELS: VideoModelConfig[] = [
   { value: 'geraew-fast', label: 'Veo 3.1 Fast', variant: 'GERAEW_FAST', api: 'geraew', durations: ['4s', '6s', '8s'], defaultDuration: '8s', audio: 'toggle', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: ASPECTS_VERTICAL_WIDE, defaultAspect: '9:16', refMode: 'refs', maxRefs: 8 },
   { value: 'geraew-quality', label: 'Veo 3.1 Quality', variant: 'GERAEW_QUALITY', api: 'geraew', durations: ['4s', '6s', '8s'], defaultDuration: '8s', audio: 'toggle', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: ASPECTS_VERTICAL_WIDE, defaultAspect: '9:16', refMode: 'refs', maxRefs: 8 },
   { value: 'gemini-omni-video', label: 'Gemini Omni', variant: 'GEMINI_OMNI', api: 'omni', durations: ['4s', '6s', '8s', '10s'], defaultDuration: '8s', audio: 'always-off', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: ASPECTS_VERTICAL_WIDE, defaultAspect: '9:16', refMode: 'refs', maxRefs: 7, isNew: true },
+  { value: 'bytedance-seedance-2-5', label: 'Seedance 2.5', variant: 'SEEDANCE_2_5', api: 'seedance', durations: durationRange(4, 30), defaultDuration: '5s', audio: 'toggle', resolutions: [{ value: 'RES_480P', label: '480p' }, { value: 'RES_720P', label: '720p' }, { value: 'RES_1080P', label: '1080p' }], defaultResolution: 'RES_480P', aspects: [{ value: '1:1', label: '1:1' }, { value: '4:3', label: '4:3' }, { value: '3:4', label: '3:4' }, { value: '16:9', label: '16:9' }, { value: '9:16', label: '9:16' }, { value: '21:9', label: '21:9' }], defaultAspect: '9:16', refMode: 'refs', maxRefs: 30, isNew: true },
   { value: 'bytedance-seedance-2', label: 'Seedance 2', variant: 'SEEDANCE_2', api: 'seedance', durations: durationRange(4, 15), defaultDuration: '5s', audio: 'toggle', resolutions: [{ value: 'RES_480P', label: '480p' }, { value: 'RES_720P', label: '720p' }, { value: 'RES_1080P', label: '1080p' }], defaultResolution: 'RES_480P', aspects: [{ value: '1:1', label: '1:1' }, { value: '4:3', label: '4:3' }, { value: '3:4', label: '3:4' }, { value: '16:9', label: '16:9' }, { value: '9:16', label: '9:16' }, { value: '21:9', label: '21:9' }], defaultAspect: '9:16', refMode: 'refs', maxRefs: 6, isNew: true },
   { value: 'grok-imagine', label: 'Grok Imagine', variant: 'GROK_IMAGINE', api: 'grok', durations: durationRange(6, 30), defaultDuration: '6s', audio: 'always-off', resolutions: [{ value: 'RES_480P', label: '480p' }, { value: 'RES_720P', label: '720p' }], defaultResolution: 'RES_720P', aspects: [{ value: '2:3', label: '2:3' }, { value: '3:2', label: '3:2' }, { value: '1:1', label: '1:1' }, { value: '9:16', label: '9:16' }, { value: '16:9', label: '16:9' }], defaultAspect: '9:16', refMode: 'first-frame', maxRefs: 1, isNew: true },
   { value: 'veo3_fast', label: 'Geraew Fast', variant: 'VEO_FAST', api: 'kie', durations: ['8s'], defaultDuration: '8s', audio: 'always-on', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: [{ value: '9:16', label: '9:16' }, { value: 'Auto', label: 'Auto' }, { value: '16:9', label: '16:9' }], defaultAspect: '9:16', refMode: 'refs', maxRefs: 8 },
@@ -451,8 +477,11 @@ export function VideoConfigPanel({
       }
       const maxRefs = effectiveMaxRefs;
       const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result as string;
+      reader.onload = async () => {
+        const rawDataUrl = reader.result as string;
+        const shouldCompress = maxRefs > REF_COMPRESS_ABOVE;
+        const dataUrl = shouldCompress ? await compressRefToJpeg(rawDataUrl) : rawDataUrl;
+        const mimeType = dataUrl.slice(5, dataUrl.indexOf(';')) || file.type;
         setReferences((prev) => {
           if (prev.length >= maxRefs) {
             toast.error(t('image.refMax', { max: maxRefs }));
@@ -460,7 +489,7 @@ export function VideoConfigPanel({
           }
           return [
             ...prev,
-            { base64: dataUrl.split(',')[1], mime_type: file.type, preview: dataUrl },
+            { base64: dataUrl.split(',')[1], mime_type: mimeType, preview: dataUrl },
           ];
         });
       };
