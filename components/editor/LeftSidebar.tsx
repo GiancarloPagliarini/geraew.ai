@@ -24,10 +24,10 @@ export function LeftSidebar() {
     { id: 'gallery', icon: FolderOpen, label: t('gallery') },
     { id: 'tutorial', icon: GraduationCap, label: t('tutorial') },
     { id: 'prompts', icon: Type, label: t('prompts'), tooltip: t('promptsTooltip') },
-    { id: 'trending', icon: Flame, label: t('trending'), tooltip: t('trendingTooltip') },
+    { id: 'trending', icon: Flame, label: t('trending'), tooltip: t('trendingTooltip'), comingSoon: true },
     { id: 'imageToPrompt', icon: ImageIcon, label: t('clone'), tooltip: t('cloneTooltip') },
     { id: 'voices', icon: MicVocal, label: t('voices'), tooltip: t('voicesTooltip') },
-    { id: 'avatars', icon: Users, label: t('avatars'), tooltip: t('avatarsTooltip'), isNew: true },
+    { id: 'avatars', icon: Users, label: t('avatars'), tooltip: t('avatarsTooltip'), comingSoon: true },
   ];
   const { galleryPickerRequest, setLeftPanelOpen, studioMode, addPanel, registerOpenVoicesDialog } = useEditor();
   const [galleryOpen, setGalleryOpen] = useState(false);

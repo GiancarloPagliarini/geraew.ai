@@ -16,7 +16,15 @@ const ENDPOINTS: Record<Tab, { path: string; order: string; extra?: Record<strin
   sales:       { path: '/api/goods/saleRank',   order: '1,2' },
 };
 
+// TikTok Shop bloqueado temporariamente (telas /tiktok-shop e Trending do
+// workspace estão "Em breve"). Para reativar, voltar para `false`.
+const TIKTOK_SHOP_DISABLED = true;
+
 export async function GET(request: NextRequest) {
+  if (TIKTOK_SHOP_DISABLED) {
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 });
+  }
+
   const tab = (request.nextUrl.searchParams.get('tab') ?? 'recommended') as Tab;
   const config = ENDPOINTS[tab] ?? ENDPOINTS.recommended;
 

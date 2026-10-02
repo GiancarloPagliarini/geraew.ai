@@ -71,11 +71,11 @@ const TOOL_SECTIONS: ToolSection[] = [
   },
   {
     id: 'avatars',
-    tools: [{ id: 'avatares', icon: ScanFace, href: '/avatar' }],
+    tools: [{ id: 'avatares', icon: ScanFace, soon: true }],
   },
   {
     id: 'commerce',
-    tools: [{ id: 'tiktokShop', icon: Flame, href: '/tiktok-shop' }],
+    tools: [{ id: 'tiktokShop', icon: Flame, soon: true }],
   },
 ];
 

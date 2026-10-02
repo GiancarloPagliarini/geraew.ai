@@ -93,10 +93,10 @@ export const TOOLS_NAV: HomeNavItem[] = [
   { id: 'workspace', icon: Waypoints, href: '/workspaces' },
   { id: 'gerarImagens', icon: Image, href: '/image' },
   { id: 'gerarVideos', icon: SquarePlay, href: '/video' },
-  { id: 'avatar', icon: ScanFace, href: '/avatar' },
+  { id: 'avatar', icon: ScanFace, href: '/avatar', soon: true },
   { id: 'textoParaVoz', icon: Mic, href: '/voice' },
   { id: 'clonarPrompt', icon: Copy, href: '/clone-prompt' },
-  { id: 'tiktokShop', icon: Flame, href: '/tiktok-shop' },
+  { id: 'tiktokShop', icon: Flame, href: '/tiktok-shop', soon: true },
 ];
 
 export interface QuickAction {
@@ -104,6 +104,8 @@ export interface QuickAction {
   id: string;
   icon: LucideIcon;
   href: string;
+  /** tela bloqueada — exibe "Em breve" */
+  soon?: boolean;
 }
 
 export const QUICK_ACTIONS: QuickAction[] = [
@@ -111,8 +113,8 @@ export const QUICK_ACTIONS: QuickAction[] = [
   { id: 'imagem', icon: Image, href: '/image' },
   { id: 'video', icon: SquarePlay, href: '/video' },
   { id: 'audio', icon: AudioLines, href: '/voice' },
-  { id: 'avatares', icon: ScanFace, href: '/avatar' },
-  { id: 'tiktokShop', icon: Flame, href: '/tiktok-shop' },
+  { id: 'avatares', icon: ScanFace, href: '/avatar', soon: true },
+  { id: 'tiktokShop', icon: Flame, href: '/tiktok-shop', soon: true },
 ];
 
 /** Painel "Ferramentas" do dashboard (atalhos fixados — só telas já em produção).
@@ -153,8 +155,8 @@ export const PALETTE_COMMANDS: PaletteCommand[] = [
   { id: 'melhorarImagem', icon: Wand2, href: '/image?tool=upscale' },
   { id: 'copiarMovimentos', icon: PersonStanding, href: '/video?tool=motion-control' },
   { id: 'clonarVoz', icon: MicVocal, href: '/voice?tool=clone' },
-  { id: 'avatar', icon: ScanFace, href: '/avatar' },
-  { id: 'tiktokShop', icon: Flame, href: '/tiktok-shop' },
+  { id: 'avatar', icon: ScanFace, href: '/avatar', soon: true },
+  { id: 'tiktokShop', icon: Flame, href: '/tiktok-shop', soon: true },
   { id: 'clonarPrompt', icon: Copy, href: '/clone-prompt' },
   { id: 'bibliotecaPrompts', icon: Library, href: '/prompt-library' },
   { id: 'visitarComunidade', icon: Rss, href: '/community' },

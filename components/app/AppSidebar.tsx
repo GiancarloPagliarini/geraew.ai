@@ -40,6 +40,11 @@ function NavRow({ item, collapsed }: { item: HomeNavItem; collapsed: boolean }) 
     >
       <Icon className={cn('size-[19px] shrink-0', active && 'text-app-lime')} strokeWidth={1.8} />
       {!collapsed && <span className="truncate">{label}</span>}
+      {!collapsed && item.soon && (
+        <span className="ml-auto shrink-0 rounded-md border border-app-hairline-2 px-1.5 py-0.5 font-mono text-[10px] leading-none text-app-muted">
+          {t('soon')}
+        </span>
+      )}
     </span>
   );
 
