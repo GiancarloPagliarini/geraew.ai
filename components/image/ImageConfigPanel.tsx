@@ -44,6 +44,7 @@ import {
   getFirstUnlimitedSlugForType,
   getFirstUnlimitedResolutionForVariant,
 } from '@/hooks/use-unlimited-status';
+import { UNLIMITED_MODE_ENABLED } from '@/lib/unlimited';
 import {
   Select,
   SelectContent,
@@ -204,8 +205,8 @@ export function ImageConfigPanel({
 
   const [tool, setTool] = useState<ToolId>(seed?.tool ?? initialTool ?? stored?.tool ?? 'generate');
 
-  // modo ilimitado
-  const [unlimited, setUnlimited] = useState(init?.unlimited ?? false);
+  // modo ilimitado (descontinuado: sempre false, ignora o que estiver salvo/duplicado)
+  const [unlimited, setUnlimited] = useState(UNLIMITED_MODE_ENABLED && (init?.unlimited ?? false));
   const [unlimitedModalOpen, setUnlimitedModalOpen] = useState(false);
   const { data: unlimitedStatus } = useUnlimitedStatus();
 
@@ -253,7 +254,7 @@ export function ImageConfigPanel({
   // ao ativar: garante que modelo + resolução estão liberados no plano,
   // trocando automaticamente quando o atual está fora.
   const handleToggleUnlimited = (next: boolean) => {
-    if (!next) {
+    if (!next || !UNLIMITED_MODE_ENABLED) {
       setUnlimited(false);
       return;
     }
@@ -1028,7 +1029,7 @@ export function ImageConfigPanel({
         </button>
       </div>
 
-      {unlimitedModalOpen && (
+      {UNLIMITED_MODE_ENABLED && unlimitedModalOpen && (
         <UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />
       )}
 

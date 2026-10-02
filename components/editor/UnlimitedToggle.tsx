@@ -4,6 +4,7 @@ import { Infinity as InfinityIcon, Lock, Loader2, TriangleAlert } from 'lucide-r
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { UNLIMITED_MODE_ENABLED } from '@/lib/unlimited';
 
 interface UnlimitedToggleProps {
   enabled: boolean;
@@ -22,7 +23,13 @@ interface UnlimitedToggleProps {
   className?: string;
 }
 
-export function UnlimitedToggle({
+/** Modo ilimitado descontinuado: o toggle não renderiza (ver lib/unlimited.ts). */
+export function UnlimitedToggle(props: UnlimitedToggleProps) {
+  if (!UNLIMITED_MODE_ENABLED) return null;
+  return <UnlimitedToggleView {...props} />;
+}
+
+function UnlimitedToggleView({
   enabled,
   onToggle,
   onRequireUpgrade,

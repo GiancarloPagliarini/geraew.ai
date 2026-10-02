@@ -1,8 +1,102 @@
-import type { Plan, CreditPackage } from './api';
+import type { BillingInterval, Plan, CreditPackage } from './api';
 import type { LucideIcon } from 'lucide-react';
 import { Flame, Zap, Trophy, Users, TestTubeDiagonal, Sprout, TrendingUp, Crown } from 'lucide-react';
 
 export const PLAN_ORDER = ['free', 'ultra-basic', 'starter', 'basic', 'creator', 'pro', 'advanced', 'studio'];
+
+/* ── Plano anual ── */
+
+/**
+ * Desconto do anual (espelha ANNUAL_DISCOUNT_PERCENT do backend). Só para
+ * textos genéricos — o preço e o desconto de cada plano vêm de `plan.annual`.
+ */
+export const ANNUAL_DISCOUNT_PERCENT = 20;
+
+export type PlanChangeAction = 'create' | 'current' | 'upgrade' | 'downgrade';
+
+export function parseBillingInterval(value: unknown): BillingInterval {
+  return value === 'YEARLY' ? 'YEARLY' : 'MONTHLY';
+}
+
+/**
+ * O que acontece ao escolher um plano + ciclo, dado o plano atual. Espelha a
+ * matriz do backend (subscriptions/plan-change.ts):
+ * - mensal → mensal superior, ou → anual do mesmo plano/superior: upgrade na hora;
+ * - anual → anual superior: upgrade na hora (paga a diferença proporcional);
+ * - qualquer outra troca (plano menor, anual → mensal): agendada pra renovação
+ *   (`downgrade`), feita em "Gerenciar assinatura".
+ */
+export function resolvePlanChange(params: {
+  targetSlug: string;
+  targetInterval: BillingInterval;
+  currentSlug: string | null;
+  currentInterval: BillingInterval;
+  hasActiveSub: boolean;
+}): PlanChangeAction {
+  const { targetSlug, targetInterval, currentSlug, currentInterval, hasActiveSub } = params;
+  if (!hasActiveSub || !currentSlug || currentSlug === 'free') return 'create';
+  if (currentSlug === targetSlug && currentInterval === targetInterval) return 'current';
+
+  const currentIdx = PLAN_ORDER.indexOf(currentSlug);
+  const targetIdx = PLAN_ORDER.indexOf(targetSlug);
+
+  if (currentInterval === 'MONTHLY') {
+    if (targetInterval === 'MONTHLY') return targetIdx > currentIdx ? 'upgrade' : 'downgrade';
+    return targetIdx >= currentIdx ? 'upgrade' : 'downgrade';
+  }
+  return targetInterval === 'YEARLY' && targetIdx > currentIdx ? 'upgrade' : 'downgrade';
+}
+
+export interface PlanIntervalPrice {
+  /** se o plano pode ser assinado nesse ciclo (anual exige `plan.annual`) */
+  available: boolean;
+  /** valor exibido como "por mês" no card */
+  perMonthCents: number;
+  /** valor cobrado a cada ciclo (mês ou ano) */
+  billedCents: number;
+  /** preço "de" riscado no anual (o mensal cheio) */
+  compareAtCents: number | null;
+  discountPercent: number | null;
+}
+
+export function getPlanIntervalPrice(plan: Plan, interval: BillingInterval): PlanIntervalPrice {
+  if (interval === 'YEARLY' && plan.annual) {
+    return {
+      available: true,
+      perMonthCents: plan.annual.monthlyEquivalentCents,
+      billedCents: plan.annual.priceCents,
+      compareAtCents: plan.priceCents,
+      discountPercent: plan.annual.discountPercent,
+    };
+  }
+  return {
+    available: interval === 'MONTHLY',
+    perMonthCents: plan.priceCents,
+    billedCents: plan.priceCents,
+    compareAtCents: null,
+    discountPercent: null,
+  };
+}
+
+/** Algum plano pago tem opção anual? (sem isso o seletor Mensal/Anual nem aparece) */
+export function plansHaveAnnual(plans: Plan[]): boolean {
+  return plans.some((p) => p.priceCents > 0 && !!p.annual);
+}
+
+/**
+ * Parâmetro `plan` do /checkout: "pro" (mensal) ou "pro:yearly" (anual). Fica
+ * num valor só para atravessar login, cookie do OAuth e redirect sem mudança.
+ */
+export function encodePlanParam(slug: string, interval: BillingInterval): string {
+  return interval === 'YEARLY' ? `${slug}:yearly` : slug;
+}
+
+export function parsePlanParam(raw: string | null): { slug: string; interval: BillingInterval } | null {
+  if (!raw) return null;
+  const [slug, interval] = raw.split(':');
+  if (!slug) return null;
+  return { slug, interval: interval === 'yearly' ? 'YEARLY' : 'MONTHLY' };
+}
 
 /**
  * @deprecated Use `editorPlans.subtitles.<slug>` via next-intl.
@@ -43,8 +137,7 @@ export const PLAN_GENERATION_ENTRIES: Record<string, PlanGenerationEntry[]> = {
     { label: 'Nano Banana 2', countNumber: 3, unit: 'image' },
     { label: 'Motion Control', countNumber: 1, unit: 'generation' },
     { label: 'Veo 3.1 Fast', countNumber: 2, unit: 'video' },
-    { label: 'Veo 3.1 Quality', countNumber: 2, unit: 'video' },
-    { label: 'Geraew', countNumber: 0, unit: 'video', blocked: true },
+    { label: 'Veo 3.1 Quality', countNumber: 0, unit: 'video', blocked: true },
     { label: 'Áudio (TTS)', countNumber: 8, unit: 'audio' },
     { label: 'Clonar voz', countNumber: 0, unit: 'voiceClone', blocked: true },
   ],
@@ -52,69 +145,55 @@ export const PLAN_GENERATION_ENTRIES: Record<string, PlanGenerationEntry[]> = {
     { label: 'Nano Banana 2', countNumber: 7, unit: 'image' },
     { label: 'Motion Control', countNumber: 1, unit: 'generation' },
     { label: 'Veo 3.1 Fast', countNumber: 2, unit: 'video' },
-    { label: 'Veo 3.1 Quality', countNumber: 1, unit: 'video' },
-    { label: 'Geraew Fast', countNumber: 0, unit: 'video', blocked: true },
-    { label: 'Geraew Quality', countNumber: 0, unit: 'video', blocked: true },
+    { label: 'Veo 3.1 Quality', countNumber: 0, unit: 'video', blocked: true },
     { label: 'Áudio (TTS)', countNumber: 20, unit: 'audio' },
     { label: 'Clonar voz', countNumber: 1, unit: 'voiceClone' },
   ],
   starter: [
     { label: 'Nano Banana 2', countNumber: 44, unit: 'image' },
     { label: 'Motion Control', countNumber: 5, unit: 'generation' },
-    { label: 'Veo 3.1 Fast', countNumber: 13, unit: 'video' },
-    { label: 'Veo 3.1 Quality', countNumber: 6, unit: 'video' },
-    { label: 'Geraew Fast', countNumber: 3, unit: 'video' },
-    { label: 'Geraew Quality', countNumber: 1, unit: 'video' },
+    { label: 'Veo 3.1 Fast', countNumber: 3, unit: 'video' },
+    { label: 'Veo 3.1 Quality', countNumber: 1, unit: 'video' },
     { label: 'Áudio (TTS)', countNumber: 100, unit: 'audio' },
     { label: 'Clonar voz', countNumber: 3, unit: 'voiceClone' },
   ],
   basic: [
     { label: 'Nano Banana 2', countNumber: 77, unit: 'image' },
     { label: 'Motion Control', countNumber: 10, unit: 'generation' },
-    { label: 'Veo 3.1 Fast', countNumber: 23, unit: 'video' },
-    { label: 'Veo 3.1 Quality', countNumber: 10, unit: 'video' },
-    { label: 'Geraew Fast', countNumber: 5, unit: 'video' },
-    { label: 'Geraew Quality', countNumber: 2, unit: 'video' },
+    { label: 'Veo 3.1 Fast', countNumber: 5, unit: 'video' },
+    { label: 'Veo 3.1 Quality', countNumber: 2, unit: 'video' },
     { label: 'Áudio (TTS)', countNumber: 200, unit: 'audio' },
     { label: 'Clonar voz', countNumber: 5, unit: 'voiceClone' },
   ],
   creator: [
     { label: 'Nano Banana 2', countNumber: 133, unit: 'image' },
     { label: 'Motion Control', countNumber: 17, unit: 'generation' },
-    { label: 'Veo 3.1 Fast', countNumber: 40, unit: 'video' },
-    { label: 'Veo 3.1 Quality', countNumber: 18, unit: 'video' },
-    { label: 'Geraew Fast', countNumber: 9, unit: 'video' },
-    { label: 'Geraew Quality', countNumber: 4, unit: 'video' },
+    { label: 'Veo 3.1 Fast', countNumber: 9, unit: 'video' },
+    { label: 'Veo 3.1 Quality', countNumber: 4, unit: 'video' },
     { label: 'Áudio (TTS)', countNumber: 340, unit: 'audio' },
     { label: 'Clonar voz', countNumber: 8, unit: 'voiceClone' },
   ],
   pro: [
     { label: 'Nano Banana 2', countNumber: 333, unit: 'image' },
     { label: 'Motion Control', countNumber: 42, unit: 'generation' },
-    { label: 'Veo 3.1 Fast', countNumber: 100, unit: 'video' },
-    { label: 'Veo 3.1 Quality', countNumber: 46, unit: 'video' },
-    { label: 'Geraew Fast', countNumber: 23, unit: 'video' },
-    { label: 'Geraew Quality', countNumber: 10, unit: 'video' },
+    { label: 'Veo 3.1 Fast', countNumber: 23, unit: 'video' },
+    { label: 'Veo 3.1 Quality', countNumber: 10, unit: 'video' },
     { label: 'Áudio (TTS)', countNumber: 850, unit: 'audio' },
     { label: 'Clonar voz', countNumber: 12, unit: 'voiceClone' },
   ],
   advanced: [
     { label: 'Nano Banana 2', countNumber: 555, unit: 'image' },
     { label: 'Motion Control', countNumber: 71, unit: 'generation' },
-    { label: 'Veo 3.1 Fast', countNumber: 166, unit: 'video' },
-    { label: 'Veo 3.1 Quality', countNumber: 76, unit: 'video' },
-    { label: 'Geraew Fast', countNumber: 38, unit: 'video' },
-    { label: 'Geraew Quality', countNumber: 17, unit: 'video' },
+    { label: 'Veo 3.1 Fast', countNumber: 38, unit: 'video' },
+    { label: 'Veo 3.1 Quality', countNumber: 17, unit: 'video' },
     { label: 'Áudio (TTS)', countNumber: 1400, unit: 'audio' },
     { label: 'Clonar voz', countNumber: 15, unit: 'voiceClone' },
   ],
   studio: [
     { label: 'Nano Banana 2', countNumber: 888, unit: 'image' },
     { label: 'Motion Control', countNumber: 114, unit: 'generation' },
-    { label: 'Veo 3.1 Fast', countNumber: 266, unit: 'video' },
-    { label: 'Veo 3.1 Quality', countNumber: 123, unit: 'video' },
-    { label: 'Geraew Fast', countNumber: 61, unit: 'video' },
-    { label: 'Geraew Quality', countNumber: 27, unit: 'video' },
+    { label: 'Veo 3.1 Fast', countNumber: 61, unit: 'video' },
+    { label: 'Veo 3.1 Quality', countNumber: 27, unit: 'video' },
     { label: 'Áudio (TTS)', countNumber: 2280, unit: 'audio' },
     { label: 'Clonar voz', countNumber: 15, unit: 'voiceClone' },
   ],
@@ -140,16 +219,13 @@ export const PLAN_GENERATIONS_INCLUDED: Record<string, PlanGenerationsIncluded> 
 };
 
 /**
- * Resumo dos modelos liberados no modo ilimitado por plano (somente
- * Creator/Pro/Advanced/Studio têm modo ilimitado). Os valores são
- * chaves i18n dentro de `editorPlans.unlimited.features.*`.
+ * Resumo dos modelos liberados no modo ilimitado por plano. O modo ilimitado
+ * foi descontinuado: o mapa fica vazio para nenhum card exibir o bloco
+ * "Modo Ilimitado". A oferta antiga era (chaves de `editorPlans.unlimited.features.*`):
+ * creator: veoFast720 · pro: veoFast720And1080 · advanced: veoBoth720, nb2_1K ·
+ * studio: veoBoth720And1080, nbBoth1K.
  */
-export const PLAN_UNLIMITED_FEATURE_KEYS: Record<string, string[]> = {
-  creator: ['veoFast720'],
-  pro: ['veoFast720And1080'],
-  advanced: ['veoBoth720', 'nb2_1K'],
-  studio: ['veoBoth720And1080', 'nbBoth1K'],
-};
+export const PLAN_UNLIMITED_FEATURE_KEYS: Record<string, string[]> = {};
 
 /**
  * Quantidade máxima de vozes salvas por plano (mirror do backend
@@ -175,8 +251,7 @@ export const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
     { label: 'Nano Banana 2', count: '3 Imagens' },
     { label: 'Motion Control', count: '1 Geração' },
     { label: 'Veo 3.1 Fast', count: '2 Vídeos Grátis' },
-    { label: 'Veo 3.1 Quality', count: '2 Vídeos Grátis' },
-    { label: 'Geraew', count: 'Bloqueado', blocked: true },
+    { label: 'Veo 3.1 Quality', count: 'Bloqueado', blocked: true },
     { label: 'Áudio (TTS)', count: '8 Áudios' },
     { label: 'Clonar voz', count: 'Bloqueado', blocked: true },
   ],
@@ -184,69 +259,55 @@ export const PLAN_GENERATIONS: Record<string, PlanGenerationExample[]> = {
     { label: 'Nano Banana 2', count: '7 Imagens' },
     { label: 'Motion Control', count: '1 Geração' },
     { label: 'Veo 3.1 Fast', count: '2 Vídeos' },
-    { label: 'Veo 3.1 Quality', count: '1 Vídeo' },
-    { label: 'Geraew Fast', count: 'Bloqueado', blocked: true },
-    { label: 'Geraew Quality', count: 'Bloqueado', blocked: true },
+    { label: 'Veo 3.1 Quality', count: 'Bloqueado', blocked: true },
     { label: 'Áudio (TTS)', count: '20 Áudios' },
     { label: 'Clonar voz', count: '1 Clonagem' },
   ],
   starter: [
     { label: 'Nano Banana 2', count: '44 Imagens' },
     { label: 'Motion Control', count: '5 Gerações' },
-    { label: 'Veo 3.1 Fast', count: '13 Vídeos' },
-    { label: 'Veo 3.1 Quality', count: '6 Vídeos' },
-    { label: 'Geraew Fast', count: '3 Vídeos' },
-    { label: 'Geraew Quality', count: '1 Vídeo' },
+    { label: 'Veo 3.1 Fast', count: '3 Vídeos' },
+    { label: 'Veo 3.1 Quality', count: '1 Vídeo' },
     { label: 'Áudio (TTS)', count: '100 Áudios' },
     { label: 'Clonar voz', count: '3 Clonagens' },
   ],
   basic: [
     { label: 'Nano Banana 2', count: '77 Imagens' },
     { label: 'Motion Control', count: '10 Gerações' },
-    { label: 'Veo 3.1 Fast', count: '23 Vídeos' },
-    { label: 'Veo 3.1 Quality', count: '10 Vídeos' },
-    { label: 'Geraew Fast', count: '5 Vídeos' },
-    { label: 'Geraew Quality', count: '2 Vídeos' },
+    { label: 'Veo 3.1 Fast', count: '5 Vídeos' },
+    { label: 'Veo 3.1 Quality', count: '2 Vídeos' },
     { label: 'Áudio (TTS)', count: '200 Áudios' },
     { label: 'Clonar voz', count: '5 Clonagens' },
   ],
   creator: [
     { label: 'Nano Banana 2', count: '133 Imagens' },
     { label: 'Motion Control', count: '17 Gerações' },
-    { label: 'Veo 3.1 Fast', count: '40 Vídeos' },
-    { label: 'Veo 3.1 Quality', count: '18 Vídeos' },
-    { label: 'Geraew Fast', count: '9 Vídeos' },
-    { label: 'Geraew Quality', count: '4 Vídeos' },
+    { label: 'Veo 3.1 Fast', count: '9 Vídeos' },
+    { label: 'Veo 3.1 Quality', count: '4 Vídeos' },
     { label: 'Áudio (TTS)', count: '340 Áudios' },
     { label: 'Clonar voz', count: '8 Clonagens' },
   ],
   pro: [
     { label: 'Nano Banana 2', count: '333 Imagens' },
     { label: 'Motion Control', count: '42 Gerações' },
-    { label: 'Veo 3.1 Fast', count: '100 Vídeos' },
-    { label: 'Veo 3.1 Quality', count: '46 Vídeos' },
-    { label: 'Geraew Fast', count: '23 Vídeos' },
-    { label: 'Geraew Quality', count: '10 Vídeos' },
+    { label: 'Veo 3.1 Fast', count: '23 Vídeos' },
+    { label: 'Veo 3.1 Quality', count: '10 Vídeos' },
     { label: 'Áudio (TTS)', count: '850 Áudios' },
     { label: 'Clonar voz', count: '12 Clonagens' },
   ],
   advanced: [
     { label: 'Nano Banana 2', count: '555 Imagens' },
     { label: 'Motion Control', count: '71 Gerações' },
-    { label: 'Veo 3.1 Fast', count: '166 Vídeos' },
-    { label: 'Veo 3.1 Quality', count: '76 Vídeos' },
-    { label: 'Geraew Fast', count: '38 Vídeos' },
-    { label: 'Geraew Quality', count: '17 Vídeos' },
+    { label: 'Veo 3.1 Fast', count: '38 Vídeos' },
+    { label: 'Veo 3.1 Quality', count: '17 Vídeos' },
     { label: 'Áudio (TTS)', count: '1.400 Áudios' },
     { label: 'Clonar voz', count: '15 Clonagens' },
   ],
   studio: [
     { label: 'Nano Banana 2', count: '888 Imagens' },
     { label: 'Motion Control', count: '114 Gerações' },
-    { label: 'Veo 3.1 Fast', count: '266 Vídeos' },
-    { label: 'Veo 3.1 Quality', count: '123 Vídeos' },
-    { label: 'Geraew Fast', count: '61 Vídeos' },
-    { label: 'Geraew Quality', count: '27 Vídeos' },
+    { label: 'Veo 3.1 Fast', count: '61 Vídeos' },
+    { label: 'Veo 3.1 Quality', count: '27 Vídeos' },
     { label: 'Áudio (TTS)', count: '2.280 Áudios' },
     { label: 'Clonar voz', count: '15 Clonagens' },
   ],

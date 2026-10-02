@@ -42,11 +42,18 @@ export interface CancelRetentionModalProps {
   };
   /** Hide retention offers (user already accepted one for this subscription) */
   hideOffers?: boolean;
+  /**
+   * Só oferece bônus de créditos (plano anual: desconto e pausa não se aplicam
+   * a um ano já pago). Motivos cuja oferta é desconto/pausa pulam a oferta.
+   */
+  onlyBonusOffers?: boolean;
 }
 
 type Step = 'achievements' | 'loss' | 'reason' | 'offer' | 'final';
 
 const CANCEL_REASON_IDS = ['expensive', 'not_using', 'quality', 'competitor', 'temporary', 'other'] as const;
+/** Motivos cuja oferta é bônus de créditos (os demais são desconto ou pausa). */
+const BONUS_OFFER_REASON_IDS: ReadonlySet<string> = new Set(['not_using', 'quality', 'competitor']);
 const REASON_ICONS: Record<string, string> = {
   expensive: '💰',
   not_using: '😴',
@@ -146,6 +153,7 @@ export function CancelRetentionModal({
   accessEndDate,
   userStats,
   hideOffers = false,
+  onlyBonusOffers = false,
 }: CancelRetentionModalProps) {
   const t = useTranslations('editor.retention');
   const [step, setStep] = useState<Step>('achievements');
@@ -373,7 +381,13 @@ export function CancelRetentionModal({
 
             <div className="flex flex-col gap-2">
               <button
-                onClick={() => setStep('offer')}
+                onClick={() =>
+                  setStep(
+                    onlyBonusOffers && selectedReason && !BONUS_OFFER_REASON_IDS.has(selectedReason)
+                      ? 'final'
+                      : 'offer',
+                  )
+                }
                 disabled={!selectedReason}
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/10 text-sm font-medium text-[#f3f0ed]/50 transition-colors hover:border-[#f3f0ed]/20 hover:text-[#f3f0ed]/70 disabled:cursor-not-allowed disabled:opacity-30"
               >

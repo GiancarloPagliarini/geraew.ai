@@ -10,7 +10,7 @@
   },
   "hero": {
     "badge": "AI-powered content creation platform",
-    "title": "Create digital influencers with unlimited video and image generations.",
+    "title": "Create digital influencers and generate videos and images with AI.",
     "subtitle": "Generate ultra-realistic images, videos, and motion with just a few clicks. No studio, no models, no showing your face. Everything you need to create professional content is here.",
     "cta": "Start Now",
     "microcopy": "Ready in under 2 minutes"
@@ -217,7 +217,7 @@
       },
       "brands": {
         "title": "Brands and Agencies",
-        "desc": "Produce unlimited UGC without hiring models or influencers. Cut production costs and get fresh creatives every day for your campaigns."
+        "desc": "Produce UGC at scale without hiring models or influencers. Cut production costs and get fresh creatives every day for your campaigns."
       },
       "social": {
         "title": "Social Media Managers",
@@ -382,7 +382,7 @@
         "s3": {
           "tag": "Image generation",
           "title": "Imagine. Describe. Create.",
-          "description": "Turn any idea into an image with cutting-edge models — fast and limitless."
+          "description": "Turn any idea into an image with cutting-edge models — fast and effortless."
         }
       }
     },

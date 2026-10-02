@@ -2,7 +2,6 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import { clearRecoveryPromo, getStoredRecoveryPromo } from '@/lib/recovery-promo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useLoadingMessage } from '@/lib/loading-messages';
@@ -25,12 +24,13 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLoginModal } from '@/lib/login-modal-context';
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { PLAN_ORDER, getPlanFeatures } from '@/lib/plans';
+import { PLAN_ORDER, getPlanFeatures, parseBillingInterval, parsePlanParam } from '@/lib/plans';
+import { startPlanCheckout, usePlanSubscribe } from '@/hooks/use-plan-subscribe';
 import { CreditPackagesGrid } from '@/components/editor/CreditPackagesGrid';
 import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 import { PlansGrid } from '@/components/editor/PlansGrid';
 import { PixAutoCheckoutModal } from '@/components/editor/PixAutoCheckoutModal';
-import type { Plan } from '@/lib/api';
+import type { BillingInterval, Plan } from '@/lib/api';
 import { useLocale, useTranslations } from 'next-intl';
 
 function CreditosPageContent() {
@@ -42,71 +42,29 @@ function CreditosPageContent() {
   const loadingMsg = useLoadingMessage('creditos');
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'plans' | 'credits'>('plans');
-  const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
-  const [pendingDowngradeSlug, setPendingDowngradeSlug] = useState<string | null>(null);
+  const [autoSubscribingSlug, setAutoSubscribingSlug] = useState<string | null>(null);
   const [isDowngrading, setIsDowngrading] = useState(false);
-  const [pixAutoPlan, setPixAutoPlan] = useState<Plan | null>(null);
+  const [pixAutoPlan, setPixAutoPlan] = useState<{ plan: Plan; interval: BillingInterval } | null>(null);
   const t = useTranslations('account.credits');
   const tCommon = useTranslations('account.common');
   const locale = useLocale();
   const dateLocale = locale === 'pt-BR' ? 'pt-BR' : locale === 'es' ? 'es' : 'en-US';
   const numFmt = new Intl.NumberFormat(dateLocale);
 
-  async function executeDowngrade(planSlug: string) {
+  async function executeDowngrade(planSlug: string, interval: BillingInterval) {
     if (!accessToken) return;
     setIsDowngrading(true);
     try {
-      await api.subscriptions.downgrade(accessToken, planSlug);
+      await api.subscriptions.downgrade(accessToken, planSlug, interval);
       toast.success(t('downgradeScheduledTitle'), {
         description: t('downgradeScheduledDescription'),
       });
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
-      setPendingDowngradeSlug(null);
+      setPendingChange(null);
     } catch {
       toast.error(t('downgradeErrorTitle'), { description: t('downgradeErrorDescription') });
     } finally {
       setIsDowngrading(false);
-    }
-  }
-
-  async function handleSubscribe(planSlug: string) {
-    if (!accessToken || subscribingSlug) return;
-    const action = getPlanAction(planSlug);
-
-    if (action === 'downgrade') {
-      setPendingDowngradeSlug(planSlug);
-      return;
-    }
-
-    setSubscribingSlug(planSlug);
-
-    try {
-
-      let checkoutUrl: string;
-      if (action === 'create') {
-        const recoveryPromo = getStoredRecoveryPromo();
-        const res = await api.subscriptions.create(accessToken, planSlug, undefined, recoveryPromo);
-        if (recoveryPromo) clearRecoveryPromo();
-        checkoutUrl = res.checkoutUrl;
-      } else {
-        const res = await api.subscriptions.upgrade(accessToken, planSlug);
-        checkoutUrl = res.checkoutUrl;
-      }
-      window.location.href = checkoutUrl;
-    } catch (err: unknown) {
-      const status = (err as { status?: number })?.status;
-      if (status === 409) {
-        try {
-          const res = await api.subscriptions.upgrade(accessToken, planSlug);
-          window.location.href = res.checkoutUrl;
-        } catch {
-          toast.error(t('changePlanErrorTitle'), { description: t('changePlanErrorDescription') });
-          setSubscribingSlug(null);
-        }
-      } else {
-        toast.error(t('changePlanErrorTitle'), { description: t('changePlanErrorDescription') });
-        setSubscribingSlug(null);
-      }
     }
   }
 
@@ -143,7 +101,23 @@ function CreditosPageContent() {
     if (!authLoading && !user) openLoginModal();
   }, [authLoading, user, router]);
 
+  const currentPlanSlug =
+    (profile?.plan as Record<string, unknown> | null)?.slug as string | null ?? null;
+  const sub = profile?.subscription as Record<string, unknown> | null;
+  const hasActiveSub = sub?.status === 'ACTIVE' || sub?.status === 'active';
+  const currentInterval = parseBillingInterval(sub?.billingInterval);
+
+  const { subscribingSlug, subscribe, pendingChange, setPendingChange } = usePlanSubscribe({
+    accessToken,
+    currentPlanSlug,
+    currentInterval,
+    hasActiveSub,
+    onError: () =>
+      toast.error(t('changePlanErrorTitle'), { description: t('changePlanErrorDescription') }),
+  });
+
   // Auto-trigger checkout when redirected from landing page with ?plan=
+  // ("pro" = mensal, "pro:yearly" = anual — ver encodePlanParam).
   const planFromUrl = searchParams.get('plan');
   useEffect(() => {
     if (
@@ -156,31 +130,26 @@ function CreditosPageContent() {
       plans.length === 0
     ) return;
 
-    const targetPlan = plans.find((p) => p.slug === planFromUrl);
-    if (!targetPlan || targetPlan.priceCents <= 0) return;
+    const requested = parsePlanParam(planFromUrl);
+    const targetPlan = requested ? plans.find((p) => p.slug === requested.slug) : undefined;
+    if (!requested || !targetPlan || targetPlan.priceCents <= 0) return;
+    const interval: BillingInterval =
+      requested.interval === 'YEARLY' && targetPlan.annual ? 'YEARLY' : 'MONTHLY';
 
     autoSubscribeTriggered.current = true;
-    setSubscribingSlug(targetPlan.slug);
+    setAutoSubscribingSlug(targetPlan.slug);
 
     (async () => {
-      const recoveryPromo = getStoredRecoveryPromo();
       try {
-        const res = await api.subscriptions.create(accessToken, targetPlan.slug, undefined, recoveryPromo);
-        if (recoveryPromo) clearRecoveryPromo();
-        window.location.href = res.checkoutUrl;
-      } catch (err: unknown) {
-        const status = (err as { status?: number })?.status;
-        if (status === 409) {
-          try {
-            const res = await api.subscriptions.upgrade(accessToken, targetPlan.slug);
-            window.location.href = res.checkoutUrl;
-            return;
-          } catch {
-            // fall through to error toast
-          }
-        }
+        window.location.href = await startPlanCheckout({
+          accessToken,
+          planSlug: targetPlan.slug,
+          billingInterval: interval,
+          action: 'create',
+        });
+      } catch {
         toast.error(t('changePlanErrorTitle'), { description: t('changePlanErrorDescription') });
-        setSubscribingSlug(null);
+        setAutoSubscribingSlug(null);
       }
     })();
   }, [planFromUrl, accessToken, plansLoading, profileLoading, plans, t]);
@@ -196,9 +165,6 @@ function CreditosPageContent() {
     );
   }
 
-  const currentPlanSlug =
-    (profile?.plan as Record<string, unknown> | null)?.slug as string | null ?? null;
-
   const isFreeUser = currentPlanSlug === 'free' || !currentPlanSlug;
 
   const periodStart = balance
@@ -210,16 +176,6 @@ function CreditosPageContent() {
 
   const totalCredits = balance ? balance.totalCreditsAvailable + balance.planCreditsUsed : 0;
   const usagePercent = totalCredits > 0 ? (balance!.planCreditsUsed / totalCredits) * 100 : 0;
-
-  const sub = profile?.subscription as Record<string, unknown> | null;
-  const hasActiveSub = sub?.status === 'ACTIVE' || sub?.status === 'active';
-
-  function getPlanAction(targetSlug: string): 'upgrade' | 'downgrade' | 'create' {
-    if (!hasActiveSub || !currentPlanSlug || currentPlanSlug === 'free') return 'create';
-    const currentIdx = PLAN_ORDER.indexOf(currentPlanSlug);
-    const targetIdx = PLAN_ORDER.indexOf(targetSlug);
-    return targetIdx > currentIdx ? 'upgrade' : 'downgrade';
-  }
 
   const sortedPlans = (plans ?? []).slice().sort(
     (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),
@@ -488,10 +444,11 @@ function CreditosPageContent() {
                 <PlansGrid
                   plans={sortedPlans}
                   currentPlanSlug={currentPlanSlug}
+                  currentInterval={currentInterval}
                   hasActiveSub={hasActiveSub}
-                  subscribingSlug={subscribingSlug}
-                  onSubscribe={handleSubscribe}
-                  onSubscribePix={(plan) => setPixAutoPlan(plan)}
+                  subscribingSlug={subscribingSlug ?? autoSubscribingSlug}
+                  onSubscribe={subscribe}
+                  onSubscribePix={(plan, interval) => setPixAutoPlan({ plan, interval })}
                 />
                 <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-[#f3f0ed]/25">
                   <span className="flex items-center gap-1.5"><Check className="h-3 w-3 text-[#a2dd00]/50" />{t('noCancelFee')}</span>
@@ -517,9 +474,14 @@ function CreditosPageContent() {
       {/* PIX Automático checkout modal */}
       {pixAutoPlan && (
         <PixAutoCheckoutModal
-          planSlug={pixAutoPlan.slug}
-          planName={pixAutoPlan.name}
-          priceCents={pixAutoPlan.priceCents}
+          planSlug={pixAutoPlan.plan.slug}
+          planName={pixAutoPlan.plan.name}
+          priceCents={
+            pixAutoPlan.interval === 'YEARLY' && pixAutoPlan.plan.annual
+              ? pixAutoPlan.plan.annual.priceCents
+              : pixAutoPlan.plan.priceCents
+          }
+          billingInterval={pixAutoPlan.interval}
           onClose={() => setPixAutoPlan(null)}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
@@ -529,12 +491,12 @@ function CreditosPageContent() {
       )}
 
       {/* Retention modal for downgrade */}
-      {pendingDowngradeSlug && (() => {
+      {pendingChange && (() => {
         const allPlans = (plans ?? []).slice().sort(
           (a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug),
         );
         const currentPlan = allPlans.find((p) => p.slug === currentPlanSlug);
-        const targetPlan = allPlans.find((p) => p.slug === pendingDowngradeSlug);
+        const targetPlan = allPlans.find((p) => p.slug === pendingChange.slug);
         const currentFeatures = currentPlan ? getPlanFeatures(currentPlan) : [];
         const targetFeatures = targetPlan ? getPlanFeatures(targetPlan) : [];
         const lostBenefits = currentFeatures.filter((f) => !targetFeatures.includes(f));
@@ -547,8 +509,8 @@ function CreditosPageContent() {
         return (
           <CancelRetentionModal
             action="downgrade"
-            onClose={() => setPendingDowngradeSlug(null)}
-            onConfirm={() => executeDowngrade(pendingDowngradeSlug)}
+            onClose={() => setPendingChange(null)}
+            onConfirm={() => executeDowngrade(pendingChange.slug, pendingChange.interval)}
             isLoading={isDowngrading}
             currentPlanName={currentPlan?.name}
             targetPlanName={targetPlan?.name}

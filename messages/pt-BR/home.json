@@ -232,6 +232,7 @@
       "frames": "Frames",
       "firstFrame": "Primeiro frame",
       "lastFrame": "Último frame",
+      "veoRefsFastOnly": "Referências múltiplas só no Veo 3.1 Fast. No Quality, use primeiro e último frame.",
       "refVideo": "Vídeo de referência",
       "refAudio": "Áudio de referência",
       "mustBeVideo": "Envie um arquivo de vídeo.",

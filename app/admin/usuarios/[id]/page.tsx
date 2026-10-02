@@ -149,10 +149,13 @@ function modelLabel(modelUsed: string | null): string | null {
     'sem-censura': 'GeraEW Unlocked',
     'sem-censura-fallback': 'GeraEW Unlocked (fallback)',
     'kling-2.6/motion-control': 'Kling 2.6 Motion Control',
-    'geraew-fast': 'Veo 3.1 Fast',
-    'geraew-quality': 'Veo 3.1 Quality',
-    'veo-3.1-fast-generate-001': 'Geraew Fast',
-    'veo-3.1-generate-001': 'Geraew Quality',
+    veo3_fast: 'Veo 3.1 Fast',
+    veo3: 'Veo 3.1 Quality',
+    // histórico: Veo via Vertex (descontinuado)
+    'geraew-fast': 'Veo 3.1 Fast (Vertex)',
+    'geraew-quality': 'Veo 3.1 Quality (Vertex)',
+    'veo-3.1-fast-generate-001': 'Veo 3.1 Fast (Vertex)',
+    'veo-3.1-generate-001': 'Veo 3.1 Quality (Vertex)',
   };
   return map[modelUsed] ?? modelUsed;
 }

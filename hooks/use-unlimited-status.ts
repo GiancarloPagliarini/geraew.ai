@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api, UnlimitedStatus } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { UNLIMITED_MODE_ENABLED } from '@/lib/unlimited';
 
 /**
  * Busca o status do modo ilimitado do usuário: elegibilidade, modelos
@@ -15,7 +16,8 @@ export function useUnlimitedStatus() {
   return useQuery<UnlimitedStatus>({
     queryKey: ['unlimited', 'status'],
     queryFn: () => api.generations.getUnlimitedStatus(accessToken!),
-    enabled: !!accessToken,
+    // Modo ilimitado descontinuado: não consulta mais o status (data fica undefined).
+    enabled: UNLIMITED_MODE_ENABLED && !!accessToken,
     staleTime: 15_000,
     refetchOnWindowFocus: true,
   });

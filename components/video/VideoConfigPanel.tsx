@@ -48,6 +48,8 @@ import {
   getFirstUnlimitedSlugForType,
   getFirstUnlimitedResolutionForVariant,
 } from '@/hooks/use-unlimited-status';
+import { UNLIMITED_MODE_ENABLED } from '@/lib/unlimited';
+import { DEFAULT_VIDEO_MODEL, normalizeVideoModelSlug } from '@/lib/video-models';
 import {
   Select,
   SelectContent,
@@ -112,7 +114,7 @@ interface VideoModelConfig {
   label: string;
   variant: string;
   /** rota de geração usada pelo workspace para este modelo */
-  api: 'geraew' | 'kie' | 'omni' | 'seedance' | 'grok';
+  api: 'kie' | 'omni' | 'seedance' | 'grok';
   durations: string[];
   defaultDuration: string;
   audio: 'toggle' | 'always-on' | 'always-off';
@@ -141,19 +143,19 @@ const ASPECTS_VERTICAL_WIDE = [
 ];
 
 /**
- * Modelos de vídeo, espelhando o painel do workspace (labels invertidos dos
- * Veo/Geraew são intencionais: geraew-* são Vertex e aparecem como "Veo 3.1";
- * veo3* são KIE e aparecem como "Geraew").
+ * Modelos de vídeo, espelhando o painel do workspace. O Veo 3.1 roda só pelo
+ * KIE (veo3_fast / veo3); os antigos geraew-* (Veo via Vertex) foram
+ * descontinuados e são migrados por normalizeVideoModelSlug.
  */
 const VIDEO_MODELS: VideoModelConfig[] = [
-  { value: 'geraew-fast', label: 'Veo 3.1 Fast', variant: 'GERAEW_FAST', api: 'geraew', durations: ['4s', '6s', '8s'], defaultDuration: '8s', audio: 'toggle', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: ASPECTS_VERTICAL_WIDE, defaultAspect: '9:16', refMode: 'refs', maxRefs: 8 },
-  { value: 'geraew-quality', label: 'Veo 3.1 Quality', variant: 'GERAEW_QUALITY', api: 'geraew', durations: ['4s', '6s', '8s'], defaultDuration: '8s', audio: 'toggle', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: ASPECTS_VERTICAL_WIDE, defaultAspect: '9:16', refMode: 'refs', maxRefs: 8 },
+  // Veo 3.1 (KIE): imagens viram primeiro/último frame (FIRST_AND_LAST_FRAMES_2_VIDEO)
+  // ou, só no Fast, até 3 referências (REFERENCE_2_VIDEO). Sempre 8s e com áudio.
+  { value: 'veo3_fast', label: 'Veo 3.1 Fast', variant: 'VEO_FAST', api: 'kie', durations: ['8s'], defaultDuration: '8s', audio: 'always-on', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: [{ value: '9:16', label: '9:16' }, { value: 'Auto', label: 'Auto' }, { value: '16:9', label: '16:9' }], defaultAspect: '9:16', refMode: 'refs', maxRefs: 3 },
+  { value: 'veo3', label: 'Veo 3.1 Quality', variant: 'VEO_MAX', api: 'kie', durations: ['8s'], defaultDuration: '8s', audio: 'always-on', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: [{ value: '9:16', label: '9:16' }, { value: 'Auto', label: 'Auto' }, { value: '16:9', label: '16:9' }], defaultAspect: '9:16', refMode: 'refs', maxRefs: 3 },
   { value: 'gemini-omni-video', label: 'Gemini Omni', variant: 'GEMINI_OMNI', api: 'omni', durations: ['4s', '6s', '8s', '10s'], defaultDuration: '8s', audio: 'always-off', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: ASPECTS_VERTICAL_WIDE, defaultAspect: '9:16', refMode: 'refs', maxRefs: 7, isNew: true },
   { value: 'bytedance-seedance-2-5', label: 'Seedance 2.5', variant: 'SEEDANCE_2_5', api: 'seedance', durations: durationRange(4, 30), defaultDuration: '5s', audio: 'toggle', resolutions: [{ value: 'RES_480P', label: '480p' }, { value: 'RES_720P', label: '720p' }, { value: 'RES_1080P', label: '1080p' }], defaultResolution: 'RES_480P', aspects: [{ value: '1:1', label: '1:1' }, { value: '4:3', label: '4:3' }, { value: '3:4', label: '3:4' }, { value: '16:9', label: '16:9' }, { value: '9:16', label: '9:16' }, { value: '21:9', label: '21:9' }], defaultAspect: '9:16', refMode: 'refs', maxRefs: 30, isNew: true },
   { value: 'bytedance-seedance-2', label: 'Seedance 2', variant: 'SEEDANCE_2', api: 'seedance', durations: durationRange(4, 15), defaultDuration: '5s', audio: 'toggle', resolutions: [{ value: 'RES_480P', label: '480p' }, { value: 'RES_720P', label: '720p' }, { value: 'RES_1080P', label: '1080p' }], defaultResolution: 'RES_480P', aspects: [{ value: '1:1', label: '1:1' }, { value: '4:3', label: '4:3' }, { value: '3:4', label: '3:4' }, { value: '16:9', label: '16:9' }, { value: '9:16', label: '9:16' }, { value: '21:9', label: '21:9' }], defaultAspect: '9:16', refMode: 'refs', maxRefs: 6, isNew: true },
   { value: 'grok-imagine', label: 'Grok Imagine', variant: 'GROK_IMAGINE', api: 'grok', durations: durationRange(6, 30), defaultDuration: '6s', audio: 'always-off', resolutions: [{ value: 'RES_480P', label: '480p' }, { value: 'RES_720P', label: '720p' }], defaultResolution: 'RES_720P', aspects: [{ value: '2:3', label: '2:3' }, { value: '3:2', label: '3:2' }, { value: '1:1', label: '1:1' }, { value: '9:16', label: '9:16' }, { value: '16:9', label: '16:9' }], defaultAspect: '9:16', refMode: 'first-frame', maxRefs: 1, isNew: true },
-  { value: 'veo3_fast', label: 'Geraew Fast', variant: 'VEO_FAST', api: 'kie', durations: ['8s'], defaultDuration: '8s', audio: 'always-on', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: [{ value: '9:16', label: '9:16' }, { value: 'Auto', label: 'Auto' }, { value: '16:9', label: '16:9' }], defaultAspect: '9:16', refMode: 'refs', maxRefs: 8 },
-  { value: 'veo3', label: 'Geraew Quality', variant: 'VEO_MAX', api: 'kie', durations: ['8s'], defaultDuration: '8s', audio: 'always-on', resolutions: RES_HD, defaultResolution: 'RES_1080P', aspects: [{ value: '9:16', label: '9:16' }, { value: 'Auto', label: 'Auto' }, { value: '16:9', label: '16:9' }], defaultAspect: '9:16', refMode: 'refs', maxRefs: 8 },
 ];
 
 function durationToSeconds(d: string): number {
@@ -234,15 +236,19 @@ export function VideoConfigPanel({
   const init = seed ?? stored;
 
   const [tool, setTool] = useState<VideoToolId>(seed?.tool ?? initialTool ?? stored?.tool ?? 'generate');
-  const [model, setModel] = useState(init?.model ?? 'geraew-fast');
+  // slugs aposentados (geraew-* = Veo via Vertex) salvos no localStorage viram o Veo 3.1 do KIE
+  const initModel = normalizeVideoModelSlug(init?.model) ?? DEFAULT_VIDEO_MODEL;
+  const [model, setModel] = useState(initModel);
+  // Veo 3.1: imagens como primeiro/último frame (padrão) ou como referências (só no Fast)
+  const [veoInput, setVeoInput] = useState<'frames' | 'refs'>('frames');
   const [references, setReferences] = useState<UploadedImage[]>(init?.references ?? []);
   // índice da referência aberta no editor de recorte (null = fechado)
   const [cropIndex, setCropIndex] = useState<number | null>(null);
   // referência sendo baixada de uma URL arrastada — mostra o loader no tile de adicionar
   const [refLoading, setRefLoading] = useState(false);
 
-  // modo ilimitado
-  const [unlimited, setUnlimited] = useState(init?.unlimited ?? false);
+  // modo ilimitado (descontinuado: sempre false, ignora o que estiver salvo/duplicado)
+  const [unlimited, setUnlimited] = useState(UNLIMITED_MODE_ENABLED && (init?.unlimited ?? false));
   const [unlimitedModalOpen, setUnlimitedModalOpen] = useState(false);
   const { data: unlimitedStatus } = useUnlimitedStatus();
 
@@ -302,10 +308,12 @@ export function VideoConfigPanel({
   const isSeedance = modelConfig.api === 'seedance';
   // quota KIE do Omni: imagens + 2×vídeos ≤ 7 — com vídeo anexado sobram 5
   const effectiveMaxRefs = isOmni && omniVideo ? 5 : modelConfig.maxRefs;
-  // o Veo 3.1 só gera 8s quando há imagens de referência — 4s/6s dão erro na API.
-  // o custo em créditos é fixo por geração, então travar em 8s não cobra a mais.
-  const durationLocked = modelConfig.api === 'geraew' && references.length > 0;
-  const effectiveDuration = durationLocked ? '8s' : duration;
+  // duração salva de outro modelo (ex.: 6s do antigo Veo via Vertex) cai no padrão do atual
+  const effectiveDuration = modelConfig.durations.includes(duration) ? duration : modelConfig.defaultDuration;
+  // Veo 3.1 (KIE): referências múltiplas só existem no Fast — o Quality usa frames
+  const isKieVeo = modelConfig.api === 'kie';
+  const usesFrames =
+    modelConfig.refMode === 'first-frame' || (isKieVeo && (veoInput === 'frames' || model === 'veo3'));
 
   // modelos do banco sobrescrevem labels/disponibilidade dos base
   const modelsQuery = useQuery({
@@ -320,7 +328,6 @@ export function VideoConfigPanel({
       const dbModel = dbBySlug.get(opt.value);
       return {
         value: opt.value,
-        // labels invertidos são intencionais — manter o override local
         label: opt.label,
         disabled: dbModel ? !dbModel.isActive : false,
         isNew: !!opt.isNew,
@@ -346,7 +353,8 @@ export function VideoConfigPanel({
       setSeedanceVideo(null);
       setSeedanceAudio(null);
     }
-    if (cfg.refMode !== 'first-frame') {
+    // frames ficam para Grok e Veo 3.1 (KIE); os demais modelos não usam
+    if (cfg.refMode !== 'first-frame' && cfg.api !== 'kie') {
       setFirstFrame(null);
       setLastFrame(null);
     }
@@ -370,7 +378,7 @@ export function VideoConfigPanel({
   }, [modelOptions, unlimitedStatus]);
 
   const handleToggleUnlimited = (next: boolean) => {
-    if (!next) {
+    if (!next || !UNLIMITED_MODE_ENABLED) {
       setUnlimited(false);
       return;
     }
@@ -428,10 +436,13 @@ export function VideoConfigPanel({
   const videoType =
     tool === 'motion-control'
       ? ('MOTION_CONTROL' as const)
-      : modelConfig.api === 'grok' && firstFrame
+      : usesFrames && firstFrame
         ? ('IMAGE_TO_VIDEO' as const)
-        : references.length > 0
-          ? ('REFERENCE_VIDEO' as const)
+        : !usesFrames && references.length > 0
+          ? // Veo 3.1 com referências é cobrado como IMAGE_TO_VIDEO no backend
+            isKieVeo
+            ? ('IMAGE_TO_VIDEO' as const)
+            : ('REFERENCE_VIDEO' as const)
           : ('TEXT_TO_VIDEO' as const);
 
   // estimativa de créditos por geração — varia conforme ferramenta/modelo/config
@@ -497,6 +508,45 @@ export function VideoConfigPanel({
     }
   };
 
+  // modo frames (Grok / Veo 3.1): o arquivo solto preenche o primeiro frame e, se já
+  // houver um, o último.
+  const setNextFrame = (frame: UploadedImage) => {
+    if (!firstFrame) setFirstFrame(frame);
+    else setLastFrame(frame);
+  };
+  const addFrameFile = (file: File | undefined) => {
+    if (!file) return;
+    if (!REF_ACCEPTED.includes(file.type)) {
+      toast.error(t('clone.invalidFormat'));
+      return;
+    }
+    if (file.size > REF_MAX_BYTES) {
+      toast.error(t('clone.tooLarge', { max: REF_MAX_MB }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setNextFrame({ base64: dataUrl.split(',')[1], mime_type: file.type, preview: dataUrl });
+    };
+    reader.readAsDataURL(file);
+  };
+  const addFrameFromUrl = async (url: string) => {
+    try {
+      const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(url)}`);
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      if (blob.size > REF_MAX_BYTES) {
+        toast.error(t('clone.tooLarge', { max: REF_MAX_MB }));
+        return;
+      }
+      const dataUrl = await blobToDataUrl(blob);
+      setNextFrame({ base64: dataUrl.split(',')[1], mime_type: blob.type || 'image/jpeg', preview: dataUrl });
+    } catch {
+      toast.error(t('clone.invalidFormat'));
+    }
+  };
+
   // adiciona uma referência a partir de uma URL (ex.: imagem arrastada das criações).
   // usa o proxy para contornar CORS antes de converter para base64.
   const addReferenceFromUrl = async (url: string) => {
@@ -531,7 +581,7 @@ export function VideoConfigPanel({
     tool === 'motion-control'
       ? !!mcImage && !!mcVideo
       : modelConfig.api === 'grok'
-        ? !!prompt.trim() || !!firstFrame
+        ? !!prompt.trim() || !!(usesFrames && firstFrame)
         : !!prompt.trim();
 
   const generate = async () => {
@@ -556,6 +606,9 @@ export function VideoConfigPanel({
       }
 
       let finalPrompt = prompt.trim();
+      const enhanceImages = usesFrames
+        ? [firstFrame, lastFrame].filter((f): f is UploadedImage => !!f)
+        : references;
       if (enhance && finalPrompt) {
         try {
           const { enhancedPrompt } = await api.promptEnhancer.enhance(
@@ -568,10 +621,10 @@ export function VideoConfigPanel({
               aspectRatio: aspect,
               durationSeconds: durationToSeconds(duration),
               hasAudio: effectiveAudio,
-              hasReferenceImages: references.length > 0,
+              hasReferenceImages: enhanceImages.length > 0,
             },
-            references.length > 0
-              ? references.map(({ base64, mime_type }) => ({ base64, mime_type }))
+            enhanceImages.length > 0
+              ? enhanceImages.map(({ base64, mime_type }) => ({ base64, mime_type }))
               : undefined,
           );
           finalPrompt = enhancedPrompt;
@@ -582,22 +635,32 @@ export function VideoConfigPanel({
       let result: { id: string };
       switch (modelConfig.api) {
         case 'kie': {
+          // preço (model_variant) e áudio são decididos no servidor
           const kiePayload = {
             prompt: finalPrompt,
             model,
             resolution,
             aspect_ratio: aspect,
-            generate_audio: true,
-            model_variant: modelConfig.variant,
           };
-          result =
-            references.length > 0
-              ? await api.generations.referenceToVideoKie(accessToken, {
-                  ...kiePayload,
-                  reference_images: references.map(({ base64 }) => base64),
-                  reference_images_mime_types: references.map(({ mime_type }) => mime_type),
-                })
-              : await api.generations.textToVideoKie(accessToken, kiePayload);
+          if (usesFrames && firstFrame) {
+            result = await api.generations.imageToVideoKie(accessToken, {
+              ...kiePayload,
+              first_frame: firstFrame.base64,
+              first_frame_mime_type: firstFrame.mime_type,
+              ...(lastFrame && {
+                last_frame: lastFrame.base64,
+                last_frame_mime_type: lastFrame.mime_type,
+              }),
+            });
+          } else if (!usesFrames && references.length > 0) {
+            result = await api.generations.referenceToVideoKie(accessToken, {
+              ...kiePayload,
+              reference_images: references.map(({ base64 }) => base64),
+              reference_images_mime_types: references.map(({ mime_type }) => mime_type),
+            });
+          } else {
+            result = await api.generations.textToVideoKie(accessToken, kiePayload);
+          }
           break;
         }
         case 'omni': {
@@ -642,14 +705,14 @@ export function VideoConfigPanel({
           break;
         }
         case 'grok': {
-          result = firstFrame
+          result = usesFrames && firstFrame
             ? await api.generations.imageToVideoGrok(accessToken, {
                 prompt: finalPrompt || undefined,
                 resolution,
                 duration_seconds: durationToSeconds(duration),
                 aspect_ratio: aspect,
-                first_frame: firstFrame.base64,
-                first_frame_mime_type: firstFrame.mime_type,
+                first_frame: firstFrame!.base64,
+                first_frame_mime_type: firstFrame!.mime_type,
                 ...(lastFrame && {
                   last_frame: lastFrame.base64,
                   last_frame_mime_type: lastFrame.mime_type,
@@ -665,29 +728,8 @@ export function VideoConfigPanel({
               });
           break;
         }
-        default: {
-          const basePayload = {
-            prompt: finalPrompt,
-            model,
-            resolution,
-            duration_seconds: durationToSeconds(effectiveDuration),
-            aspect_ratio: aspect,
-            generate_audio: effectiveAudio,
-            sample_count: 1,
-            ...(unlimited && { unlimited: true }),
-          };
-          result =
-            references.length > 0
-              ? await api.generations.videoWithReferences(accessToken, {
-                  ...basePayload,
-                  reference_images: references.map(({ base64, mime_type }) => ({
-                    base64,
-                    mime_type,
-                    reference_type: 'asset' as const,
-                  })),
-                })
-              : await api.generations.textToVideo(accessToken, basePayload);
-        }
+        default:
+          throw new Error(`Modelo de vídeo sem rota de geração: ${model}`);
       }
 
       track(result.id, finalPrompt || t('video.tab'), undefined, unlimited);
@@ -727,7 +769,11 @@ export function VideoConfigPanel({
         setDragDepth(0);
         const droppedUrl = e.dataTransfer.getData(GALLERY_IMAGE_DRAG_TYPE);
         if (droppedUrl) {
-          if (tool === 'generate') void addReferenceFromUrl(droppedUrl);
+          if (tool !== 'generate') return;
+          if (usesFrames) void addFrameFromUrl(droppedUrl);
+          else void addReferenceFromUrl(droppedUrl);
+        } else if (usesFrames) {
+          addFrameFile(e.dataTransfer.files?.[0]);
         } else {
           addReferenceFiles(e.dataTransfer.files);
         }
@@ -823,7 +869,7 @@ export function VideoConfigPanel({
                   <span className="flex items-center gap-1.5">
                     {opt.disabled && <TriangleAlert className="size-3 shrink-0 text-amber-400" strokeWidth={2} />}
                     {opt.label}
-                    {unlimited && isModelSlugInUnlimitedPlan(unlimitedStatus, opt.value) && (
+                    {UNLIMITED_MODE_ENABLED && unlimited && isModelSlugInUnlimitedPlan(unlimitedStatus, opt.value) && (
                       <InfinityIcon className="size-3.5 text-[#a855f7]" strokeWidth={2} />
                     )}
                     {opt.isNew && (
@@ -861,8 +907,38 @@ export function VideoConfigPanel({
           </Select>
         </div>
 
-        {/* referências (Grok usa primeiro/último frame) */}
-        {modelConfig.refMode === 'first-frame' ? (
+        {/* Veo 3.1: escolhe entre frames e referências (referências só no Fast) */}
+        {isKieVeo && (
+          <div className="flex flex-col gap-1.5">
+            <div className="grid grid-cols-2 gap-1 rounded-[10px] border border-app-hairline bg-app-surface p-1">
+              {(['frames', 'refs'] as const).map((mode) => {
+                const active = mode === 'frames' ? usesFrames : !usesFrames;
+                const blocked = mode === 'refs' && model === 'veo3';
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    disabled={blocked}
+                    onClick={() => setVeoInput(mode)}
+                    className={cn(
+                      'h-8 rounded-[7px] text-[12px] font-semibold transition-colors duration-200 ease-app',
+                      active ? 'bg-app-lime/15 text-app-lime' : 'text-app-text-2 hover:text-app-text',
+                      blocked && 'cursor-not-allowed opacity-40 hover:text-app-text-2',
+                    )}
+                  >
+                    {mode === 'frames' ? t('video.frames') : t('image.references')}
+                  </button>
+                );
+              })}
+            </div>
+            {model === 'veo3' && (
+              <p className="text-[11.5px] leading-relaxed text-app-muted">{t('video.veoRefsFastOnly')}</p>
+            )}
+          </div>
+        )}
+
+        {/* referências (Grok e Veo 3.1 em modo frames usam primeiro/último frame) */}
+        {usesFrames ? (
           <div className="flex flex-col gap-2">
             <FieldLabel>{t('video.frames')}</FieldLabel>
             <div className="grid grid-cols-2 gap-3">
@@ -1026,11 +1102,8 @@ export function VideoConfigPanel({
 
         {/* duração + resolução / proporção + áudio */}
         <div className="grid grid-cols-2 gap-3">
-          <Select value={effectiveDuration} onValueChange={setDuration} disabled={durationLocked}>
-            <SelectTrigger
-              className={cn(selectTriggerClass, '!h-10', durationLocked && 'opacity-60')}
-              title={durationLocked ? t('video.durationLockedRefs') : undefined}
-            >
+          <Select value={effectiveDuration} onValueChange={setDuration}>
+            <SelectTrigger className={cn(selectTriggerClass, '!h-10')}>
               <Clock className="size-[15px] !text-app-lime" strokeWidth={1.8} />
               <span className="flex-1 truncate text-left font-mono text-[13px]">
                 <SelectValue />
@@ -1065,7 +1138,7 @@ export function VideoConfigPanel({
                 <SelectItem key={r.value} value={r.value} className={cn(selectItemClass, 'font-mono')}>
                   <span className="flex items-center gap-1.5">
                     {r.label}
-                    {unlimited && isUnlimitedModelAllowed(unlimitedStatus, modelConfig.variant, r.value) && (
+                    {UNLIMITED_MODE_ENABLED && unlimited && isUnlimitedModelAllowed(unlimitedStatus, modelConfig.variant, r.value) && (
                       <InfinityIcon className="size-3.5 text-[#a855f7] [[data-slot=select-trigger]_&]:hidden" strokeWidth={2} />
                     )}
                   </span>
@@ -1171,7 +1244,7 @@ export function VideoConfigPanel({
         </button>
       </div>
 
-      {unlimitedModalOpen && (
+      {UNLIMITED_MODE_ENABLED && unlimitedModalOpen && (
         <UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />
       )}
 

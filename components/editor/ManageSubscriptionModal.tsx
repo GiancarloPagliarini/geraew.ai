@@ -14,8 +14,14 @@ import {
 import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
-import { api } from '@/lib/api';
-import { formatCurrency, PLAN_ORDER, getPlanFeatureKeys } from '@/lib/plans';
+import { api, type BillingInterval } from '@/lib/api';
+import {
+  formatCurrency,
+  PLAN_ORDER,
+  getPlanFeatureKeys,
+  getPlanIntervalPrice,
+  parseBillingInterval,
+} from '@/lib/plans';
 import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -30,7 +36,7 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [pendingDowngradeSlug, setPendingDowngradeSlug] = useState<string | null>(null);
+  const [pendingDowngrade, setPendingDowngrade] = useState<{ slug: string; interval: BillingInterval } | null>(null);
   const [isDowngrading, setIsDowngrading] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [showPlanOptions, setShowPlanOptions] = useState(false);
@@ -82,7 +88,7 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
       queryClient.invalidateQueries({ queryKey: ['credits', 'balance'] });
       queryClient.invalidateQueries({ queryKey: ['subscription', 'current'] });
       setShowCancelModal(false);
-      setPendingDowngradeSlug(null);
+      setPendingDowngrade(null);
       const messages: Record<string, { title: string; desc: string }> = {
         discount: { title: t('manage.toasts.offerDiscountTitle'), desc: data.detail },
         bonus_credits: { title: t('manage.toasts.offerBonusTitle'), desc: data.detail },
@@ -136,13 +142,13 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
-        if (showCancelModal || pendingDowngradeSlug) return;
+        if (showCancelModal || pendingDowngrade) return;
         onClose();
       }
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose, showCancelModal, pendingDowngradeSlug]);
+  }, [onClose, showCancelModal, pendingDowngrade]);
 
   const isLoading = profileLoading || balanceLoading;
 
@@ -165,12 +171,20 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
   const plan = profile.plan as Record<string, unknown> | null;
   const planName = (plan?.name as string) || (plan?.planName as string) || t('manage.noPlan');
   const planSlug = (plan?.slug as string) || 'free';
-  const planPriceCents = (plan?.priceCents as number) || 0;
   const planCurrency = (plan?.currency as string) || 'BRL';
   const isFreeUser = planSlug === 'free' || !planSlug;
 
   // Subscription info
   const sub = profile.subscription as Record<string, unknown> | null;
+  const currentInterval = parseBillingInterval(sub?.billingInterval);
+  const isYearly = currentInterval === 'YEARLY';
+  const currentPlanObj = (plans ?? []).find((p) => p.slug === planSlug);
+  // No anual o custo é o valor anual cobrado; no mensal, o preço do plano.
+  const planPriceCents =
+    isYearly && currentPlanObj?.annual
+      ? currentPlanObj.annual.priceCents
+      : (plan?.priceCents as number) || 0;
+  const cycleSuffix = isYearly ? t('manage.perYearShort') : '';
   const subStatus = (sub?.status as string) || null;
   const cancelAtPeriodEnd = (sub?.cancelAtPeriodEnd as boolean) || false;
   const isActive = subStatus?.toLowerCase() === 'active';
@@ -196,9 +210,32 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
 
   // Scheduled plan change (downgrade pending for next cycle)
   const scheduledPlan = (subscription as Record<string, unknown> | null)?.scheduledPlan as {
+    slug?: string;
     name: string;
     priceCents: number;
   } | null | undefined;
+  const scheduledIntervalRaw = (subscription as Record<string, unknown> | null)?.scheduledBillingInterval;
+  const scheduledInterval = scheduledIntervalRaw ? parseBillingInterval(scheduledIntervalRaw) : currentInterval;
+  const scheduledPlanObj = scheduledPlan?.slug
+    ? (plans ?? []).find((p) => p.slug === scheduledPlan.slug)
+    : undefined;
+  const scheduledPriceCents =
+    scheduledInterval === 'YEARLY' && scheduledPlanObj?.annual
+      ? scheduledPlanObj.annual.priceCents
+      : scheduledPlan?.priceCents ?? 0;
+  // Mensagem com o ciclo só quando o ciclo muda ou a nova troca é no anual.
+  const scheduledChangeKey =
+    scheduledInterval === 'YEARLY'
+      ? 'manage.scheduledChangeYearly'
+      : isYearly
+        ? 'manage.scheduledChangeMonthly'
+        : 'manage.scheduledChange';
+
+  // Créditos do anual renovam todo mês — mostra quando entra o próximo lote.
+  const nextCreditsDate =
+    isYearly && balance?.periodEnd
+      ? new Date(balance.periodEnd).toLocaleDateString(locale, { day: '2-digit', month: 'long' })
+      : null;
 
   // Retention offer already used? Hide cancel/downgrade retention modals
   const retentionOfferUsed = !!(subscription as Record<string, unknown> | null)?.retentionOfferAcceptedAt;
@@ -223,28 +260,36 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
       ? discountedPriceMain
       : priceMain;
 
-  // Plan change options
+  // Plan change options — no anual, as trocas ficam no anual (subir é na hora,
+  // descer fica pra renovação); voltar pro mensal é uma opção à parte.
   const currentPlanIdx = PLAN_ORDER.indexOf(planSlug);
+  const sameIntervalAvailable = (p: { slug: string; annual?: unknown }) => !isYearly || !!p.annual;
   const upgradePlans = (plans ?? [])
-    .filter((p) => PLAN_ORDER.indexOf(p.slug) > currentPlanIdx)
+    .filter((p) => PLAN_ORDER.indexOf(p.slug) > currentPlanIdx && sameIntervalAvailable(p))
     .sort((a, b) => PLAN_ORDER.indexOf(a.slug) - PLAN_ORDER.indexOf(b.slug));
   const downgradePlans = (plans ?? [])
     .filter((p) => {
       const idx = PLAN_ORDER.indexOf(p.slug);
-      return idx < currentPlanIdx && p.slug !== 'free';
+      return idx < currentPlanIdx && p.slug !== 'free' && sameIntervalAvailable(p);
     })
     .sort((a, b) => PLAN_ORDER.indexOf(b.slug) - PLAN_ORDER.indexOf(a.slug));
+  const canSwitchToAnnual = !isYearly && !!currentPlanObj?.annual;
+  const canSwitchToMonthly = isYearly;
+  const formatCycle = (p: (typeof upgradePlans)[number]) => {
+    const price = getPlanIntervalPrice(p, currentInterval);
+    return `${formatCurrency(price.billedCents, p.currency || planCurrency, locale)}${isYearly ? t('manage.perYearShort') : perMonthShort}`;
+  };
 
-  async function executeDowngrade(targetSlug: string) {
+  async function executeDowngrade(targetSlug: string, interval: BillingInterval) {
     if (!accessToken) return;
     setIsDowngrading(true);
     try {
-      await api.subscriptions.downgrade(accessToken, targetSlug);
+      await api.subscriptions.downgrade(accessToken, targetSlug, interval);
       toast.success(t('manage.toasts.downgradeScheduled'), {
         description: t('manage.toasts.downgradeScheduledDesc'),
       });
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
-      setPendingDowngradeSlug(null);
+      setPendingDowngrade(null);
       onClose();
     } catch {
       toast.error(t('manage.toasts.downgradeError'), {
@@ -255,11 +300,11 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
     }
   }
 
-  async function executeUpgrade(targetSlug: string) {
+  async function executeUpgrade(targetSlug: string, interval: BillingInterval) {
     if (!accessToken) return;
     setIsUpgrading(true);
     try {
-      const { checkoutUrl } = await api.subscriptions.upgrade(accessToken, targetSlug);
+      const { checkoutUrl } = await api.subscriptions.upgrade(accessToken, targetSlug, undefined, interval);
       window.location.href = checkoutUrl;
     } catch {
       toast.error(t('manage.toasts.upgradeError'), {
@@ -325,6 +370,11 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
               <span className="flex-1 text-xs text-[#f3f0ed]/40">{t('manage.plan')}</span>
               <span className="flex items-center gap-1.5 text-xs font-medium text-[#f3f0ed]">
                 {planName}
+                {!isFreeUser && (
+                  <span className="rounded-full bg-[#f3f0ed]/[0.06] px-1.5 py-0.5 text-[10px] font-semibold text-[#f3f0ed]/60">
+                    {isYearly ? t('manage.billingYearly') : t('manage.billingMonthly')}
+                  </span>
+                )}
                 {isActive && !cancelAtPeriodEnd && (
                   <span className="rounded-full bg-green-400/10 px-1.5 py-0.5 text-[10px] font-bold text-green-400">{t('manage.active')}</span>
                 )}
@@ -340,10 +390,10 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
                 <div className="flex items-center gap-3">
                   <CalendarDays className="h-4 w-4 shrink-0 text-amber-400/60" />
                   <span className="text-[11px] text-amber-400/80">
-                    {t.rich('manage.scheduledChange', {
+                    {t.rich(scheduledChangeKey, {
                       name: (chunks) => <span className="font-semibold">{chunks}</span>,
                       planName: scheduledPlan.name,
-                      price: formatCurrency(scheduledPlan.priceCents, planCurrency, locale),
+                      price: formatCurrency(scheduledPriceCents, planCurrency, locale),
                     })}
                   </span>
                 </div>
@@ -361,9 +411,16 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
             <div className="flex items-center gap-3 rounded-xl border border-[#f3f0ed]/8 bg-[#f3f0ed]/[0.03] px-4 py-3">
               <Coins className="h-4 w-4 shrink-0 text-[#a2dd00]/60" />
               <span className="flex-1 text-xs text-[#f3f0ed]/40">{t('manage.remainingCredits')}</span>
-              <span className="text-xs font-medium text-[#f3f0ed]">
-                {creditsRemaining.toLocaleString(locale)}
-              </span>
+              <div className="flex flex-col items-end">
+                <span className="text-xs font-medium text-[#f3f0ed]">
+                  {creditsRemaining.toLocaleString(locale)}
+                </span>
+                {nextCreditsDate && (
+                  <span className="text-[10px] text-[#f3f0ed]/30">
+                    {t('manage.yearlyCreditsNote', { date: nextCreditsDate })}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Custo do plano */}
@@ -374,7 +431,7 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
                 {hasDiscount ? (
                   <>
                     <span className="text-[10px] text-[#f3f0ed]/30 line-through">{priceMain}</span>
-                    <span className="text-xs font-medium text-[#a2dd00]">{discountedPriceMain}</span>
+                    <span className="text-xs font-medium text-[#a2dd00]">{discountedPriceMain}{cycleSuffix}</span>
                     <span className="rounded-full bg-[#a2dd00]/10 px-1.5 py-0.5 text-[9px] font-bold text-[#a2dd00]">
                       {discount!.percentOff
                         ? t('badges.discountOff', { pct: discount!.percentOff })
@@ -386,7 +443,7 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
                     </span>
                   </>
                 ) : (
-                  <span className="text-xs font-medium text-[#f3f0ed]">{priceMain}</span>
+                  <span className="text-xs font-medium text-[#f3f0ed]">{priceMain}{cycleSuffix}</span>
                 )}
               </div>
             </div>
@@ -429,7 +486,7 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
           {isActive && !isFreeUser && (
             <div className="flex flex-col gap-3">
               {/* Change plan — collapsible with upgrade + downgrade options */}
-              {(upgradePlans.length > 0 || downgradePlans.length > 0) && !cancelAtPeriodEnd && (
+              {(upgradePlans.length > 0 || downgradePlans.length > 0 || canSwitchToAnnual || canSwitchToMonthly) && !cancelAtPeriodEnd && (
                 <div>
                   <button
                     onClick={() => setShowPlanOptions(!showPlanOptions)}
@@ -443,12 +500,25 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
 
                   {showPlanOptions && (
                     <div className="mt-2 flex flex-col gap-1.5 pl-2">
+                      {canSwitchToAnnual && currentPlanObj?.annual && (
+                        <button
+                          onClick={() => executeUpgrade(planSlug, 'YEARLY')}
+                          disabled={isUpgrading}
+                          className="flex items-center justify-between rounded-lg border border-[#a2dd00]/25 bg-[#a2dd00]/10 px-3 py-2 text-xs font-medium text-[#f3f0ed]/80 transition-colors hover:border-[#a2dd00]/40 hover:bg-[#a2dd00]/15"
+                        >
+                          <span>{t('manage.switchToAnnual', { pct: currentPlanObj.annual.discountPercent })}</span>
+                          <span className="text-[#a2dd00]/80">
+                            {formatCurrency(currentPlanObj.annual.priceCents, currentPlanObj.currency || planCurrency, locale)}
+                            {t('manage.perYearShort')}
+                          </span>
+                        </button>
+                      )}
                       {upgradePlans.map((p) => {
-                        const main = formatCurrency(p.priceCents, p.currency || planCurrency, locale);
+                        const main = formatCycle(p);
                         return (
                           <button
                             key={p.id}
-                            onClick={() => executeUpgrade(p.slug)}
+                            onClick={() => executeUpgrade(p.slug, currentInterval)}
                             disabled={isUpgrading}
                             className="flex items-center justify-between rounded-lg border border-[#a2dd00]/15 bg-[#a2dd00]/5 px-3 py-2 text-xs text-[#f3f0ed]/60 transition-colors hover:border-[#a2dd00]/30 hover:bg-[#a2dd00]/10"
                           >
@@ -456,23 +526,37 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
                               {p.name}
                               <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[9px] font-bold text-[#a2dd00]">{t('badges.upgrade')}</span>
                             </span>
-                            <span className="text-[#a2dd00]/60">{main}{perMonthShort}</span>
+                            <span className="text-[#a2dd00]/60">{main}</span>
                           </button>
                         );
                       })}
                       {!scheduledPlan && downgradePlans.map((p) => {
-                        const main = formatCurrency(p.priceCents, p.currency || planCurrency, locale);
+                        const main = formatCycle(p);
                         return (
                           <button
                             key={p.id}
-                            onClick={() => setPendingDowngradeSlug(p.slug)}
+                            onClick={() => setPendingDowngrade({ slug: p.slug, interval: currentInterval })}
                             className="flex items-center justify-between rounded-lg border border-[#f3f0ed]/6 bg-[#f3f0ed]/[0.02] px-3 py-2 text-xs text-[#f3f0ed]/40 transition-colors hover:border-[#f3f0ed]/12 hover:text-[#f3f0ed]/60"
                           >
                             <span>{p.name}</span>
-                            <span className="text-[#f3f0ed]/25">{main}{perMonthShort}</span>
+                            <span className="text-[#f3f0ed]/25">{main}</span>
                           </button>
                         );
                       })}
+                      {!scheduledPlan && canSwitchToMonthly && (
+                        <button
+                          onClick={() => setPendingDowngrade({ slug: planSlug, interval: 'MONTHLY' })}
+                          className="flex items-center justify-between rounded-lg border border-[#f3f0ed]/6 bg-[#f3f0ed]/[0.02] px-3 py-2 text-xs text-[#f3f0ed]/40 transition-colors hover:border-[#f3f0ed]/12 hover:text-[#f3f0ed]/60"
+                        >
+                          <span>{t('manage.switchToMonthly')}</span>
+                          {currentPlanObj && (
+                            <span className="text-[#f3f0ed]/25">
+                              {formatCurrency(currentPlanObj.priceCents, currentPlanObj.currency || planCurrency, locale)}
+                              {perMonthShort}
+                            </span>
+                          )}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -528,6 +612,7 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
           currentPlanName={planName}
           accessEndDate={subEnd ?? undefined}
           hideOffers={retentionOfferUsed}
+          onlyBonusOffers={isYearly}
           lostBenefits={[
             t('manage.retentionLostBenefits.allCredits', { plan: planName }),
             t('manage.retentionLostBenefits.speedPriority'),
@@ -539,9 +624,9 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
       )}
 
       {/* Downgrade retention modal */}
-      {pendingDowngradeSlug && (() => {
+      {pendingDowngrade && (() => {
         const currentPlan = sorted.find((p) => p.slug === planSlug);
-        const targetPlan = sorted.find((p) => p.slug === pendingDowngradeSlug);
+        const targetPlan = sorted.find((p) => p.slug === pendingDowngrade.slug);
         const currentFeatureKeys = currentPlan ? getPlanFeatureKeys(currentPlan) : [];
         const targetFeatureKeys = targetPlan ? getPlanFeatureKeys(targetPlan) : [];
         const targetKeySet = new Set(targetFeatureKeys.map((e) => e.key));
@@ -564,16 +649,21 @@ export function ManageSubscriptionModal({ onClose }: ManageSubscriptionModalProp
         return (
           <CancelRetentionModal
             action="downgrade"
-            onClose={() => setPendingDowngradeSlug(null)}
-            onConfirm={() => executeDowngrade(pendingDowngradeSlug)}
+            onClose={() => setPendingDowngrade(null)}
+            onConfirm={() => executeDowngrade(pendingDowngrade.slug, pendingDowngrade.interval)}
             onAcceptOffer={(reasonId) => {
               acceptOfferMutation.mutate(reasonId);
             }}
             isLoading={isDowngrading}
             isAcceptingOffer={acceptOfferMutation.isPending}
             currentPlanName={currentPlan?.name}
-            targetPlanName={targetPlan?.name}
+            targetPlanName={
+              targetPlan && pendingDowngrade.slug === planSlug
+                ? `${targetPlan.name} (${t('manage.billingMonthly')})`
+                : targetPlan?.name
+            }
             hideOffers={retentionOfferUsed}
+            onlyBonusOffers={isYearly}
             lostBenefits={
               lostBenefits.length > 0
                 ? lostBenefits

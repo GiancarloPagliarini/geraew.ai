@@ -22,10 +22,8 @@ import {
   BrainCircuit,
   Megaphone,
   Mail,
-  Infinity as InfinityIcon,
   Link2,
   Clock,
-  Cloud,
   Tags,
   TrendingUp,
   ChevronDown,
@@ -46,7 +44,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/admin/usuarios', label: 'Usuários', icon: Users },
       { href: '/admin/geracoes', label: 'Gerações', icon: Image },
-      { href: '/admin/filas-ilimitado', label: 'Fila Ilimitada', icon: InfinityIcon },
       { href: '/admin/feedback', label: 'Feedback', icon: MessageSquareHeart },
       { href: '/admin/publico', label: 'Público', icon: PieChart },
     ],
@@ -57,7 +54,6 @@ const NAV_GROUPS: NavGroup[] = [
     icon: BrainCircuit,
     items: [
       { href: '/admin/modelos', label: 'Modelos', icon: BrainCircuit },
-      { href: '/admin/vertex', label: 'Vertex', icon: Cloud },
     ],
   },
   {

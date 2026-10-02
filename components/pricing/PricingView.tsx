@@ -4,17 +4,17 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { BadgePercent, Check, CircleOff, Coins, Flame, Infinity as InfinityIcon, Zap, type LucideIcon } from 'lucide-react';
+import { BadgePercent, CalendarCheck, Check, CircleOff, Coins, Flame, Zap, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { clearRecoveryPromo, getStoredRecoveryPromo } from '@/lib/recovery-promo';
 import { CancelRetentionModal } from '@/components/editor/CancelRetentionModal';
 import { CreditPackagesGrid } from '@/components/editor/CreditPackagesGrid';
 import { PlansGrid } from '@/components/editor/PlansGrid';
 import { PixAutoCheckoutModal } from '@/components/editor/PixAutoCheckoutModal';
-import type { Plan } from '@/lib/api';
-import { PLAN_ORDER, getPlanFeatureKeys } from '@/lib/plans';
+import type { BillingInterval, Plan } from '@/lib/api';
+import { PLAN_ORDER, getPlanFeatureKeys, parseBillingInterval } from '@/lib/plans';
+import { usePlanSubscribe } from '@/hooks/use-plan-subscribe';
 
 /** Faixa de confiança exibida abaixo dos cards (garantias do plano). */
 function TrustBar({ items }: { items: { icon: LucideIcon; label: string }[] }) {
@@ -41,10 +41,8 @@ export function PricingView() {
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'plans' | 'credits'>('plans');
-  const [subscribingSlug, setSubscribingSlug] = useState<string | null>(null);
-  const [pendingDowngradeSlug, setPendingDowngradeSlug] = useState<string | null>(null);
   const [isDowngrading, setIsDowngrading] = useState(false);
-  const [pixAutoPlan, setPixAutoPlan] = useState<Plan | null>(null);
+  const [pixAutoPlan, setPixAutoPlan] = useState<{ plan: Plan; interval: BillingInterval } | null>(null);
 
   const { data: plans, isLoading: plansLoading } = useQuery({
     queryKey: ['plans', uiCurrency],
@@ -74,73 +72,37 @@ export function PricingView() {
 
   const sub = profile?.subscription as Record<string, unknown> | null;
   const hasActiveSub = sub?.status === 'ACTIVE' || sub?.status === 'active';
+  const currentInterval = parseBillingInterval(sub?.billingInterval);
+
+  const { subscribingSlug, subscribe, pendingChange, setPendingChange } = usePlanSubscribe({
+    accessToken,
+    currency: uiCurrency,
+    currentPlanSlug,
+    currentInterval,
+    hasActiveSub,
+    onError: () =>
+      toast.error(t('manage.toasts.changePlanError'), { description: t('manage.toasts.tryAgain') }),
+  });
 
   // Ordena do mais caro para o mais barato.
   const sorted = (plans ?? [])
     .slice()
     .sort((a, b) => PLAN_ORDER.indexOf(b.slug) - PLAN_ORDER.indexOf(a.slug));
 
-  function getPlanAction(targetSlug: string): 'upgrade' | 'downgrade' | 'create' {
-    if (!hasActiveSub || !currentPlanSlug || currentPlanSlug === 'free') return 'create';
-    const currentIdx = PLAN_ORDER.indexOf(currentPlanSlug);
-    const targetIdx = PLAN_ORDER.indexOf(targetSlug);
-    return targetIdx > currentIdx ? 'upgrade' : 'downgrade';
-  }
-
-  async function executeDowngrade(planSlug: string) {
+  async function executeDowngrade(planSlug: string, interval: BillingInterval) {
     if (!accessToken) return;
     setIsDowngrading(true);
     try {
-      await api.subscriptions.downgrade(accessToken, planSlug);
+      await api.subscriptions.downgrade(accessToken, planSlug, interval);
       toast.success(t('manage.toasts.downgradeScheduled'), {
         description: t('manage.toasts.downgradeScheduledDesc'),
       });
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
-      setPendingDowngradeSlug(null);
+      setPendingChange(null);
     } catch {
       toast.error(t('manage.toasts.downgradeError'), { description: t('manage.toasts.tryAgain') });
     } finally {
       setIsDowngrading(false);
-    }
-  }
-
-  async function handleSubscribe(planSlug: string) {
-    if (!accessToken || subscribingSlug) return;
-    const action = getPlanAction(planSlug);
-
-    if (action === 'downgrade') {
-      setPendingDowngradeSlug(planSlug);
-      return;
-    }
-
-    setSubscribingSlug(planSlug);
-
-    try {
-      let checkoutUrl: string;
-      if (action === 'create') {
-        const recoveryPromo = getStoredRecoveryPromo();
-        const res = await api.subscriptions.create(accessToken, planSlug, uiCurrency, recoveryPromo);
-        if (recoveryPromo) clearRecoveryPromo();
-        checkoutUrl = res.checkoutUrl;
-      } else {
-        const res = await api.subscriptions.upgrade(accessToken, planSlug, uiCurrency);
-        checkoutUrl = res.checkoutUrl;
-      }
-      window.location.href = checkoutUrl;
-    } catch (err: unknown) {
-      const status = (err as { status?: number })?.status;
-      if (status === 409) {
-        try {
-          const res = await api.subscriptions.upgrade(accessToken, planSlug, uiCurrency);
-          window.location.href = res.checkoutUrl;
-        } catch {
-          toast.error(t('manage.toasts.changePlanError'), { description: t('manage.toasts.tryAgain') });
-          setSubscribingSlug(null);
-        }
-      } else {
-        toast.error(t('manage.toasts.changePlanError'), { description: t('manage.toasts.tryAgain') });
-        setSubscribingSlug(null);
-      }
     }
   }
 
@@ -211,10 +173,11 @@ export function PricingView() {
             <PlansGrid
               plans={plans ?? []}
               currentPlanSlug={currentPlanSlug}
+              currentInterval={currentInterval}
               hasActiveSub={hasActiveSub}
               subscribingSlug={subscribingSlug}
-              onSubscribe={handleSubscribe}
-              onSubscribePix={(plan) => setPixAutoPlan(plan)}
+              onSubscribe={subscribe}
+              onSubscribePix={(plan, interval) => setPixAutoPlan({ plan, interval })}
               compact
               isLoading={isLoading}
             />
@@ -238,7 +201,7 @@ export function PricingView() {
               items={[
                 { icon: Coins, label: t('plansModal.stackWithPlan') },
                 { icon: Zap, label: t('plansModal.instant') },
-                { icon: InfinityIcon, label: t('plansModal.neverExpire') },
+                { icon: CalendarCheck, label: t('plansModal.neverExpire') },
               ]}
             />
           </>
@@ -248,9 +211,14 @@ export function PricingView() {
       {/* PIX Automático checkout */}
       {pixAutoPlan && (
         <PixAutoCheckoutModal
-          planSlug={pixAutoPlan.slug}
-          planName={pixAutoPlan.name}
-          priceCents={pixAutoPlan.priceCents}
+          planSlug={pixAutoPlan.plan.slug}
+          planName={pixAutoPlan.plan.name}
+          priceCents={
+            pixAutoPlan.interval === 'YEARLY' && pixAutoPlan.plan.annual
+              ? pixAutoPlan.plan.annual.priceCents
+              : pixAutoPlan.plan.priceCents
+          }
+          billingInterval={pixAutoPlan.interval}
           onClose={() => setPixAutoPlan(null)}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
@@ -260,10 +228,10 @@ export function PricingView() {
       )}
 
       {/* retenção no downgrade */}
-      {pendingDowngradeSlug &&
+      {pendingChange &&
         (() => {
           const currentPlan = sorted.find((p) => p.slug === currentPlanSlug);
-          const targetPlan = sorted.find((p) => p.slug === pendingDowngradeSlug);
+          const targetPlan = sorted.find((p) => p.slug === pendingChange.slug);
           const currentFeatureKeys = currentPlan ? getPlanFeatureKeys(currentPlan) : [];
           const targetFeatureKeys = targetPlan ? getPlanFeatureKeys(targetPlan) : [];
           const targetKeySet = new Set(targetFeatureKeys.map((e) => e.key));
@@ -281,8 +249,8 @@ export function PricingView() {
           return (
             <CancelRetentionModal
               action="downgrade"
-              onClose={() => setPendingDowngradeSlug(null)}
-              onConfirm={() => executeDowngrade(pendingDowngradeSlug)}
+              onClose={() => setPendingChange(null)}
+              onConfirm={() => executeDowngrade(pendingChange.slug, pendingChange.interval)}
               isLoading={isDowngrading}
               currentPlanName={currentPlan?.name}
               targetPlanName={targetPlan?.name}

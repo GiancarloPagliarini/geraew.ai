@@ -85,6 +85,13 @@ function modelLabel(model: string | null) {
     'veo-3.1': 'Veo 3.1',
     'veo-fast': 'Veo Fast',
     'veo-max': 'Veo Max',
+    veo3_fast: 'Veo 3.1 Fast',
+    veo3: 'Veo 3.1 Quality',
+    // histórico: Veo via Vertex (descontinuado)
+    'geraew-fast': 'Veo 3.1 Fast (Vertex)',
+    'geraew-quality': 'Veo 3.1 Quality (Vertex)',
+    'veo-3.1-fast-generate-001': 'Veo 3.1 Fast (Vertex)',
+    'veo-3.1-generate-001': 'Veo 3.1 Quality (Vertex)',
   };
   return map[model] ?? model;
 }

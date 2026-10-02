@@ -4,8 +4,8 @@ import { Loader2, AlertTriangle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { api } from '@/lib/api';
-import { clearRecoveryPromo, getStoredRecoveryPromo } from '@/lib/recovery-promo';
+import { parsePlanParam } from '@/lib/plans';
+import { startPlanCheckout } from '@/hooks/use-plan-subscribe';
 
 function CheckoutRedirectContent() {
   const router = useRouter();
@@ -14,18 +14,21 @@ function CheckoutRedirectContent() {
   const triggered = useRef(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const planSlug = searchParams.get('plan');
+  // "pro" = mensal, "pro:yearly" = anual (ver encodePlanParam). O valor bruto
+  // segue igual pro login, que devolve pra cá depois de autenticar.
+  const planParam = searchParams.get('plan');
 
   useEffect(() => {
     if (authLoading) return;
 
-    if (!planSlug) {
+    const requested = parsePlanParam(planParam);
+    if (!planParam || !requested) {
       router.replace('/creditos');
       return;
     }
 
     if (!user || !accessToken) {
-      router.replace(`/login?plan=${encodeURIComponent(planSlug)}`);
+      router.replace(`/login?plan=${encodeURIComponent(planParam)}`);
       return;
     }
 
@@ -33,26 +36,18 @@ function CheckoutRedirectContent() {
     triggered.current = true;
 
     (async () => {
-      const recoveryPromo = getStoredRecoveryPromo();
       try {
-        const res = await api.subscriptions.create(accessToken, planSlug, undefined, recoveryPromo);
-        if (recoveryPromo) clearRecoveryPromo();
-        window.location.href = res.checkoutUrl;
-      } catch (err: unknown) {
-        const status = (err as { status?: number })?.status;
-        if (status === 409) {
-          try {
-            const res = await api.subscriptions.upgrade(accessToken, planSlug);
-            window.location.href = res.checkoutUrl;
-            return;
-          } catch {
-            // fall through
-          }
-        }
+        window.location.href = await startPlanCheckout({
+          accessToken,
+          planSlug: requested.slug,
+          billingInterval: requested.interval,
+          action: 'create',
+        });
+      } catch {
         setErrorMsg('Não foi possível iniciar o checkout. Tente novamente pela página de planos.');
       }
     })();
-  }, [authLoading, user, accessToken, planSlug, router]);
+  }, [authLoading, user, accessToken, planParam, router]);
 
   if (errorMsg) {
     return (

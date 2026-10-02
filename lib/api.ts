@@ -181,8 +181,24 @@ export interface PixAutoAuthorization {
   isUpgrade: boolean;
   /** valor cobrado AGORA (em centavos) — em upgrade é a diferença pro-rateada */
   immediateValueCents: number;
-  /** valor da cobrança recorrente mensal (em centavos) */
+  /** valor da cobrança recorrente (em centavos) — mensal ou anual, conforme billingInterval */
   recurringValueCents: number;
+  /** periodicidade da assinatura criada (ausente em APIs antigas = MONTHLY) */
+  billingInterval?: BillingInterval;
+}
+
+/** Periodicidade de cobrança da assinatura. Créditos sempre renovam todo mês. */
+export type BillingInterval = 'MONTHLY' | 'YEARLY';
+
+/** Preço anual do plano (cobrado uma vez por ano, com desconto). */
+export interface PlanAnnualPrice {
+  /** total cobrado por ano, em centavos */
+  priceCents: number;
+  /** equivalente mensal (priceCents / 12), em centavos */
+  monthlyEquivalentCents: number;
+  currency: string;
+  /** desconto real vs. 12× o mensal, em % inteiro */
+  discountPercent: number;
 }
 
 export interface Plan {
@@ -197,6 +213,8 @@ export interface Plan {
   hasWatermark: boolean;
   galleryRetentionDays: number | null;
   hasApiAccess: boolean;
+  /** null/ausente quando o plano não tem opção anual nessa moeda */
+  annual?: PlanAnnualPrice | null;
 }
 
 // ─── AI Models ───────────────────────────────────────────────────────────────
@@ -1482,23 +1500,6 @@ export interface AdminGeneration {
   completedAt: string | null;
 }
 
-// ─── Admin Vertex (gestão de contas no Geraew Provider) ──────────────────
-export interface VertexCredential {
-  id: string;
-  name: string;
-  quotaProjectId: string;
-  active: boolean;
-  createdAt: string;
-}
-
-export interface CreateVertexCredentialInput {
-  name: string;
-  clientId: string;
-  clientSecret: string;
-  refreshToken: string;
-  quotaProjectId: string;
-}
-
 // ─── Inworld voices cache (module-level, dedupes concurrent fetches) ─────
 const INWORLD_VOICES_CACHE_TTL = 60 * 60 * 1000; // 1h
 let inworldVoicesCache: { at: number; voices: InworldVoice[] } | null = null;
@@ -2046,11 +2047,18 @@ export const api = {
   },
 
   subscriptions: {
-    async create(accessToken: string, planSlug: string, currency?: string, recoveryPromoCode?: string) {
+    async create(
+      accessToken: string,
+      planSlug: string,
+      currency?: string,
+      recoveryPromoCode?: string,
+      billingInterval: BillingInterval = 'MONTHLY',
+    ) {
       const res = await authRequest<{ checkoutUrl: string }>('/api/v1/subscriptions', accessToken, {
         method: 'POST',
         body: JSON.stringify({
           planSlug,
+          billingInterval,
           ...(currency ? { currency } : {}),
           ...(recoveryPromoCode ? { recoveryPromoCode } : {}),
         }),
@@ -2084,16 +2092,22 @@ export const api = {
         body: JSON.stringify({ reason }),
       });
     },
-    upgrade(accessToken: string, planSlug: string, currency?: string) {
+    /** Sem billingInterval o backend mantém a periodicidade atual da assinatura. */
+    upgrade(accessToken: string, planSlug: string, currency?: string, billingInterval?: BillingInterval) {
       return authRequest<{ checkoutUrl: string }>('/api/v1/subscriptions/upgrade', accessToken, {
         method: 'PATCH',
-        body: JSON.stringify({ planSlug, ...(currency ? { currency } : {}) }),
+        body: JSON.stringify({
+          planSlug,
+          ...(currency ? { currency } : {}),
+          ...(billingInterval ? { billingInterval } : {}),
+        }),
       });
     },
-    downgrade(accessToken: string, planSlug: string) {
+    /** Troca agendada para a próxima renovação (plano menor ou volta pro mensal). */
+    downgrade(accessToken: string, planSlug: string, billingInterval?: BillingInterval) {
       return authRequest<Record<string, unknown>>('/api/v1/subscriptions/downgrade', accessToken, {
         method: 'PATCH',
-        body: JSON.stringify({ planSlug }),
+        body: JSON.stringify({ planSlug, ...(billingInterval ? { billingInterval } : {}) }),
       });
     },
     cancelDowngrade(accessToken: string) {
@@ -2106,10 +2120,15 @@ export const api = {
         method: 'POST',
       });
     },
-    createPixAuto(accessToken: string, planSlug: string, taxId?: string) {
+    createPixAuto(
+      accessToken: string,
+      planSlug: string,
+      taxId?: string,
+      billingInterval: BillingInterval = 'MONTHLY',
+    ) {
       return authRequest<PixAutoAuthorization>('/api/v1/subscriptions/pix-auto', accessToken, {
         method: 'POST',
-        body: JSON.stringify({ planSlug, ...(taxId ? { taxId } : {}) }),
+        body: JSON.stringify({ planSlug, billingInterval, ...(taxId ? { taxId } : {}) }),
       });
     },
     pixAutoStatus(accessToken: string, authorizationId: string) {
@@ -3148,23 +3167,6 @@ export const api = {
         `/api/v1/admin/crons/executions${suffix}`,
         accessToken,
       );
-    },
-  },
-
-  adminVertex: {
-    listCredentials(accessToken: string) {
-      return authRequest<VertexCredential[]>('/api/v1/admin/vertex/credentials', accessToken);
-    },
-    createCredential(accessToken: string, payload: CreateVertexCredentialInput) {
-      return authRequest<VertexCredential>('/api/v1/admin/vertex/credentials', accessToken, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
-    },
-    deleteCredential(accessToken: string, id: string) {
-      return authRequest<void>(`/api/v1/admin/vertex/credentials/${id}`, accessToken, {
-        method: 'DELETE',
-      });
     },
   },
 

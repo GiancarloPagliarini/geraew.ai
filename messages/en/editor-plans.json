@@ -26,7 +26,8 @@
       "downgrade": "Downgrade",
       "create": "Get started",
       "current": "Current plan",
-      "buyNow": "Buy now"
+      "buyNow": "Buy now",
+      "switchToAnnual": "Switch to yearly"
     },
     "whatYouCanCreate": "What you can create",
     "features": {
@@ -177,7 +178,15 @@
         "noWatermark": "Watermark-free generations",
         "currentPlanBenefits": "Credits and features from your current plan",
         "creditsLess": "{count, number} fewer monthly credits"
-      }
+      },
+      "billingYearly": "Yearly",
+      "billingMonthly": "Monthly",
+      "perYearShort": "/yr",
+      "switchToAnnual": "Switch to yearly ({pct}% OFF)",
+      "switchToMonthly": "Switch back to monthly at renewal",
+      "scheduledChangeYearly": "Changes to <name>{planName}</name> yearly ({price}/yr) at the next renewal",
+      "scheduledChangeMonthly": "Changes to <name>{planName}</name> monthly ({price}/mo) at the next renewal",
+      "yearlyCreditsNote": "Renew monthly · next on {date}"
     },
     "unlimited": {
       "modeBadge": "Unlimited Mode",
@@ -206,6 +215,15 @@
         "nb2_1K": "Nano Banana 2 images at 1K",
         "nbBoth1K": "Nano Banana 2 and Pro images at 1K"
       }
+    },
+    "billing": {
+      "label": "Billing cycle",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "yearlyDiscount": "-{pct}%",
+      "billedYearly": "{amount} billed yearly",
+      "monthlyOnly": "Only available on monthly billing",
+      "creditsMonthly": "On yearly billing, credits still renew every month"
     }
   }
 }

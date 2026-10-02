@@ -48,9 +48,12 @@ import {
   getModelVariantFromSlug,
   isUnlimitedModelAllowed,
 } from '@/hooks/use-unlimited-status';
+import { UNLIMITED_MODE_ENABLED } from '@/lib/unlimited';
 import {
   getVideoModelCapabilities,
   proportionToApiAspectRatio,
+  DEFAULT_VIDEO_MODEL,
+  normalizeVideoModelSlug,
 } from '@/lib/video-models';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -77,6 +80,9 @@ type GenState = 'idle' | 'generating' | 'done';
 
 const RADIUS = 36;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
+/** Veo via Vertex (descontinuado) — escondido mesmo que o banco ainda liste. */
+const RETIRED_VIDEO_MODELS = new Set(['geraew-fast', 'geraew-quality']);
 
 const MAX_REFERENCE_SIZE = 1920;
 const REFERENCE_QUALITY = 0.85;
@@ -128,6 +134,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   const t = useTranslations('editorPanels.video');
   const tCommon = useTranslations('editorPanels.common');
   const tUnlimited = useTranslations('editorPanels.unlimited');
+  const tVideoHome = useTranslations('home.video');
   const VIDEO_LOADING_MESSAGES = t.raw('loadingMessages') as string[];
   const { setNodeImage, consumeCredits, refetchCredits, prependToGallery, openGalleryPicker, pendingPromptRef, consumePendingPrompt, setNodeGenerating, studioMode } = useEditor();
   const [initialPendingPrompt] = useState(() => {
@@ -154,7 +161,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   const [negativePrompt, setNegativePrompt] = useState<string>('');
   const [editingNegative, setEditingNegative] = useState<boolean>(false);
   const [audio, setAudio] = useState<boolean>(stored?.audio ?? true);
-  const [model, setModel] = useState<string>(stored?.model ?? 'geraew-fast');
+  // slugs aposentados (geraew-* = Veo via Vertex) salvos no localStorage viram o Veo 3.1 do KIE
+  const [model, setModel] = useState<string>(normalizeVideoModelSlug(stored?.model) ?? DEFAULT_VIDEO_MODEL);
   const [duration, setDuration] = useState<string>(stored?.duration ?? '8s');
   const [proportion, setProportion] = useState<string>(stored?.proportion ?? '9-16');
   const [resolution, setResolution] = useState<string>(stored?.resolution ?? 'RES_1080P');
@@ -208,10 +216,8 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
 
   const videoModelOptions = useMemo(() => {
     const labelOverride: Record<string, string> = {
-      'geraew-quality': 'Veo 3.1 Quality',
-      'geraew-fast': 'Veo 3.1 Fast',
-      'veo3': 'Geraew Quality',
-      'veo3_fast': 'Geraew Fast',
+      'veo3': 'Veo 3.1 Quality',
+      'veo3_fast': 'Veo 3.1 Fast',
       'grok-imagine': 'Grok Imagine',
       'gemini-omni-video': 'Gemini Omni',
       'bytedance-seedance-2': 'Seedance 2',
@@ -222,14 +228,13 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
       { value: 'bytedance-seedance-2-5', label: labelOverride['bytedance-seedance-2-5'] },
       { value: 'bytedance-seedance-2', label: labelOverride['bytedance-seedance-2'] },
       { value: 'grok-imagine', label: labelOverride['grok-imagine'] },
-      { value: 'geraew-quality', label: labelOverride['geraew-quality'] },
-      { value: 'geraew-fast', label: labelOverride['geraew-fast'] },
       { value: 'veo3', label: labelOverride['veo3'] },
       { value: 'veo3_fast', label: labelOverride['veo3_fast'] },
     ];
     const raw = videoModelsQuery.data
       ? videoModelsQuery.data
-          .filter((m) => !m.isGateway)
+          // geraew-* = Veo via Vertex, descontinuado — nunca aparece, mesmo se o banco ainda o listar
+          .filter((m) => !m.isGateway && !RETIRED_VIDEO_MODELS.has(m.slug))
           .map((m) => ({
             value: m.slug,
             label: labelOverride[m.slug] ?? m.label,
@@ -248,7 +253,9 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     if (!videoModelsQuery.data) return;
     const current = videoModelsQuery.data.find((m) => m.slug === model);
     if (current && !current.isActive) {
-      const firstActive = videoModelsQuery.data.find((m) => m.isActive && !m.isGateway);
+      const firstActive = videoModelsQuery.data.find(
+        (m) => m.isActive && !m.isGateway && !RETIRED_VIDEO_MODELS.has(m.slug),
+      );
       if (firstActive) setModel(firstActive.slug);
     }
   }, [videoModelsQuery.data, model]);
@@ -275,7 +282,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   // Ao ativar o toggle: garante que modelo + resolução estão no plano,
   // trocando automaticamente caso o atual esteja fora.
   const handleToggleUnlimited = (next: boolean) => {
-    if (!next) {
+    if (!next || !UNLIMITED_MODE_ENABLED) {
       setUnlimited(false);
       return;
     }
@@ -308,19 +315,18 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     setUnlimited(true);
   };
 
-  // With references (text mode) OR references + 1080P/4K → only 8s allowed
-  const forceEightSeconds =
-    refImages.length > 0 && (videoMode === 'text' || resolution === 'RES_1080P' || resolution === 'RES_4K');
-  const effectiveDuration = forceEightSeconds ? '8s' : duration;
 
   // Hover dos botões de upload (referências, frames) — violeta em modo ilimitado.
   const refHoverClass = unlimited
     ? 'hover:border-[#a855f7]/40 hover:text-[#a855f7]/60'
     : 'hover:border-[#a2dd00]/40 hover:text-[#a2dd00]/60';
+  const isKieVeo = model === 'veo3_fast' || model === 'veo3';
+  // Veo 3.1 (KIE) com referências é gerado em veo3_fast e cobrado como IMAGE_TO_VIDEO / VEO_FAST
+  const isKieVeoRefs = isKieVeo && videoMode !== 'image' && refImages.length > 0;
   const videoType = videoMode === 'image'
     ? 'IMAGE_TO_VIDEO' as const
     : refImages.length > 0
-      ? 'REFERENCE_VIDEO' as const
+      ? (isKieVeo ? 'IMAGE_TO_VIDEO' as const : 'REFERENCE_VIDEO' as const)
       : 'TEXT_TO_VIDEO' as const;
 
   const [generationId, setGenerationId] = useState<string | null>(stored?.generationId ?? null);
@@ -335,22 +341,27 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
   }, [genState, nodeId, setNodeGenerating]);
 
   const isGenerating = genState === 'generating';
-  const isKieModel = model === 'veo3_fast' || model === 'veo3';
+  const isKieModel = isKieVeo;
   const isGrokModel = model === 'grok-imagine';
   const isOmniModel = model === 'gemini-omni-video';
   const isSeedanceModel = model === 'bytedance-seedance-2' || model === 'bytedance-seedance-2-5';
   const caps = useMemo(() => getVideoModelCapabilities(model), [model]);
   const maxRefImages = caps.maxReferenceImages ?? 3;
   const videoModelVariant = ({
-    'geraew-fast': 'GERAEW_FAST',
-    'geraew-quality': 'GERAEW_QUALITY',
     'veo3_fast': 'VEO_FAST',
     'veo3': 'VEO_MAX',
     'grok-imagine': 'GROK_IMAGINE',
     'gemini-omni-video': 'GEMINI_OMNI',
     'bytedance-seedance-2': 'SEEDANCE_2',
     'bytedance-seedance-2-5': 'SEEDANCE_2_5',
-  } as Record<string, string>)[model] ?? 'GERAEW_QUALITY';
+  } as Record<string, string>)[model] ?? 'VEO_FAST';
+  // duração fora das opções do modelo (ex.: 6s salvo do antigo Veo via Vertex) cai no padrão dele
+  const effectiveDuration =
+    caps.duration.type === 'preset' && !caps.duration.options.includes(duration)
+      ? caps.duration.default
+      : duration;
+  const isDurationUnavailable = (d: string) =>
+    caps.duration.type === 'preset' && !caps.duration.options.includes(d);
 
   const effectiveAudio = caps.audio === 'always-on' ? true : caps.audio === 'always-off' ? false : audio;
   const effectiveSampleCount = caps.samples === 'single' ? 1 : sampleCount;
@@ -402,14 +413,14 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     (isOmniModel && !!omniVideoFile) ||
     (isSeedanceModel && !!seedanceVideoFile);
   const { data: estimate, isLoading: estimateLoading } = useQuery({
-    queryKey: ['credits', 'estimate', videoType, resolution, effectiveAudio, effectiveSampleCount, videoModelVariant, estimateDurationSeconds, estimateHasVideoInput],
+    queryKey: ['credits', 'estimate', videoType, resolution, effectiveAudio, effectiveSampleCount, videoModelVariant, isKieVeoRefs, estimateDurationSeconds, estimateHasVideoInput],
     queryFn: () => api.credits.estimate(accessToken!, {
       type: videoType,
       resolution,
       durationSeconds: estimateDurationSeconds,
       hasAudio: effectiveAudio,
       sampleCount: effectiveSampleCount,
-      modelVariant: videoModelVariant,
+      modelVariant: isKieVeoRefs ? 'VEO_FAST' : videoModelVariant,
       hasVideoInput: estimateHasVideoInput,
     }),
     enabled: !!accessToken && genState !== 'generating',
@@ -1134,14 +1145,12 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           throw new Error(t('errors.grokUnsupportedMode'));
         }
       } else if (isKieModel) {
-        // KIE API — always audio, sampleCount=1
+        // Veo 3.1 (KIE) — sempre com áudio e 1 vídeo; preço decidido no servidor
         const kiePayload = {
           prompt: finalPrompt,
           model,
           resolution,
           aspect_ratio: proportionToApiAspectRatio(caps, proportion),
-          generate_audio: true,
-          model_variant: videoModelVariant,
         };
 
         if (videoMode === 'image' && firstFrame) {
@@ -1164,41 +1173,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           result = await api.generations.textToVideoKie(accessToken, kiePayload);
         }
       } else {
-        // GeraEW provider — original flow
-        const basePayload = {
-          prompt: finalPrompt,
-          model,
-          resolution,
-          duration_seconds: durationToSeconds(effectiveDuration),
-          aspect_ratio: proportionToApiAspectRatio(caps, proportion),
-          generate_audio: audio,
-          sample_count: sampleCount,
-          ...(negativePrompt.trim() && { negative_prompt: negativePrompt.trim() }),
-          ...(unlimited && { unlimited: true }),
-        };
-
-        if (videoMode === 'image' && firstFrame) {
-          result = await api.generations.imageToVideo(accessToken, {
-            ...basePayload,
-            first_frame: firstFrame.base64,
-            first_frame_mime_type: firstFrame.mime_type,
-            ...(lastFrame ? {
-              last_frame: lastFrame.base64,
-              last_frame_mime_type: lastFrame.mime_type,
-            } : {}),
-          });
-        } else if (refImages.length > 0) {
-          result = await api.generations.videoWithReferences(accessToken, {
-            ...basePayload,
-            reference_images: refImages.map(({ base64, mime_type }) => ({
-              base64,
-              mime_type,
-              reference_type: 'asset' as const,
-            })),
-          });
-        } else {
-          result = await api.generations.textToVideo(accessToken, basePayload);
-        }
+        throw new Error(`Modelo de vídeo sem rota de geração: ${model}`);
       }
 
       const { id, creditsConsumed } = result;
@@ -1401,7 +1376,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
     const durationOptions = ['4s', '6s', '8s'].map((d) => ({
       value: d,
       label: d,
-      disabled: forceEightSeconds && d !== '8s',
+      disabled: isDurationUnavailable(d),
     }));
     const sampleOptions = [1, 2, 3, 4].map((n) => ({ value: String(n), label: `${n}× ${tCommon('credits')}` }));
     const modelSelectOptions = videoModelOptions.map((o) => ({
@@ -1501,6 +1476,9 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                 </div>
               )}
 
+              {videoMode === 'text' && refImages.length > 0 && model === 'veo3' && (
+                <p className="pt-1 text-[10.5px] leading-relaxed text-[#f3f0ed]/40">{tVideoHome('veoRefsFastOnly')}</p>
+              )}
               {videoMode === 'text' && refImages.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {refImages.map((img, i) => (
@@ -1833,7 +1811,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
           </div>
         </TooltipProvider>
         {plansModalOpen && createPortal(<PlansModal onClose={() => setPlansModalOpen(false)} />, document.body)}
-        {unlimitedModalOpen && createPortal(<UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />, document.body)}
+        {UNLIMITED_MODE_ENABLED && unlimitedModalOpen && createPortal(<UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />, document.body)}
       </>
     );
   }
@@ -2496,7 +2474,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       <div className="flex gap-1.5">
                         {(caps.duration as { type: 'preset'; options: string[]; default: string }).options.map((d) => {
                           const active = effectiveDuration === d;
-                          const disabled = forceEightSeconds && d !== '8s';
+                          const disabled = isDurationUnavailable(d);
                           return (
                             <button
                               key={d}
@@ -2682,6 +2660,10 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
                       </label>
                       <span className="text-[10px] text-[#f3f0ed]/25">{refImages.length}/{maxRefImages}</span>
                     </div>
+                    {/* REFERENCE_2_VIDEO do KIE só existe no Veo 3.1 Fast */}
+                    {model === 'veo3' && refImages.length > 0 && (
+                      <p className="text-[10.5px] leading-relaxed text-[#f3f0ed]/40">{tVideoHome('veoRefsFastOnly')}</p>
+                    )}
                     <div className="flex flex-wrap gap-2">
                       {refImages.map((img, i) => (
                         <div key={i} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#f3f0ed]/10">
@@ -2825,7 +2807,7 @@ export function GenerateVideoPanel({ nodeId, onClose, onDuplicate }: GenerateVid
         </div>
       </TooltipProvider>
       {plansModalOpen && createPortal(<PlansModal onClose={() => setPlansModalOpen(false)} />, document.body)}
-      {unlimitedModalOpen && createPortal(<UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />, document.body)}
+      {UNLIMITED_MODE_ENABLED && unlimitedModalOpen && createPortal(<UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />, document.body)}
     </>
   );
 }

@@ -47,25 +47,8 @@ export interface VideoModelCapabilities {
 
 // ─── Definições por família ──────────────────────────────────────────
 
-const GERAEW: VideoModelCapabilities = {
-  resolutions: [
-    { value: 'RES_720P', label: '720p' },
-    { value: 'RES_1080P', label: '1080p' },
-    { value: 'RES_4K', label: '4K' },
-  ],
-  aspectRatios: [
-    { value: '9-16', apiValue: '9:16', label: '9:16' },
-    { value: '16-9', apiValue: '16:9', label: '16:9' },
-  ],
-  duration: { type: 'preset', options: ['4s', '6s', '8s'], default: '8s' },
-  audio: 'toggle',
-  samples: 'multi',
-  supportsNegativePrompt: true,
-  supportsTextMode: true,
-  supportsImageMode: true,
-  supportsReferenceMode: true,
-};
-
+// Veo 3.1 roda só pelo KIE (veo3 / veo3_fast). Os modelos geraew-* (Veo via
+// Vertex) foram descontinuados — slugs desconhecidos caem no KIE_VEO.
 const KIE_VEO: VideoModelCapabilities = {
   resolutions: [
     { value: 'RES_720P', label: '720p' },
@@ -87,7 +70,7 @@ const KIE_VEO: VideoModelCapabilities = {
 };
 
 const GEMINI_OMNI: VideoModelCapabilities = {
-  // 4K removido: o Omni Flash (Vertex Interactions) não controla resolução —
+  // 4K removido: o Omni Flash não controla resolução —
   // o modelo decide. 720p/1080p têm o mesmo preço; oferecer 4K cobrava o
   // premium sem entregar. Ver plans.service.ts OMNI_PRICING.
   resolutions: [
@@ -164,8 +147,6 @@ const GROK_IMAGINE: VideoModelCapabilities = {
 };
 
 const VIDEO_MODEL_CAPABILITIES: Record<string, VideoModelCapabilities> = {
-  'geraew-fast': GERAEW,
-  'geraew-quality': GERAEW,
   'veo3_fast': KIE_VEO,
   'veo3': KIE_VEO,
   'grok-imagine': GROK_IMAGINE,
@@ -175,7 +156,22 @@ const VIDEO_MODEL_CAPABILITIES: Record<string, VideoModelCapabilities> = {
 };
 
 export function getVideoModelCapabilities(slug: string): VideoModelCapabilities {
-  return VIDEO_MODEL_CAPABILITIES[slug] ?? GERAEW;
+  return VIDEO_MODEL_CAPABILITIES[normalizeVideoModelSlug(slug)] ?? KIE_VEO;
+}
+
+/** Slug padrão de vídeo (Veo 3.1 Fast via KIE). */
+export const DEFAULT_VIDEO_MODEL = 'veo3_fast';
+
+/**
+ * Converte slugs aposentados do Veo via Vertex (geraew-*) — que podem estar
+ * salvos em localStorage / painéis persistidos — para o Veo 3.1 do KIE.
+ */
+export function normalizeVideoModelSlug(slug: string): string;
+export function normalizeVideoModelSlug(slug: string | null | undefined): string | null | undefined;
+export function normalizeVideoModelSlug(slug: string | null | undefined): string | null | undefined {
+  if (slug === 'geraew-fast' || slug === 'veo-3.1-fast-generate-001') return 'veo3_fast';
+  if (slug === 'geraew-quality' || slug === 'veo-3.1-generate-001') return 'veo3';
+  return slug;
 }
 
 /**

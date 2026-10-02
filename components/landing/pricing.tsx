@@ -8,16 +8,22 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { useLoginModal } from "@/lib/login-modal-context";
-import { api, Plan } from "@/lib/api";
+import { api, Plan, type BillingInterval } from "@/lib/api";
 import {
   PLAN_ORDER,
   PLAN_ORIGINAL_PRICES,
   PLAN_DISCOUNT_LABELS,
   PLAN_SOCIAL_PROOF,
   PLAN_UNLIMITED_FEATURE_KEYS,
+  encodePlanParam,
   formatPrice,
   formatPriceRaw,
+  getPlanIntervalPrice,
+  parseBillingInterval,
+  plansHaveAnnual,
+  resolvePlanChange,
 } from "@/lib/plans";
+import { BillingIntervalToggle } from "@/components/editor/PlansGrid";
 
 function useTranslatedPlanFeatures(plan: Plan): string[] {
   const t = useTranslations("pricing.features");
@@ -58,28 +64,43 @@ function PlanCard({
   plan,
   i,
   currentPlanSlug,
+  currentInterval,
+  billingInterval,
   hasActiveSub,
 }: {
   plan: Plan;
   i: number;
   total: number;
   currentPlanSlug: string | null;
+  currentInterval: BillingInterval;
+  billingInterval: BillingInterval;
   hasActiveSub: boolean;
 }) {
   const t = useTranslations("pricing");
   const tPlans = useTranslations("plans");
+  const tBilling = useTranslations("editorPlans.billing");
   const { user } = useAuth();
   const { openLoginModal } = useLoginModal();
   const isLoggedIn = !!user;
-  const targetIdx = PLAN_ORDER.indexOf(plan.slug);
-  const currentIdx = currentPlanSlug ? PLAN_ORDER.indexOf(currentPlanSlug) : -1;
-  const isCurrentPlan = isLoggedIn && hasActiveSub && currentIdx >= 0 && targetIdx === currentIdx;
-  const isLowerPlan = isLoggedIn && hasActiveSub && currentIdx >= 0 && targetIdx < currentIdx;
+  const knownCurrent = !!currentPlanSlug && PLAN_ORDER.includes(currentPlanSlug);
+  const change = resolvePlanChange({
+    targetSlug: plan.slug,
+    targetInterval: billingInterval,
+    currentSlug: currentPlanSlug,
+    currentInterval,
+    hasActiveSub,
+  });
+  const isCurrentPlan = isLoggedIn && hasActiveSub && knownCurrent && change === "current";
+  const isLowerPlan = isLoggedIn && hasActiveSub && knownCurrent && change === "downgrade";
   const { ref, isVisible } = useScrollReveal();
   const locale = useLocale();
   const isPopular = plan.slug === "pro";
   const isFree = plan.priceCents === 0;
-  const { main, sub } = formatPrice(plan.priceCents, plan.currency, locale);
+  const isYearly = billingInterval === "YEARLY";
+  const price = getPlanIntervalPrice(plan, billingInterval);
+  const unavailable = !isFree && !price.available;
+  const { main, sub } = formatPrice(price.perMonthCents, plan.currency, locale);
+  const planParam = encodePlanParam(plan.slug, billingInterval);
   const features = useTranslatedPlanFeatures(plan);
   const unlimitedFeatureKeys = PLAN_UNLIMITED_FEATURE_KEYS[plan.slug];
   const tUnlimited = useTranslations("editorPlans.unlimited");
@@ -175,7 +196,19 @@ function PlanCard({
 
         {/* Price with anchor */}
         <div className="mt-4">
-          {originalPrice && !isFree && plan.currency === 'BRL' && (
+          {isYearly && price.compareAtCents && !isFree && (
+            <div className="mb-1 flex items-center gap-2">
+              <span className="text-[13px] text-[#f3f0ed]/25 line-through">
+                {formatPriceRaw(price.compareAtCents, plan.currency, locale)}
+              </span>
+              {!!price.discountPercent && (
+                <span className="rounded-md bg-landing-accent/15 px-1.5 py-0.5 text-[9px] font-bold text-landing-accent">
+                  {tBilling("yearlyDiscount", { pct: price.discountPercent })}
+                </span>
+              )}
+            </div>
+          )}
+          {!isYearly && originalPrice && !isFree && plan.currency === 'BRL' && (
             <div className="mb-1 flex items-center gap-2">
               <span className="text-[13px] text-[#f3f0ed]/25 line-through">
                 {formatPriceRaw(originalPrice, plan.currency, locale)}
@@ -200,6 +233,13 @@ function PlanCard({
               <span className="text-[13px] text-[#f3f0ed]/30">{sub}</span>
             )}
           </div>
+          {isYearly && !isFree && (
+            <p className="mt-1 text-[12px] text-[#f3f0ed]/40">
+              {price.available
+                ? tBilling("billedYearly", { amount: formatPriceRaw(price.billedCents, plan.currency, locale) })
+                : tBilling("monthlyOnly")}
+            </p>
+          )}
         </div>
 
         {/* Social proof */}
@@ -288,16 +328,16 @@ function PlanCard({
             <Check className="h-3.5 w-3.5" />
             {t("currentPlan")}
           </button>
-        ) : isLowerPlan ? (
+        ) : isLowerPlan || unavailable ? (
           <button
             disabled
             className="mt-7 flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-[#f3f0ed]/[0.05] py-3.5 text-[13px] font-bold text-[#f3f0ed]/25"
           >
-            {t("downgradeBlocked")}
+            {unavailable ? tBilling("monthlyOnly") : t("downgradeBlocked")}
           </button>
         ) : isLoggedIn ? (
           <a
-            href={`/checkout?plan=${plan.slug}`}
+            href={`/checkout?plan=${encodeURIComponent(planParam)}`}
             className={cn(
               "mt-7 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[13px] font-bold transition-all duration-300",
               isPopular
@@ -310,7 +350,7 @@ function PlanCard({
           </a>
         ) : (
           <button
-            onClick={() => openLoginModal({ plan: plan.slug })}
+            onClick={() => openLoginModal({ plan: planParam })}
             className={cn(
               "mt-7 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[13px] font-bold transition-all duration-300",
               isPopular
@@ -334,6 +374,7 @@ export function Pricing() {
   const { ref, isVisible } = useScrollReveal();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>("MONTHLY");
   const { accessToken } = useAuth();
 
   const { data: profile } = useQuery({
@@ -346,6 +387,12 @@ export function Pricing() {
   const currentPlanSlug = (profile?.plan as { slug?: string } | null)?.slug ?? null;
   const subStatus = (profile?.subscription as { status?: string } | null)?.status;
   const hasActiveSub = subStatus === 'ACTIVE' || subStatus === 'active';
+  const currentInterval = parseBillingInterval(
+    (profile?.subscription as { billingInterval?: string } | null)?.billingInterval,
+  );
+  const hasAnnual = plansHaveAnnual(plans);
+  const shownInterval: BillingInterval = hasAnnual ? billingInterval : "MONTHLY";
+  const maxAnnualDiscount = Math.max(0, ...plans.map((p) => p.annual?.discountPercent ?? 0));
 
   useEffect(() => {
     api.plans
@@ -410,6 +457,13 @@ export function Pricing() {
           </div>
         ) : (
           <div className="mt-10 flex flex-col gap-8 sm:mt-16 lg:mt-20 lg:gap-10">
+            {hasAnnual && (
+              <BillingIntervalToggle
+                value={shownInterval}
+                onChange={setBillingInterval}
+                discountPercent={maxAnnualDiscount}
+              />
+            )}
             {/* Monetizer plans (do mais caro pro mais barato): studio, advanced, pro */}
             {(() => {
               const monetizerSlugs = ['pro', 'advanced', 'studio'];
@@ -432,6 +486,8 @@ export function Pricing() {
                         i={i}
                         total={monetizerPlans.length}
                         currentPlanSlug={currentPlanSlug}
+                        currentInterval={currentInterval}
+                        billingInterval={shownInterval}
                         hasActiveSub={hasActiveSub}
                       />
                     ))}
@@ -461,6 +517,8 @@ export function Pricing() {
                         i={i}
                         total={entryPlans.length}
                         currentPlanSlug={currentPlanSlug}
+                        currentInterval={currentInterval}
+                        billingInterval={shownInterval}
                         hasActiveSub={hasActiveSub}
                       />
                     ))}

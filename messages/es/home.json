@@ -232,6 +232,7 @@
       "frames": "Fotogramas",
       "firstFrame": "Primer fotograma",
       "lastFrame": "Último fotograma",
+      "veoRefsFastOnly": "Las referencias múltiples solo están en Veo 3.1 Fast. En Quality, usa el primer y último fotograma.",
       "refVideo": "Video de referencia",
       "refAudio": "Audio de referencia",
       "mustBeVideo": "Sube un archivo de video.",

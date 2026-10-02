@@ -26,7 +26,8 @@
       "downgrade": "Fazer downgrade",
       "create": "Começar agora",
       "current": "Plano ativo",
-      "buyNow": "Comprar agora"
+      "buyNow": "Comprar agora",
+      "switchToAnnual": "Mudar para o anual"
     },
     "whatYouCanCreate": "O que dá pra criar",
     "features": {
@@ -177,7 +178,15 @@
         "noWatermark": "Gerações sem marca d'água",
         "currentPlanBenefits": "Créditos e funcionalidades do plano atual",
         "creditsLess": "{count, number} créditos mensais a menos"
-      }
+      },
+      "billingYearly": "Anual",
+      "billingMonthly": "Mensal",
+      "perYearShort": "/ano",
+      "switchToAnnual": "Mudar para o anual ({pct}% OFF)",
+      "switchToMonthly": "Voltar para o mensal na renovação",
+      "scheduledChangeYearly": "Muda para <name>{planName}</name> anual ({price}/ano) na próxima renovação",
+      "scheduledChangeMonthly": "Muda para <name>{planName}</name> mensal ({price}/mês) na próxima renovação",
+      "yearlyCreditsNote": "Renovam todo mês · próxima em {date}"
     },
     "unlimited": {
       "modeBadge": "Modo Ilimitado",
@@ -206,6 +215,15 @@
         "nb2_1K": "Imagens Nano Banana 2 em 1K",
         "nbBoth1K": "Imagens Nano Banana 2 e Pro em 1K"
       }
+    },
+    "billing": {
+      "label": "Ciclo de cobrança",
+      "monthly": "Mensal",
+      "yearly": "Anual",
+      "yearlyDiscount": "-{pct}%",
+      "billedYearly": "{amount} cobrado por ano",
+      "monthlyOnly": "Disponível só no plano mensal",
+      "creditsMonthly": "No anual os créditos também renovam todo mês"
     }
   }
 }

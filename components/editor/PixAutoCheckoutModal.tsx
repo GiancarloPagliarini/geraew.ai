@@ -5,7 +5,7 @@ import { AlertCircle, Check, Copy, Loader2, X, Smartphone } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-context';
-import { api, type PixAutoAuthorization } from '@/lib/api';
+import { api, type BillingInterval, type PixAutoAuthorization } from '@/lib/api';
 import { formatCurrency } from '@/lib/plans';
 import {
   formatTaxIdMask,
@@ -18,7 +18,9 @@ import { PixIcon } from '@/components/icons/PixIcon';
 interface PixAutoCheckoutModalProps {
   planSlug: string;
   planName: string;
+  /** valor cobrado a cada ciclo (mensal ou anual) */
   priceCents: number;
+  billingInterval?: BillingInterval;
   onClose: () => void;
   onSuccess?: () => void;
 }
@@ -27,10 +29,15 @@ export function PixAutoCheckoutModal({
   planSlug,
   planName,
   priceCents,
+  billingInterval = 'MONTHLY',
   onClose,
   onSuccess,
 }: PixAutoCheckoutModalProps) {
   const { accessToken } = useAuth();
+  const isYearly = billingInterval === 'YEARLY';
+  const perCycle = isYearly ? 'por ano' : 'por mês';
+  const perCycleShort = isYearly ? '/ano' : '/mês';
+  const recurringLabel = isYearly ? 'cobrança anual' : 'cobrança mensal';
   const queryClient = useQueryClient();
 
   const { data: profile } = useQuery({
@@ -71,7 +78,12 @@ export function PixAutoCheckoutModal({
       setCreating(true);
       setError(null);
       try {
-        const a = await api.subscriptions.createPixAuto(accessToken, planSlug, taxIdToSend);
+        const a = await api.subscriptions.createPixAuto(
+          accessToken,
+          planSlug,
+          taxIdToSend,
+          billingInterval,
+        );
         setAuth(a);
         setStep('qr');
         queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
@@ -85,7 +97,7 @@ export function PixAutoCheckoutModal({
         setCreating(false);
       }
     },
-    [accessToken, creating, planSlug, queryClient],
+    [accessToken, creating, planSlug, billingInterval, queryClient],
   );
 
   function handleSubmitTaxId(e: React.FormEvent) {
@@ -167,7 +179,8 @@ export function PixAutoCheckoutModal({
           </div>
           <h3 className="text-lg font-bold text-[#f3f0ed]">{planName}</h3>
           <p className="text-sm text-[#f3f0ed]/50">
-            {formatCurrency(priceCents, 'BRL', 'pt-BR')} por mês · cobrado automaticamente
+            {formatCurrency(priceCents, 'BRL', 'pt-BR')} {perCycle} · cobrado automaticamente
+            {isYearly && ' · créditos renovam todo mês'}
           </p>
         </div>
 
@@ -184,10 +197,10 @@ export function PixAutoCheckoutModal({
             </div>
             <div className="flex items-baseline justify-between border-t border-[#32BCAD]/15 pt-2">
               <span className="text-[11px] text-[#f3f0ed]/50">
-                Próximas mensalidades
+                {isYearly ? 'Próximas anuidades' : 'Próximas mensalidades'}
               </span>
               <span className="text-xs font-semibold tabular-nums text-[#f3f0ed]/80">
-                {formatCurrency(auth.recurringValueCents, 'BRL', 'pt-BR')}/mês
+                {formatCurrency(auth.recurringValueCents, 'BRL', 'pt-BR')}{perCycleShort}
               </span>
             </div>
           </div>
@@ -222,7 +235,7 @@ export function PixAutoCheckoutModal({
             </div>
 
             <div className="rounded-lg border border-[#32BCAD]/15 bg-[#32BCAD]/[0.04] p-3 text-[11px] leading-relaxed text-[#f3f0ed]/65">
-              No próximo passo seu banco vai perguntar se autoriza a cobrança mensal.
+              No próximo passo seu banco vai perguntar se autoriza a {recurringLabel}.
               Após aprovar, sua assinatura é ativada na hora.
             </div>
 
@@ -392,7 +405,7 @@ export function PixAutoCheckoutModal({
                   <Smartphone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#32BCAD]" />
                   <span>
                     Abra o app do seu banco, escolha PIX → copia-e-cola → cole o código. Seu banco
-                    vai perguntar se autoriza a cobrança mensal — basta aprovar.
+                    vai perguntar se autoriza a {recurringLabel} — basta aprovar.
                   </span>
                 </div>
               </>

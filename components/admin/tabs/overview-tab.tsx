@@ -73,7 +73,7 @@ function ProviderBreakdown({ stats }: { stats: AdminStats }) {
   if (total === 0) return null;
 
   const segments = [
-    { key: 'geraew', label: 'GeraEW Provider', value: bp.geraew, color: '#a2dd00' },
+    { key: 'geraew', label: 'Vertex (legado)', value: bp.geraew, color: '#a2dd00' },
     { key: 'kie', label: 'KIE API', value: bp.kie, color: '#f59e0b' },
   ];
 

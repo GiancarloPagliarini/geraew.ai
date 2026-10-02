@@ -15,8 +15,9 @@ import {
   Users,
   Zap,
 } from 'lucide-react';
+import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import type { Plan } from '@/lib/api';
+import type { BillingInterval, Plan } from '@/lib/api';
 import { PixIcon } from '@/components/icons/PixIcon';
 import {
   PLAN_DISCOUNT_LABELS,
@@ -26,44 +27,93 @@ import {
   PLAN_UNLIMITED_FEATURE_KEYS,
   formatCurrency,
   getPlanFeatureKeys,
+  getPlanIntervalPrice,
+  plansHaveAnnual,
+  resolvePlanChange,
+  type PlanChangeAction,
 } from '@/lib/plans';
 
 export interface PlansGridProps {
   plans: Plan[];
   currentPlanSlug: string | null;
+  /** periodicidade da assinatura atual (default MONTHLY) */
+  currentInterval?: BillingInterval;
   hasActiveSub: boolean;
   subscribingSlug: string | null;
-  onSubscribe: (slug: string) => void;
+  onSubscribe: (slug: string, interval: BillingInterval) => void;
   /** Quando informado e o card está em BRL, mostra opção de pagar via PIX Automático */
-  onSubscribePix?: (plan: Plan) => void;
+  onSubscribePix?: (plan: Plan, interval: BillingInterval) => void;
+  /** Ciclo exibido (controlado). Sem isso o grid controla o seletor Mensal/Anual sozinho. */
+  billingInterval?: BillingInterval;
+  onBillingIntervalChange?: (interval: BillingInterval) => void;
   /** compact = modal style (5-col grid, smaller cards) | full = page style (3+2 layout, larger cards) */
   compact?: boolean;
   isLoading?: boolean;
 }
 
-function resolvePlanAction(
-  targetSlug: string,
-  currentPlanSlug: string | null,
-  hasActiveSub: boolean,
-): 'upgrade' | 'downgrade' | 'create' | 'current' {
-  if (currentPlanSlug === targetSlug) return 'current';
-  if (!hasActiveSub || !currentPlanSlug || currentPlanSlug === 'free') return 'create';
-  const currentIdx = PLAN_ORDER.indexOf(currentPlanSlug);
-  const targetIdx = PLAN_ORDER.indexOf(targetSlug);
-  return targetIdx > currentIdx ? 'upgrade' : 'downgrade';
+/** Seletor Mensal / Anual (−X%). */
+export function BillingIntervalToggle({
+  value,
+  onChange,
+  discountPercent,
+  compact = false,
+}: {
+  value: BillingInterval;
+  onChange: (interval: BillingInterval) => void;
+  discountPercent: number;
+  compact?: boolean;
+}) {
+  const t = useTranslations('editorPlans');
+  const options: BillingInterval[] = ['MONTHLY', 'YEARLY'];
+  return (
+    <div className="flex justify-center">
+      <div
+        role="radiogroup"
+        aria-label={t('billing.label')}
+        className="inline-flex items-center gap-1 rounded-full border border-[#f3f0ed]/[0.08] bg-[#f3f0ed]/[0.03] p-1"
+      >
+        {options.map((option) => {
+          const selected = value === option;
+          return (
+            <button
+              key={option}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => onChange(option)}
+              className={`flex items-center gap-1.5 rounded-full font-semibold transition-all duration-200 ${compact ? 'px-3.5 py-1.5 text-[12px]' : 'px-4 py-2 text-[13px]'} ${selected
+                ? 'bg-[#f3f0ed]/[0.1] text-[#f3f0ed] shadow-sm'
+                : 'text-[#f3f0ed]/45 hover:text-[#f3f0ed]/75'
+                }`}
+            >
+              {option === 'MONTHLY' ? t('billing.monthly') : t('billing.yearly')}
+              {option === 'YEARLY' && discountPercent > 0 && (
+                <span className="rounded-full bg-[#a2dd00]/15 px-1.5 py-0.5 text-[10px] font-bold text-[#a2dd00]">
+                  {t('billing.yearlyDiscount', { pct: discountPercent })}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 interface PlanCardProps {
   plan: Plan;
   isCurrent: boolean;
-  planAction: 'upgrade' | 'downgrade' | 'create' | 'current';
-  onSubscribe: (slug: string) => void;
-  onSubscribePix?: (plan: Plan) => void;
+  planAction: PlanChangeAction;
+  billingInterval: BillingInterval;
+  /** o card é o plano atual em outro ciclo (ex.: mensal → anual do mesmo plano) */
+  isSamePlanOtherInterval: boolean;
+  onSubscribe: (slug: string, interval: BillingInterval) => void;
+  onSubscribePix?: (plan: Plan, interval: BillingInterval) => void;
   subscribingSlug: string | null;
   compact: boolean;
 }
 
-function PlanCard({ plan, isCurrent, planAction, onSubscribe, onSubscribePix, subscribingSlug, compact }: PlanCardProps) {
+function PlanCard({ plan, isCurrent, planAction, billingInterval, isSamePlanOtherInterval, onSubscribe, onSubscribePix, subscribingSlug, compact }: PlanCardProps) {
   const t = useTranslations('editorPlans');
   const locale = useLocale();
   const isFree = plan.priceCents === 0;
@@ -72,9 +122,14 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, onSubscribePix, su
   const isRecommended = plan.slug === 'pro';
   const isStudio = plan.slug === 'studio';
 
+  const currency = plan.currency || 'BRL';
+  const isYearly = billingInterval === 'YEARLY';
+  const price = getPlanIntervalPrice(plan, billingInterval);
+  const unavailable = !isFree && !price.available;
+
   const mainPrice = isFree
     ? t('free')
-    : formatCurrency(plan.priceCents, plan.currency || 'BRL', locale);
+    : formatCurrency(price.perMonthCents, currency, locale);
   const subPrice = isFree ? null : t('perMonth');
 
   const isSubscribing = subscribingSlug === plan.slug;
@@ -93,7 +148,10 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, onSubscribePix, su
     ? t(`socialProof.${plan.slug}` as 'socialProof.free')
     : '';
 
-  const actionLabel = t(`actions.${planAction}` as 'actions.upgrade');
+  const actionLabel =
+    planAction === 'upgrade' && isSamePlanOtherInterval && isYearly
+      ? t('actions.switchToAnnual')
+      : t(`actions.${planAction}` as 'actions.upgrade');
 
   const isUltraBasic = plan.slug === 'ultra-basic';
   const isBasic = plan.slug === 'basic';
@@ -173,7 +231,18 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, onSubscribePix, su
 
         {/* Price */}
         <div className={`${compact ? 'mt-2.5 min-h-[42px]' : 'mt-5 min-h-[60px]'}`}>
-          {originalPrice && !isFree ? (
+          {isYearly && price.compareAtCents && !isFree ? (
+            <div className={`flex items-center gap-1 ${compact ? 'mb-0.5' : 'mb-1'}`}>
+              <span className="text-[12px] text-[#f3f0ed]/25 line-through">
+                {formatCurrency(price.compareAtCents, currency, locale)}
+              </span>
+              {!!price.discountPercent && (
+                <span className={`rounded bg-[#a2dd00]/15 font-bold text-[#a2dd00] ${compact ? 'px-1 py-0.5 text-[10px]' : 'px-1.5 py-0.5 text-[9px]'}`}>
+                  {t('billing.yearlyDiscount', { pct: price.discountPercent })}
+                </span>
+              )}
+            </div>
+          ) : !isYearly && originalPrice && !isFree ? (
             <div className={`flex items-center gap-1 ${compact ? 'mb-0.5' : 'mb-1'}`}>
               <span className="text-[12px] text-[#f3f0ed]/25 line-through">
                 {formatCurrency(originalPrice, plan.currency || 'BRL', locale)}
@@ -196,6 +265,13 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, onSubscribePix, su
             </span>
             {subPrice && <span className={`text-[#f3f0ed]/30 ${compact ? 'text-[12px]' : 'text-[11px]'}`}>{subPrice}</span>}
           </div>
+          {isYearly && !isFree && (
+            <p className={`mt-0.5 text-[#f3f0ed]/40 ${compact ? 'text-[11px]' : 'text-[11.5px]'}`}>
+              {price.available
+                ? t('billing.billedYearly', { amount: formatCurrency(price.billedCents, currency, locale) })
+                : t('billing.monthlyOnly')}
+            </p>
+          )}
         </div>
 
         {/* Credits */}
@@ -281,8 +357,8 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, onSubscribePix, su
         {isFree && <div className={compact ? 'mt-3 h-8' : 'mt-6 h-11'} />}
         {!isFree && !isDowngrade && (
           <button
-            disabled={isCurrent || !!subscribingSlug}
-            onClick={() => onSubscribe(plan.slug)}
+            disabled={isCurrent || unavailable || !!subscribingSlug}
+            onClick={() => onSubscribe(plan.slug, billingInterval)}
             className={`flex w-full items-center justify-center gap-1.5 rounded-xl font-bold transition-all duration-300 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 ${compact ? 'mt-3 h-8 text-[13px]' : 'mt-6 h-11 text-[13px]'
               } ${isCurrent
                 ? 'bg-[#f3f0ed]/10 text-[#f3f0ed]/60'
@@ -303,10 +379,10 @@ function PlanCard({ plan, isCurrent, planAction, onSubscribe, onSubscribePix, su
         )}
 
         {/* PIX Automático (só BRL, não Free, não downgrade, não current) */}
-        {!isFree && !isDowngrade && !isCurrent && onSubscribePix && (plan.currency ?? 'BRL') === 'BRL' && (
+        {!isFree && !isDowngrade && !isCurrent && !unavailable && onSubscribePix && (plan.currency ?? 'BRL') === 'BRL' && (
           <button
             type="button"
-            onClick={() => onSubscribePix(plan)}
+            onClick={() => onSubscribePix(plan, billingInterval)}
             disabled={!!subscribingSlug}
             className={`group/pix relative mt-2 flex w-full items-center justify-center gap-1.5 overflow-hidden rounded-xl border border-[#32BCAD]/30 bg-gradient-to-r from-[#32BCAD]/[0.08] via-[#32BCAD]/[0.12] to-[#32BCAD]/[0.08] font-semibold text-[#5BD9CB] transition-all duration-300 hover:border-[#32BCAD]/55 hover:from-[#32BCAD]/[0.14] hover:via-[#32BCAD]/[0.2] hover:to-[#32BCAD]/[0.14] hover:text-[#7BE8DC] hover:shadow-[0_0_20px_rgba(50,188,173,0.18)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${compact ? 'h-8 text-[12px]' : 'h-10 text-[12.5px]'}`}
           >
@@ -354,6 +430,8 @@ function PlanSection({
   sectionKey,
   plans,
   currentPlanSlug,
+  currentInterval,
+  billingInterval,
   hasActiveSub,
   subscribingSlug,
   onSubscribe,
@@ -364,10 +442,12 @@ function PlanSection({
   sectionKey: 'entry' | 'creator' | 'monetizer';
   plans: Plan[];
   currentPlanSlug: string | null;
+  currentInterval: BillingInterval;
+  billingInterval: BillingInterval;
   hasActiveSub: boolean;
   subscribingSlug: string | null;
-  onSubscribe: (slug: string) => void;
-  onSubscribePix?: (plan: Plan) => void;
+  onSubscribe: (slug: string, interval: BillingInterval) => void;
+  onSubscribePix?: (plan: Plan, interval: BillingInterval) => void;
   compact: boolean;
   cols?: 2 | 3 | 4;
 }) {
@@ -387,8 +467,16 @@ function PlanSection({
           <PlanCard
             key={plan.id}
             plan={plan}
-            isCurrent={currentPlanSlug === plan.slug}
-            planAction={resolvePlanAction(plan.slug, currentPlanSlug, hasActiveSub)}
+            isCurrent={currentPlanSlug === plan.slug && currentInterval === billingInterval}
+            planAction={resolvePlanChange({
+              targetSlug: plan.slug,
+              targetInterval: billingInterval,
+              currentSlug: currentPlanSlug,
+              currentInterval,
+              hasActiveSub,
+            })}
+            billingInterval={billingInterval}
+            isSamePlanOtherInterval={currentPlanSlug === plan.slug && currentInterval !== billingInterval}
             onSubscribe={onSubscribe}
             onSubscribePix={onSubscribePix}
             subscribingSlug={subscribingSlug}
@@ -403,13 +491,32 @@ function PlanSection({
 export function PlansGrid({
   plans,
   currentPlanSlug,
+  currentInterval = 'MONTHLY',
   hasActiveSub,
   subscribingSlug,
   onSubscribe,
   onSubscribePix,
+  billingInterval: controlledInterval,
+  onBillingIntervalChange,
   compact = false,
   isLoading = false,
 }: PlansGridProps) {
+  // Até o usuário mexer no seletor, segue o ciclo da assinatura atual (quem já
+  // é anual abre no anual). Derivado a cada render porque o perfil costuma
+  // chegar depois do primeiro render do grid.
+  const [chosenInterval, setChosenInterval] = useState<BillingInterval | null>(null);
+  const hasAnnual = plansHaveAnnual(plans);
+  const defaultInterval: BillingInterval =
+    hasActiveSub && currentInterval === 'YEARLY' ? 'YEARLY' : 'MONTHLY';
+  const billingInterval: BillingInterval = hasAnnual
+    ? (controlledInterval ?? chosenInterval ?? defaultInterval)
+    : 'MONTHLY';
+  const setBillingInterval = (interval: BillingInterval) => {
+    setChosenInterval(interval);
+    onBillingIntervalChange?.(interval);
+  };
+  const maxAnnualDiscount = Math.max(0, ...plans.map((p) => p.annual?.discountPercent ?? 0));
+
   if (isLoading) {
     return (
       <div className={`flex flex-col ${compact ? 'gap-4' : 'gap-6'}`}>
@@ -438,11 +545,21 @@ export function PlansGrid({
 
   return (
     <div className={`flex flex-col ${compact ? 'gap-4' : 'gap-6'}`}>
+      {hasAnnual && (
+        <BillingIntervalToggle
+          value={billingInterval}
+          onChange={setBillingInterval}
+          discountPercent={maxAnnualDiscount}
+          compact={compact}
+        />
+      )}
       {monetizerPlans.length > 0 && (
         <PlanSection
           sectionKey="monetizer"
           plans={monetizerPlans}
           currentPlanSlug={currentPlanSlug}
+          currentInterval={currentInterval}
+          billingInterval={billingInterval}
           hasActiveSub={hasActiveSub}
           subscribingSlug={subscribingSlug}
           onSubscribe={onSubscribe}
@@ -456,6 +573,8 @@ export function PlansGrid({
           sectionKey="entry"
           plans={entryPlans}
           currentPlanSlug={currentPlanSlug}
+          currentInterval={currentInterval}
+          billingInterval={billingInterval}
           hasActiveSub={hasActiveSub}
           subscribingSlug={subscribingSlug}
           onSubscribe={onSubscribe}

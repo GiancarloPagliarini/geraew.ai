@@ -10,7 +10,7 @@
   },
   "hero": {
     "badge": "Plataforma de creación con Inteligencia Artificial",
-    "title": "Crea influencers digitales con generaciones ilimitadas de videos e imágenes.",
+    "title": "Crea influencers digitales y genera videos e imágenes con IA.",
     "subtitle": "Genera imágenes, videos ultrarrealistas y movimientos con pocos clics. Sin estudio, sin modelos, sin aparecer. Todo lo que necesitas para crear contenido profesional está aquí.",
     "cta": "Comenzar Ahora",
     "microcopy": "Listo en menos de 2 minutos"
@@ -217,7 +217,7 @@
       },
       "brands": {
         "title": "Marcas y Agencias",
-        "desc": "Produce UGC ilimitado sin contratar modelos ni influencers. Reduce costos de producción y ten creativos nuevos todos los días para campañas."
+        "desc": "Produce UGC a escala sin contratar modelos ni influencers. Reduce costos de producción y ten creativos nuevos todos los días para campañas."
       },
       "social": {
         "title": "Social Media Managers",
@@ -382,7 +382,7 @@
         "s3": {
           "tag": "Generación de Imágenes",
           "title": "Imagina. Describe. Crea.",
-          "description": "Transforma cualquier idea en imagen con modelos de última generación — rápido y sin limitaciones."
+          "description": "Transforma cualquier idea en imagen con modelos de última generación — rápido y sin complicaciones."
         }
       }
     },

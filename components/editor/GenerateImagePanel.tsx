@@ -26,6 +26,7 @@ import {
   getModelVariantFromSlug,
   isUnlimitedModelAllowed,
 } from '@/hooks/use-unlimited-status';
+import { UNLIMITED_MODE_ENABLED } from '@/lib/unlimited';
 import { PanelDuplicateButton } from './PanelDuplicateButton';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -257,7 +258,8 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
   // Ao ativar o toggle: garante que modelo + qualidade estão no plano,
   // trocando automaticamente caso o atual esteja fora.
   const handleToggleUnlimited = (next: boolean) => {
-    if (!next) {
+    // modo ilimitado descontinuado: nunca liga (ver lib/unlimited.ts)
+    if (!next || !UNLIMITED_MODE_ENABLED) {
       setUnlimited(false);
       return;
     }
@@ -1183,7 +1185,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
           </div>
         </TooltipProvider>
         {plansModalOpen && createPortal(<PlansModal onClose={() => setPlansModalOpen(false)} />, document.body)}
-        {unlimitedModalOpen && createPortal(<UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />, document.body)}
+        {UNLIMITED_MODE_ENABLED && unlimitedModalOpen && createPortal(<UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />, document.body)}
       </>
     );
   }
@@ -1581,7 +1583,7 @@ export function GenerateImagePanel({ nodeId, onClose, onDuplicate }: GenerateIma
         </div>
       </TooltipProvider>
       {plansModalOpen && createPortal(<PlansModal onClose={() => setPlansModalOpen(false)} />, document.body)}
-      {unlimitedModalOpen && createPortal(<UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />, document.body)}
+      {UNLIMITED_MODE_ENABLED && unlimitedModalOpen && createPortal(<UnlimitedUpgradeModal onClose={() => setUnlimitedModalOpen(false)} />, document.body)}
     </>
   );
 }

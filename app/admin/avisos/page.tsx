@@ -585,7 +585,10 @@ function AnnouncementEditor({ mode, announcement, accessToken, onClose, onSaved 
                   <option value="openai">OpenAI</option>
                   <option value="gift">Presente</option>
                   <option value="mic">Microfone</option>
-                  <option value="unlimited">Ilimitado</option>
+                  {/* modo ilimitado descontinuado: a opção só aparece para avisos antigos que já a usam */}
+                  {form.variant === 'unlimited' && (
+                    <option value="unlimited">Ilimitado (descontinuado)</option>
+                  )}
                 </select>
               </Field>
               <Field label="Ordem" hint="Menor número = aparece primeiro.">
@@ -735,7 +738,9 @@ function AnnouncementEditor({ mode, announcement, accessToken, onClose, onSaved 
                   <option value="open-video-panel">Abrir painel de vídeo</option>
                   <option value="open-audio-panel">Abrir painel de áudio</option>
                   <option value="open-weekly-claim">Abrir resgate semanal</option>
-                  <option value="open-unlimited-modal">Abrir modal de planos ilimitados</option>
+                  {form.actionType === 'open-unlimited-modal' && (
+                    <option value="open-unlimited-modal">Abrir modal de planos ilimitados (descontinuado)</option>
+                  )}
                   <option value="href">Link externo</option>
                 </select>
               </Field>
